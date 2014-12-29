@@ -347,22 +347,22 @@ namespace Qoollo.Turbo.PerformanceTests
 
             for (int i = 0; i < 10; i++)
             {
-                //RunConcurrentBC("1, 1", 5000000, 1, 1, 10, 10);
-                //Free();
+                RunConcurrentBC("1, 1", 5000000, 1, 1, 10, 10);
+                Free();
 
-                //RunConcurrentBC("4, 4", 5000000, 4, 4, 10, 10);
-                //Free();
+                RunConcurrentBC("4, 4", 5000000, 4, 4, 10, 10);
+                Free();
 
-                //RunConcurrentBC("16, 1", 5000000, 16, 1, 10, 10);
-                //Free();
+                RunConcurrentBC("16, 1", 5000000, 16, 1, 10, 10);
+                Free();
 
-                //RunConcurrentBC("1, 16", 5000000, 1, 16, 10, 10);
-                //Free();
+                RunConcurrentBC("1, 16", 5000000, 1, 16, 10, 10);
+                Free();
 
-                //RunConcurrentBC("16, 16", 5000000, 16, 16, 10, 10);
-                //Free();
+                RunConcurrentBC("16, 16", 5000000, 16, 16, 10, 10);
+                Free();
 
-                //Console.WriteLine();
+                Console.WriteLine();
 
                 RunConcurrentBQ("1, 1", 5000000, 1, 1, 10, 10);
                 Free();

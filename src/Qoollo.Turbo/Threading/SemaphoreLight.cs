@@ -17,7 +17,7 @@ namespace Qoollo.Turbo.Threading
     /// Легковесный семафор
     /// </summary>
     [DebuggerDisplay("CurrentCount = {CurrentCount}")]
-    public class SemaphoreLight
+    public class SemaphoreLight: IDisposable
     {
         private static readonly int _processorCount = Environment.ProcessorCount;
 
@@ -74,6 +74,8 @@ namespace Qoollo.Turbo.Threading
 
         private volatile int _waitCount;
 
+        private volatile bool _isDisposed;
+
         private object _lockObj;
 
 
@@ -95,6 +97,7 @@ namespace Qoollo.Turbo.Threading
             _lockObj = new object();
             _currentCountLocFree = initialCount;
             _currentCountForWait = 0;
+            _isDisposed = false;
         }
         /// <summary>
         /// Конструктор SemaphoreLight
@@ -119,7 +122,6 @@ namespace Qoollo.Turbo.Threading
         {
             get { return _waitCount; }
         }
-
 
 
         /// <summary>
@@ -150,24 +152,14 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Таймаут</param>
         /// <param name="startTime">Начальное время (для отслеживания таймаута)</param>
         /// <param name="token">Токен отмены</param>
-        /// <returns>Удалось ли дождаться (false - таймаут или отмена)</returns>
+        /// <returns>Удалось ли дождаться (false - таймаут или отмена или Dispose)</returns>
         private bool WaitUntilCountOrTimeoutAndTake(int timeout, uint startTime, CancellationToken token)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
 
             while (true)
             {
-                if (_currentCountForWait > 0)
-                {
-                    _currentCountForWait--;
-                    return true;
-                }
-
-                // Проверяем и lock-free
-                if (TryTakeLockFree())
-                    return true;
-
-                if (token.IsCancellationRequested)
+                if (token.IsCancellationRequested || _isDisposed)
                     return false;
 
                 if (timeout != Timeout.Infinite)
@@ -179,6 +171,17 @@ namespace Qoollo.Turbo.Threading
 
                 if (!Monitor.Wait(_lockObj, remainingWaitMilliseconds))
                     return false;
+
+
+                if (_currentCountForWait > 0)
+                {
+                    _currentCountForWait--;
+                    return true;
+                }
+
+                // Проверяем и lock-free
+                if (TryTakeLockFree())
+                    return true;
             }
         }
 
@@ -193,6 +196,9 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Удалось ли захватить слот</returns>
         public bool Wait(int timeout, CancellationToken token)
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+
             if (timeout < -1)
                 timeout = Timeout.Infinite;
 
@@ -211,7 +217,7 @@ namespace Qoollo.Turbo.Threading
             if (_processorCount > 1)
             {
                 int currentCountLocFree = _currentCountLocFree;
-                if (_waitCount >= _currentCountForWait && _waitCount <= _currentCountForWait + _processorCount)
+                if (_waitCount >= _currentCountForWait && _waitCount <= _currentCountForWait + 2)
                 {
                     for (int i = 0; i < 9; i++)
                     {
@@ -277,6 +283,9 @@ namespace Qoollo.Turbo.Threading
 
                 if (token.IsCancellationRequested)
                     throw new OperationCanceledException(token);
+
+                if (_isDisposed)
+                    throw new OperationInterruptedException("Semaphore wait was interrupted by Dispose", new ObjectDisposedException(this.GetType().Name));
             }
             finally
             {
@@ -385,6 +394,8 @@ namespace Qoollo.Turbo.Threading
         /// <param name="releaseCount">Число слотов для освобождения</param>
         public void Release(int releaseCount)
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
             if (releaseCount < 1)
                 throw new ArgumentOutOfRangeException("releaseCount", "releaseCount should be positive");
             if (_maxCount - CurrentCount < releaseCount)
@@ -488,6 +499,26 @@ namespace Qoollo.Turbo.Threading
         public void Release()
         {
             Release(1);
+        }
+
+
+        /// <summary>
+        /// Освобождение ресурсов
+        /// </summary>
+        public void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            lock (_lockObj)
+            {
+                if (_isDisposed)
+                    return;
+
+                _isDisposed = true;
+
+                Monitor.PulseAll(this._lockObj);
+            }
         }
     }
 

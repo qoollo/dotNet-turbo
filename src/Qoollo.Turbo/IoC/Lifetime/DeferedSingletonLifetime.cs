@@ -43,6 +43,23 @@ namespace Qoollo.Turbo.IoC.Lifetime
             _createInstanceFunc = createInstanceFunc;
         }
 
+
+        /// <summary>
+        /// Создание инстанса (lock должен быть в отдельном методе для ускорения)
+        /// </summary>
+        /// <param name="resolver">Резолвер</param>
+        private void CreateInstanceCore(IInjectionResolver resolver)
+        {
+            lock (_lockObj)
+            {
+                if (!_isInited)
+                {
+                    _obj = _createInstanceFunc(resolver);
+                    _isInited = true;
+                }
+            }
+        }
+
         /// <summary>
         /// Возвращает объект, которым управляет данный контейнер
         /// </summary>
@@ -51,16 +68,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
             if (!_isInited)
-            {
-                lock (_lockObj)
-                {
-                    if (!_isInited)
-                    {
-                        _obj = _createInstanceFunc(resolver);
-                        _isInited = true;
-                    }
-                }
-            }
+                CreateInstanceCore(resolver);
+
             return _obj;
         }
 

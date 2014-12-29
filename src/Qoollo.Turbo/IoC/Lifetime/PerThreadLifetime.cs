@@ -49,10 +49,15 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <returns>Полученный объект</returns>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
-            if (!_obj.IsValueCreated)
-                _obj.Value = _createInstFunc(resolver);
+            var result = _obj.Value;
 
-            return _obj.Value;
+            if (result == null)
+            {
+                result = _createInstFunc(resolver);
+                _obj.Value = result;
+            }
+
+            return result;
         }
 
         /// <summary>

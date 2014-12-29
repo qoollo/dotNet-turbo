@@ -49,6 +49,21 @@ namespace Qoollo.Turbo.PerformanceTests
             }
         }
 
+        public class ObjectPoolBCL<T>
+        {
+            private BlockingCollection<T> _objects = new BlockingCollection<T>();
+
+            public T GetObject()
+            {
+                return _objects.Take();
+            }
+
+            public void PutObject(T item)
+            {
+                _objects.Add(item);
+            }
+        }
+
         public class ObjectPool<T>
         {
             //private BlockingCollection<T> _objects;
@@ -181,6 +196,61 @@ namespace Qoollo.Turbo.PerformanceTests
         }
 
 
+        private static TimeSpan TestBCL(ObjectPoolBCL<PoolElem> pool, int threadCount, int opCount, int pauseSpin)
+        {
+            Thread[] threads = new Thread[threadCount];
+            Barrier startBar = new Barrier(threadCount + 1);
+
+            int opCountPerThread = opCount / threadCount;
+
+            Action thAct = () =>
+            {
+                startBar.SignalAndWait();
+                int execOp = 0;
+                while (execOp++ < opCountPerThread)
+                {
+                    PoolElem el = null;
+                    try
+                    {
+                        el = pool.GetObject();
+                        //Thread.Sleep(pauseSpin);
+                        Thread.SpinWait(pauseSpin);
+                    }
+                    finally
+                    {
+                        pool.PutObject(el);
+                    }
+                }
+            };
+
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i] = new Thread(new ThreadStart(thAct));
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i].Start();
+
+            startBar.SignalAndWait();
+            Stopwatch sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i].Join();
+
+            sw.Stop();
+
+            Console.WriteLine("BCL ObjPool. Elapsed = " + sw.ElapsedMilliseconds.ToString() + "ms");
+
+            return sw.Elapsed;
+        }
+
+        private static void RunTestBCL(int threadCount, int elemCount, int opCount, int pauseSpin)
+        {
+            ObjectPoolBCL<PoolElem> pool = new ObjectPoolBCL<PoolElem>();
+            for (int i = 0; i < elemCount; i++)
+                pool.PutObject(new PoolElem());
+
+            TestBCL(pool, threadCount, opCount, pauseSpin);
+        }
 
         private static TimeSpan TestSimple(ObjectPool<PoolElem> pool, int threadCount, int opCount, int pauseSpin)
         {
@@ -522,7 +592,7 @@ namespace Qoollo.Turbo.PerformanceTests
         {
             using (var pool = new NewDynPool(elemCount))
             {
-                //pool.FillPoolUpTo(elemCount);
+                pool.FillPoolUpTo(elemCount);
 
                 TestNewPool(pool, threadCount, opCount, pauseSpin);
             }
@@ -556,14 +626,23 @@ namespace Qoollo.Turbo.PerformanceTests
             //TestStaticThreadPool(4, 4, 10000000, 1);
             //TestStaticThreadPool(4, 4, 10000000, 1);
 
-            for (int i = 0; i < 1; i++)
-                RunTestSimple(8, 16, 10000000, 10);
+            for (int i = 0; i < 3; i++)
+                RunTestBCL(8, 1, 10000000, 100);
 
-            for (int i = 0; i < 1; i++)
-                RunTestObjectPoolWithLListSimple(8, 16, 10000000, 10);
+            for (int i = 0; i < 3; i++)
+                TestNewDynamicPool(8, 1, 10000000, 100);
 
-            for (int i = 0; i < 1; i++)
-                RunTestObjectPoolWithSyncPrior(8, 16, 10000000, 10);
+            //for (int i = 0; i < 3; i++)
+            //    TestNewStaticPool(8, 1, 10000000, 100);
+
+            //for (int i = 0; i < 1; i++)
+            //    RunTestSimple(8, 16, 10000000, 10);
+
+            //for (int i = 0; i < 1; i++)
+            //    RunTestObjectPoolWithLListSimple(8, 16, 10000000, 10);
+
+            //for (int i = 0; i < 1; i++)
+            //    RunTestObjectPoolWithSyncPrior(8, 16, 10000000, 10);
 
 
             //for (int i = 0; i < 1; i++)
@@ -578,17 +657,17 @@ namespace Qoollo.Turbo.PerformanceTests
             //for (int i = 0; i < 3; i++)
             //    TestNewDynamicPool(8, 4, 10000000, 10);
 
-            for (int i = 0; i < 1; i++)
-                TestBalancingStaticPool(8, 16, 10000000, 10);
+            //for (int i = 0; i < 1; i++)
+            //    TestBalancingStaticPool(8, 16, 10000000, 10);
 
             //for (int i = 0; i < 1; i++)
             //    TestBalancingDynamicPool(8, 160, 10000000, 10);
 
-            for (int i = 0; i < 4; i++)
-                TestNewBalancingStaticPool(8, 16, 10000000, 10);
+            //for (int i = 0; i < 3; i++)
+            //    TestNewBalancingStaticPool(8, 1, 10000000, 100);
 
-            for (int i = 0; i < 4; i++)
-                TestNewBalancingDynamicPool(8, 16, 10000000, 10);
+            //for (int i = 0; i < 4; i++)
+            //    TestNewBalancingDynamicPool(8, 16, 10000000, 10);
 
             //TestStaticThreadPool(8, 4, 10000, 1);
             //TestStaticThreadPool(8, 4, 10000, 1);
