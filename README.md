@@ -1,4 +1,4 @@
-Qoollo System Class Library
+Qoollo Turbo
 ===============
 
 Collection of useful classes for your .NET application.
@@ -6,7 +6,7 @@ Collection of useful classes for your .NET application.
 
 Library contains a number of reuseful base classes:
 
-1. [Object pools](https://github.com/qoollo/system-class-library/wiki/Object-pool) - simple to use object pools;
+1. [Object pools](https://github.com/qoollo/system-class-library/wiki/Object-pool) - easy to use object pools;
 2. [Asynchronous data processing with queue](https://github.com/qoollo/system-class-library/wiki/QueueAsyncProcessor) - help in parallelization of item processing;
 3. [Thread pools](https://github.com/qoollo/system-class-library/wiki/Thread-Pool) - fast thread pools with dynamic adjustment of thread count;
 4. [Thread set manager](https://github.com/qoollo/system-class-library/wiki/ThreadSetManager) - simplify common thread start/stop scenarios;

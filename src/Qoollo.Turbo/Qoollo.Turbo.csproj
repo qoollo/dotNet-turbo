@@ -1,0 +1,433 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Qoollo.Turbo</RootNamespace>
+    <AssemblyName>Qoollo.Turbo</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
+    <CodeContractsAssemblyMode>1</CodeContractsAssemblyMode>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SERVICE_CLASSES_PROFILING</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <CodeContractsEnableRuntimeChecking>True</CodeContractsEnableRuntimeChecking>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
+    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
+    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>True</CodeContractsArithmeticObligations>
+    <CodeContractsEnumObligations>True</CodeContractsEnumObligations>
+    <CodeContractsRedundantAssumptions>False</CodeContractsRedundantAssumptions>
+    <CodeContractsInferRequires>True</CodeContractsInferRequires>
+    <CodeContractsInferEnsures>True</CodeContractsInferEnsures>
+    <CodeContractsInferObjectInvariants>True</CodeContractsInferObjectInvariants>
+    <CodeContractsSuggestAssumptions>False</CodeContractsSuggestAssumptions>
+    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>
+    <CodeContractsSuggestEnsures>False</CodeContractsSuggestEnsures>
+    <CodeContractsSuggestObjectInvariants>False</CodeContractsSuggestObjectInvariants>
+    <CodeContractsDisjunctiveRequires>False</CodeContractsDisjunctiveRequires>
+    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
+    <CodeContractsCustomRewriterAssembly />
+    <CodeContractsCustomRewriterClass />
+    <CodeContractsLibPaths />
+    <CodeContractsExtraRewriteOptions />
+    <CodeContractsExtraAnalysisOptions />
+    <CodeContractsBaseLineFile />
+    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>
+    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
+    <CodeContractsAnalysisWarningLevel>1</CodeContractsAnalysisWarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>bin\Debug\Qoollo.Turbo.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeContractsEnableRuntimeChecking>True</CodeContractsEnableRuntimeChecking>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
+    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
+    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsNonNullObligations>False</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
+    <CodeContractsEnumObligations>False</CodeContractsEnumObligations>
+    <CodeContractsRedundantAssumptions>False</CodeContractsRedundantAssumptions>
+    <CodeContractsInferRequires>False</CodeContractsInferRequires>
+    <CodeContractsInferEnsures>False</CodeContractsInferEnsures>
+    <CodeContractsInferObjectInvariants>False</CodeContractsInferObjectInvariants>
+    <CodeContractsSuggestAssumptions>False</CodeContractsSuggestAssumptions>
+    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>
+    <CodeContractsSuggestEnsures>False</CodeContractsSuggestEnsures>
+    <CodeContractsSuggestObjectInvariants>False</CodeContractsSuggestObjectInvariants>
+    <CodeContractsDisjunctiveRequires>False</CodeContractsDisjunctiveRequires>
+    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>False</CodeContractsShowSquigglies>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
+    <CodeContractsCustomRewriterAssembly />
+    <CodeContractsCustomRewriterClass />
+    <CodeContractsLibPaths />
+    <CodeContractsExtraRewriteOptions />
+    <CodeContractsExtraAnalysisOptions />
+    <CodeContractsBaseLineFile />
+    <CodeContractsCacheAnalysisResults>False</CodeContractsCacheAnalysisResults>
+    <CodeContractsRuntimeCheckingLevel>ReleaseRequires</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsReferenceAssembly>DoNotBuild</CodeContractsReferenceAssembly>
+    <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>bin\Release\Qoollo.Turbo.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugSC|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\DebugSC\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeContractsEnableRuntimeChecking>True</CodeContractsEnableRuntimeChecking>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRuntimeThrowOnFailure>False</CodeContractsRuntimeThrowOnFailure>
+    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
+    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>
+    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>
+    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>True</CodeContractsArithmeticObligations>
+    <CodeContractsEnumObligations>True</CodeContractsEnumObligations>
+    <CodeContractsRedundantAssumptions>False</CodeContractsRedundantAssumptions>
+    <CodeContractsInferRequires>True</CodeContractsInferRequires>
+    <CodeContractsInferEnsures>True</CodeContractsInferEnsures>
+    <CodeContractsInferObjectInvariants>True</CodeContractsInferObjectInvariants>
+    <CodeContractsSuggestAssumptions>False</CodeContractsSuggestAssumptions>
+    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>
+    <CodeContractsSuggestEnsures>False</CodeContractsSuggestEnsures>
+    <CodeContractsSuggestObjectInvariants>False</CodeContractsSuggestObjectInvariants>
+    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
+    <CodeContractsCustomRewriterAssembly />
+    <CodeContractsCustomRewriterClass />
+    <CodeContractsLibPaths />
+    <CodeContractsExtraRewriteOptions />
+    <CodeContractsExtraAnalysisOptions />
+    <CodeContractsBaseLineFile />
+    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>
+    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
+    <CodeContractsAnalysisWarningLevel>1</CodeContractsAnalysisWarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugSC|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\DebugSC\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugRC|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\DebugRC\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeContractsEnableRuntimeChecking>True</CodeContractsEnableRuntimeChecking>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
+    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
+    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
+    <CodeContractsEnumObligations>False</CodeContractsEnumObligations>
+    <CodeContractsRedundantAssumptions>False</CodeContractsRedundantAssumptions>
+    <CodeContractsMissingPublicRequiresAsWarnings>True</CodeContractsMissingPublicRequiresAsWarnings>
+    <CodeContractsInferRequires>True</CodeContractsInferRequires>
+    <CodeContractsInferEnsures>False</CodeContractsInferEnsures>
+    <CodeContractsInferObjectInvariants>False</CodeContractsInferObjectInvariants>
+    <CodeContractsSuggestAssumptions>False</CodeContractsSuggestAssumptions>
+    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>
+    <CodeContractsSuggestObjectInvariants>False</CodeContractsSuggestObjectInvariants>
+    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
+    <CodeContractsCustomRewriterAssembly />
+    <CodeContractsCustomRewriterClass />
+    <CodeContractsLibPaths />
+    <CodeContractsExtraRewriteOptions />
+    <CodeContractsExtraAnalysisOptions />
+    <CodeContractsSQLServerOption />
+    <CodeContractsBaseLineFile />
+    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>
+    <CodeContractsFailBuildOnWarnings>False</CodeContractsFailBuildOnWarnings>
+    <CodeContractsRuntimeCheckingLevel>ReleaseRequires</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsReferenceAssembly>DoNotBuild</CodeContractsReferenceAssembly>
+    <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugRC|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\DebugRC\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Collections\Concurrent\BlockingQueue.cs" />
+    <Compile Include="Exceptions\OperationInterruptedException.cs" />
+    <Compile Include="Exceptions\ThreadSetManagerException.cs" />
+    <Compile Include="ObjectPools\Common\DefaultPoolElementComparer.cs" />
+    <Compile Include="ObjectPools\Common\PoolElementComparer.cs" />
+    <Compile Include="ObjectPools\Common\DefaultPoolElementOperationSource.cs" />
+    <Compile Include="ObjectPools\BalancingDynamicPoolManager.cs" />
+    <Compile Include="ObjectPools\DynamicPoolManager.cs" />
+    <Compile Include="ObjectPools\ObjectPoolManager.cs" />
+    <Compile Include="ObjectPools\RentedElementMonitor.cs" />
+    <Compile Include="ObjectPools\ServiceStuff\ElementCollections\BunchElementStorage.cs" />
+    <Compile Include="ObjectPools\ServiceStuff\ElementCollections\SingleElementPerThreadStorage.cs" />
+    <Compile Include="ObjectPools\ServiceStuff\ElementCollections\SparceArrayStorage.cs" />
+    <Compile Include="ObjectPools\ServiceStuff\ElementCollections\IndexedStackElementStorage.cs" />
+    <Compile Include="ObjectPools\ServiceStuff\ElementCollections\SingleElementStorage.cs" />
+    <Compile Include="ObjectPools\ServiceStuff\ElementContainers\PrioritizedElementsContainer.cs" />
+    <Compile Include="ObjectPools\ServiceStuff\ElementContainers\SimpleElementsContainer.cs" />
+    <Compile Include="ObjectPools\Common\IPoolElementOperationSource.cs" />
+    <Compile Include="ObjectPools\Common\PoolElementWrapper.cs" />
+    <Compile Include="ObjectPools\ServiceStuff\UsedElementTracker.cs" />
+    <Compile Include="ObjectPools\BalancingStaticPoolManager.cs" />
+    <Compile Include="ObjectPools\StaticPoolManager.cs" />
+    <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchAwaitable.cs" />
+    <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchSupplier.cs" />
+    <Compile Include="Threading\AsyncAwaitSupport\CustomSynchronizationContext.cs" />
+    <Compile Include="Threading\LinearSpinWait.cs" />
+    <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorExtensions.cs" />
+    <Compile Include="Threading\SemaphoreLight.cs" />
+    <Compile Include="Threading\SemaphoreSlimE.cs" />
+    <Compile Include="Threading\ServiceStuff\CancellationTokenHelper.cs" />
+    <Compile Include="Threading\ServiceStuff\ManagementThreadController.cs" />
+    <Compile Include="Threading\ServiceStuff\TaskHelper.cs" />
+    <Compile Include="Threading\Tasks\LimitedConcurrencyLevelTaskScheduler.cs" />
+    <Compile Include="Threading\AsyncAwaitSupport\StandardContextSwitchSuppliers.cs" />
+    <Compile Include="Common\ByReferenceEqualityComparer.cs" />
+    <Compile Include="Collections\Deque.cs" />
+    <Compile Include="Collections\OutOfTurnQueue.cs" />
+    <Compile Include="Collections\HighLowPriorityQueue.cs" />
+    <Compile Include="Collections\LimitedPriorityQueueBase.cs" />
+    <Compile Include="Collections\ServiceStuff\CollectionDebugView.cs" />
+    <Compile Include="Collections\Wrappers\ReadOnlyDictionary.cs" />
+    <Compile Include="Collections\Wrappers\ReadOnlyHashSet.cs" />
+    <Compile Include="Collections\Wrappers\ReadOnlyCollectionWrapper.cs" />
+    <Compile Include="Collections\Wrappers\ReadOnlyDictionaryWrapper.cs" />
+    <Compile Include="Collections\Wrappers\ReadOnlyList.cs" />
+    <Compile Include="Collections\Wrappers\ReadOnlyListWrapper.cs" />
+    <Compile Include="Collections\Wrappers\ReadOnlySetWrapper.cs" />
+    <Compile Include="Collections\Wrappers\TransformedReadOnlyListWrapper.cs" />
+    <Compile Include="Common\Extensions\CollectionExtensions.cs" />
+    <Compile Include="Common\Extensions\ExceptionExtensions.cs" />
+    <Compile Include="Common\Interfaces\IConsumer.cs" />
+    <Compile Include="Common\Interfaces\IFreezable.cs" />
+    <Compile Include="Common\Interfaces\IProducer.cs" />
+    <Compile Include="Common\Interfaces\IProducerConsumer.cs" />
+    <Compile Include="Common\Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Common\Console\ConsoleHelper.cs" />
+    <Compile Include="Exceptions\CantInitThreadException.cs" />
+    <Compile Include="Exceptions\CantRetrieveElementException.cs" />
+    <Compile Include="Exceptions\ItemAlreadyExistsException.cs" />
+    <Compile Include="Exceptions\IoCException.cs" />
+    <Compile Include="Exceptions\ItemNotFoundException.cs" />
+    <Compile Include="Exceptions\ObjectFrozenException.cs" />
+    <Compile Include="Exceptions\QueueAsyncProcessorException.cs" />
+    <Compile Include="Exceptions\WrongStateException.cs" />
+    <Compile Include="Common\ExecutionContextStorage.cs" />
+    <Compile Include="IoC\Associations\AssociationContainerGenerator.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AssociationContainerGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Include="IoC\Associations\ConcurrentGenericAssociationContainer.cs" />
+    <Compile Include="IoC\Associations\FreezeRequiredGenericAssociationContainer.cs" />
+    <Compile Include="IoC\Associations\GenericAssociationContainerBase.cs" />
+    <Compile Include="IoC\Associations\Interfaces\IAssociationSource.cs" />
+    <Compile Include="IoC\Associations\Interfaces\IAssociationSupport.cs" />
+    <Compile Include="IoC\Associations\TypeStrict\TypeStrictAssociationContainer.cs" />
+    <Compile Include="IoC\Associations\TypeStrict\TypeStrictAssociationExtension.cs" />
+    <Compile Include="IoC\Associations\TypeStrict\TypeStrictFreezeRequiredAssociationContainer.cs" />
+    <Compile Include="IoC\CommonCaseIoC\CommonObjectLocator.cs" />
+    <Compile Include="IoC\CommonCaseIoC\DirectTypeAssociationContainer.cs" />
+    <Compile Include="IoC\CommonCaseIoC\SimpleObjectLocator.cs" />
+    <Compile Include="IoC\CommonEnums.cs" />
+    <Compile Include="IoC\DefaultConstructorAttribute.cs" />
+    <Compile Include="IoC\Helpers\OnjectInstantiationHelper.cs" />
+    <Compile Include="IoC\Injections\ConcurrentGenericInjectionContainer.cs" />
+    <Compile Include="IoC\Injections\GenericInjectionContainerBase.cs" />
+    <Compile Include="IoC\Injections\Interfaces\IInjectionSource.cs" />
+    <Compile Include="IoC\Injections\FreezeRequiredGenericInjectionContainer.cs" />
+    <Compile Include="IoC\Injections\TypeStrict\TypeStrictFreezeRequiredInjectionContainer.cs" />
+    <Compile Include="IoC\Injections\TypeStrict\TypeStrictInjectionContainer.cs" />
+    <Compile Include="IoC\Injections\TypeStrict\TypeStrictInjectionExtension.cs" />
+    <Compile Include="IoC\IObjectLocator.cs" />
+    <Compile Include="IoC\Lifetime\DeferedSingletonLifetime.cs" />
+    <Compile Include="IoC\Lifetime\Factories\DefaultLifetimeFactories.cs" />
+    <Compile Include="IoC\Lifetime\Factories\LifetimeFactories.cs" />
+    <Compile Include="IoC\Lifetime\PerCallInlinedParamsInterfaceLifetime.cs" />
+    <Compile Include="IoC\Lifetime\PerCallInlinedParamsLifetime.cs" />
+    <Compile Include="IoC\Lifetime\PerCallInterfaceLifetime.cs" />
+    <Compile Include="IoC\Lifetime\PerCallLifetime.cs" />
+    <Compile Include="IoC\Lifetime\PerThreadLifetime.cs" />
+    <Compile Include="IoC\ObjectLocator.cs" />
+    <Compile Include="IoC\ServiceStuff\IInjectionResolver.cs" />
+    <Compile Include="IoC\Lifetime\LifetimeBase.cs" />
+    <Compile Include="IoC\Lifetime\SingletonLifetime.cs" />
+    <Compile Include="IoC\LocatorTargetObjectAttribute.cs" />
+    <Compile Include="IoC\ServiceStuff\IInstanceCreator.cs" />
+    <Compile Include="IoC\ServiceStuff\InstantiationService.cs" />
+    <Compile Include="OldPool\BalancingDynamicSizePoolManager.cs" />
+    <Compile Include="OldPool\BalancingStaticPoolManager.cs" />
+    <Compile Include="OldPool\DynamicSizePoolManager.cs" />
+    <Compile Include="OldPool\InterfaceBasedDynamicSizePoolManager.cs" />
+    <Compile Include="OldPool\Elements\IPoolElementReleaser.cs" />
+    <Compile Include="OldPool\Elements\PoolElement.cs" />
+    <Compile Include="OldPool\PoolManager.cs" />
+    <Compile Include="OldPool\StaticPoolManager.cs" />
+    <Compile Include="OldPool\UnifiedDynamicSizePoolManager.cs" />
+    <Compile Include="OldPool\Elements\UnifiedPoolElement.cs" />
+    <Compile Include="OldPool\UnifiedBalancingDynamicSizePoolManager.cs" />
+    <Compile Include="Profiling\DefaultProfilingProvider.cs" />
+    <Compile Include="Profiling\IProfilingProvider.cs" />
+    <Compile Include="Profiling\ProfilingTimer.cs" />
+    <Compile Include="Profiling\Profiler.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Threading\QueueProcessing\DeleageQueueAsyncProcessor.cs" />
+    <Compile Include="Threading\QueueProcessing\InterfaceQueueAsyncProcessor.cs" />
+    <Compile Include="Threading\QueueProcessing\QueueAsyncProcessor.cs" />
+    <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorBase.cs" />
+    <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorState.cs" />
+    <Compile Include="Threading\EntryCountingEvent.cs" />
+    <Compile Include="Threading\ThreadManagement\DelegateThreadSetManager.cs" />
+    <Compile Include="Threading\ThreadManagement\ThreadSetManager.cs" />
+    <Compile Include="Threading\ThreadManagement\ThreadSetManagerState.cs" />
+    <Compile Include="Threading\ThreadPools\Common\CommonThreadPool.cs" />
+    <Compile Include="Threading\ThreadPools\Common\ExtendedThreadPoolWorkItems.cs" />
+    <Compile Include="Threading\ThreadPools\Common\ThreadPoolWorkItem.cs" />
+    <Compile Include="Threading\ServiceStuff\ExecutionContextHelper.cs" />
+    <Compile Include="Threading\ThreadPools\DynamicThreadPool.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\ExecutionThroughoutTrackers\ExecutionThroughoutTrackerUpSmartDownCorrection.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\ExecutionThroughoutTrackers\ExecutionThroughoutTrackerUpHardDownCorrection.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\ExecutionThroughoutTrackers\ExecutionThroughoutTrackerUpDownCorrection.cs" />
+    <Compile Include="Threading\PartialThreadBlocker.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\Queues\ThreadPoolLocalQueue.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\Queues\ThreadPoolConcurrentQueue.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\ThreadPoolGlobals.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\Queues\ThreadPoolGlobalQueue.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\Queues\ThreadPoolQueueController.cs" />
+    <Compile Include="Threading\ThreadPools\ServiceStuff\ThreadPoolThreadLocals.cs" />
+    <Compile Include="Threading\ThreadPools\StaticThreadPool.cs" />
+    <Compile Include="Threading\ThreadPools\SystemThreadPool.cs" />
+    <Compile Include="Threading\ThreadPools\ThreadPoolBase.cs" />
+    <Compile Include="Threading\ThreadPools\ThreadPoolState.cs" />
+    <Compile Include="Threading\OldThreadPools\ServiceStuff\CommonThreadPool.cs" />
+    <Compile Include="Threading\OldThreadPools\DynamicThreadPool.cs" />
+    <Compile Include="Threading\OldThreadPools\ServiceStuff\ThreadPoolWorkItem.cs" />
+    <Compile Include="Threading\OldThreadPools\StaticThreadPool.cs" />
+    <Compile Include="Threading\OldThreadPools\SystemThreadPool.cs" />
+    <Compile Include="Threading\OldThreadPools\ThreadPoolBase.cs" />
+    <Compile Include="Common\Extensions\TypeExtensions.cs" />
+    <Compile Include="Common\Throttling\CPUThrottleBehavior.cs" />
+    <Compile Include="Common\Throttling\ThrottleBehavior.cs" />
+    <Compile Include="Common\WeakEvent\IWeakEventReferenceStorage.cs" />
+    <Compile Include="Common\WeakEvent\StrongReferenceStorage.cs" />
+    <Compile Include="Common\WeakEvent\MulticastWeakDelegate.cs" />
+    <Compile Include="Common\WeakEvent\WeakDelegate.cs" />
+    <Compile Include="Common\WeakEvent\WeakReferenceStorage.cs" />
+    <Compile Include="Threading\ThreadStartControllingToken.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Caching\" />
+    <Folder Include="OldPool\ServiceStuff\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Qoollo.Turbo.csproj.nuspec" />
+    <None Include="IoC\Associations\AssociationContainerGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>AssociationContainerGenerator.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

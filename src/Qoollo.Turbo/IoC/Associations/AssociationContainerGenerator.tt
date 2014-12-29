@@ -1,0 +1,860 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ output extension=".cs" #>
+
+<#@ Assembly Name="System.Core.dll" #>
+<#@ Assembly Name="System.Data.Linq.dll" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.Collections" #>
+<#@ import namespace="System.Collections.Generic" #> 
+<#@ import namespace="System.Reflection" #>
+<#@ import namespace="System.Runtime.Serialization" #>
+
+
+<#
+	string BaseMethodQualifier = "base";
+	string MethodsModifiers = "public";
+
+
+	string KeyType = "Type";
+	string KeyRestriction = "";
+	string ValueRestriction = "";
+	
+	AllowCodeContracts = true;
+	CodeContractsKeyNotNullCheck = true;
+	CodeContractAllowKeyValueCheck = true;
+	CodeContractKeyValueCorrectCheckMethod = "IsGoodTypeForKey";
+
+	bool SupportTryAdd = true;
+
+	bool SpecialSingletonSupport = true;
+	string StrictSingletonValueType = "object";
+
+	bool SpecialAddAssociationSupport = true;
+
+	bool GenerateNonGeneric = false;
+	bool GenerateGenericKey = false && (KeyType == "Type");
+	bool GenerateGenericValue = false;
+	bool GenerateGenericKeyValue = false && (KeyType == "Type");
+
+	List<MappingContainer> MappingList = new List<MappingContainer>();
+	MappingList.Add(new MappingContainer("Singleton", "LifetimeFactories.Singleton", "синглтон"));
+	MappingList.Add(new MappingContainer("DeferedSingleton", "LifetimeFactories.DeferedSingleton", "отложенный синглтон"));
+	MappingList.Add(new MappingContainer("PerThread", "LifetimeFactories.PerThread", "экземпляр на поток"));
+	MappingList.Add(new MappingContainer("PerCall", "LifetimeFactories.PerCall", "экземпляр на каждый вызов"));
+	MappingList.Add(new MappingContainer("PerCallInlinedParams", "LifetimeFactories.PerCallInlinedParams", "экземпляр на каждый вызов с зашитыми параметрами инстанцирования"));
+#>
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+<# if (AllowCodeContracts) 
+	   WriteLine("using System.Diagnostics.Contracts;");
+#>
+
+namespace Qoollo.Turbo.IoC.Associations
+{
+	internal abstract class GenerationTestClass : ConcurrentGenericAssociationContainer<<#= KeyType #>>
+	{
+<#
+	if (SpecialSingletonSupport)
+	{
+		this.PushIndent();
+		this.PushIndent();
+
+		if (string.IsNullOrEmpty(StrictSingletonValueType))
+			StrictSingletonValueType = "object";
+
+
+		if (GenerateNonGeneric)
+        {
+			#>
+/// <summary>
+/// Добавить синглтон
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="val">Объект синглтона</param>
+<#= MethodsModifiers #> void AddSingleton(<#= KeyType #> key, <#= StrictSingletonValueType #> val)
+{
+<# WriteContractCheck("key", "val", "key", "val.GetType()"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val));
+}
+
+/// <summary>
+/// Добавить синглтон
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="val">Объект синглтона</param>
+/// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+<#= MethodsModifiers #> void AddSingleton(<#= KeyType #> key, <#= StrictSingletonValueType #> val, bool disposeWithContainer)
+{
+<# WriteContractCheck("key", "val", "key", "val.GetType()"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val, disposeWithContainer));
+}
+
+<#
+        }
+		if (GenerateNonGeneric && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить синглтон
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="val">Объект синглтона</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddSingleton(<#= KeyType #> key, <#= StrictSingletonValueType #> val)
+{
+<# WriteContractCheck("key", "val"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val));
+}
+
+/// <summary>
+/// Попытаться добавить синглтон
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="val">Объект синглтона</param>
+/// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddSingleton(<#= KeyType #> key, <#= StrictSingletonValueType #> val, bool disposeWithContainer)
+{
+<# WriteContractCheck("key", "val"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val, disposeWithContainer));
+}
+
+<#
+        }
+
+
+		//================
+
+		if (GenerateGenericKey)
+        {
+			#>
+/// <summary>
+/// Добавить синглтон
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="val">Объект синглтона</param>
+<#= MethodsModifiers #> void AddSingleton<TKey>(<#= StrictSingletonValueType #> val)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheck(null, "val", "typeof(TKey)", "val.GetType()"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val));
+}
+
+/// <summary>
+/// Добавить синглтон
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="val">Объект синглтона</param>
+/// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+<#= MethodsModifiers #> void AddSingleton<TKey>(<#= StrictSingletonValueType #> val, bool disposeWithContainer)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheck(null, "val", "typeof(TKey)", "val.GetType()"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val, disposeWithContainer));
+}
+
+<#
+        }
+		if (GenerateGenericKey && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить синглтон
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="val">Объект синглтона</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddSingleton<TKey>(<#= StrictSingletonValueType #> val)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheck(null, "val"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val));
+}
+
+/// <summary>
+/// Попытаться добавить синглтон
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="val">Объект синглтона</param>
+/// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddSingleton<TKey>(<#= StrictSingletonValueType #> val, bool disposeWithContainer)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheck(null, "val"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val, disposeWithContainer));
+}
+
+<#
+        }
+
+	
+
+		//================
+
+		if (GenerateGenericValue)
+        {
+			#>
+/// <summary>
+/// Добавить синглтон
+/// </summary>
+/// <typeparam name="TValue">Тип объекта синглтона</typeparam>
+/// <param name="key">Ключ</param>
+/// <param name="val">Объект синглтона</param>
+<#= MethodsModifiers #> void AddSingleton<TValue>(<#= KeyType #> key, TValue val)
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck("key", "val", "key", "val.GetType()"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val));
+}
+
+/// <summary>
+/// Добавить синглтон
+/// </summary>
+/// <typeparam name="TValue">Тип объекта синглтона</typeparam>
+/// <param name="key">Ключ</param>
+/// <param name="val">Объект синглтона</param>
+/// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+<#= MethodsModifiers #> void AddSingleton<TValue>(<#= KeyType #> key, TValue val, bool disposeWithContainer)
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck("key", "val", "key", "val.GetType()"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val, disposeWithContainer));
+}
+
+<#
+        }
+		if (GenerateGenericValue && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить синглтон
+/// </summary>
+/// <typeparam name="TValue">Тип объекта синглтона</typeparam>
+/// <param name="key">Ключ</param>
+/// <param name="val">Объект синглтона</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddSingleton<TValue>(<#= KeyType #> key, TValue val)
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck("key", "val"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val));
+}
+
+/// <summary>
+/// Попытаться добавить синглтон
+/// </summary>
+/// <typeparam name="TValue">Тип объекта синглтона</typeparam>
+/// <param name="key">Ключ</param>
+/// <param name="val">Объект синглтона</param>
+/// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddSingleton<TValue>(<#= KeyType #> key, TValue val, bool disposeWithContainer)
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck("key", "val"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val, disposeWithContainer));
+}
+
+<#
+        }
+	
+
+		//================
+
+		if (GenerateGenericKeyValue)
+        {
+			#>
+/// <summary>
+/// Добавить синглтон
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <typeparam name="TValue">Тип объекта синглтона</typeparam>
+/// <param name="val">Объект синглтона</param>
+<#= MethodsModifiers #> void AddSingleton<TKey, TValue>(TValue val)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck(null, "val", "typeof(TKey)", "val.GetType()"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val));
+}
+
+/// <summary>
+/// Добавить синглтон
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <typeparam name="TValue">Тип объекта синглтона</typeparam>
+/// <param name="val">Объект синглтона</param>
+/// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+<#= MethodsModifiers #> void AddSingleton<TKey, TValue>(TValue val, bool disposeWithContainer)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck(null, "val", "typeof(TKey)", "val.GetType()"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val, disposeWithContainer));
+}
+
+<#
+        }
+		if (GenerateGenericKeyValue && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить синглтон
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <typeparam name="TValue">Тип объекта синглтона</typeparam>
+/// <param name="val">Объект синглтона</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddSingleton<TKey, TValue>(TValue val)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck(null, "val"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val));
+}
+
+/// <summary>
+/// Попытаться добавить синглтон
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <typeparam name="TValue">Тип объекта синглтона</typeparam>
+/// <param name="val">Объект синглтона</param>
+/// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddSingleton<TKey, TValue>(TValue val, bool disposeWithContainer)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck(null, "val"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), new Qoollo.Turbo.IoC.Lifetime.SingletonLifetime(val, disposeWithContainer));
+}
+
+<#
+        }
+
+
+		this.PopIndent();
+		this.PopIndent();
+	}
+
+#>
+
+
+
+<#
+	if (SpecialAddAssociationSupport)
+	{
+		this.PushIndent();
+		this.PushIndent();
+
+
+		if (GenerateNonGeneric)
+        {
+			#>
+/// <summary>
+/// Добавить ассоциацию с заднным Lifetime контейнером
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="lifetimeContainer">Lifetime контейнер</param>
+<#= MethodsModifiers #> new void AddAssociation(<#= KeyType #> key, Lifetime.LifetimeBase lifetimeContainer)
+{
+<# WriteContractCheck("key", "lifetimeContainer", "key", "lifetimeContainer.OutputType"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, lifetimeContainer);
+}
+
+/// <summary>
+/// Добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
+/// <param name="factory">Фабрика</param>
+<#= MethodsModifiers #> new void AddAssociation(<#= KeyType #> key, Type objType, Lifetime.Factories.LifetimeFactory factory)
+{
+<# WriteContractCheckExt("key", "objType", "factory", "key", "objType"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, objType, factory);
+}
+
+<#
+        }
+		if (GenerateNonGeneric && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить ассоциацию с заднным Lifetime контейнером
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="lifetimeContainer">Lifetime контейнер</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> new bool TryAddAssociation(<#= KeyType #> key, Lifetime.LifetimeBase lifetimeContainer)
+{
+<# WriteContractCheck("key", "lifetimeContainer"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, lifetimeContainer);
+}
+
+/// <summary>
+/// Попытаться добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
+/// <param name="factory">Фабрика</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> new bool TryAddAssociation(<#= KeyType #> key, Type objType, Lifetime.Factories.LifetimeFactory factory)
+{
+<# WriteContractCheckExt("key", "objType", "factory"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, objType, factory);
+}
+
+<#
+        }
+
+
+		//================
+
+		if (GenerateGenericKey)
+        {
+			#>
+/// <summary>
+/// Добавить ассоциацию
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="lifetimeContainer">Lifetime контейнер</param>
+<#= MethodsModifiers #> void AddAssociation<TKey>(Lifetime.LifetimeBase lifetimeContainer)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheck(null, "lifetimeContainer", "typeof(TKey)", "lifetimeContainer.OutputType"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), lifetimeContainer);
+}
+
+/// <summary>
+/// Добавить ассоциацию
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
+/// <param name="factory">Фабрика</param>
+<#= MethodsModifiers #> void AddAssociation<TKey>(Type objType, Lifetime.Factories.LifetimeFactory factory)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheckExt(null, "objType", "factory", "typeof(TKey)", "objType"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), objType, factory);
+}
+
+<#
+        }
+		if (GenerateGenericKey && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить ассоциацию
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="lifetimeContainer">Lifetime контейнер</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddAssociation<TKey>(Lifetime.LifetimeBase lifetimeContainer)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheck(null, "lifetimeContainer"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), lifetimeContainer);
+}
+
+/// <summary>
+/// Попытаться добавить ассоциацию
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
+/// <param name="factory">Фабрика</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddAssociation<TKey>(Type objType, Lifetime.Factories.LifetimeFactory factory)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheckExt(null, "objType", "factory"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), objType, factory);
+}
+
+<#
+        }
+
+	
+
+		//================
+
+		if (GenerateGenericValue)
+        {
+			#>
+/// <summary>
+/// Добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+/// </summary>
+/// <typeparam name="TValue">Тип объекта, которым будет управлять Lifetime контейнер</typeparam>
+/// <param name="key">Ключ</param>
+/// <param name="factory">Фабрика</param>
+<#= MethodsModifiers #> void AddAssociation<TValue>(<#= KeyType #> key, Lifetime.Factories.LifetimeFactory factory)
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheckExt("key", null, "factory", "key", "typeof(TValue)"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, typeof(TValue), factory);
+}
+
+<#
+        }
+		if (GenerateGenericValue && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+/// </summary>
+/// <typeparam name="TValue">Тип объекта, которым будет управлять Lifetime контейнер</typeparam>
+/// <param name="key">Ключ</param>
+/// <param name="factory">Фабрика</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddAssociation<TValue>(<#= KeyType #> key, Lifetime.Factories.LifetimeFactory factory)
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheckExt("key", null, "factory"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, typeof(TValue), factory);
+}
+
+<#
+        }
+	
+
+		//================
+
+		if (GenerateGenericKeyValue)
+        {
+			#>
+/// <summary>
+/// Добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <typeparam name="TValue">Тип объекта, которым будет управлять Lifetime контейнер</typeparam>
+/// <param name="factory">Фабрика</param>
+<#= MethodsModifiers #> void AddAssociation<TKey, TValue>(Lifetime.Factories.LifetimeFactory factory)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheckExt(null, null, "factory", "typeof(TKey)", "typeof(TValue)"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), typeof(TValue), factory);
+}
+
+<#
+        }
+		if (GenerateGenericKeyValue && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <typeparam name="TValue">Тип объекта, которым будет управлять Lifetime контейнер</typeparam>
+/// <param name="factory">Фабрика</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAddAssociation<TKey, TValue>(Lifetime.Factories.LifetimeFactory factory)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheckExt(null, null, "factory"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), typeof(TValue), factory);
+}
+
+<#
+        }
+
+
+		this.PopIndent();
+		this.PopIndent();
+	}
+
+#>
+
+
+
+
+
+
+
+
+<#
+   this.PushIndent();
+   this.PushIndent();
+
+	foreach (var mapElem in MappingList)
+    {
+		if (GenerateNonGeneric)
+        {
+			#>
+/// <summary>
+/// Добавить ассоциацию типа '<#= mapElem.CommentInfo #>'
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="objType">Тип инстанцируемого объекта</param>
+<#= MethodsModifiers #> void Add<#= mapElem.MethodName #>(<#= KeyType #> key, Type objType)
+{
+<# WriteContractCheck("key", "objType", "key", "objType"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, objType, <#= mapElem.LifeTimeFactoryExtractor #>);
+}
+
+<#
+        }
+		if (GenerateNonGeneric && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить ассоциацию типа '<#= mapElem.CommentInfo #>'
+/// </summary>
+/// <param name="key">Ключ</param>
+/// <param name="objType">Тип инстанцируемого объекта</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAdd<#= mapElem.MethodName #>(<#= KeyType #> key, Type objType)
+{
+<# WriteContractCheck("key", "objType"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, objType, <#= mapElem.LifeTimeFactoryExtractor #>);
+}
+
+<#
+        }
+
+		// ===============
+
+		if (GenerateGenericKey)
+        {
+			#>
+/// <summary>
+/// Добавить ассоциацию типа '<#= mapElem.CommentInfo #>'
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="objType">Тип инстанцируемого объекта</param>
+<#= MethodsModifiers #> void Add<#= mapElem.MethodName #><TKey>(Type objType)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheck(null, "objType", "typeof(TKey)", "objType"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), objType, <#= mapElem.LifeTimeFactoryExtractor #>);
+}
+
+<#
+        }
+		if (GenerateGenericKey && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить ассоциацию типа '<#= mapElem.CommentInfo #>'
+/// </summary>
+/// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+/// <param name="objType">Тип инстанцируемого объекта</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAdd<#= mapElem.MethodName #><TKey>(Type objType)
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+{
+<# WriteContractCheck(null, "objType"); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), objType, <#= mapElem.LifeTimeFactoryExtractor #>);
+}
+
+<#
+        }
+
+		// ===============
+
+		if (GenerateGenericValue)
+        {
+			#>
+/// <summary>
+/// Добавить ассоциацию типа '<#= mapElem.CommentInfo #>'
+/// </summary>
+/// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+/// <param name="key">Ключ</param>
+<#= MethodsModifiers #> void Add<#= mapElem.MethodName #><TValue>(<#= KeyType #> key)
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck("key", null, "key", "typeof(TValue)"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(key, typeof(TValue), <#= mapElem.LifeTimeFactoryExtractor #>);
+}
+
+<#
+        }
+		if (GenerateGenericValue && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить ассоциацию типа '<#= mapElem.CommentInfo #>'
+/// </summary>
+/// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+/// <param name="key">Ключ</param>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAdd<#= mapElem.MethodName #><TValue>(<#= KeyType #> key)
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck("key", null); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(key, typeof(TValue), <#= mapElem.LifeTimeFactoryExtractor #>);
+}
+
+<#
+        }
+
+		// ===============
+
+
+		if (GenerateGenericKeyValue)
+        {
+			#>
+/// <summary>
+/// Добавить ассоциацию типа '<#= mapElem.CommentInfo #>'
+/// </summary>
+/// <typeparam name="TKey">Тип ключа</typeparam>
+/// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+<#= MethodsModifiers #> void Add<#= mapElem.MethodName #><TKey, TValue>()
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck(null, null, "typeof(TKey)", "typeof(TValue)"); #>
+
+	<#= BaseMethodQualifier #>.AddAssociation(typeof(TKey), typeof(TValue), <#= mapElem.LifeTimeFactoryExtractor #>);
+}
+
+<#
+        }
+		if (GenerateGenericKeyValue && SupportTryAdd)
+        {
+				#>
+/// <summary>
+/// Попытаться добавить ассоциацию типа '<#= mapElem.CommentInfo #>'
+/// </summary>
+/// <typeparam name="TKey">Тип ключа</typeparam>
+/// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+/// <returns>Успешность</returns>
+<#= MethodsModifiers #> bool TryAdd<#= mapElem.MethodName #><TKey, TValue>()
+	<#= string.IsNullOrEmpty(KeyRestriction) ? "" : "where TKey: " + KeyRestriction #>
+	<#= string.IsNullOrEmpty(ValueRestriction) ? "" : "where TValue: " + ValueRestriction #>
+{
+<# WriteContractCheck(null, null); #>
+
+	return <#= BaseMethodQualifier #>.TryAddAssociation(typeof(TKey), typeof(TValue), <#= mapElem.LifeTimeFactoryExtractor #>);
+}
+
+<#
+        }
+
+	} 
+	this.ClearIndent();
+	#>
+
+	}
+}
+
+<#+
+
+	const string Indent = "    ";
+
+	bool AllowCodeContracts;
+	bool CodeContractsKeyNotNullCheck;
+	bool CodeContractAllowKeyValueCheck;
+	string CodeContractKeyValueCorrectCheckMethod; 
+
+	void PushIndent()
+	{
+		this.PushIndent(Indent);
+	}
+
+	void WriteContractCheck(string keyName, string valueName, string keyTypeAccess = null, string valueTypeAccess = null)
+	{
+		if (AllowCodeContracts)
+		{
+			this.PushIndent();
+			if (CodeContractsKeyNotNullCheck && !string.IsNullOrEmpty(keyName))
+				WriteLine("Contract.Requires<ArgumentNullException>({0} != null);", keyName);
+
+			if (!string.IsNullOrEmpty(valueName))
+				WriteLine("Contract.Requires<ArgumentNullException>({0} != null);", valueName);
+					
+
+			if (CodeContractAllowKeyValueCheck && !string.IsNullOrEmpty(CodeContractKeyValueCorrectCheckMethod) && !string.IsNullOrEmpty(keyTypeAccess) && !string.IsNullOrEmpty(valueTypeAccess))
+            {
+				WriteLine("if (!{0}({1}, {2}))", CodeContractKeyValueCorrectCheckMethod, keyTypeAccess, valueTypeAccess);
+				WriteLine(Indent + "throw new ArgumentException(\"{0} is not valid type for key\", \"{0}\");", valueTypeAccess);
+            }
+			this.PopIndent();
+        }
+	}
+
+	void WriteContractCheckExt(string keyName, string valueName, string factory, string keyTypeAccess = null, string valueTypeAccess = null)
+	{
+		if (AllowCodeContracts)
+		{
+			this.PushIndent();
+			if (CodeContractsKeyNotNullCheck && !string.IsNullOrEmpty(keyName))
+				WriteLine("Contract.Requires<ArgumentNullException>({0} != null);", keyName);
+
+			if (!string.IsNullOrEmpty(valueName))
+				WriteLine("Contract.Requires<ArgumentNullException>({0} != null);", valueName);
+			
+			if (!string.IsNullOrEmpty(factory))
+				WriteLine("Contract.Requires<ArgumentNullException>({0} != null);", factory);		
+
+			if (CodeContractAllowKeyValueCheck && !string.IsNullOrEmpty(CodeContractKeyValueCorrectCheckMethod) && !string.IsNullOrEmpty(keyTypeAccess) && !string.IsNullOrEmpty(valueTypeAccess))
+            {
+				WriteLine("if (!{0}({1}, {2}))", CodeContractKeyValueCorrectCheckMethod, keyTypeAccess, valueTypeAccess);
+				WriteLine(Indent + "throw new ArgumentException(\"{0} is not valid type for key\", \"{0}\");", valueTypeAccess);
+            }
+			this.PopIndent();
+        }
+	}
+
+
+
+
+
+	class MappingContainer
+	{
+		public MappingContainer(string methodName, string lifetimeFactoryExtr, string comment)
+        {
+			MethodName = methodName;
+			LifeTimeFactoryExtractor = lifetimeFactoryExtr;
+			CommentInfo = comment;
+        }
+
+		public string MethodName {get; private set;}
+		public string LifeTimeFactoryExtractor {get; private set;}
+		public string CommentInfo {get; private set;}
+	}
+
+#>

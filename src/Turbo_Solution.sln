@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qoollo.Turbo", "Qoollo.Turbo\Qoollo.Turbo.csproj", "{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qoollo.Turbo.UnitTests", "Qoollo.Turbo.UnitTests\Qoollo.Turbo.UnitTests.csproj", "{E23A113F-53EC-459D-8E69-03B7E62353B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qoollo.Turbo.PerformanceTests", "Qoollo.Turbo.PerformanceTests\Qoollo.Turbo.PerformanceTests.csproj", "{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		DebugRC|Any CPU = DebugRC|Any CPU
+		DebugSC|Any CPU = DebugSC|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}.DebugRC|Any CPU.ActiveCfg = DebugRC|Any CPU
+		{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}.DebugRC|Any CPU.Build.0 = DebugRC|Any CPU
+		{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}.DebugSC|Any CPU.ActiveCfg = DebugSC|Any CPU
+		{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}.DebugSC|Any CPU.Build.0 = DebugSC|Any CPU
+		{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E23A113F-53EC-459D-8E69-03B7E62353B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E23A113F-53EC-459D-8E69-03B7E62353B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E23A113F-53EC-459D-8E69-03B7E62353B7}.DebugRC|Any CPU.ActiveCfg = Debug|Any CPU
+		{E23A113F-53EC-459D-8E69-03B7E62353B7}.DebugRC|Any CPU.Build.0 = Debug|Any CPU
+		{E23A113F-53EC-459D-8E69-03B7E62353B7}.DebugSC|Any CPU.ActiveCfg = Debug|Any CPU
+		{E23A113F-53EC-459D-8E69-03B7E62353B7}.DebugSC|Any CPU.Build.0 = Debug|Any CPU
+		{E23A113F-53EC-459D-8E69-03B7E62353B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E23A113F-53EC-459D-8E69-03B7E62353B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}.DebugRC|Any CPU.ActiveCfg = Debug|Any CPU
+		{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}.DebugRC|Any CPU.Build.0 = Debug|Any CPU
+		{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}.DebugSC|Any CPU.ActiveCfg = Debug|Any CPU
+		{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}.DebugSC|Any CPU.Build.0 = Debug|Any CPU
+		{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
