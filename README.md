@@ -20,3 +20,7 @@ Library contains a number of reuseful base classes:
 12. [Priority Queues](https://github.com/qoollo/system-class-library/wiki/Priority-Queues) - simple queue with limited number of priorities;
 13. [Read only collections](https://github.com/qoollo/system-class-library/wiki/Read-only-collections) - a number of useful readonly collections (List, Dictionary, HashSet);
 14. [A bunch of extension methods](https://github.com/qoollo/system-class-library/wiki/Extension-Methods) for IEnumerable, Type, Exception.
+
+
+## NuGet
+[Qoollo.Turbo](https://www.nuget.org/packages/Qoollo.Turbo/)
