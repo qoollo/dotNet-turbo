@@ -247,18 +247,19 @@ namespace Qoollo.Turbo.ObjectPools
 
             try
             {
-                if (timeout == 0)
+                elemWasTaken = _elementsContainer.TryTake(out result, 0, new CancellationToken());
+
+                if (!elemWasTaken && timeout != 0)
                 {
-                    elemWasTaken = _elementsContainer.TryTake(out result, 0, new CancellationToken());
-                }
-                else if (!token.CanBeCanceled)
-                {
-                    elemWasTaken = _elementsContainer.TryTake(out result, timeout, _disposeCancellation.Token);
-                }
-                else
-                {
-                    linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, _disposeCancellation.Token);
-                    elemWasTaken = _elementsContainer.TryTake(out result, timeout, linkedTokenSource.Token);
+                    if (!token.CanBeCanceled)
+                    {
+                        elemWasTaken = _elementsContainer.TryTake(out result, timeout, _disposeCancellation.Token);
+                    }
+                    else
+                    {
+                        linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, _disposeCancellation.Token);
+                        elemWasTaken = _elementsContainer.TryTake(out result, timeout, linkedTokenSource.Token);
+                    }
                 }
             }
             catch (OperationCanceledException)

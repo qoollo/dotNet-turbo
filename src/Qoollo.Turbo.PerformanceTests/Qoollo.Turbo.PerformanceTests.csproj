@@ -54,6 +54,7 @@
     <Compile Include="ObjectPoolTest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SemaphorePerfTest.cs" />
     <Compile Include="ThreadPoolQueueTest.cs" />
     <Compile Include="ThreadPoolTaskSpawnPerformanceTest.cs" />
     <Compile Include="ThreadPoolTests.cs" />
