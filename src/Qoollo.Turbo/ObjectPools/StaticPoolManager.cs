@@ -348,8 +348,22 @@ namespace Qoollo.Turbo.ObjectPools
                     Profiling.Profiler.ObjectPoolDisposed(this.Name, false);
                 }
             }
+            else
+            {
+                Contract.Assert(false, "StaticPoolManager should be Disposed by user! PoolName: " + this.Name);
+            }
 
             base.Dispose(isUserCall);
         }
+
+#if DEBUG
+        /// <summary>
+        /// Финализатор
+        /// </summary>
+        ~StaticPoolManager()
+        {
+            Dispose(false);
+        }
+#endif
     }
 }

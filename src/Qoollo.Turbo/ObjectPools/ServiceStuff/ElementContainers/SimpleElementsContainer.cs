@@ -62,6 +62,9 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
             container.MakeBusy();
             container.ThisIndex = _allElements.Add(container);
 
+            Contract.Assert(container.ThisIndex >= 0 && container.ThisIndex < _allElements.Capacity);
+            Contract.Assert(object.ReferenceEquals(container, _allElements.RawData[container.ThisIndex]));
+
             if (container.ThisIndex >= (1 << 16) - 2)
             {
                 container.MarkElementDestroyed();
@@ -91,8 +94,12 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
             if (element.IsRemoved)
                 return;
 
+            Contract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
+            Contract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
+
             bool removeResult = _allElements.RemoveAt(element.ThisIndex);
             Contract.Assert(removeResult == true);
+            Contract.Assert(_allElements.IndexOf(element) < 0);
             element.MarkRemoved();
             _allElements.Compact(false);
         }
@@ -131,9 +138,15 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
                 return;
             }
 
+            Contract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
+            Contract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
+
 #pragma warning disable 0420
             _allElements.CompactElementAt(ref element.ThisIndex);
 #pragma warning restore 0420
+
+            Contract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
+            Contract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
 
             ReleaseCore(element);
         }
