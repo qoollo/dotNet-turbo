@@ -482,10 +482,9 @@ namespace Qoollo.Turbo.Threading
                         currentCountForWait += releaseCountForWait;
                         Contract.Assert(currentCountForWait > 0);
 
-                        if (currentCountForWait == 1 || waitCount == 1)
+                        int waitersToNotify = Math.Min(currentCountForWait, waitCount);
+                        for (int i = 0; i < waitersToNotify; i++)
                             Monitor.Pulse(_lockObj);
-                        else
-                            Monitor.PulseAll(_lockObj);
 
                         _currentCountForWait = currentCountForWait;
                     }
