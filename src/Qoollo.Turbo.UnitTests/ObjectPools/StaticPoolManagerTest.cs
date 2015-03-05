@@ -352,6 +352,30 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
         }
 
 
+        private void RunFinalizerTest()
+        {
+            StaticPoolManager<int> testInst = new StaticPoolManager<int>();
+            testInst.AddElement(10);
+
+            using (var item = testInst.Rent(false))
+            {
+                Assert.IsTrue(item.IsValid);
+            }
+        }
+
+        [TestMethod]
+        public void FinalizerTest_CanFailRantime()
+        {
+            RunFinalizerTest();
+
+            for (int i = 0; i < 5; i++)
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+                GC.WaitForPendingFinalizers();
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+            }
+        }
+
 
         private void RunComplexTest(StaticPoolManager<int> testInst, int threadCount, int opCount, int pauseSpin, bool autoAddRemove)
         {
