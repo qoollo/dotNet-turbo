@@ -46,8 +46,8 @@ namespace Qoollo.Turbo.UnitTests.ExecutionTickers
                     Interlocked.Increment(ref stageNum);
                 });
 
-            Assert.IsTrue(SpinWait.SpinUntil(() => Volatile.Read(ref stageNum) != 0, 5000));
-            Assert.AreEqual(1, stageNum);
+
+            TimingAssert.AreEqual(5000, 1, () => Volatile.Read(ref stageNum));
 
             testInst.AllowProcess();
             testInst.WaitForTickers();
