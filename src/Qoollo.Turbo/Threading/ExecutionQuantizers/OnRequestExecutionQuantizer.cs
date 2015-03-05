@@ -5,12 +5,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Qoollo.Turbo.Threading.ExecutionTickers
+namespace Qoollo.Turbo.Threading.ExecutionQuantizers
 {
     /// <summary>
-    /// Реализация ExecutionTicker, которая продвигается лишь при явном разрешении
+    /// Реализация ExecutionQuantizer, которая продвигается лишь при явном разрешении
     /// </summary>
-    public class OnRequestExecutionTicker: ExecutionTicker, IDisposable
+    public class OnRequestExecutionQuantizer: ExecutionQuantizer, IDisposable
     {
         private readonly object _processNotifier;
         private volatile bool _processNotifierFlag;
@@ -18,9 +18,9 @@ namespace Qoollo.Turbo.Threading.ExecutionTickers
         private volatile int _tickWaiters;
 
         /// <summary>
-        /// Конструктор OnRequestExecutionTicker
+        /// Конструктор OnRequestExecutionQuantizer
         /// </summary>
-        public OnRequestExecutionTicker()
+        public OnRequestExecutionQuantizer()
         {
             _processNotifierFlag = false;
             _processNotifier = new object();
@@ -149,6 +149,49 @@ namespace Qoollo.Turbo.Threading.ExecutionTickers
         {
             return _waiterNotifier.Wait(timeout, token);
         }
+
+
+
+        /// <summary>
+        /// Разрешить обработку очередного тика и дождаться его
+        /// </summary>
+        public void AllowProcessAndWaitForTickers()
+        {
+            AllowProcess();
+            WaitForTickers();
+        }
+        /// <summary>
+        /// Разрешить обработку очередного тика и дождаться его
+        /// </summary>
+        /// <param name="timeout">Таймаут ожидания</param>
+        /// <returns>Удалось ли дождаться</returns>
+        public bool AllowProcessAndWaitForTickers(int timeout)
+        {
+            AllowProcess();
+            return WaitForTickers(timeout);
+        }
+        /// <summary>
+        /// Разрешить обработку очередного тика и дождаться его
+        /// </summary>
+        /// <param name="token">Токен отмены ожидания</param>
+        public void AllowProcessAndWaitForTickers(CancellationToken token)
+        {
+            AllowProcess();
+            WaitForTickers(token);
+        }
+        /// <summary>
+        /// Разрешить обработку очередного тика и дождаться его
+        /// </summary>
+        /// <param name="timeout">Таймаут ожидания</param>
+        /// <param name="token">Токен отмены ожидания</param>
+        /// <returns>Удалось ли дождаться</returns>
+        public bool AllowProcessAndWaitForTickers(int timeout, CancellationToken token)
+        {
+            AllowProcess();
+            return WaitForTickers(timeout, token);
+        }
+
+
 
 
         /// <summary>

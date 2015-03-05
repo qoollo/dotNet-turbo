@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Qoollo.Turbo.Threading.ExecutionTickers;
+using Qoollo.Turbo.Threading.ExecutionQuantizers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ExecutionTickers
 {
     [TestClass]
-    public class OnRequestExecutionTickerTest
+    public class OnRequestExecutionQuantizerTest
     {
         [TestMethod]
         [Timeout(5000)]
         public void TestBasicFunctions()
         {
-            OnRequestExecutionTicker testInst = new OnRequestExecutionTicker();
+            OnRequestExecutionQuantizer testInst = new OnRequestExecutionQuantizer();
 
             Assert.AreEqual(0, testInst.TickWaiters);
             Assert.AreEqual(false, testInst.IsProcessAllowed);
@@ -34,7 +34,7 @@ namespace Qoollo.Turbo.UnitTests.ExecutionTickers
         [Timeout(60000)]
         public void TestAsyncThreeStageWork()
         {
-            OnRequestExecutionTicker testInst = new OnRequestExecutionTicker();
+            OnRequestExecutionQuantizer testInst = new OnRequestExecutionQuantizer();
             int stageNum = 0;
 
             var task = Task.Run(() =>

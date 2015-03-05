@@ -5,18 +5,18 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Qoollo.Turbo.Threading.ExecutionTickers
+namespace Qoollo.Turbo.Threading.ExecutionQuantizers
 {
     /// <summary>
     /// Примитив передачи управления по сообщению
     /// </summary>
-    public class ExecutionTicker
+    public class ExecutionQuantizer
     {
-        private static readonly ExecutionTicker _instance = new ExecutionTicker();
+        private static readonly ExecutionQuantizer _instance = new ExecutionQuantizer();
         /// <summary>
         /// Стандартный инстанс
         /// </summary>
-        public static ExecutionTicker Default { get { return _instance; } }
+        public static ExecutionQuantizer Default { get { return _instance; } }
 
         // =============
 
@@ -74,6 +74,13 @@ namespace Qoollo.Turbo.Threading.ExecutionTickers
         /// </summary>
         public virtual void Tick()
         {
+        }
+
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void TickDebug()
+        {
+            this.Tick();
         }
     }
 }

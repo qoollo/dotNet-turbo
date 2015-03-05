@@ -266,8 +266,8 @@
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchAwaitable.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchSupplier.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\CustomSynchronizationContext.cs" />
-    <Compile Include="Threading\ExecutionTickers\OnRequestExecutionTicker.cs" />
-    <Compile Include="Threading\ExecutionTickers\ExecutionTicker.cs" />
+    <Compile Include="Threading\ExecutionQuantizers\OnRequestExecutionQuantizer.cs" />
+    <Compile Include="Threading\ExecutionQuantizers\ExecutionQuantizer.cs" />
     <Compile Include="Threading\LinearSpinWait.cs" />
     <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorExtensions.cs" />
     <Compile Include="Threading\SemaphoreLight.cs" />

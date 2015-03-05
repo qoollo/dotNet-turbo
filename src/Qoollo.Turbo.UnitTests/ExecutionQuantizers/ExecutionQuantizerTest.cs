@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Qoollo.Turbo.Threading.ExecutionTickers;
+using Qoollo.Turbo.Threading.ExecutionQuantizers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,18 +11,18 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ExecutionTickers
 {
     [TestClass]
-    public class ExecutionTickerTest
+    public class ExecutionQuantizerTest
     {
         [TestMethod]
         public void TestDefaultTick()
         {
-            ExecutionTicker testInst = new ExecutionTicker();
+            ExecutionQuantizer testInst = new ExecutionQuantizer();
             testInst.Tick();
         }
         [TestMethod]
         public void TestDefaultTickTimeout()
         {
-            ExecutionTicker testInst = new ExecutionTicker();
+            ExecutionQuantizer testInst = new ExecutionQuantizer();
 
             Stopwatch sw = Stopwatch.StartNew();
 
@@ -35,7 +35,7 @@ namespace Qoollo.Turbo.UnitTests.ExecutionTickers
         [Timeout(5000)]
         public void TestDefaultTickCancellation()
         {
-            ExecutionTicker testInst = new ExecutionTicker();
+            ExecutionQuantizer testInst = new ExecutionQuantizer();
 
             CancellationTokenSource cancSrc = new CancellationTokenSource();
             cancSrc.CancelAfter(100);

@@ -51,7 +51,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Collections\BlockingQueueTest.cs" />
-    <Compile Include="ExecutionTickers\OnRequestExecutionTickerTest.cs" />
+    <Compile Include="ExecutionQuantizers\OnRequestExecutionQuantizerTest.cs" />
     <Compile Include="ObjectPools\BunchElementStorageTest.cs" />
     <Compile Include="ObjectPools\BalancingDynamicPoolManagerTest.cs" />
     <Compile Include="ObjectPools\IndexedStackElementStorageTest.cs" />
@@ -67,7 +67,7 @@
     <Compile Include="QueueProcessing\QueueAsyncProcessorTest.cs" />
     <Compile Include="TestLoggingHelper.cs" />
     <Compile Include="Threading\EntryCountingEventTest.cs" />
-    <Compile Include="ExecutionTickers\ExecutionTickerTest.cs" />
+    <Compile Include="ExecutionQuantizers\ExecutionQuantizerTest.cs" />
     <Compile Include="Threading\LinearSpinWaitTest.cs" />
     <Compile Include="Threading\ManagementThreadControllerTest.cs" />
     <Compile Include="Threading\PartialThreadBlockerTest.cs" />
