@@ -381,7 +381,13 @@ namespace Qoollo.Turbo.ObjectPools
             }
             else
             {
-                Contract.Assert(false, "BalancingStaticPoolManager should be Disposed by user! PoolName: " + this.Name);
+#if DEBUG
+                var elementsContainer = _elementsContainer;
+                if (elementsContainer == null)
+                    Contract.Assert(false, "BalancingStaticPoolManager should be Disposed by user! PoolName: " + this.Name);
+
+                elementsContainer.ProcessFreeElements(o => o.MarkElementDestroyed());
+#endif
             }
 
             base.Dispose(isUserCall);
