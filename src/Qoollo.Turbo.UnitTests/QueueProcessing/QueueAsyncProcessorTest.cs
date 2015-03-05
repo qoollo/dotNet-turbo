@@ -238,6 +238,18 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
 
 
 
+        private static void SmartSleep(int timeMs)
+        {
+            if (timeMs == 0)
+            {
+                Thread.Yield();
+                return;
+            }
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.Elapsed.TotalMilliseconds < timeMs)
+                Thread.Sleep(0);
+        }
 
         private void RunComplexTest(int threadCount, int queueSize, int testElemCount, int addThreadCount, int procSpinWaitCount, int addSleepMs)
         {
@@ -268,7 +280,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
                             proc.Add(curVal - 1);
 
                             if (addSleepMs > 0)
-                                Thread.Sleep(addSleepMs);
+                                SmartSleep(addSleepMs);
                         }
                     };
 
@@ -304,10 +316,15 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         [Timeout(2 * 60 * 1000)]
         public void ComplexTest()
         {
+            this.TestContext.WriteLine("QAP.ComplexTest: start");
             RunComplexTest(Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 0, 0);
+            this.TestContext.WriteLine("QAP.ComplexTest: stage 1 complete");
             RunComplexTest(1, -1, 10000, Environment.ProcessorCount, 0, 1);
+            this.TestContext.WriteLine("QAP.ComplexTest: stage 2 completed");
             RunComplexTest(2 * Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 100, 0);
+            this.TestContext.WriteLine("QAP.ComplexTest: stage 3 completed");
             RunComplexTest(Environment.ProcessorCount, 100, 20000, Environment.ProcessorCount, 100, 1);
+            this.TestContext.WriteLine("QAP.ComplexTest: stage 4 completed");
         }
     }
 }
