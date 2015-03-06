@@ -33,84 +33,90 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         [TestMethod]
         public void TestSimpleProcessWork()
         {
-            StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 100, "name");
-            Assert.AreEqual(Environment.ProcessorCount, testInst.ThreadCount);
-            Assert.AreEqual(100, testInst.QueueCapacity);
-            Assert.IsTrue(testInst.IsWork);
-
-            int expectedWork = 100000;
-            int executedWork = 0;
-
-            for (int i = 0; i < expectedWork; i++)
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 100, "name"))
             {
-                testInst.Run(() =>
+                Assert.AreEqual(Environment.ProcessorCount, testInst.ThreadCount);
+                Assert.AreEqual(100, testInst.QueueCapacity);
+                Assert.IsTrue(testInst.IsWork);
+
+                int expectedWork = 100000;
+                int executedWork = 0;
+
+                for (int i = 0; i < expectedWork; i++)
                 {
-                    Interlocked.Increment(ref executedWork);
-                });
+                    testInst.Run(() =>
+                    {
+                        Interlocked.Increment(ref executedWork);
+                    });
+                }
+
+                testInst.Dispose(true, true, true);
+
+                Assert.AreEqual(0, testInst.ThreadCount);
+                Assert.IsFalse(testInst.IsWork);
+                Assert.AreEqual(expectedWork, executedWork);
+
+                testInst.CompleteAdding();
+                testInst.Dispose();
             }
-
-            testInst.Dispose(true, true, true);
-
-            Assert.AreEqual(0, testInst.ThreadCount);
-            Assert.IsFalse(testInst.IsWork);
-            Assert.AreEqual(expectedWork, executedWork);
-
-            testInst.CompleteAdding();
-            testInst.Dispose();
         }
 
         [TestMethod]
         public void TestLongProcessWork()
         {
-            StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 100, "name");
-            Assert.AreEqual(Environment.ProcessorCount, testInst.ThreadCount);
-            Assert.AreEqual(100, testInst.QueueCapacity);
-
-            int expectedWork = 100;
-            int executedWork = 0;
-
-            for (int i = 0; i < expectedWork; i++)
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 100, "name"))
             {
-                testInst.Run(() =>
+                Assert.AreEqual(Environment.ProcessorCount, testInst.ThreadCount);
+                Assert.AreEqual(100, testInst.QueueCapacity);
+
+                int expectedWork = 100;
+                int executedWork = 0;
+
+                for (int i = 0; i < expectedWork; i++)
                 {
-                    Thread.Sleep(300);
-                    Interlocked.Increment(ref executedWork);
-                });
+                    testInst.Run(() =>
+                    {
+                        Thread.Sleep(300);
+                        Interlocked.Increment(ref executedWork);
+                    });
+                }
+
+                testInst.Dispose(true, true, true);
+
+                Assert.AreEqual(0, testInst.ThreadCount);
+                Assert.IsFalse(testInst.IsWork);
+                Assert.AreEqual(expectedWork, executedWork);
             }
-
-            testInst.Dispose(true, true, true);
-
-            Assert.AreEqual(0, testInst.ThreadCount);
-            Assert.IsFalse(testInst.IsWork);
-            Assert.AreEqual(expectedWork, executedWork);
         }
 
         [TestMethod]
         public void TestQueueCapacityBound()
         {
-            StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 10, "name");
-            Assert.AreEqual(10, testInst.QueueCapacity);
-
-            int tryRunWorkItem = 100 * testInst.QueueCapacity;
-            int runWorkCount = 0;
-            int executedWork = 0;
-
-            for (int i = 0; i < tryRunWorkItem; i++)
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 10, "name"))
             {
-                if (testInst.TryRun(() =>
-                                        {
-                                            Thread.Sleep(500);
-                                            Interlocked.Increment(ref executedWork);
-                                        }))
-                {
-                    runWorkCount++;
-                }
-            }
+                Assert.AreEqual(10, testInst.QueueCapacity);
 
-            testInst.Dispose(true, true, true);
-            Assert.IsTrue(runWorkCount > 0);
-            Assert.IsTrue(runWorkCount < tryRunWorkItem);
-            Assert.AreEqual(runWorkCount, executedWork);
+                int tryRunWorkItem = 100 * testInst.QueueCapacity;
+                int runWorkCount = 0;
+                int executedWork = 0;
+
+                for (int i = 0; i < tryRunWorkItem; i++)
+                {
+                    if (testInst.TryRun(() =>
+                                            {
+                                                Thread.Sleep(500);
+                                                Interlocked.Increment(ref executedWork);
+                                            }))
+                    {
+                        runWorkCount++;
+                    }
+                }
+
+                testInst.Dispose(true, true, true);
+                Assert.IsTrue(runWorkCount > 0);
+                Assert.IsTrue(runWorkCount < tryRunWorkItem);
+                Assert.AreEqual(runWorkCount, executedWork);
+            }
         }
 
 
@@ -118,81 +124,87 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         [Timeout(2 * 60 * 1000)]
         public void TestQueueCapacityBoundExtends()
         {
-            StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 10, "name");
-
-            int expectedWork = 25;
-            int executedWork = 0;
-
-            ManualResetEventSlim tracker = new ManualResetEventSlim();
-
-            for (int i = 0; i < expectedWork; i++)
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 10, "name"))
             {
-                testInst.Run(() =>
-                    {
-                        tracker.Wait();
-                        Interlocked.Increment(ref executedWork);
-                    });
+
+                int expectedWork = 25;
+                int executedWork = 0;
+
+                ManualResetEventSlim tracker = new ManualResetEventSlim();
+
+                for (int i = 0; i < expectedWork; i++)
+                {
+                    testInst.Run(() =>
+                        {
+                            tracker.Wait();
+                            Interlocked.Increment(ref executedWork);
+                        });
+                }
+
+                tracker.Set();
+
+
+                testInst.Dispose(true, true, true);
+                Assert.AreEqual(expectedWork, executedWork);
             }
-
-            tracker.Set();
-
-
-            testInst.Dispose(true, true, true);
-            Assert.AreEqual(expectedWork, executedWork);
         }
 
 
         [TestMethod]
         public void StopNoFinishProcessWorkCorrect()
         {
-            StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, -1, "name");
-            Assert.AreEqual(-1, testInst.QueueCapacity);
-
-            int expectedWork = 1000;
-            int executedWork = 0;
-
-            for (int i = 0; i < expectedWork; i++)
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, -1, "name"))
             {
-                testInst.Run(() =>
+                Assert.AreEqual(-1, testInst.QueueCapacity);
+
+                int expectedWork = 1000;
+                int executedWork = 0;
+
+                for (int i = 0; i < expectedWork; i++)
                 {
-                    Thread.Sleep(1000);
-                    Interlocked.Increment(ref executedWork);
-                });
+                    testInst.Run(() =>
+                    {
+                        Thread.Sleep(1000);
+                        Interlocked.Increment(ref executedWork);
+                    });
+                }
+
+                testInst.Dispose(true, false, false);
+
+                Assert.IsTrue(testInst.State == ThreadPoolState.Stopped);
+                Assert.IsFalse(testInst.IsWork);
+                Assert.IsTrue(executedWork < expectedWork);
             }
-
-            testInst.Dispose(true, false, false);
-
-            Assert.IsTrue(testInst.State == ThreadPoolState.Stopped);
-            Assert.IsFalse(testInst.IsWork);
-            Assert.IsTrue(executedWork < expectedWork);
         }
 
 
         [TestMethod]
         public void WaitUntilStopWorkCorrect()
         {
-            StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, -1, "name");
-            Assert.AreEqual(-1, testInst.QueueCapacity);
-
-            int expectedWork = 100;
-            int executedWork = 0;
-
-            for (int i = 0; i < expectedWork; i++)
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, -1, "name"))
             {
-                testInst.Run(() =>
+                Assert.AreEqual(-1, testInst.QueueCapacity);
+
+                int expectedWork = 100;
+                int executedWork = 0;
+
+                for (int i = 0; i < expectedWork; i++)
                 {
-                    Thread.Sleep(200);
-                    Interlocked.Increment(ref executedWork);
-                });
+                    testInst.Run(() =>
+                    {
+                        Thread.Sleep(200);
+                        Interlocked.Increment(ref executedWork);
+                    });
+                }
+
+                testInst.Dispose(false, true, false);
+                Assert.IsTrue(executedWork < expectedWork);
+                Assert.IsTrue(testInst.State == ThreadPoolState.StopRequested);
+
+                testInst.WaitUntilStop();
+                Assert.IsTrue(testInst.State == ThreadPoolState.Stopped);
+                Assert.AreEqual(expectedWork, executedWork);
             }
-
-            testInst.Dispose(false, true, false);
-            Assert.IsTrue(executedWork < expectedWork);
-            Assert.IsTrue(testInst.State == ThreadPoolState.StopRequested);
-
-            testInst.WaitUntilStop();
-            Assert.IsTrue(testInst.State == ThreadPoolState.Stopped);
-            Assert.AreEqual(expectedWork, executedWork);
         }
 
 
@@ -200,15 +212,16 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         [ExpectedException(typeof(ObjectDisposedException))]
         public void TestNotAddAfterDispose()
         {
-            StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, -1, "name");
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, -1, "name"))
+            {
+                Assert.IsTrue(testInst.TryRun(() => { }));
 
-            Assert.IsTrue(testInst.TryRun(() => { }));
+                testInst.Dispose();
 
-            testInst.Dispose();
+                Assert.IsFalse(testInst.TryRun(() => { }));
 
-            Assert.IsFalse(testInst.TryRun(() => { }));
-
-            testInst.Run(() => { });
+                testInst.Run(() => { });
+            }
         }
 
 
@@ -244,10 +257,12 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         [TestMethod]
         public void TestSwitchToPoolWork()
         {
-            StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, -1, "name");
-            var task = TestSwitchToPoolWorkInner(testInst);
-            task.Wait();
-            Assert.IsFalse(task.IsFaulted);
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, -1, "name"))
+            {
+                var task = TestSwitchToPoolWorkInner(testInst);
+                task.Wait();
+                Assert.IsFalse(task.IsFaulted);
+            }
         }
 
 
@@ -256,62 +271,64 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         [TestMethod]
         public void StaticThreadPoolChangeThreadCount()
         {
-            StaticThreadPool testInst = new StaticThreadPool(0, -1, "name");
-
-            int expectedWork = 100;
-            int executedWork = 0;
-
-            for (int i = 0; i < expectedWork; i++)
+            using (StaticThreadPool testInst = new StaticThreadPool(0, -1, "name"))
             {
-                if (i == 30)
-                    testInst.AddThreads(10);
-                else if (i == 50)
-                    testInst.RemoveThreads(5);
-                else if (i == 80)
-                    testInst.SetThreadCount(2);
+                int expectedWork = 100;
+                int executedWork = 0;
 
-                testInst.Run(() =>
+                for (int i = 0; i < expectedWork; i++)
                 {
-                    Thread.Sleep(200);
-                    Interlocked.Increment(ref executedWork);
-                });
+                    if (i == 30)
+                        testInst.AddThreads(10);
+                    else if (i == 50)
+                        testInst.RemoveThreads(5);
+                    else if (i == 80)
+                        testInst.SetThreadCount(2);
 
-                Thread.Sleep(10);
+                    testInst.Run(() =>
+                    {
+                        Thread.Sleep(200);
+                        Interlocked.Increment(ref executedWork);
+                    });
+
+                    Thread.Sleep(10);
+                }
+
+                SpinWait.SpinUntil(() => executedWork == expectedWork);
+
+                Assert.AreEqual(2, testInst.ThreadCount);
+
+                testInst.Dispose(true, true, true);
+
+                Assert.AreEqual(0, testInst.ThreadCount);
+                Assert.IsFalse(testInst.IsWork);
+                Assert.AreEqual(expectedWork, executedWork);
             }
-
-            SpinWait.SpinUntil(() => executedWork == expectedWork);
-
-            Assert.AreEqual(2, testInst.ThreadCount);
-
-            testInst.Dispose(true, true, true);
-
-            Assert.AreEqual(0, testInst.ThreadCount);
-            Assert.IsFalse(testInst.IsWork);
-            Assert.AreEqual(expectedWork, executedWork);
         }
 
 
         [TestMethod]
         public void TestTaskSchedulerWork()
         {
-            StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, 2000, 2000, 256, true, true, false);
+            using (StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, 2000, 2000, 256, true, true, false))
+            {
+                bool firstTaskInPool = false;
+                bool secondTaskInPool = false;
 
-            bool firstTaskInPool = false;
-            bool secondTaskInPool = false;
+                var task = testInst.RunAsTask(() =>
+                    {
+                        firstTaskInPool = testInst.IsThreadPoolThread;
+                    }).ContinueWith(t =>
+                    {
+                        secondTaskInPool = testInst.IsThreadPoolThread;
+                    }, testInst.TaskScheduler);
 
-            var task = testInst.RunAsTask(() =>
-                {
-                    firstTaskInPool = testInst.IsThreadPoolThread;
-                }).ContinueWith(t =>
-                {
-                    secondTaskInPool = testInst.IsThreadPoolThread;
-                }, testInst.TaskScheduler);
+                task.Wait();
+                Assert.IsTrue(firstTaskInPool);
+                Assert.IsTrue(secondTaskInPool);
 
-            task.Wait();
-            Assert.IsTrue(firstTaskInPool);
-            Assert.IsTrue(secondTaskInPool);
-
-            testInst.Dispose();
+                testInst.Dispose();
+            }
         }
 
 
