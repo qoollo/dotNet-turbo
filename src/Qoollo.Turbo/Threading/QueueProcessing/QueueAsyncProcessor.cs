@@ -381,6 +381,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <summary>
         /// Основная функция, выполняемая потоками
         /// </summary>
+        [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadProcFunc()
         {
             CancellationToken stopRequestedToken = GetStopRequestedCancellationToken();
@@ -499,6 +500,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// </summary>
         /// <param name="ex">Исключение</param>
         /// <returns>Игнорировать ли исключение (false - поток завершает работу)</returns>
+        [System.Diagnostics.DebuggerNonUserCode]
         protected virtual bool ProcessThreadException(Exception ex)
         {
             Contract.Requires(ex != null);
