@@ -76,7 +76,10 @@ namespace Qoollo.Turbo.Threading.ExecutionQuantizers
         {
         }
 
-
+        /// <summary>
+        /// Сообщить, что можно переключится в данном месте.
+        /// Работает только при компиляции в DEBUG режиме.
+        /// </summary>
         [System.Diagnostics.Conditional("DEBUG")]
         public void TickDebug()
         {

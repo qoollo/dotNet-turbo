@@ -51,6 +51,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Collections\BlockingQueueTest.cs" />
+    <Compile Include="Common\PeriodicalEventTrackerTest.cs" />
     <Compile Include="ExecutionQuantizers\OnRequestExecutionQuantizerTest.cs" />
     <Compile Include="ObjectPools\BunchElementStorageTest.cs" />
     <Compile Include="ObjectPools\BalancingDynamicPoolManagerTest.cs" />
