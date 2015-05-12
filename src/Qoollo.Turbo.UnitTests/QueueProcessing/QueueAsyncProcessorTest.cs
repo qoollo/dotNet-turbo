@@ -34,7 +34,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
             }))
@@ -69,7 +69,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
             });
@@ -84,7 +84,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
             }))
@@ -107,7 +107,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
             }))
@@ -135,7 +135,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
             int startedTask = 0;
             ManualResetEventSlim waiter = new ManualResetEventSlim(false);
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 try
                 {
@@ -176,7 +176,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
             int processed = 0;
             ManualResetEventSlim waiter = new ManualResetEventSlim(false);
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
                 waiter.Wait(token);
@@ -216,7 +216,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Thread.Sleep(1000);
                 Interlocked.Increment(ref processed);
@@ -257,7 +257,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
             int currentItem = 0;
             Random rnd = new Random();
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(threadCount, queueSize, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(threadCount, queueSize, "name", (elem, token) =>
             {
                 int curSpinCount = 0;
                 lock (rnd)

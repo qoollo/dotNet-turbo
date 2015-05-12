@@ -13,7 +13,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
     /// Лучше не использовать, а самостоятельно наследоваться от QueueAsyncProcessor
     /// </summary>
     /// <typeparam name="T">Тип обрабатываемого элемента</typeparam>
-    public class DeleageQueueAsyncProcessor<T> : QueueAsyncProcessor<T>
+    public class DelegateQueueAsyncProcessor<T> : QueueAsyncProcessor<T>
     {
         /// <summary>
         /// Контракты
@@ -29,7 +29,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
         /// <summary>
-        /// Конструктор DeleageQueueAsyncProcessor
+        /// Конструктор DelegateQueueAsyncProcessor
         /// </summary>
         /// <param name="processorCount">Число потоков</param>
         /// <param name="maxQueueSize">Максимальный размер очереди</param>
@@ -37,7 +37,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <param name="isBackground">Будут ли потоки работать в фоновом режиме</param>
         /// <param name="processing">Делегат обработки элементов</param>
         /// <param name="exceptionAct">Делегат обработки исключений</param>
-        public DeleageQueueAsyncProcessor(int processorCount, int maxQueueSize, string name, bool isBackground, Action<T, CancellationToken> processing, Action<Exception> exceptionAct)
+        public DelegateQueueAsyncProcessor(int processorCount, int maxQueueSize, string name, bool isBackground, Action<T, CancellationToken> processing, Action<Exception> exceptionAct)
             : base(processorCount, maxQueueSize, name, isBackground)
         {
             Contract.Requires<ArgumentNullException>(processing != null, "processing");
@@ -46,55 +46,55 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             _exceptionProc = exceptionAct;
         }
         /// <summary>
-        /// Конструктор DeleageQueueAsyncProcessor
+        /// Конструктор DelegateQueueAsyncProcessor
         /// </summary>
         /// <param name="processorCount">Число потоков</param>
         /// <param name="maxQueueSize">Максимальный размер очереди</param>
         /// <param name="name">Имя для потоков</param>
         /// <param name="processing">Делегат обработки элементов</param>
         /// <param name="exceptionAct">Делегат обработки исключений</param>
-        public DeleageQueueAsyncProcessor(int processorCount, int maxQueueSize, string name, Action<T, CancellationToken> processing, Action<Exception> exceptionAct)
+        public DelegateQueueAsyncProcessor(int processorCount, int maxQueueSize, string name, Action<T, CancellationToken> processing, Action<Exception> exceptionAct)
             : this(processorCount, maxQueueSize, name, false, processing, exceptionAct)
         {
         }
         /// <summary>
-        /// Конструктор DeleageQueueAsyncProcessor
+        /// Конструктор DelegateQueueAsyncProcessor
         /// </summary>
         /// <param name="processorCount">Число потоков</param>
         /// <param name="maxQueueSize">Максимальный размер очереди</param>
         /// <param name="name">Имя для потоков</param>
         /// <param name="processing">Делегат обработки элементов</param>
-        public DeleageQueueAsyncProcessor(int processorCount, int maxQueueSize, string name, Action<T, CancellationToken> processing)
+        public DelegateQueueAsyncProcessor(int processorCount, int maxQueueSize, string name, Action<T, CancellationToken> processing)
             : this(processorCount, maxQueueSize, name, false, processing, null)
         {
         }
         /// <summary>
-        /// Конструктор DeleageQueueAsyncProcessor
+        /// Конструктор DelegateQueueAsyncProcessor
         /// </summary>
         /// <param name="processorCount">Число потоков</param>
         /// <param name="name">Имя для потоков</param>
         /// <param name="processing">Делегат обработки элементов</param>
         /// <param name="exceptionAct">Делегат обработки исключений</param>
-        public DeleageQueueAsyncProcessor(int processorCount, string name, Action<T, CancellationToken> processing, Action<Exception> exceptionAct)
+        public DelegateQueueAsyncProcessor(int processorCount, string name, Action<T, CancellationToken> processing, Action<Exception> exceptionAct)
             : this(processorCount, -1, name, false, processing, exceptionAct)
         {
         }
         /// <summary>
-        /// Конструктор DeleageQueueAsyncProcessor
+        /// Конструктор DelegateQueueAsyncProcessor
         /// </summary>
         /// <param name="processorCount">Число потоков</param>
         /// <param name="name">Имя для потоков</param>
         /// <param name="processing">Делегат обработки элементов</param>
-        public DeleageQueueAsyncProcessor(int processorCount, string name, Action<T, CancellationToken> processing)
+        public DelegateQueueAsyncProcessor(int processorCount, string name, Action<T, CancellationToken> processing)
             : this(processorCount, -1, name, false, processing, null)
         {
         }
         /// <summary>
-        /// Конструктор DeleageQueueAsyncProcessor
+        /// Конструктор DelegateQueueAsyncProcessor
         /// </summary>
         /// <param name="processorCount">Число потоков</param>
         /// <param name="processing">Делегат обработки элементов</param>
-        public DeleageQueueAsyncProcessor(int processorCount, Action<T, CancellationToken> processing)
+        public DelegateQueueAsyncProcessor(int processorCount, Action<T, CancellationToken> processing)
             : this(processorCount, -1, null, false, processing, null)
         {
         }

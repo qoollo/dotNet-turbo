@@ -368,7 +368,7 @@
     <Compile Include="Profiling\ProfilingTimer.cs" />
     <Compile Include="Profiling\Profiler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Threading\QueueProcessing\DeleageQueueAsyncProcessor.cs" />
+    <Compile Include="Threading\QueueProcessing\DelegateQueueAsyncProcessor.cs" />
     <Compile Include="Threading\QueueProcessing\InterfaceQueueAsyncProcessor.cs" />
     <Compile Include="Threading\QueueProcessing\QueueAsyncProcessor.cs" />
     <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorBase.cs" />
