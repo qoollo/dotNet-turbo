@@ -309,7 +309,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <summary>
         /// Запуск обработчиков
         /// </summary>
-        public void Start()
+        public virtual void Start()
         {
             QueueAsyncProcessorState prevState;
             if (!ChangeStateSafe(QueueAsyncProcessorState.StartRequested, out prevState))
