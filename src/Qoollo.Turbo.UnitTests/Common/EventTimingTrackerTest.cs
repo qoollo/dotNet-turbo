@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class PeriodicalEventTrackerTest
+    public class EventTimingTrackerTest
     {
         [TestMethod]
         public void TestRegisterWork()
         {
-            PeriodicalEventTracker inst = new PeriodicalEventTracker(10000);
+            EventTimingTracker inst = new EventTimingTracker(10000);
             Assert.IsFalse(inst.IsEventRegistered);
             Assert.IsTrue(inst.IsPeriodPassed);
 
@@ -27,7 +27,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         [TestMethod]
         public void TestRegisterReactions()
         {
-            PeriodicalEventTracker inst = new PeriodicalEventTracker(150);
+            EventTimingTracker inst = new EventTimingTracker(150);
             Assert.IsFalse(inst.IsEventRegistered);
             Assert.IsTrue(inst.IsPeriodPassed);
 
@@ -60,7 +60,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         [TestMethod]
         public void TestRegisterWithFirstTimeWork()
         {
-            PeriodicalEventTracker inst = new PeriodicalEventTracker(10000);
+            EventTimingTracker inst = new EventTimingTracker(10000);
             Assert.IsFalse(inst.IsEventRegistered);
             Assert.IsTrue(inst.IsPeriodPassed);
 
@@ -77,7 +77,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         [TestMethod]
         public void TestRegisterWithFirstTimeReactions()
         {
-            PeriodicalEventTracker inst = new PeriodicalEventTracker(150);
+            EventTimingTracker inst = new EventTimingTracker(150);
             Assert.IsFalse(inst.IsEventRegistered);
             Assert.IsTrue(inst.IsPeriodPassed);
 
@@ -116,7 +116,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         [TestMethod]
         public void TestRegisterWithDelegateWork()
         {
-            PeriodicalEventTracker inst = new PeriodicalEventTracker(10000);
+            EventTimingTracker inst = new EventTimingTracker(10000);
             Assert.IsFalse(inst.IsEventRegistered);
             Assert.IsTrue(inst.IsPeriodPassed);
 
@@ -139,7 +139,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         [TestMethod]
         public void TestRegisterWithDelegateReactions()
         {
-            PeriodicalEventTracker inst = new PeriodicalEventTracker(150);
+            EventTimingTracker inst = new EventTimingTracker(150);
             Assert.IsFalse(inst.IsEventRegistered);
             Assert.IsTrue(inst.IsPeriodPassed);
 
@@ -196,7 +196,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         [TestMethod]
         public void TestResetWork()
         {
-            PeriodicalEventTracker inst = new PeriodicalEventTracker(150);
+            EventTimingTracker inst = new EventTimingTracker(150);
             Assert.IsFalse(inst.IsEventRegistered);
             Assert.IsTrue(inst.IsPeriodPassed);
 

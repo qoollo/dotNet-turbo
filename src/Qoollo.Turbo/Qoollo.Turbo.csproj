@@ -242,7 +242,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\Concurrent\BlockingQueue.cs" />
-    <Compile Include="Common\PeriodicalEventTracker.cs" />
+    <Compile Include="Common\EventTimingTracker.cs" />
     <Compile Include="Exceptions\OperationInterruptedException.cs" />
     <Compile Include="Exceptions\ThreadSetManagerException.cs" />
     <Compile Include="ObjectPools\Common\DefaultPoolElementComparer.cs" />

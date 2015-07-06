@@ -14,7 +14,7 @@ namespace Qoollo.Turbo
     /// Применяется, если событие возникает часто, а действие нужно предпринимать с заданным интервалом времени.
     /// Пример: логирование исключений
     /// </summary>
-    public class PeriodicalEventTracker
+    public class EventTimingTracker
     {
         /// <summary>
         /// Делегат для выполнения действий при наступлении события, когда отведённый период времени истёк
@@ -40,28 +40,28 @@ namespace Qoollo.Turbo
         private int _registeredTimeStamp;
 
         /// <summary>
-        /// Конструктор PeriodicalEventTracker. 
+        /// Конструктор EventTimingTracker. 
         /// Период по умолчанию: 5 минут.
         /// </summary>
-        public PeriodicalEventTracker()
+        public EventTimingTracker()
             : this(5 * 60 * 1000)
         {
         }
         /// <summary>
-        /// Конструктор PeriodicalEventTracker
+        /// Конструктор EventTimingTracker
         /// </summary>
         /// <param name="period">Период реагирования на событие</param>
-        public PeriodicalEventTracker(TimeSpan period)
+        public EventTimingTracker(TimeSpan period)
             : this((int)period.TotalMilliseconds)
         {
 			Contract.Requires<ArgumentException>(period >= TimeSpan.Zero);
             Contract.Requires<ArgumentException>(period.TotalMilliseconds < int.MaxValue);
         }
         /// <summary>
-        /// Конструктор PeriodicalEventTracker
+        /// Конструктор EventTimingTracker
         /// </summary>
         /// <param name="periodMs">Период реагирования на событие</param>
-        public PeriodicalEventTracker(int periodMs)
+        public EventTimingTracker(int periodMs)
         {
             Contract.Requires<ArgumentException>(periodMs >= 0);
             
