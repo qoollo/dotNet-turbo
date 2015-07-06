@@ -503,6 +503,49 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
         }
 
 
+
+        [TestMethod]
+        [Timeout(5000)]
+        public void WaitForElementReleaseNotBlockAfterStop()
+        {
+            using (TestDynamicPool testInst = new TestDynamicPool(0, 10))
+            {
+                using (var item = testInst.Rent())
+                {
+                    Assert.IsTrue(item.IsValid);
+                }
+
+                testInst.Dispose(DisposeFlags.WaitForElementsReleased);
+            }
+        }
+
+
+        [TestMethod]
+        [Timeout(10000)]
+        public void WaitForElementReleaseWaits()
+        {
+            using (TestDynamicPool testInst = new TestDynamicPool(0, 10))
+            {
+                int elementRented = 0;
+                int elementReleased = 0;
+
+                Task.Run(() =>
+                {
+                    using (var item = testInst.Rent())
+                    {
+                        Interlocked.Increment(ref elementRented);
+                        Thread.Sleep(250);
+                    }
+                    Interlocked.Increment(ref elementReleased);
+                });
+
+                SpinWait.SpinUntil(() => Volatile.Read(ref elementRented) == 1);
+                testInst.Dispose(DisposeFlags.WaitForElementsReleased);
+                TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref elementReleased));
+            }
+        }
+
+
         private void RunComplexTest(TestDynamicPool testInst, int threadCount, int opCount, int pauseSpin, bool faultElements)
         {
             Thread[] threads = new Thread[threadCount];

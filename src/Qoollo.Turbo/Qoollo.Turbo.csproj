@@ -250,6 +250,7 @@
     <Compile Include="ObjectPools\Common\DefaultPoolElementOperationSource.cs" />
     <Compile Include="ObjectPools\BalancingDynamicPoolManager.cs" />
     <Compile Include="ObjectPools\DynamicPoolManager.cs" />
+    <Compile Include="ObjectPools\DisposeFlags.cs" />
     <Compile Include="ObjectPools\ObjectPoolManager.cs" />
     <Compile Include="ObjectPools\RentedElementMonitor.cs" />
     <Compile Include="ObjectPools\ServiceStuff\ElementCollections\BunchElementStorage.cs" />
