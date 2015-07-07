@@ -585,7 +585,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                     Assert.IsTrue(item.IsValid);
                 }
 
-                testInst.Dispose(DisposeFlags.WaitForElementsReleased);
+                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
             }
         }
 
@@ -610,7 +610,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                 });
 
                 SpinWait.SpinUntil(() => Volatile.Read(ref elementRented) == 1);
-                testInst.Dispose(DisposeFlags.WaitForElementsReleased);
+                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
                 TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref elementReleased));
             }
         }

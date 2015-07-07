@@ -19,6 +19,6 @@ namespace Qoollo.Turbo.ObjectPools
         /// <summary>
         /// Wait for all PoolElements to be released
         /// </summary>
-        WaitForElementsReleased = 1
+        WaitForElementsRelease = 1
     }
 }

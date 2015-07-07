@@ -425,7 +425,7 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="flags">Флаги остановки</param>
         public virtual void Dispose(DisposeFlags flags)
         {
-            bool waitForRelease = (flags & DisposeFlags.WaitForElementsReleased) != DisposeFlags.None;
+            bool waitForRelease = (flags & DisposeFlags.WaitForElementsRelease) != DisposeFlags.None;
             this.DisposePool(waitForRelease);
             GC.SuppressFinalize(this);
         }
