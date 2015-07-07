@@ -206,6 +206,9 @@ namespace Qoollo.Turbo.ObjectPools
                 rentedAt = ". RentedAt: <unknown>";
 
             Contract.Assert(false, "Rented element should be disposed by user call. Finalizer is not allowed. PoolName: " + poolName + rentedAt);
+
+            if (_elementWrapper != null && _sourcePool != null)
+                _sourcePool.ReleaseElement(_elementWrapper);
         }
 #endif
     }
