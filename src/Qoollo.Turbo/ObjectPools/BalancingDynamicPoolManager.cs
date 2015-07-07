@@ -259,6 +259,15 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
 
+        /// <summary>
+        /// Returns a string that represents the current object
+        /// </summary>
+        /// <returns>A string that represents the current object</returns>
+        public override string ToString()
+        {
+            return "BalancingDynamicPoolManager '" + this.Name + "'";
+        }
+
 
         /// <summary>
         /// Наполнить пул до count элементов
