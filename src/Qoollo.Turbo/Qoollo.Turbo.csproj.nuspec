@@ -16,7 +16,7 @@
     </description>
     <releaseNotes>v2.1</releaseNotes>
     <copyright>Copyright 2014</copyright>
-    <tags>Qoollo Turbo Commons Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Object Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance</tags>
+    <tags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance</tags>
     <references>
       <reference file="$id$.dll" />
     </references>
