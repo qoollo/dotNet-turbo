@@ -87,6 +87,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
 
             bool removeResult = _allElements.Remove(element);
             Contract.Assert(removeResult == true);
+            Contract.Assert(_allElements.IndexOf(element) < 0);
             element.MarkRemoved();
         }
 

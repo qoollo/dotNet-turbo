@@ -309,7 +309,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <summary>
         /// Запуск обработчиков
         /// </summary>
-        public void Start()
+        public virtual void Start()
         {
             QueueAsyncProcessorState prevState;
             if (!ChangeStateSafe(QueueAsyncProcessorState.StartRequested, out prevState))
@@ -381,6 +381,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <summary>
         /// Основная функция, выполняемая потоками
         /// </summary>
+        [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadProcFunc()
         {
             CancellationToken stopRequestedToken = GetStopRequestedCancellationToken();

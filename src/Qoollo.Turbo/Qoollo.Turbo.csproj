@@ -242,6 +242,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\Concurrent\BlockingQueue.cs" />
+    <Compile Include="Common\EventTimingTracker.cs" />
     <Compile Include="Exceptions\OperationInterruptedException.cs" />
     <Compile Include="Exceptions\ThreadSetManagerException.cs" />
     <Compile Include="ObjectPools\Common\DefaultPoolElementComparer.cs" />
@@ -249,6 +250,7 @@
     <Compile Include="ObjectPools\Common\DefaultPoolElementOperationSource.cs" />
     <Compile Include="ObjectPools\BalancingDynamicPoolManager.cs" />
     <Compile Include="ObjectPools\DynamicPoolManager.cs" />
+    <Compile Include="ObjectPools\DisposeFlags.cs" />
     <Compile Include="ObjectPools\ObjectPoolManager.cs" />
     <Compile Include="ObjectPools\RentedElementMonitor.cs" />
     <Compile Include="ObjectPools\ServiceStuff\ElementCollections\BunchElementStorage.cs" />
@@ -266,6 +268,9 @@
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchAwaitable.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchSupplier.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\CustomSynchronizationContext.cs" />
+    <Compile Include="Threading\BackgroundWorkers\BackgroundWorker.cs" />
+    <Compile Include="Threading\ExecutionQuantizers\OnRequestExecutionQuantizer.cs" />
+    <Compile Include="Threading\ExecutionQuantizers\ExecutionQuantizer.cs" />
     <Compile Include="Threading\LinearSpinWait.cs" />
     <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorExtensions.cs" />
     <Compile Include="Threading\SemaphoreLight.cs" />
@@ -364,7 +369,7 @@
     <Compile Include="Profiling\ProfilingTimer.cs" />
     <Compile Include="Profiling\Profiler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Threading\QueueProcessing\DeleageQueueAsyncProcessor.cs" />
+    <Compile Include="Threading\QueueProcessing\DelegateQueueAsyncProcessor.cs" />
     <Compile Include="Threading\QueueProcessing\InterfaceQueueAsyncProcessor.cs" />
     <Compile Include="Threading\QueueProcessing\QueueAsyncProcessor.cs" />
     <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorBase.cs" />

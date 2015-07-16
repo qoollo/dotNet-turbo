@@ -97,6 +97,7 @@ namespace Qoollo.Turbo.ObjectPools
 
         private readonly UsedElementTracker _usedElementTracker;
         private readonly PrioritizedElementsContainer<TElem> _elementsContainer;
+        private readonly ManualResetEventSlim _stoppedEvent;
         private readonly CancellationTokenSource _disposeCancellation;
 
         private int _reservedCount;
@@ -127,6 +128,7 @@ namespace Qoollo.Turbo.ObjectPools
 
             _usedElementTracker = new UsedElementTracker(_trimPeriod);
             _elementsContainer = new PrioritizedElementsContainer<TElem>(new ElementComparer(this));
+            _stoppedEvent = new ManualResetEventSlim(false);
             _disposeCancellation = new CancellationTokenSource();
 
             Profiling.Profiler.ObjectPoolCreated(this.Name);
@@ -256,6 +258,15 @@ namespace Qoollo.Turbo.ObjectPools
             return false;
         }
 
+
+        /// <summary>
+        /// Returns a string that represents the current object
+        /// </summary>
+        /// <returns>A string that represents the current object</returns>
+        public override string ToString()
+        {
+            return "BalancingDynamicPoolManager '" + this.Name + "'";
+        }
 
 
         /// <summary>
@@ -594,6 +605,9 @@ namespace Qoollo.Turbo.ObjectPools
                 Profiling.Profiler.ObjectPoolElementFaulted(this.Name, this.ElementCount);
 
             Profiling.Profiler.ObjectPoolElementReleased(this.Name, this.RentedElementCount);
+
+            if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
+                _stoppedEvent.Set();
         }
 
 
@@ -611,6 +625,77 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
+        /// Ожидание полной остановки и освобождения всех элементов
+        /// </summary>
+        public void WaitUntilStop()
+        {
+            if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
+                return;
+
+            _stoppedEvent.Wait();
+        }
+
+        /// <summary>
+        /// Ожидание полной остановки и освобождения всех элементов с таймаутом
+        /// </summary>
+        /// <param name="timeout">Таймаут ожидания в миллисекундах</param>
+        /// <returns>true - дождались, false - вышли по таймауту</returns>
+        public bool WaitUntilStop(int timeout)
+        {
+            if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
+                return true;
+
+            return _stoppedEvent.Wait(timeout);
+        }
+
+
+
+        /// <summary>
+        /// Уничтожить пул объектов
+        /// </summary>
+        /// <param name="waitForRelease">Дожидаться ли возвращения всех элементов</param>
+        private void DisposePool(bool waitForRelease)
+        {
+            if (!_disposeCancellation.IsCancellationRequested)
+            {
+                _disposeCancellation.Cancel();
+
+                try { }
+                finally
+                {
+                    int count = _elementsContainer.Count;
+                    while (TakeDestroyAndRemoveElement())
+                        Contract.Assert(--count >= 0);
+
+                    if (_elementsContainer.Count == 0)
+                        _stoppedEvent.Set();
+                }
+
+                Profiling.Profiler.ObjectPoolDisposed(this.Name, false);
+            }
+            else
+            {
+                if (_elementsContainer.Count == 0)
+                    _stoppedEvent.Set();
+            }
+
+            if (waitForRelease)
+                this.WaitUntilStop();
+        }
+
+        /// <summary>
+        /// Освобождения ресурсов пула
+        /// </summary>
+        /// <param name="flags">Флаги остановки</param>
+        public virtual void Dispose(DisposeFlags flags)
+        {
+            bool waitForRelease = (flags & DisposeFlags.WaitForElementsRelease) != DisposeFlags.None;
+            this.DisposePool(waitForRelease);
+            GC.SuppressFinalize(this);
+        }
+
+
+        /// <summary>
         /// Основной код освобождения ресурсов
         /// </summary>
         /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
@@ -618,23 +703,30 @@ namespace Qoollo.Turbo.ObjectPools
         {
             if (isUserCall)
             {
-                if (!_disposeCancellation.IsCancellationRequested)
-                {
-                    _disposeCancellation.Cancel();
+                this.DisposePool(false);
+            }
+            else
+            {
+#if DEBUG
+                var elementsContainer = _elementsContainer;
+                if (elementsContainer == null)
+                    Contract.Assert(false, "BalancingDynamicPoolManager should be Disposed by user! PoolName: " + this.Name);
 
-                    try { }
-                    finally
-                    {
-                        int count = _elementsContainer.Count;
-                        while (TakeDestroyAndRemoveElement())
-                            Contract.Assert(--count >= 0);
-                    }
-
-                    Profiling.Profiler.ObjectPoolDisposed(this.Name, false);
-                }
+                elementsContainer.ProcessFreeElements(o => o.MarkElementDestroyed());
+#endif
             }
 
             base.Dispose(isUserCall);
         }
+
+#if DEBUG
+        /// <summary>
+        /// Финализатор
+        /// </summary>
+        ~BalancingDynamicPoolManager()
+        {
+            Dispose(false);
+        }
+#endif
     }
 }

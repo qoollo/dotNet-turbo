@@ -376,6 +376,75 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
             }
         }
 
+        private void RunFinalizerTest()
+        {
+            BalancingStaticPoolManager<int> testInst = new BalancingStaticPoolManager<int>();
+            testInst.AddElement(10);
+
+            using (var item = testInst.Rent(false))
+            {
+                Assert.IsTrue(item.IsValid);
+            }
+        }
+
+        [TestMethod]
+        public void FinalizerTest_CanFailRantime()
+        {
+            RunFinalizerTest();
+
+            for (int i = 0; i < 5; i++)
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+                GC.WaitForPendingFinalizers();
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+            }
+        }
+
+
+        [TestMethod]
+        [Timeout(5000)]
+        public void WaitForElementReleaseNotBlockAfterStop()
+        {
+            using (BalancingStaticPoolManager<int> testInst = new BalancingStaticPoolManager<int>())
+            {
+                testInst.AddElement(1);
+
+                using (var item = testInst.Rent())
+                {
+                    Assert.IsTrue(item.IsValid);
+                }
+
+                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
+            }
+        }
+
+
+        [TestMethod]
+        [Timeout(10000)]
+        public void WaitForElementReleaseWaits()
+        {
+            using (BalancingStaticPoolManager<int> testInst = new BalancingStaticPoolManager<int>())
+            {
+                int elementRented = 0;
+                int elementReleased = 0;
+                testInst.AddElement(1);
+
+                Task.Run(() =>
+                {
+                    using (var item = testInst.Rent())
+                    {
+                        Interlocked.Increment(ref elementRented);
+                        Thread.Sleep(250);
+                    }
+                    Interlocked.Increment(ref elementReleased);
+                });
+
+                SpinWait.SpinUntil(() => Volatile.Read(ref elementRented) == 1);
+                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
+                TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref elementReleased));
+            }
+        }
+
 
 
         private void RunComplexTest(BalancingStaticPoolManager<int> testInst, int threadCount, int opCount, int pauseSpin, bool autoAddRemove)

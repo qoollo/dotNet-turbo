@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
@@ -257,6 +258,92 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
             {
                 Assert.AreEqual(i, (int)testInst.GetItem(i));
             }
+        }
+
+
+
+        private void TestHeavyRandomAddRemoveCore(int operationCount, int threadCount, int spinCount, bool doAutoCompaction)
+        {
+            SparceArrayStorage<object> testInst = new SparceArrayStorage<object>(doAutoCompaction);
+            List<object> activeElements = new List<object>();
+            int randomSeed = 0;
+            int operationPerThread = operationCount / threadCount;
+            Thread[] threads = new Thread[threadCount];
+
+            Action act = () =>
+                {
+                    Random rnd = new Random(Interlocked.Increment(ref randomSeed) + Environment.TickCount);
+                    List<object> localElements = new List<object>();
+
+                    for (int i = 0; i < operationPerThread; i++)
+                    {
+                        int operationId = doAutoCompaction ? rnd.Next(2) : rnd.Next(3);
+
+                        if (operationId == 0)
+                        {
+                            object obj = new object();
+                            localElements.Add(obj);
+                            testInst.Add(obj);
+                        }
+                        else if (operationId == 1)
+                        {
+                            if (localElements.Count > 0)
+                            {
+                                object obj = localElements[rnd.Next(localElements.Count)];
+                                localElements.Remove(obj);
+                                testInst.Remove(obj);
+                            }
+                        }
+                        else
+                        {
+                            if (localElements.Count > 0)
+                            {
+                                object obj = localElements[rnd.Next(localElements.Count)];
+                                int compactionIndex = testInst.IndexOf(obj);
+                                testInst.CompactElementAt(ref compactionIndex);
+                            }
+                        }
+
+                        int mySpinCount = spinCount / 2 + rnd.Next(spinCount / 2);
+                        Thread.SpinWait(mySpinCount);
+                    }
+
+                    lock (activeElements)
+                    {
+                        activeElements.AddRange(localElements);
+                    }
+                };
+
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i] = new Thread(new ThreadStart(act));
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i].Start();
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i].Join();
+
+            Assert.AreEqual(activeElements.Count, testInst.Count, "activeElements.Count != testInst.Count");
+
+            List<object> elementsFromTestInst = new List<object>();
+            for (int i = 0; i < testInst.RawData.Length; i++)
+                if (testInst.RawData[i] != null)
+                    elementsFromTestInst.Add(testInst.RawData[i]);
+
+
+            Assert.AreEqual(elementsFromTestInst.Count, testInst.Count, "elementsFromTestInst.Count != testInst.Count");
+
+            foreach (var elem in activeElements)
+                Assert.IsTrue(elementsFromTestInst.Contains(elem), "!elementsFromTestInst.Contains(elem)");
+        }
+
+        [TestMethod]
+        public void TestHeavyRandomAddRemove()
+        {
+            TestHeavyRandomAddRemoveCore(1000000, Environment.ProcessorCount, 10, true);
+            TestHeavyRandomAddRemoveCore(500000, Environment.ProcessorCount * 2, 10, true);
+            TestHeavyRandomAddRemoveCore(1000000, Environment.ProcessorCount, 10, false);
         }
     }
 }

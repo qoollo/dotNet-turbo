@@ -145,12 +145,23 @@ namespace Qoollo.Turbo.ObjectPools.Common
         }
 
 #if DEBUG
+
+        private bool _finalizerReRegistered;
+
         /// <summary>
         /// Финализатор
         /// </summary>
         ~PoolElementWrapper()
         {
-            Contract.Assert(this.IsElementDestroyed, "Element should be destroyed before removing the PoolElementWrapper");
+            if (!this.IsElementDestroyed && !_finalizerReRegistered)
+            {
+                GC.ReRegisterForFinalize(this);
+                _finalizerReRegistered = true;
+            }
+            else
+            {
+                Contract.Assert(this.IsElementDestroyed, "Element should be destroyed before removing the PoolElementWrapper");
+            }
         }
 #endif
     }

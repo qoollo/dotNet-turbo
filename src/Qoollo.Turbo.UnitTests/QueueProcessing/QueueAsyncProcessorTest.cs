@@ -34,7 +34,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
             }))
@@ -69,7 +69,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
             });
@@ -84,7 +84,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
             }))
@@ -107,7 +107,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
             }))
@@ -135,7 +135,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
             int startedTask = 0;
             ManualResetEventSlim waiter = new ManualResetEventSlim(false);
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 try
                 {
@@ -176,7 +176,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
             int processed = 0;
             ManualResetEventSlim waiter = new ManualResetEventSlim(false);
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Interlocked.Increment(ref processed);
                 waiter.Wait(token);
@@ -216,7 +216,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             int processed = 0;
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(Environment.ProcessorCount, 1000, "name", (elem, token) =>
             {
                 Thread.Sleep(1000);
                 Interlocked.Increment(ref processed);
@@ -238,6 +238,18 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
 
 
 
+        private static void SmartSleep(int timeMs)
+        {
+            if (timeMs == 0)
+            {
+                Thread.Yield();
+                return;
+            }
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.Elapsed.TotalMilliseconds < timeMs)
+                Thread.Sleep(0);
+        }
 
         private void RunComplexTest(int threadCount, int queueSize, int testElemCount, int addThreadCount, int procSpinWaitCount, int addSleepMs)
         {
@@ -245,7 +257,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
             int currentItem = 0;
             Random rnd = new Random();
 
-            using (DeleageQueueAsyncProcessor<int> proc = new DeleageQueueAsyncProcessor<int>(threadCount, queueSize, "name", (elem, token) =>
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(threadCount, queueSize, "name", (elem, token) =>
             {
                 int curSpinCount = 0;
                 lock (rnd)
@@ -268,7 +280,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
                             proc.Add(curVal - 1);
 
                             if (addSleepMs > 0)
-                                Thread.Sleep(addSleepMs);
+                                SmartSleep(addSleepMs);
                         }
                     };
 
@@ -304,10 +316,15 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         [Timeout(2 * 60 * 1000)]
         public void ComplexTest()
         {
+            this.TestContext.WriteLine("QAP.ComplexTest: start");
             RunComplexTest(Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 0, 0);
+            this.TestContext.WriteLine("QAP.ComplexTest: stage 1 complete");
             RunComplexTest(1, -1, 10000, Environment.ProcessorCount, 0, 1);
+            this.TestContext.WriteLine("QAP.ComplexTest: stage 2 completed");
             RunComplexTest(2 * Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 100, 0);
+            this.TestContext.WriteLine("QAP.ComplexTest: stage 3 completed");
             RunComplexTest(Environment.ProcessorCount, 100, 20000, Environment.ProcessorCount, 100, 1);
+            this.TestContext.WriteLine("QAP.ComplexTest: stage 4 completed");
         }
     }
 }

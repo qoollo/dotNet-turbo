@@ -89,6 +89,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// </summary>
         /// <param name="element">Элемент</param>
         /// <returns>Индекс (-1 - если не найден)</returns>
+        [Pure]
         public int IndexOf(T element)
         {
             if (element == null)

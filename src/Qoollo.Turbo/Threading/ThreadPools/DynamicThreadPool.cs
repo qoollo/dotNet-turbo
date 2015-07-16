@@ -49,7 +49,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
         private const int DefaultQueueStealAwakePeriod = 2000;
         private const int DefaultMaxQueueCapacityExtension = 256;
-        private const int DefaultNoWorkItemTrimPeriod = 90 * 1000;
+        private const int DefaultNoWorkItemTrimPeriod = 5 * 60 * 1000;
         private const int DefaultManagementProcessPeriod = 500;
         private const int WorkItemPerThreadLimit = 32;
         private const int NoWorkItemPreventDeactivationPeriod = 2 * 1000;

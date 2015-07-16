@@ -550,6 +550,72 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
         }
 
 
+        private void RunFinalizerTest()
+        {
+            TestDynamicPool testInst = new TestDynamicPool(0, 10);
+
+            using (var item = testInst.Rent(false))
+            {
+                Assert.IsTrue(item.IsValid);
+            }
+        }
+
+        [TestMethod]
+        public void FinalizerTest_CanFailRantime()
+        {
+            RunFinalizerTest();
+
+            for (int i = 0; i < 5; i++)
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+                GC.WaitForPendingFinalizers();
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+            }
+        }
+
+
+        [TestMethod]
+        [Timeout(5000)]
+        public void WaitForElementReleaseNotBlockAfterStop()
+        {
+            using (TestDynamicPool testInst = new TestDynamicPool(0, 10))
+            {
+                using (var item = testInst.Rent())
+                {
+                    Assert.IsTrue(item.IsValid);
+                }
+
+                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
+            }
+        }
+
+
+        [TestMethod]
+        [Timeout(10000)]
+        public void WaitForElementReleaseWaits()
+        {
+            using (TestDynamicPool testInst = new TestDynamicPool(0, 10))
+            {
+                int elementRented = 0;
+                int elementReleased = 0;
+
+                Task.Run(() =>
+                {
+                    using (var item = testInst.Rent())
+                    {
+                        Interlocked.Increment(ref elementRented);
+                        Thread.Sleep(250);
+                    }
+                    Interlocked.Increment(ref elementReleased);
+                });
+
+                SpinWait.SpinUntil(() => Volatile.Read(ref elementRented) == 1);
+                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
+                TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref elementReleased));
+            }
+        }
+
+
         private void RunComplexTest(TestDynamicPool testInst, int threadCount, int opCount, int pauseSpin, bool faultElements)
         {
             Thread[] threads = new Thread[threadCount];

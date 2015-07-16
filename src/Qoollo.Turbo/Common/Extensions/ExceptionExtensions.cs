@@ -97,38 +97,47 @@ namespace System
                 if (emptyArgConstructor != null)
                     ex = emptyArgConstructor.Invoke(null) as Exception;
             }
-            else
+
+            if (ex == null)
             {
                 var singleArgConstructor = exceptionType.GetConstructor(new Type[] { typeof(string) });
                 if (singleArgConstructor != null && singleArgConstructor.GetParameters()[0].Name == "message")
-                {
                     ex = singleArgConstructor.Invoke(new object[] { message }) as Exception;
-                }
-                else
+            }
+
+            if (ex == null)
+            {
+                var messageExcConstructor = exceptionType.GetConstructor(new Type[] { typeof(string), typeof(Exception) });
+                var messageExcConstructorParams = messageExcConstructor != null ? messageExcConstructor.GetParameters() : null;
+                if (messageExcConstructor != null && messageExcConstructorParams[0].Name == "message" && messageExcConstructorParams[1].Name == "innerException")
+                    ex = messageExcConstructor.Invoke(new object[] { message, null }) as Exception;
+            }
+
+            if (ex == null)
+            {
+                var doubleArgConstructor = exceptionType.GetConstructor(new Type[] { typeof(string), typeof(string) });
+                if (doubleArgConstructor != null)
                 {
-                    var doubleArgConstructor = exceptionType.GetConstructor(new Type[] { typeof(string), typeof(string) });
-                    if (doubleArgConstructor != null)
-                    {
-                        var constructorParams = doubleArgConstructor.GetParameters();
-                        if (constructorParams[0].Name == "paramName" && constructorParams[1].Name == "message")
-                            ex = doubleArgConstructor.Invoke(new object[] { null, message }) as Exception;
-                        else if (constructorParams[0].Name == "message")
-                            ex = doubleArgConstructor.Invoke(new object[] { message, null }) as Exception;
-                    }
-                    else
-                    {
-                        if (singleArgConstructor != null)
-                        {
-                            ex = singleArgConstructor.Invoke(new object[] { message }) as Exception;
-                        }
-                        else
-                        {
-                            var emptyArgConstructor = exceptionType.GetConstructor(Type.EmptyTypes);
-                            if (emptyArgConstructor != null)
-                                ex = emptyArgConstructor.Invoke(null) as Exception;
-                        }
-                    }
+                    var constructorParams = doubleArgConstructor.GetParameters();
+                    if ((constructorParams[0].Name == "paramName" || constructorParams[0].Name == "objectName") && constructorParams[1].Name == "message")
+                        ex = doubleArgConstructor.Invoke(new object[] { null, message }) as Exception;
+                    else if (constructorParams[0].Name == "message")
+                        ex = doubleArgConstructor.Invoke(new object[] { message, null }) as Exception;
                 }
+            }
+
+            if (ex == null)
+            {
+                var singleArgConstructor = exceptionType.GetConstructor(new Type[] { typeof(string) });
+                if (singleArgConstructor != null)
+                    ex = singleArgConstructor.Invoke(new object[] { message ?? "" }) as Exception;
+            }
+
+            if (ex == null && message != null)
+            {
+                var emptyArgConstructor = exceptionType.GetConstructor(Type.EmptyTypes);
+                if (emptyArgConstructor != null)
+                    ex = emptyArgConstructor.Invoke(null) as Exception;
             }
 
             if (ex == null)

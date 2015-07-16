@@ -22,6 +22,12 @@ namespace Qoollo.Turbo.ObjectPools
         private PoolElementWrapper<TElem> _elementWrapper;
         private ObjectPoolManager<TElem> _sourcePool;
 
+#if DEBUG
+        private string _memberName;
+        private string _filePath;
+        private int _lineNumber;
+#endif
+
 #if SERVICE_CLASSES_PROFILING && SERVICE_CLASSES_PROFILING_TIME
         private Profiling.ProfilingTimer _activeTime;
 
@@ -70,6 +76,39 @@ namespace Qoollo.Turbo.ObjectPools
                 this.StartActiveTime();
             }
         }
+
+        /// <summary>
+        /// Конструктор RentedElementMonitor
+        /// </summary>
+        /// <param name="element">Обёртка над элементом</param>
+        /// <param name="sourcePool">Пул-источник</param>
+        /// <param name="memberName">Иия метода, в котором произошло получение элемента пула</param>
+        /// <param name="filePath">Путь до файла, в котором произошло получение элемента пула</param>
+        /// <param name="lineNumber">Строка файла, в которой произошло получение элемента пула</param>
+        internal RentedElementMonitor(PoolElementWrapper<TElem> element, ObjectPoolManager<TElem> sourcePool, string memberName, string filePath, int lineNumber)
+            : this(element, sourcePool)
+        {
+#if DEBUG
+            _memberName = memberName;
+            _filePath = filePath;
+            _lineNumber = lineNumber;
+#endif
+        }
+
+#if DEBUG
+        /// <summary>
+        /// Иия метода, в котором произошло получение элемента пула
+        /// </summary>
+        internal string MemberName { get { return _memberName; } }
+        /// <summary>
+        /// Путь до файла, в котором произошло получение элемента пула
+        /// </summary>
+        internal string FilePath { get { return _filePath; } }
+        /// <summary>
+        /// Строка файла, в которой произошло получение элемента пула
+        /// </summary>
+        internal int LineNumber { get { return _lineNumber; } }
+#endif
 
         /// <summary>
         /// Исходный пул
@@ -152,7 +191,27 @@ namespace Qoollo.Turbo.ObjectPools
         /// </summary>
         ~RentedElementMonitor()
         {
-            Contract.Assert(false, "Rented element should be disposed by user call. Finalizer is not allowed.");
+            if (_elementWrapper == null && _sourcePool == null)
+                return;
+
+            string poolName = "<null>";
+            if (_sourcePool != null)
+                poolName = _sourcePool.ToString();
+
+            string rentedAt = "";
+            if (_memberName != null)
+                rentedAt += ". MemberName: " + _memberName;
+            if (_filePath != null)
+                rentedAt += ". FilePath: " + _filePath;
+            if (_lineNumber > 0)
+                rentedAt += ". LineNumber: " + _lineNumber.ToString();
+            if (rentedAt == "")
+                rentedAt = ". RentedAt: <unknown>";
+
+            Contract.Assert(false, "Rented element should be disposed by user call. Finalizer is not allowed. PoolName: " + poolName + rentedAt);
+
+            if (_elementWrapper != null && _sourcePool != null)
+                _sourcePool.ReleaseElement(_elementWrapper);
         }
 #endif
     }
