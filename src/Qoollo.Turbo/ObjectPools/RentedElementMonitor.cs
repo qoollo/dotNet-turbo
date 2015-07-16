@@ -191,6 +191,9 @@ namespace Qoollo.Turbo.ObjectPools
         /// </summary>
         ~RentedElementMonitor()
         {
+            if (_elementWrapper == null && _sourcePool == null)
+                return;
+
             string poolName = "<null>";
             if (_sourcePool != null)
                 poolName = _sourcePool.ToString();
