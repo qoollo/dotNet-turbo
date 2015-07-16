@@ -51,7 +51,7 @@ namespace Qoollo.Turbo.UnitTests.ExecutionTickers
 
             testInst.AllowProcess();
             testInst.WaitForTickers();
-            Assert.AreEqual(2, stageNum, "stageNum = 2");
+            TimingAssert.AreEqual(5000, 2, () => Volatile.Read(ref stageNum), "StageNum = 2");
 
             testInst.AllowProcess();
 
