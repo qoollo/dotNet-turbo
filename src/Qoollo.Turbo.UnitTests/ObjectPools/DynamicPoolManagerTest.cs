@@ -44,6 +44,9 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
 
         private class TestDynamicPool : DynamicPoolManager<TestPoolElem>
         {
+            private int _elementsCreated = 0;
+            private int _elementsDestroyed = 0;
+
             public TestDynamicPool(int min, int max) :
                 base(min, max, "a")
             {
@@ -56,6 +59,8 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
             }
 
             public bool CanCreateElement { get; set; }
+            public int ElementsCreated { get { return _elementsCreated; } }
+            public int ElementsDestroyed { get { return _elementsDestroyed; } }
 
             protected override bool CreateElement(out TestPoolElem elem, int timeout, CancellationToken token)
             {
@@ -66,6 +71,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                 }
 
                 elem = new TestPoolElem(1);
+                Interlocked.Increment(ref _elementsCreated);
                 return true;
             }
 
@@ -77,6 +83,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
             protected override void DestroyElement(TestPoolElem elem)
             {
                 elem.IsDestroyed = true;
+                Interlocked.Increment(ref _elementsDestroyed);
             }
         }
 
@@ -601,6 +608,9 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                 RunComplexTest(testInst, Environment.ProcessorCount, 2000000, 10, true);
                 RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 100, true);
                 RunComplexTest(testInst, Environment.ProcessorCount, 100000, 4000, true);
+
+                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
+                Assert.AreEqual(testInst.ElementsCreated, testInst.ElementsDestroyed, "ElementsCreated != ElementsDestroyed");
             }
         }
 
@@ -613,6 +623,9 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                 RunComplexTest(testInst, 1, 100000, 10, false);
                 RunComplexTest(testInst, Environment.ProcessorCount, 2000000, 10, false);
                 RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 100, false);
+
+                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
+                Assert.AreEqual(testInst.ElementsCreated, testInst.ElementsDestroyed, "ElementsCreated != ElementsDestroyed");
             }
         }
     }
