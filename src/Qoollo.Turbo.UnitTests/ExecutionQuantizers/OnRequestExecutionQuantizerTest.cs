@@ -47,16 +47,16 @@ namespace Qoollo.Turbo.UnitTests.ExecutionTickers
                 });
 
 
-            TimingAssert.AreEqual(5000, 1, () => Volatile.Read(ref stageNum));
+            TimingAssert.AreEqual(5000, 1, () => Volatile.Read(ref stageNum), "StageNum = 1");
 
             testInst.AllowProcess();
             testInst.WaitForTickers();
-            Assert.AreEqual(2, stageNum);
+            Assert.AreEqual(2, stageNum, "stageNum = 2");
 
             testInst.AllowProcess();
 
             task.Wait();
-            Assert.AreEqual(3, stageNum);
+            Assert.AreEqual(3, stageNum, "stageNum = 3");
         }
     }
 }

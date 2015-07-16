@@ -78,7 +78,7 @@ namespace Qoollo.Turbo.Threading.ExecutionQuantizers
                 {
                     Monitor.Enter(_processNotifier, ref lockTaken);
                     _tickWaiters++;
-                    if (_tickWaiters > 0 && !_waiterNotifier.IsSet)
+                    if (!_processNotifierFlag && _tickWaiters > 0 && !_waiterNotifier.IsSet)
                         _waiterNotifier.Set();
                 }
 
@@ -111,6 +111,9 @@ namespace Qoollo.Turbo.Threading.ExecutionQuantizers
             {
                 _processNotifierFlag = true;
                 Monitor.Pulse(_processNotifier);
+
+                if (_tickWaiters <= 1 && _waiterNotifier.IsSet)
+                    _waiterNotifier.Reset();
             }
         }
 
