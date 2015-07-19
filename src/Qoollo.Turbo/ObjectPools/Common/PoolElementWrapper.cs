@@ -178,6 +178,10 @@ namespace Qoollo.Turbo.ObjectPools.Common
         private readonly T _element;
         private readonly IPoolElementOperationSource<T> _operations;
 
+        private string _lastTimeUsedAtMemberName;
+        private string _lastTimeUsedAtFilePath;
+        private int _lastTimeUsedAtLineNumber;
+
         /// <summary>
         /// Конструктор PoolElementWrapper
         /// </summary>
@@ -205,6 +209,18 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// Имя пула-владельца
         /// </summary>
         internal string SourcePoolName { get { return _sourcePoolName; } }
+        /// <summary>
+        /// Иия метода, в котором произошло последнее получение элемента пула
+        /// </summary>
+        internal string LastTimeUsedAtMemberName { get { return _lastTimeUsedAtMemberName; } }
+        /// <summary>
+        /// Путь до файла, в котором произошло последнее получение элемента пула
+        /// </summary>
+        internal string LastTimeUsedAtFilePath { get { return _lastTimeUsedAtFilePath; } }
+        /// <summary>
+        /// Строка файла, в которой произошло последнее получение элемента пула
+        /// </summary>
+        internal int LastTimeUsedAtLineNumber { get { return _lastTimeUsedAtLineNumber; } }
 
         /// <summary>
         /// Задать имя пула-владельца
@@ -214,6 +230,27 @@ namespace Qoollo.Turbo.ObjectPools.Common
         {
             Contract.Requires(name != null);
             _sourcePoolName = name;
+        }
+        /// <summary>
+        /// Задать точку последнего использования
+        /// </summary>
+        /// <param name="memberName">Имя метода</param>
+        /// <param name="filePath">Путь до файла</param>
+        /// <param name="lineNumber">Номер строки в файле</param>
+        internal void SetLastTimeUsedAt(string memberName, string filePath, int lineNumber)
+        {
+            _lastTimeUsedAtMemberName = memberName;
+            _lastTimeUsedAtFilePath = filePath;
+            _lastTimeUsedAtLineNumber = lineNumber;
+        }
+        /// <summary>
+        /// Сбросить точку последнего использования
+        /// </summary>
+        internal void ResetLastTimeUsedAt()
+        {
+            _lastTimeUsedAtMemberName = null;
+            _lastTimeUsedAtFilePath = null;
+            _lastTimeUsedAtLineNumber = 0;
         }
     }
 }

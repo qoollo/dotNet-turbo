@@ -601,13 +601,13 @@ namespace Qoollo.Turbo.ObjectPools
                     TakeDestroyAndRemoveElement();
             }
 
+            if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
+                _stoppedEvent.Set();
+
             if (!isValid)
                 Profiling.Profiler.ObjectPoolElementFaulted(this.Name, this.ElementCount);
 
             Profiling.Profiler.ObjectPoolElementReleased(this.Name, this.RentedElementCount);
-
-            if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
-                _stoppedEvent.Set();
         }
 
 

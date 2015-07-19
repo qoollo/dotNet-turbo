@@ -349,10 +349,10 @@ namespace Qoollo.Turbo.ObjectPools
             else
                 _elementsContainer.Release(element);
 
-            Profiling.Profiler.ObjectPoolElementReleased(this.Name, this.RentedElementCount);
-
             if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
                 _stoppedEvent.Set();
+
+            Profiling.Profiler.ObjectPoolElementReleased(this.Name, this.RentedElementCount);
         }
 
 
