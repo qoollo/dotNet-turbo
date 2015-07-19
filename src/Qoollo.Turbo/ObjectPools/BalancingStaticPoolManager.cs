@@ -144,15 +144,6 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
 
-        /// <summary>
-        /// Returns a string that represents the current object
-        /// </summary>
-        /// <returns>A string that represents the current object</returns>
-        public override string ToString()
-        {
-            return "BalancingStaticPoolManager '" + this.Name + "'";
-        }
-
 
         /// <summary>
         /// Добавление нового элемента в пул
