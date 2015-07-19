@@ -265,6 +265,7 @@
     <Compile Include="ObjectPools\ServiceStuff\UsedElementTracker.cs" />
     <Compile Include="ObjectPools\BalancingStaticPoolManager.cs" />
     <Compile Include="ObjectPools\StaticPoolManager.cs" />
+    <Compile Include="Profiling\ProfilingProviderWrapper.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchAwaitable.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchSupplier.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\CustomSynchronizationContext.cs" />
