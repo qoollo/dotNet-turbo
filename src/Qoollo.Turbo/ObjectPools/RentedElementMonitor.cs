@@ -94,7 +94,8 @@ namespace Qoollo.Turbo.ObjectPools
             _filePath = filePath;
             _lineNumber = lineNumber;
 
-            element.SetLastTimeUsedAt(memberName, filePath, lineNumber);
+            if (element != null)
+                element.SetLastTimeUsedAt(memberName, filePath, lineNumber);
         }
 #endif
 

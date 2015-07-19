@@ -553,6 +553,8 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
         }
 
 
+
+
         private void RunComplexTest(TestDynamicPool testInst, int threadCount, int opCount, int pauseSpin, bool faultElements)
         {
             Thread[] threads = new Thread[threadCount];
@@ -609,7 +611,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                 RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 100, true);
                 RunComplexTest(testInst, Environment.ProcessorCount, 100000, 4000, true);
 
-                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
+                testInst.Dispose();
                 Assert.AreEqual(testInst.ElementsCreated, testInst.ElementsDestroyed, "ElementsCreated != ElementsDestroyed");
             }
         }
@@ -624,7 +626,89 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                 RunComplexTest(testInst, Environment.ProcessorCount, 2000000, 10, false);
                 RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 100, false);
 
-                testInst.Dispose(DisposeFlags.WaitForElementsRelease);
+                testInst.Dispose();
+                Assert.AreEqual(testInst.ElementsCreated, testInst.ElementsDestroyed, "ElementsCreated != ElementsDestroyed");
+            }
+        }
+
+
+
+
+
+
+        private void RunConcurrentUseWithTimeout(TestDynamicPool testInst, int threadCount, int opCount, int sleepTime, int rentTimeout, int cancelTimeout, bool faultElements)
+        {
+            Thread[] threads = new Thread[threadCount];
+            Barrier startBar = new Barrier(threadCount + 1);
+
+            int opCountPerThread = opCount / threadCount;
+
+            Action thAct = () =>
+            {
+                Random localRand = new Random(Thread.CurrentThread.ManagedThreadId + Environment.TickCount);
+                int sleepDiff = sleepTime / 4;
+                int rentDiff = rentTimeout / 4;
+                int cancelDiff = cancelTimeout / 4;
+
+                startBar.SignalAndWait();
+
+                int execOp = 0;
+                while (execOp++ < opCountPerThread)
+                {
+                    try
+                    {
+                        int curCancelTimeout = localRand.Next(cancelTimeout - cancelDiff, cancelTimeout + cancelDiff);
+                        int curRentTimeout = localRand.Next(rentTimeout - rentDiff, rentTimeout + rentDiff);
+                        int curSleepTime = localRand.Next(sleepTime - sleepDiff, sleepTime + sleepDiff);
+
+                        using (var tokenSrc = new CancellationTokenSource(curCancelTimeout))
+                        {
+                            using (var el = testInst.Rent(curRentTimeout, tokenSrc.Token, true))
+                            {
+                                if (faultElements && localRand.Next(10) == 0)
+                                    el.Element.MakeInvalid();
+
+                                Thread.Sleep(curSleepTime);
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    catch (TimeoutException)
+                    {
+                    }
+                }
+            };
+
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i] = new Thread(new ThreadStart(thAct));
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i].Start();
+
+            startBar.SignalAndWait();
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i].Join();
+
+            Assert.AreEqual(testInst.ElementCount, testInst.FreeElementCount);
+        }
+
+        [TestMethod]
+        [Timeout(4 * 60 * 1000)]
+        public void ComplexConcurrentUseWithTimeout()
+        {
+            using (TestDynamicPool testInst = new TestDynamicPool(0, 1))
+            {
+                RunConcurrentUseWithTimeout(testInst, 2, 2000, 1, 1, 1000, true);
+                RunConcurrentUseWithTimeout(testInst, Environment.ProcessorCount, 2000, 2, 1, 1000, true);
+                RunConcurrentUseWithTimeout(testInst, 2 * Environment.ProcessorCount, 3000, 2, 1, 1000, true);
+                RunConcurrentUseWithTimeout(testInst, 4 * Environment.ProcessorCount, 4000, 2, 1, 1000, true);
+                RunConcurrentUseWithTimeout(testInst, 4 * Environment.ProcessorCount, 2000, 4, 4, 4, true);
+ 
+                testInst.Dispose();
                 Assert.AreEqual(testInst.ElementsCreated, testInst.ElementsDestroyed, "ElementsCreated != ElementsDestroyed");
             }
         }

@@ -108,6 +108,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadManagement
         [Timeout(2 * 60 * 1000)]
         public void TestCancellationOnStop()
         {
+            int threadEnter = 0;
             int threadExit = 0;
             ManualResetEventSlim waiter = new ManualResetEventSlim(false);
 
@@ -115,6 +116,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadManagement
             {
                 try
                 {
+                    Interlocked.Increment(ref threadEnter);
                     waiter.Wait(token);
                 }
                 finally
@@ -128,6 +130,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadManagement
 
                 TimingAssert.IsTrue(15000, () => testInst.State == ThreadSetManagerState.Running);
                 TimingAssert.IsTrue(15000, () => testInst.ActiveThreadCount == Environment.ProcessorCount);
+                TimingAssert.IsTrue(15000, () => Volatile.Read(ref threadEnter) == Environment.ProcessorCount);
 
                 testInst.Stop();
                 Assert.IsTrue(testInst.State == ThreadSetManagerState.Stopped);
