@@ -181,6 +181,10 @@ namespace Qoollo.Turbo.ObjectPools.Common
         private string _lastTimeUsedAtMemberName;
         private string _lastTimeUsedAtFilePath;
         private int _lastTimeUsedAtLineNumber;
+        private DateTime _lastTimeUsedAtTime;
+        private DateTime _createTime;
+        private int _numberOfTimesWasRented;
+        private int _numberOfTimesWasReleased;
 
         /// <summary>
         /// Конструктор PoolElementWrapper
@@ -195,6 +199,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
 
             _element = element;
             _operations = operations;
+            _createTime = DateTime.Now;
         }
 
         /// <summary>
@@ -209,6 +214,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// Имя пула-владельца
         /// </summary>
         internal string SourcePoolName { get { return _sourcePoolName; } }
+
         /// <summary>
         /// Иия метода, в котором произошло последнее получение элемента пула
         /// </summary>
@@ -221,6 +227,22 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// Строка файла, в которой произошло последнее получение элемента пула
         /// </summary>
         internal int LastTimeUsedAtLineNumber { get { return _lastTimeUsedAtLineNumber; } }
+        /// <summary>
+        /// Время, когда элемент был арендован в последний раз
+        /// </summary>
+        internal DateTime LastTimeUsedAtTime { get { return _lastTimeUsedAtTime; } }
+        /// <summary>
+        /// Время создания элемента
+        /// </summary>
+        internal DateTime CreateTime { get { return _createTime; } }
+        /// <summary>
+        /// Сколько раз арендовали этот элемент
+        /// </summary>
+        internal int NumberOfTimesWasRented { get { return _numberOfTimesWasRented; } }
+        /// <summary>
+        /// Сколько раз элемент был освобождён
+        /// </summary>
+        internal int NumberOfTimesWasReleased { get { return _numberOfTimesWasReleased; } }
 
         /// <summary>
         /// Задать имя пула-владельца
@@ -232,25 +254,26 @@ namespace Qoollo.Turbo.ObjectPools.Common
             _sourcePoolName = name;
         }
         /// <summary>
-        /// Задать точку последнего использования
+        /// Обновить статистику при аренде
         /// </summary>
         /// <param name="memberName">Имя метода</param>
         /// <param name="filePath">Путь до файла</param>
         /// <param name="lineNumber">Номер строки в файле</param>
-        internal void SetLastTimeUsedAt(string memberName, string filePath, int lineNumber)
+        /// <param name="rentTime">Время аренды</param>
+        internal void UpdateStatOnRent(string memberName, string filePath, int lineNumber, DateTime rentTime)
         {
             _lastTimeUsedAtMemberName = memberName;
             _lastTimeUsedAtFilePath = filePath;
             _lastTimeUsedAtLineNumber = lineNumber;
+            _lastTimeUsedAtTime = rentTime;
+            Interlocked.Increment(ref _numberOfTimesWasRented);
         }
         /// <summary>
-        /// Сбросить точку последнего использования
+        /// Обновить статистику при освобождении
         /// </summary>
-        internal void ResetLastTimeUsedAt()
+        internal void UpdateStatOnRelease()
         {
-            _lastTimeUsedAtMemberName = null;
-            _lastTimeUsedAtFilePath = null;
-            _lastTimeUsedAtLineNumber = 0;
+            Interlocked.Increment(ref _numberOfTimesWasReleased);
         }
     }
 }

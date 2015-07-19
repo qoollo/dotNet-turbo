@@ -26,6 +26,7 @@ namespace Qoollo.Turbo.ObjectPools
         private string _memberName;
         private string _filePath;
         private int _lineNumber;
+        private DateTime _rentTime;
 #endif
 
 #if SERVICE_CLASSES_PROFILING && SERVICE_CLASSES_PROFILING_TIME
@@ -93,9 +94,10 @@ namespace Qoollo.Turbo.ObjectPools
             _memberName = memberName;
             _filePath = filePath;
             _lineNumber = lineNumber;
+            _rentTime = DateTime.Now;
 
             if (element != null)
-                element.SetLastTimeUsedAt(memberName, filePath, lineNumber);
+                element.UpdateStatOnRent(memberName, filePath, lineNumber, _rentTime);
         }
 #endif
 
@@ -112,6 +114,10 @@ namespace Qoollo.Turbo.ObjectPools
         /// Строка файла, в которой произошло получение элемента пула
         /// </summary>
         internal int LineNumber { get { return _lineNumber; } }
+        /// <summary>
+        /// Время аренды
+        /// </summary>
+        internal DateTime RentTime { get { return _rentTime; } }
 #endif
 
         /// <summary>
@@ -185,7 +191,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 #if DEBUG
             if (wrapperCopy != null)
-                wrapperCopy.ResetLastTimeUsedAt();
+                wrapperCopy.UpdateStatOnRelease();
 
             GC.SuppressFinalize(this);
 #endif
