@@ -31,7 +31,7 @@ namespace Qoollo.Turbo.Profiling
         protected virtual void ProcessException(Exception ex)
         {
             if (ex != null)
-                Environment.FailFast("Qoollo.Turbo profiler throws unexpected exception", ex);
+                Environment.FailFast("Qoollo.Turbo profiler throws unexpected exception." + Environment.NewLine + "Exception details: " + ex.ToString(), ex);
             else
                 Environment.FailFast("Qoollo.Turbo profiler throws unexpected exception");
         }

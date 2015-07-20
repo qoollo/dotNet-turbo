@@ -270,6 +270,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// </summary>
         /// <param name="privateData">Данные потока</param>
         /// <param name="token">Токен отмены (при остановке пула)</param>
+        [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadProc(ThreadPrivateData privateData, CancellationToken token)
         {
             if (privateData == null)

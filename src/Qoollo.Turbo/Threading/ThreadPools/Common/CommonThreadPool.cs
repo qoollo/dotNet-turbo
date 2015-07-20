@@ -646,11 +646,35 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return _threadRunningCancellation.Token;
         }
 
+        /// <summary>
+        /// Выбрасывает исключение из task, если он оказался в состояние Cancelled или Faulted
+        /// </summary>
+        /// <param name="task">Task</param>
+        private void RethrowTaskException(Task task)
+        {
+            Contract.Requires(task != null);
+
+            if (task.IsCanceled)
+                throw new TaskCanceledException("ThreadPool task was cancelled by unknown reason. ThreadPool: " + this.Name);
+
+            if (task.IsFaulted)
+            {
+                var exception = task.Exception;
+                if (exception == null)
+                    throw new ApplicationException("ThreadPool task was faulted by unknown reason. ThreadPool: " + this.Name);
+                if (exception.InnerExceptions.Count != 1)
+                    throw exception;
+
+                var capturedException = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception.InnerException);
+                capturedException.Throw();
+            }
+        }
 
         /// <summary>
         /// Процедура для потоков, выполняющая начальную инициализацию и завершение
         /// </summary>
         /// <param name="rawData">Данные для запуска</param>
+        [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadStartUpProc(object rawData)
         {
             Contract.Requires(rawData != null);
@@ -686,6 +710,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                     Task threadTask = new Task(ThreadStartUpInsideTask, rawData, TaskCreationOptions.LongRunning);
                     Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.SetTaskScheduler(threadTask, this.TaskScheduler);
                     Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(threadTask, false);
+                    if (threadTask.IsFaulted || threadTask.IsCanceled)
+                        RethrowTaskException(threadTask);
                 }
             }
             finally
@@ -701,6 +727,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// Исполнение цикла потока внутри Task (для установки taskScheduler)
         /// </summary>
         /// <param name="rawData">Данные для запуска</param>
+        [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadStartUpInsideTask(object rawData)
         {
             Contract.Requires(rawData != null);
