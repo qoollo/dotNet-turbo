@@ -21,6 +21,9 @@ namespace Qoollo.Turbo.Profiling
         {
             if (profiler == null)
                 profiler = new DefaultProfilingProvider();
+            else if (profiler.GetType() != typeof(ProfilingProviderWrapper) && !profiler.GetType().IsSubclassOf(typeof(ProfilingProviderWrapper)))
+                profiler = new ProfilingProviderWrapper(profiler);
+
             System.Threading.Interlocked.Exchange(ref _profiler, profiler);
         }
 

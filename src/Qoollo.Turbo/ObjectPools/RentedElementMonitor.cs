@@ -26,6 +26,7 @@ namespace Qoollo.Turbo.ObjectPools
         private string _memberName;
         private string _filePath;
         private int _lineNumber;
+        private DateTime _rentTime;
 #endif
 
 #if SERVICE_CLASSES_PROFILING && SERVICE_CLASSES_PROFILING_TIME
@@ -77,6 +78,8 @@ namespace Qoollo.Turbo.ObjectPools
             }
         }
 
+
+#if DEBUG
         /// <summary>
         /// Конструктор RentedElementMonitor
         /// </summary>
@@ -88,12 +91,15 @@ namespace Qoollo.Turbo.ObjectPools
         internal RentedElementMonitor(PoolElementWrapper<TElem> element, ObjectPoolManager<TElem> sourcePool, string memberName, string filePath, int lineNumber)
             : this(element, sourcePool)
         {
-#if DEBUG
             _memberName = memberName;
             _filePath = filePath;
             _lineNumber = lineNumber;
-#endif
+            _rentTime = DateTime.Now;
+
+            if (element != null)
+                element.UpdateStatOnRent(memberName, filePath, lineNumber, _rentTime);
         }
+#endif
 
 #if DEBUG
         /// <summary>
@@ -108,6 +114,10 @@ namespace Qoollo.Turbo.ObjectPools
         /// Строка файла, в которой произошло получение элемента пула
         /// </summary>
         internal int LineNumber { get { return _lineNumber; } }
+        /// <summary>
+        /// Время аренды
+        /// </summary>
+        internal DateTime RentTime { get { return _rentTime; } }
 #endif
 
         /// <summary>
@@ -180,6 +190,9 @@ namespace Qoollo.Turbo.ObjectPools
             }
 
 #if DEBUG
+            if (wrapperCopy != null)
+                wrapperCopy.UpdateStatOnRelease();
+
             GC.SuppressFinalize(this);
 #endif
         }
@@ -195,7 +208,9 @@ namespace Qoollo.Turbo.ObjectPools
                 return;
 
             string poolName = "<null>";
-            if (_sourcePool != null)
+            if (_elementWrapper != null && _elementWrapper.SourcePoolName != null)
+                poolName = _elementWrapper.SourcePoolName;
+            else if (_sourcePool != null)
                 poolName = _sourcePool.ToString();
 
             string rentedAt = "";

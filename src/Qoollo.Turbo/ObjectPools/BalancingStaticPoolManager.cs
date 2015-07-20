@@ -144,15 +144,6 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
 
-        /// <summary>
-        /// Returns a string that represents the current object
-        /// </summary>
-        /// <returns>A string that represents the current object</returns>
-        public override string ToString()
-        {
-            return "BalancingStaticPoolManager '" + this.Name + "'";
-        }
-
 
         /// <summary>
         /// Добавление нового элемента в пул
@@ -349,10 +340,10 @@ namespace Qoollo.Turbo.ObjectPools
             else
                 _elementsContainer.Release(element);
 
-            Profiling.Profiler.ObjectPoolElementReleased(this.Name, this.RentedElementCount);
-
             if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
                 _stoppedEvent.Set();
+
+            Profiling.Profiler.ObjectPoolElementReleased(this.Name, this.RentedElementCount);
         }
 
 

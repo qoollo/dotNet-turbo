@@ -16,6 +16,7 @@ namespace Qoollo.Turbo.ObjectPools
     /// Объектный пул с автоматической регулировкой числа элементов
     /// </summary>
     /// <typeparam name="TElem">Тип элемента</typeparam>
+    [ContractClass(typeof(DynamicPoolManagerCodeContract<>))]
     public abstract class DynamicPoolManager<TElem> : ObjectPoolManager<TElem>, IPoolElementOperationSource<TElem>
     {
         /// <summary>
@@ -208,15 +209,6 @@ namespace Qoollo.Turbo.ObjectPools
         protected abstract void DestroyElement(TElem elem);
 
 
-
-        /// <summary>
-        /// Returns a string that represents the current object
-        /// </summary>
-        /// <returns>A string that represents the current object</returns>
-        public override string ToString()
-        {
-            return "DynamicPoolManager '" + this.Name + "'";
-        }
 
 
         /// <summary>
@@ -526,13 +518,13 @@ namespace Qoollo.Turbo.ObjectPools
                     TakeDestroyAndRemoveElement();
             }
 
+            if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
+                _stoppedEvent.Set();
+
             if (!isValid)
                 Profiling.Profiler.ObjectPoolElementFaulted(this.Name, this.ElementCount);
 
             Profiling.Profiler.ObjectPoolElementReleased(this.Name, this.RentedElementCount);
-
-            if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
-                _stoppedEvent.Set();
         }
 
 
@@ -654,5 +646,33 @@ namespace Qoollo.Turbo.ObjectPools
             Dispose(false);
         }
 #endif
+    }
+
+
+    /// <summary>
+    /// Code contracts
+    /// </summary>
+    /// <typeparam name="TElem"></typeparam>
+    [ContractClassFor(typeof(DynamicPoolManager<>))]
+    internal abstract class DynamicPoolManagerCodeContract<TElem>: DynamicPoolManager<TElem>
+    {
+        private DynamicPoolManagerCodeContract() : base(1) { }
+
+        protected override bool CreateElement(out TElem elem, int timeout, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override bool IsValidElement(TElem elem)
+        {
+            Contract.EnsuresOnThrow<Exception>(false, "DynamicPoolManager.IsValidElement should not throw any exception");
+
+            throw new NotImplementedException();
+        }
+
+        protected override void DestroyElement(TElem elem)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
