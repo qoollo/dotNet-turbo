@@ -489,14 +489,20 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="item">Извлечённый элемент</param>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать исключение при отмене по токену</param>
         /// <returns>Удалось ли извлечь элемент</returns>
-        private bool TryDequeueInner(out T item, int timeout, CancellationToken token)
+        private bool TryDequeueInner(out T item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             CheckDisposed();
             item = default(T);
 
             if (token.IsCancellationRequested)
-                throw new OperationCanceledException(token);
+            {
+                if (!throwOnCancellation)
+                    return false;
+
+                token.ThrowIfCancellationRequested();
+            }
 
             if (IsCompleted)
                 return false;
@@ -523,7 +529,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             }
             catch (OperationCanceledException)
             {
-                if (token.IsCancellationRequested)
+                if (token.IsCancellationRequested && throwOnCancellation)
                     throw new OperationCanceledException(token);
 
                 return false;
@@ -541,7 +547,13 @@ namespace Qoollo.Turbo.Collections.Concurrent
             bool removeFaulted = true;
             try
             {
-                token.ThrowIfCancellationRequested();
+                if (token.IsCancellationRequested)
+                {
+                    if (!throwOnCancellation)
+                        return false;
+
+                    token.ThrowIfCancellationRequested();
+                }
                 removeSucceeded = _innerQueue.TryDequeue(out item);
                 Contract.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
@@ -578,7 +590,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public T Dequeue()
         {
             T result;
-            bool takeResult = TryDequeueInner(out result, Timeout.Infinite, new CancellationToken());
+            bool takeResult = TryDequeueInner(out result, Timeout.Infinite, new CancellationToken(), true);
             Contract.Assert(takeResult);
  
             return result;
@@ -591,7 +603,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public T Dequeue(CancellationToken token)
         {
             T result;
-            bool takeResult = TryDequeueInner(out result, Timeout.Infinite, token);
+            bool takeResult = TryDequeueInner(out result, Timeout.Infinite, token, true);
             Contract.Assert(takeResult);
 
             return result;
@@ -604,7 +616,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>Успешность извлечения</returns>
         public bool TryDequeue(out T item)
         {
-            return TryDequeueInner(out item, 0, CancellationToken.None);
+            return TryDequeueInner(out item, 0, CancellationToken.None, true);
         }
         /// <summary>
         /// Попытаться извлечь элемент из головы очереди
@@ -620,7 +632,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
-            return TryDequeueInner(out item, (int)timeoutMs, new CancellationToken());
+            return TryDequeueInner(out item, (int)timeoutMs, new CancellationToken(), true);
         }
         /// <summary>
         /// Попытаться извлечь элемент из головы очереди
@@ -632,7 +644,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             if (timeout < 0)
                 timeout = Timeout.Infinite;
-            return TryDequeueInner(out item, timeout, new CancellationToken());
+            return TryDequeueInner(out item, timeout, new CancellationToken(), true);
         }
         /// <summary>
         /// Попытаться извлечь элемент из головы очереди
@@ -645,10 +657,22 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             if (timeout < 0)
                 timeout = Timeout.Infinite;
-            return TryDequeueInner(out item, timeout, token);
+            return TryDequeueInner(out item, timeout, token, true);
         }
-
-
+        /// <summary>
+        /// Попытаться извлечь элемент из головы очереди
+        /// </summary>
+        /// <param name="item">Извлечённый элемент (если удалось)</param>
+        /// <param name="timeout">Таймаут в миллисекундах</param>
+        /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене</param>
+        /// <returns>Успешность извлечения</returns>
+        internal bool TryDequeue(out T item, int timeout, CancellationToken token, bool throwOnCancellation)
+        {
+            if (timeout < 0)
+                timeout = Timeout.Infinite;
+            return TryDequeueInner(out item, timeout, token, throwOnCancellation);
+        }
 
 
 
