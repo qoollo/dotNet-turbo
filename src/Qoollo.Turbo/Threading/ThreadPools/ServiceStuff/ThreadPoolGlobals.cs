@@ -174,9 +174,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             Contract.Assert(!_isDisposed);
 
             if (local != null)
-                return _queues.TryTake(local.LocalQueue, out item, 0, new CancellationToken());
+                return _queues.TryTake(local.LocalQueue, out item, 0, new CancellationToken(), true);
             else
-                return _queues.TryTake(null, out item, 0, new CancellationToken());
+                return _queues.TryTake(null, out item, 0, new CancellationToken(), true);
         }
         /// <summary>
         /// Попытаться получить элемент из очереди
@@ -187,17 +187,18 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="item">Выбранный элемент</param>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
         /// <returns>Успешность</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryTakeItem(ThreadPoolThreadLocals local, bool doLocalSearch, bool doWorkSteal, out ThreadPoolWorkItem item, int timeout, CancellationToken token)
+        public bool TryTakeItem(ThreadPoolThreadLocals local, bool doLocalSearch, bool doWorkSteal, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
             Contract.Assert(!_isDisposed);
 
             if (local != null)
-                return _queues.TryTake(local.LocalQueue, doLocalSearch, doWorkSteal, out item, timeout, token);
+                return _queues.TryTake(local.LocalQueue, doLocalSearch, doWorkSteal, out item, timeout, token, throwOnCancellation);
             else
-                return _queues.TryTake(null, doLocalSearch, doWorkSteal, out item, timeout, token);
+                return _queues.TryTake(null, doLocalSearch, doWorkSteal, out item, timeout, token, throwOnCancellation);
         }
         /// <summary>
         /// Попытаться безопасно получить элемент из общей очереди

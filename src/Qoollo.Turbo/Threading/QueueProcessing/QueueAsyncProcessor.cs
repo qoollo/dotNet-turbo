@@ -403,14 +403,18 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                 {
                     try
                     {
+                        T elem = default(T);
                         while (!stopRequestedToken.IsCancellationRequested)
                         {
-                            T elem = _queue.Dequeue(stopRequestedToken);
-                            Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
+                            elem = default(T);
+                            if (_queue.TryDequeue(out elem, -1, stopRequestedToken, false))
+                            {
+                                Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
 
-                            timer.RestartTime();
-                            this.Process(elem, state, stoppedToken);
-                            Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
+                                timer.RestartTime();
+                                this.Process(elem, state, stoppedToken);
+                                Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
+                            }
                         }
                     }
                     catch (OperationCanceledException opEx)

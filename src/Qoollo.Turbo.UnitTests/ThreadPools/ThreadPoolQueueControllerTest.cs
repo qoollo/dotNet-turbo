@@ -102,7 +102,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             ThreadPoolQueueController q = new ThreadPoolQueueController(100, 1000);
             Assert.IsTrue(q.TryAdd(new TestThreadPoolItem(10), null, false, 0, CancellationToken.None));
             ThreadPoolWorkItem res = null;
-            Assert.IsTrue(q.TryTake(null, out res, 0, CancellationToken.None));
+            Assert.IsTrue(q.TryTake(null, out res, 0, CancellationToken.None, true));
             Assert2.AreEqual(10, res);
         }
 
@@ -121,12 +121,12 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             for (int i = 0; i < 100; i++)
             {
                 ThreadPoolWorkItem res = null;
-                Assert.IsTrue(q.TryTake(null, out res, 0, CancellationToken.None));
+                Assert.IsTrue(q.TryTake(null, out res, 0, CancellationToken.None, true));
                 Assert2.AreEqual(i, res, "(TestThreadPoolItem)res == i");
             }
 
             ThreadPoolWorkItem tmp = null;
-            Assert.IsFalse(q.TryTake(null, out tmp, 0, CancellationToken.None));
+            Assert.IsFalse(q.TryTake(null, out tmp, 0, CancellationToken.None, true));
         }
 
 
@@ -249,7 +249,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
                 try
                 {
                     Interlocked.Exchange(ref startedFlag, 1);
-                    q.TryTake(null, out takenItem, -1, cSrc.Token);
+                    q.TryTake(null, out takenItem, -1, cSrc.Token, true);
                 }
                 catch (OperationCanceledException)
                 {
@@ -264,6 +264,40 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
 
             cSrc.Cancel();
             TimingAssert.IsTrue(5000, () => Volatile.Read(ref takeCompleted));
+
+            Assert.IsTrue(q.TryAdd(new TestThreadPoolItem(1), null, false, 0, CancellationToken.None));
+            Assert2.AreEqual(1, q.Take(null));
+
+            Assert.AreEqual(0, q.GlobalQueue.OccupiedNodesCount);
+            Assert.AreEqual(100, q.GlobalQueue.FreeNodesCount);
+        }
+
+        [TestMethod]
+        public void TestSilentTakeCancellation()
+        {
+            ThreadPoolQueueController q = new ThreadPoolQueueController(100, 1000);
+            CancellationTokenSource cSrc = new CancellationTokenSource();
+
+
+            bool takeCompleted = false;
+            bool takeResult = false;
+            ThreadPoolWorkItem takenItem = null;
+            int startedFlag = 0;
+            Task.Run(() =>
+            {
+                Interlocked.Exchange(ref startedFlag, 1);
+                var res = q.TryTake(null, out takenItem, -1, cSrc.Token, false);
+                Volatile.Write(ref takeResult, res);
+                Volatile.Write(ref takeCompleted, true);
+            });
+
+            TimingAssert.IsTrue(5000, () => Volatile.Read(ref startedFlag) == 1);
+            Thread.Sleep(100);
+            Assert.IsFalse(takeCompleted);
+
+            cSrc.Cancel();
+            TimingAssert.IsTrue(5000, () => Volatile.Read(ref takeCompleted));
+            Assert.IsFalse(takeResult);
 
             Assert.IsTrue(q.TryAdd(new TestThreadPoolItem(1), null, false, 0, CancellationToken.None));
             Assert2.AreEqual(1, q.Take(null));
@@ -331,7 +365,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             local.TryAddLocal(new TestThreadPoolItem(1));
 
             item = null;
-            Assert.IsTrue(q.TryTake(local, out item, 0, CancellationToken.None));
+            Assert.IsTrue(q.TryTake(local, out item, 0, CancellationToken.None, true));
             Assert2.AreEqual(1, item);
         }
 
@@ -360,12 +394,12 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             for (int i = 0; i < 4; i++)
             {
                 ThreadPoolWorkItem item = null;
-                Assert.IsTrue(q.TryTake(locQ[0], out item, 0, CancellationToken.None));
+                Assert.IsTrue(q.TryTake(locQ[0], out item, 0, CancellationToken.None, true));
                 extractedItems.Add((TestThreadPoolItem)item);
             }
 
             ThreadPoolWorkItem tmp = null;
-            Assert.IsFalse(q.TryTake(locQ[0], out tmp, 0, CancellationToken.None));
+            Assert.IsFalse(q.TryTake(locQ[0], out tmp, 0, CancellationToken.None, true));
 
             extractedItems.Sort();
             Assert.AreEqual(4, extractedItems.Count);
@@ -507,7 +541,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
                     while (Volatile.Read(ref addFinished) < thCount)
                     {
                         ThreadPoolWorkItem tmp = null;
-                        if (q.TryTake(localQ, out tmp, -1, tokSrc.Token))
+                        if (q.TryTake(localQ, out tmp, -1, tokSrc.Token, true))
                             data.Add((TestThreadPoolItem)tmp);
 
                         int sleepTime = rnd.Next(500);
@@ -521,7 +555,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
                             {
                                 while (!q.TryAdd(new TestThreadPoolItem(item), localQ, false, 0, CancellationToken.None))
                                 {
-                                    if (q.TryTake(localQ, out tmp, 0, CancellationToken.None))
+                                    if (q.TryTake(localQ, out tmp, 0, CancellationToken.None, true))
                                         data.Add((TestThreadPoolItem)tmp);
                                 }
                             }
@@ -531,7 +565,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
                 catch (OperationCanceledException) { }
 
                 ThreadPoolWorkItem tmp2;
-                while (q.TryTake(localQ, out tmp2, 0, CancellationToken.None))
+                while (q.TryTake(localQ, out tmp2, 0, CancellationToken.None, true))
                     data.Add((TestThreadPoolItem)tmp2);
 
                 lock (global)

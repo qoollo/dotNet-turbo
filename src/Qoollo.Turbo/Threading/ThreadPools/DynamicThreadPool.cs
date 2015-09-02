@@ -702,15 +702,15 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                         ActivateThread();
                     }
 
-                    bool itemTaken = this.TryTakeWorkItemFromQueue(privateData, out currentWorkItem, 0, new CancellationToken());
+                    bool itemTaken = this.TryTakeWorkItemFromQueue(privateData, out currentWorkItem, 0, new CancellationToken(), false);
                     if (itemTaken == false)
                     {
                         lastViewedActiveThreadCount = this.ActiveThreadCount;
                         // this.ActiveThreadCount <= _reasonableThreadCount - возможна гонка, но нам не критично
                         if (lastViewedActiveThreadCount <= _reasonableThreadCount)
-                            itemTaken = this.TryTakeWorkItemFromQueue(privateData, out currentWorkItem, _noWorkItemTrimPeriod, token);
+                            itemTaken = this.TryTakeWorkItemFromQueue(privateData, out currentWorkItem, _noWorkItemTrimPeriod, token, false);
                         else
-                            itemTaken = this.TryTakeWorkItemFromQueue(privateData, out currentWorkItem, NoWorkItemPreventDeactivationPeriod, token);
+                            itemTaken = this.TryTakeWorkItemFromQueue(privateData, out currentWorkItem, NoWorkItemPreventDeactivationPeriod, token, false);
                     }
 
                     if (itemTaken)
@@ -722,7 +722,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                         if (_wasSomeProcessByThreadsFlag == false)
                             _wasSomeProcessByThreadsFlag = true;
                     }
-                    else
+                    else if (!token.IsCancellationRequested)
                     {
                         if (lastViewedActiveThreadCount <= _reasonableThreadCount)
                         {

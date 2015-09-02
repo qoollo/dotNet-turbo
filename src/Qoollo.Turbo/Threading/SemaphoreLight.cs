@@ -193,8 +193,9 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать исключение при отмене по токену</param>
         /// <returns>Удалось ли захватить слот</returns>
-        public bool Wait(int timeout, CancellationToken token)
+        internal bool Wait(int timeout, CancellationToken token, bool throwOnCancellation)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
@@ -202,7 +203,13 @@ namespace Qoollo.Turbo.Threading
             if (timeout < -1)
                 timeout = Timeout.Infinite;
 
-            token.ThrowIfCancellationRequested();
+            if (token.IsCancellationRequested)
+            {
+                if (throwOnCancellation)
+                    throw new OperationCanceledException(token);
+
+                return false;
+            }
 
             uint startTime = 0;
             if (timeout != Timeout.Infinite && timeout > 0)
@@ -282,7 +289,12 @@ namespace Qoollo.Turbo.Threading
                     return true;
 
                 if (token.IsCancellationRequested)
-                    throw new OperationCanceledException(token);
+                {
+                    if (throwOnCancellation)
+                        throw new OperationCanceledException(token);
+
+                    return false;
+                }
 
                 if (_isDisposed)
                     throw new OperationInterruptedException("Semaphore wait was interrupted by Dispose", new ObjectDisposedException(this.GetType().Name));
@@ -303,7 +315,18 @@ namespace Qoollo.Turbo.Threading
         }
 
 
-
+        /// <summary>
+        /// Выполнить ожидание появления 1-ого слота в семаформе. 
+        /// При успешном захвате число доступных слотов уменьшается на 1
+        /// </summary>
+        /// <param name="timeout">Таймаут</param>
+        /// <param name="token">Токен отмены</param>
+        /// <returns>Удалось ли захватить слот</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait(int timeout, CancellationToken token)
+        {
+            return Wait(timeout, token, true);
+        }
 
         /// <summary>
         /// Выполнить ожидание появления 1-ого слота в семаформе. 
@@ -312,7 +335,7 @@ namespace Qoollo.Turbo.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Wait()
         {
-            bool semaphoreSlotTaken = Wait(Timeout.Infinite, new CancellationToken());
+            bool semaphoreSlotTaken = Wait(Timeout.Infinite, new CancellationToken(), true);
             Contract.Assert(semaphoreSlotTaken);
         }
         /// <summary>
@@ -323,7 +346,7 @@ namespace Qoollo.Turbo.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Wait(CancellationToken token)
         {
-            bool semaphoreSlotTaken = Wait(Timeout.Infinite, token);
+            bool semaphoreSlotTaken = Wait(Timeout.Infinite, token, true);
             Contract.Assert(semaphoreSlotTaken);
         }
         /// <summary>
@@ -338,7 +361,7 @@ namespace Qoollo.Turbo.Threading
             if (timeoutMs > int.MaxValue)
                 throw new ArgumentOutOfRangeException("timeout");
 
-            return Wait((int)timeoutMs, new CancellationToken());
+            return Wait((int)timeoutMs, new CancellationToken(), true);
         }
         /// <summary>
         /// Выполнить ожидание появления 1-ого слота в семаформе. 
@@ -353,7 +376,7 @@ namespace Qoollo.Turbo.Threading
             if (timeoutMs > int.MaxValue)
                 throw new ArgumentOutOfRangeException("timeout");
 
-            return Wait((int)timeoutMs, token);
+            return Wait((int)timeoutMs, token, true);
         }
         /// <summary>
         /// Выполнить ожидание появления 1-ого слота в семаформе. 
@@ -364,7 +387,7 @@ namespace Qoollo.Turbo.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Wait(int timeout)
         {
-            return Wait(timeout, new CancellationToken());
+            return Wait(timeout, new CancellationToken(), true);
         }
 
 

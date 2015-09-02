@@ -283,12 +283,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             {
                 while (!token.IsCancellationRequested && !ShouldIDie())
                 {
-                    currentWorkItem = this.TakeWorkItemFromQueue(privateData, token);
-                    this.RunWorkItem(currentWorkItem);
-                    currentWorkItem = null;
+                    if (this.TryTakeWorkItemFromQueue(privateData, out currentWorkItem, -1, token, false))
+                    {
+                        this.RunWorkItem(currentWorkItem);
+                        currentWorkItem = null;
 
-                    if (_wasSomeProcessByThreadsFlag == false)
-                        _wasSomeProcessByThreadsFlag = true;
+                        if (_wasSomeProcessByThreadsFlag == false)
+                            _wasSomeProcessByThreadsFlag = true;
+                    }
                 }
             }
             catch (OperationCanceledException)

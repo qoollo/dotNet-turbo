@@ -1121,15 +1121,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <param name="item">Полученный элемент</param>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
         /// <returns>Успешность</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected bool TryTakeWorkItemFromQueue(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token)
+        protected bool TryTakeWorkItemFromQueue(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             Contract.Requires(privateData != null);
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
             Contract.Assert(State != ThreadPoolState.Stopped);
 
-            var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, true, true, out item, timeout, token);
+            var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, true, true, out item, timeout, token, throwOnCancellation);
             if (result)
             {
                 Profiling.Profiler.ThreadPoolWaitingInQueueTime(this.Name, item.StopStoreTimer());
@@ -1144,15 +1145,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <param name="item">Полученный элемент</param>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
         /// <returns>Успешность</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected bool TryTakeWorkItemFromQueueWithoutSteal(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token)
+        protected bool TryTakeWorkItemFromQueueWithoutSteal(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             Contract.Requires(privateData != null);
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
             Contract.Assert(State != ThreadPoolState.Stopped);
 
-            var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, true, false, out item, timeout, token);
+            var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, true, false, out item, timeout, token, throwOnCancellation);
             if (result)
             {
                 Profiling.Profiler.ThreadPoolWaitingInQueueTime(this.Name, item.StopStoreTimer());
@@ -1167,15 +1169,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <param name="item">Полученный элемент</param>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
         /// <returns>Успешность</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected bool TryTakeWorkItemFromQueueWithoutLocalSearch(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token)
+        protected bool TryTakeWorkItemFromQueueWithoutLocalSearch(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             Contract.Requires(privateData != null);
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
             Contract.Assert(State != ThreadPoolState.Stopped);
 
-            var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, false, true, out item, timeout, token);
+            var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, false, true, out item, timeout, token, throwOnCancellation);
             if (result)
             {
                 Profiling.Profiler.ThreadPoolWaitingInQueueTime(this.Name, item.StopStoreTimer());
