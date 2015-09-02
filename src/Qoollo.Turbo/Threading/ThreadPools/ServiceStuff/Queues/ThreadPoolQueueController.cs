@@ -280,8 +280,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="item">Выбранный элемент</param>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
         /// <returns>Удалось ли выбрать</returns>
-        public bool TryTake(ThreadPoolLocalQueue localQueue, bool doLocalSearch, bool doWorkSteal, out ThreadPoolWorkItem item, int timeout, CancellationToken token)
+        public bool TryTake(ThreadPoolLocalQueue localQueue, bool doLocalSearch, bool doWorkSteal, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
             Contract.Assert(!_isDisposed);
@@ -301,10 +302,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
 
             // Если нельзя делать похищение, то сразу забираем из очереди
             if (!doWorkSteal)
-                return _globalQueue.TryTake(out item, timeout, token);
+                return _globalQueue.TryTake(out item, timeout, token, throwOnCancellation);
 
             // Пытаемся выбрать из общей очереди (если не удаётся, то нужно проверить возможность похищения)
-            if (_globalQueue.TryTake(out item, 0, new CancellationToken()))
+            if (_globalQueue.TryTake(out item, 0, new CancellationToken(), false))
                 return true;
 
             // Пытаемся похитить элемент
@@ -320,7 +321,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
 
             // Если не нужно просыпаться для похищения, то просто выбриаем из общей очереди
             if (_stealAwakePeriod <= 0)
-                return _globalQueue.TryTake(out item, timeout, token);
+                return _globalQueue.TryTake(out item, timeout, token, throwOnCancellation);
 
 
             if (timeout < 0)
@@ -328,10 +329,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 // Если таймаут не ограничен, то выбираем из основной осереди и периодически пытаемся похитить
                 while (true)
                 {
-                    token.ThrowIfCancellationRequested();
+                    if (token.IsCancellationRequested)
+                        break;
 
-                    if (_globalQueue.TryTake(out item, _stealAwakePeriod, token))
+                    if (_globalQueue.TryTake(out item, _stealAwakePeriod, token, throwOnCancellation))
                         return true;
+
+                    if (token.IsCancellationRequested)
+                        break;
 
                     if (TryTakeFromOtherLocalQueues(localQueue, _localQueues, out item))
                         return true;
@@ -345,10 +350,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
 
                 while (restTime > 0)
                 {
-                    token.ThrowIfCancellationRequested();
+                    if (token.IsCancellationRequested)
+                        break;
 
-                    if (_globalQueue.TryTake(out item, Math.Min(_stealAwakePeriod, restTime), token))
+                    if (_globalQueue.TryTake(out item, Math.Min(_stealAwakePeriod, restTime), token, throwOnCancellation))
                         return true;
+
+                    if (token.IsCancellationRequested)
+                        break;
 
                     if (TryTakeFromOtherLocalQueues(localQueue, _localQueues, out item))
                         return true;
@@ -356,6 +365,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                     restTime = UpdateTimeout(startTime, timeout);
                 }
             }
+
+            if (token.IsCancellationRequested && throwOnCancellation)
+                throw new OperationCanceledException(token);
 
             item = null;
             return false;
@@ -367,11 +379,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="item">Выбранный элемент</param>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
         /// <returns>Удалось ли выбрать</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryTake(ThreadPoolLocalQueue localQueue, out ThreadPoolWorkItem item, int timeout, CancellationToken token)
+        public bool TryTake(ThreadPoolLocalQueue localQueue, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
-            return TryTake(localQueue, true, true, out item, timeout, token);
+            return TryTake(localQueue, true, true, out item, timeout, token, throwOnCancellation);
         }
         /// <summary>
         /// Выбрать элемент из очереди
@@ -383,7 +396,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         public ThreadPoolWorkItem Take(ThreadPoolLocalQueue localQueue, CancellationToken token)
         {
             ThreadPoolWorkItem item = null;
-            bool result = TryTake(localQueue, true, true, out item, -1, token);
+            bool result = TryTake(localQueue, true, true, out item, -1, token, true);
             Contract.Assert(result, "Something went wrong. Take not return any result.");
             return item;
         }
@@ -396,7 +409,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         public ThreadPoolWorkItem Take(ThreadPoolLocalQueue localQueue)
         {
             ThreadPoolWorkItem item = null;
-            bool result = TryTake(localQueue, true, true, out item, -1, default(CancellationToken));
+            bool result = TryTake(localQueue, true, true, out item, -1, new CancellationToken(), true);
             Contract.Assert(result, "Something went wrong. Take not return any result.");
             return item;
         }
@@ -408,7 +421,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Успешность</returns>
         public bool TryTakeSafeFromGlobalQueue(out ThreadPoolWorkItem item)
         {
-            return _globalQueue.TryTake(out item, 0, new CancellationToken());
+            return _globalQueue.TryTake(out item, 0, new CancellationToken(), true);
         }
 
 

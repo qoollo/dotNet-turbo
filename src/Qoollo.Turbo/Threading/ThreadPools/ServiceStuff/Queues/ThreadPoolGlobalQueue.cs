@@ -226,19 +226,25 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="item">Полученный элемент</param>
         /// <param name="timeout">Таймаут</param>
         /// <param name="token">Токен отмены</param>
+        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
         /// <returns>Удалось ли получить</returns>
-        public bool TryTake(out ThreadPoolWorkItem item, int timeout, CancellationToken token)
+        public bool TryTake(out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
 
-            if (token.IsCancellationRequested)
-                throw new OperationCanceledException(token);
-
             item = null;
+
+            if (token.IsCancellationRequested)
+            {
+                if (throwOnCancellation)
+                    throw new OperationCanceledException(token);
+
+                return false;
+            }
 
             bool occupiedNodesExist = _occupiedNodes.Wait(0);
             if (occupiedNodesExist == false && timeout != 0)
-                occupiedNodesExist = _occupiedNodes.Wait(timeout, token);
+                occupiedNodesExist = _occupiedNodes.Wait(timeout, token, throwOnCancellation);
 
             if (occupiedNodesExist)
             {
@@ -246,7 +252,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 bool takePerformed = true;
                 try
                 {
-                    token.ThrowIfCancellationRequested();
+                    if (token.IsCancellationRequested)
+                    {
+                        if (throwOnCancellation)
+                            throw new OperationCanceledException(token);
+
+                        return false;
+                    }
                     wasElementTaken = _mainQueue.TryTake(out item);
                     takePerformed = false;
                     Contract.Assert(wasElementTaken, "Incorrect collection state. Can't take items from collection when they should be there");
@@ -280,7 +292,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             Contract.Ensures(Contract.Result<ThreadPoolWorkItem>() != null);
 
             ThreadPoolWorkItem result = null;
-            bool success = TryTake(out result, Timeout.Infinite, new CancellationToken());
+            bool success = TryTake(out result, Timeout.Infinite, new CancellationToken(), true);
             Contract.Assert(success, "Element was not taken from ThreadPoolGlobalQueue due to unknown reason");
             return result;
         }
