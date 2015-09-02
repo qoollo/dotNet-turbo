@@ -501,47 +501,36 @@ namespace Qoollo.Turbo.Collections.Concurrent
                 if (!throwOnCancellation)
                     return false;
 
-                token.ThrowIfCancellationRequested();
+                throw new OperationCanceledException(token);
             }
 
             if (IsCompleted)
                 return false;
 
 
-            bool waitForSemaphoreWasSuccessful = false;
-
-            CancellationTokenSource linkedTokenSource = null;
-            try
+            bool waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(0);
+            if (waitForSemaphoreWasSuccessful == false && timeout != 0)
             {
-                waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(0);
-                if (waitForSemaphoreWasSuccessful == false && timeout != 0)
+                if (token.CanBeCanceled)
                 {
-                    if (token.CanBeCanceled)
+                    using (var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, _consumersCancellationTokenSource.Token))
                     {
-                        linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, _consumersCancellationTokenSource.Token);
-                        waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(timeout, linkedTokenSource.Token);
-                    }
-                    else
-                    {
-                        waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(timeout, _consumersCancellationTokenSource.Token);
-                    }
+                        waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(timeout, linkedTokenSource.Token, false);
+                    }            
+                }
+                else
+                {
+                    waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(timeout, _consumersCancellationTokenSource.Token, false);
                 }
             }
-            catch (OperationCanceledException)
+
+            if (!waitForSemaphoreWasSuccessful)
             {
                 if (token.IsCancellationRequested && throwOnCancellation)
                     throw new OperationCanceledException(token);
 
                 return false;
             }
-            finally
-            {
-                if (linkedTokenSource != null)
-                    linkedTokenSource.Dispose();
-            }
-
-            if (!waitForSemaphoreWasSuccessful)
-                return false;
 
             bool removeSucceeded = false;
             bool removeFaulted = true;
@@ -552,7 +541,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                     if (!throwOnCancellation)
                         return false;
 
-                    token.ThrowIfCancellationRequested();
+                    throw new OperationCanceledException(token);
                 }
                 removeSucceeded = _innerQueue.TryDequeue(out item);
                 Contract.Assert(removeSucceeded, "Take from underlying collection return false");
@@ -568,7 +557,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                             _freeNodes.Release();
                     }
                 }
-                else if (removeFaulted)
+                else if (removeFaulted && waitForSemaphoreWasSuccessful)
                 {
                     _occupiedNodes.Release();
                 }
