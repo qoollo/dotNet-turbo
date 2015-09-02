@@ -128,6 +128,30 @@ namespace Qoollo.Turbo.UnitTests.Threading
             Assert.AreEqual(0, inst.WaiterCount);
         }
 
+        [TestMethod]
+        public void TestSilentCancellation()
+        {
+            SemaphoreLight inst = new SemaphoreLight(0);
+            CancellationTokenSource tokenSrc = new CancellationTokenSource();
+            bool cancelled = false;
+
+            Task.Run(() =>
+            {
+                inst.Wait(-1, tokenSrc.Token, false);
+                Volatile.Write(ref cancelled, true);
+                Thread.MemoryBarrier();
+            });
+
+            TimingAssert.IsTrue(5000, () => inst.WaiterCount > 0);
+            Assert.IsFalse(Volatile.Read(ref cancelled));
+
+            tokenSrc.Cancel();
+            TimingAssert.IsTrue(5000, () => Volatile.Read(ref cancelled));
+
+            Assert.AreEqual(0, inst.CurrentCount);
+            Assert.AreEqual(0, inst.WaiterCount);
+        }
+
 
 
         private void RunComplexTest(SemaphoreLight sem, int elemCount, int thCount)
