@@ -515,22 +515,17 @@ namespace Qoollo.Turbo.Collections.Concurrent
                 {
                     using (var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, _consumersCancellationTokenSource.Token))
                     {
-                        waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(timeout, linkedTokenSource.Token, false);
+                        waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(timeout, linkedTokenSource.Token, throwOnCancellation);
                     }            
                 }
                 else
                 {
-                    waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(timeout, _consumersCancellationTokenSource.Token, false);
+                    waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(timeout, _consumersCancellationTokenSource.Token, throwOnCancellation);
                 }
             }
 
             if (!waitForSemaphoreWasSuccessful)
-            {
-                if (token.IsCancellationRequested && throwOnCancellation)
-                    throw new OperationCanceledException(token);
-
                 return false;
-            }
 
             bool removeSucceeded = false;
             bool removeFaulted = true;
