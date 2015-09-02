@@ -125,7 +125,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     while (Volatile.Read(ref addFinished) < thCount)
                     {
                         ThreadPoolWorkItem tmp = null;
-                        if (q.TryTake(localQ, out tmp, -1, tokSrc.Token))
+                        if (q.TryTake(localQ, out tmp, -1, tokSrc.Token, true))
                             data.Add((TestThreadPoolItem)tmp);
 
                         if (((index++) % 10) == 0)
@@ -135,7 +135,7 @@ namespace Qoollo.Turbo.PerformanceTests
                             {
                                 while (!q.TryAdd(new TestThreadPoolItem(item), localQ, false, 0, CancellationToken.None))
                                 {
-                                    if (q.TryTake(localQ, out tmp, 0, CancellationToken.None))
+                                    if (q.TryTake(localQ, out tmp, 0, CancellationToken.None, true))
                                         data.Add((TestThreadPoolItem)tmp);
                                 }
                             }
@@ -145,7 +145,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 catch (OperationCanceledException) { }
 
                 ThreadPoolWorkItem tmp2;
-                while (q.TryTake(localQ, out tmp2, 0, CancellationToken.None))
+                while (q.TryTake(localQ, out tmp2, 0, CancellationToken.None, true))
                     data.Add((TestThreadPoolItem)tmp2);
 
                 lock (global)
