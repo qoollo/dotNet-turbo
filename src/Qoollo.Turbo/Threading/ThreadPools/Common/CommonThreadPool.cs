@@ -264,7 +264,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <summary>
         /// Число элементов в общей очереди
         /// </summary>
-        protected int GlobalQueueWorkItemCount
+        public int GlobalQueueWorkItemCount
         {
             get { return _threadPoolGlobals.GlobalQueue.OccupiedNodesCount; }
         }

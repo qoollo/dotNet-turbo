@@ -898,11 +898,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             if (State == ThreadPoolState.Stopped || IsAddingCompleted)
                 return false;
 
-            this.PrepareWorkItem(item);
-            bool resut = this.TryAddWorkItemToQueue(item);
+            bool result = false;
+
+            if (GlobalQueueWorkItemCount < QueueCapacity)
+            {
+                this.PrepareWorkItem(item);
+                result = this.TryAddWorkItemToQueue(item);
+            }
 
             TryRequestNewThreadOnAdd();
-            return resut;
+            return result;
         }
 
 
