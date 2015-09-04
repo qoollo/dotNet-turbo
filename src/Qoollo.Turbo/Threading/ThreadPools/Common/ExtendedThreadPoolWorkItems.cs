@@ -602,7 +602,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     /// Единица работы пула для исполнения Task
     /// </summary>
     /// <typeparam name="TState">Тип параметра состояния</typeparam>
-    public sealed class TaskEntryExecutionWithClosureThreadPoolWorkItem<TState> : ThreadPoolWorkItem
+    internal sealed class TaskEntryExecutionWithClosureThreadPoolWorkItem<TState> : ThreadPoolWorkItem
     {
         /// <summary>
         /// Заранее созданный делегат на RunRaw
@@ -715,7 +715,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     /// </summary>
     /// <typeparam name="TState">Тип параметра состояния</typeparam>
     /// <typeparam name="TRes">Тип результата</typeparam>
-    public sealed class TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes> : ThreadPoolWorkItem
+    internal sealed class TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes> : ThreadPoolWorkItem
     {
         /// <summary>
         /// Заранее созданный делегат на RunRaw
