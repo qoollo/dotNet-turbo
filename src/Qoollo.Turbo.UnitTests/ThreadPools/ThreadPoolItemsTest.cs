@@ -93,5 +93,77 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
 
             item.Wait();
         }
+
+        [TestMethod]
+        public void TestTaskThreadPoolWorkItemExecute()
+        {
+            int wasExecuted = 0;
+
+            var item = new TaskThreadPoolWorkItem(() =>
+            {
+                Interlocked.Exchange(ref wasExecuted, 1);
+            });
+
+            item.Run(false, true);
+
+            Assert.AreEqual(1, wasExecuted);
+            Assert.IsTrue(item.Task.IsCompleted);
+        }
+        [TestMethod]
+        public void TestTaskThreadPoolWorkItemWithParamExecute()
+        {
+            int wasExecuted = 0;
+            int stateVal = 0;
+
+            var item = new TaskThreadPoolWorkItem<int>((state) =>
+            {
+                stateVal = state;
+                Interlocked.Exchange(ref wasExecuted, 1);
+            }, 100);
+
+            item.Run(false, true);
+
+            Assert.AreEqual(1, wasExecuted);
+            Assert.AreEqual(100, stateVal);
+            Assert.IsTrue(item.Task.IsCompleted);
+        }
+
+        [TestMethod]
+        public void TestTaskFuncThreadPoolWorkItemExecute()
+        {
+            int wasExecuted = 0;
+
+            var item = new TaskFuncThreadPoolWorkItem<int>(() =>
+            {
+                Interlocked.Exchange(ref wasExecuted, 1);
+                return 2;
+            });
+
+            item.Run(false, true);
+
+            Assert.AreEqual(1, wasExecuted);
+            Assert.IsTrue(item.Task.IsCompleted);
+            Assert.AreEqual(2, item.Task.Result);
+        }
+        [TestMethod]
+        public void TestTaskFuncThreadPoolWorkItemWithParamExecute()
+        {
+            int wasExecuted = 0;
+            int stateVal = 0;
+
+            var item = new TaskFuncThreadPoolWorkItem<int, int>((state) =>
+            {
+                stateVal = state;
+                Interlocked.Exchange(ref wasExecuted, 1);
+                return 2;
+            }, 100);
+
+            item.Run(false, true);
+
+            Assert.AreEqual(1, wasExecuted);
+            Assert.AreEqual(100, stateVal);
+            Assert.IsTrue(item.Task.IsCompleted);
+            Assert.AreEqual(2, item.Task.Result);
+        }
     }
 }

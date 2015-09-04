@@ -331,6 +331,102 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             }
         }
 
+        [TestMethod]
+        public void TestRunAsTaskWork()
+        {
+            using (StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, new StaticThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
+            {
+                int wasExecuted = 0;
+
+                var task = testInst.RunAsTask(() =>
+                    {
+                        Interlocked.Exchange(ref wasExecuted, 1);
+                    });
+
+                task.Wait();
+                Assert.AreEqual(1, Volatile.Read(ref wasExecuted));
+            }
+        }
+        [TestMethod]
+        public void TestRunAsTaskWithParamWork()
+        {
+            using (StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, new StaticThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
+            {
+                int wasExecuted = 0;
+                int paramValue = 0;
+
+                var task = testInst.RunAsTask((p) =>
+                {
+                    Interlocked.Exchange(ref paramValue, p);
+                    Interlocked.Exchange(ref wasExecuted, 1);
+                }, 100);
+
+                task.Wait();
+                Assert.AreEqual(1, Volatile.Read(ref wasExecuted));
+                Assert.AreEqual(100, Volatile.Read(ref paramValue));
+            }
+        }
+
+        [TestMethod]
+        public void TestRunAsTaskWithParamNoTaskSchedWork()
+        {
+            using (StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, new StaticThreadPoolOptions() { UseOwnTaskScheduler = false, UseOwnSyncContext = false }))
+            {
+                int wasExecuted = 0;
+                int paramValue = 0;
+
+                var task = testInst.RunAsTask((p) =>
+                {
+                    Interlocked.Exchange(ref paramValue, p);
+                    Interlocked.Exchange(ref wasExecuted, 1);
+                }, 100);
+
+                task.Wait();
+                Assert.AreEqual(1, Volatile.Read(ref wasExecuted));
+                Assert.AreEqual(100, Volatile.Read(ref paramValue));
+            }
+        }
+
+        [TestMethod]
+        public void TestRunAsTaskFuncWork()
+        {
+            using (StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, new StaticThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
+            {
+                int wasExecuted = 0;
+
+                var task = testInst.RunAsTask(() =>
+                {
+                    Interlocked.Exchange(ref wasExecuted, 1);
+                    return 200;
+                });
+
+                task.Wait();
+                Assert.AreEqual(1, Volatile.Read(ref wasExecuted));
+                Assert.AreEqual(200, task.Result);
+            }
+        }
+        [TestMethod]
+        public void TestRunAsTaskFuncWithParamWork()
+        {
+            using (StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, new StaticThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
+            {
+                int wasExecuted = 0;
+                int paramValue = 0;
+
+                var task = testInst.RunAsTask((p) =>
+                {
+                    Interlocked.Exchange(ref paramValue, p);
+                    Interlocked.Exchange(ref wasExecuted, 1);
+                    return 200;
+                }, 100);
+
+                task.Wait();
+                Assert.AreEqual(1, Volatile.Read(ref wasExecuted));
+                Assert.AreEqual(100, Volatile.Read(ref paramValue));
+                Assert.AreEqual(200, task.Result);
+            }
+        }
+
 
         private void RunTestOnPool(StaticThreadPool pool, int totalTaskCount, int taskSpinCount, int spawnThreadCount, int spawnSpinTime, bool spawnFromPool)
         {

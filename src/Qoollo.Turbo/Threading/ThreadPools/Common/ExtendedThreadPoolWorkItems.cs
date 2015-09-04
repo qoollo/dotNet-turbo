@@ -49,7 +49,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     /// Единица работы пула для Action с одним параметром
     /// </summary>
     /// <typeparam name="T">Тип параметра</typeparam>
-    public sealed class ActionWithStateThreadPoolWorkItem<T> : ThreadPoolWorkItem
+    public sealed class ActionThreadPoolWorkItem<T> : ThreadPoolWorkItem
     {
         private readonly Action<T> _action;
         private readonly T _state;
@@ -61,7 +61,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <param name="state">Параметр</param>
         /// <param name="allowExecutionContextFlow">Допустимо ли захватывать контекст исполнения</param>
         /// <param name="preferFairness">Требовать постановку в общую очередь</param>
-        public ActionWithStateThreadPoolWorkItem(Action<T> action, T state, bool allowExecutionContextFlow, bool preferFairness)
+        public ActionThreadPoolWorkItem(Action<T> action, T state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
             Contract.Requires(action != null);
@@ -73,7 +73,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// </summary>
         /// <param name="action">Исполняемое действие</param>
         /// <param name="state">Параметр</param>
-        public ActionWithStateThreadPoolWorkItem(Action<T> action, T state)
+        public ActionThreadPoolWorkItem(Action<T> action, T state)
             : this(action, state, true, false)
         {
 
@@ -148,33 +148,97 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
     }
 
-
     /// <summary>
-    /// Единица работы пула для Func, которая управляет Task'ом
+    /// Единица работы пула для Action, которая управляет Task'ом с параметром состояния
     /// </summary>
-    /// <typeparam name="T">Тип результата задачи</typeparam>
-    public sealed class TaskThreadPoolWorkItem<T> : ThreadPoolWorkItem
+    /// <typeparam name="TState">Тип параметра состояния</typeparam>
+    public sealed class TaskThreadPoolWorkItem<TState> : ThreadPoolWorkItem
     {
-        private readonly Func<T> _action;
-        private readonly TaskCompletionSource<T> _completionSource;
+        private readonly Action<TState> _action;
+        private readonly TState _state;
+        private readonly TaskCompletionSource<object> _completionSource;
 
         /// <summary>
         /// Конструктор TaskThreadPoolWorkItem
         /// </summary>
         /// <param name="action">Исполняемое действие</param>
+        /// <param name="state">Параметр</param>
         /// <param name="creationOptions">Параметры создания таска</param>
-        public TaskThreadPoolWorkItem(Func<T> action, TaskCreationOptions creationOptions)
+        public TaskThreadPoolWorkItem(Action<TState> action, TState state, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
             Contract.Requires(action != null);
             _action = action;
-            _completionSource = new TaskCompletionSource<T>(creationOptions);
+            _state = state;
+            _completionSource = new TaskCompletionSource<object>(creationOptions);
         }
         /// <summary>
         /// Конструктор TaskThreadPoolWorkItem
         /// </summary>
         /// <param name="action">Исполняемое действие</param>
-        public TaskThreadPoolWorkItem(Func<T> action)
+        /// <param name="state">Параметр</param>
+        public TaskThreadPoolWorkItem(Action<TState> action, TState state)
+            : this(action, state, TaskCreationOptions.None)
+        {
+        }
+
+        /// <summary>
+        /// Task
+        /// </summary>
+        public Task Task { get { return _completionSource.Task; } }
+
+        /// <summary>
+        /// Метод исполнения задачи
+        /// </summary>
+        protected sealed override void RunInner()
+        {
+            try
+            {
+                _action(_state);
+                _completionSource.SetResult(null);
+            }
+            catch (Exception ex)
+            {
+                _completionSource.SetException(ex);
+            }
+        }
+
+        /// <summary>
+        /// Уведомление об отмене операции
+        /// </summary>
+        protected sealed override void CancelInner()
+        {
+            _completionSource.SetCanceled();
+        }
+    }
+
+ 
+    /// <summary>
+    /// Единица работы пула для Func, которая управляет Task'ом
+    /// </summary>
+    /// <typeparam name="TRes">Тип результата задачи</typeparam>
+    public sealed class TaskFuncThreadPoolWorkItem<TRes> : ThreadPoolWorkItem
+    {
+        private readonly Func<TRes> _action;
+        private readonly TaskCompletionSource<TRes> _completionSource;
+
+        /// <summary>
+        /// Конструктор TaskFuncThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Исполняемое действие</param>
+        /// <param name="creationOptions">Параметры создания таска</param>
+        public TaskFuncThreadPoolWorkItem(Func<TRes> action, TaskCreationOptions creationOptions)
+            : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
+        {
+            Contract.Requires(action != null);
+            _action = action;
+            _completionSource = new TaskCompletionSource<TRes>(creationOptions);
+        }
+        /// <summary>
+        /// Конструктор TaskFuncThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Исполняемое действие</param>
+        public TaskFuncThreadPoolWorkItem(Func<TRes> action)
             : this(action, TaskCreationOptions.None)
         {
 
@@ -183,7 +247,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <summary>
         /// Task
         /// </summary>
-        public Task<T> Task { get { return _completionSource.Task; } }
+        public Task<TRes> Task { get { return _completionSource.Task; } }
 
         /// <summary>
         /// Метод исполнения задачи
@@ -210,6 +274,72 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
     }
 
+    /// <summary>
+    /// Единица работы пула для Func, которая управляет Task'ом
+    /// </summary>
+    /// <typeparam name="TState">Тип параметра состояния</typeparam>
+    /// <typeparam name="TRes">Тип результата задачи</typeparam>
+    public sealed class TaskFuncThreadPoolWorkItem<TState, TRes> : ThreadPoolWorkItem
+    {
+        private readonly Func<TState, TRes> _action;
+        private readonly TState _state;
+        private readonly TaskCompletionSource<TRes> _completionSource;
+
+        /// <summary>
+        /// Конструктор TaskFuncThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Исполняемое действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <param name="creationOptions">Параметры создания таска</param>
+        public TaskFuncThreadPoolWorkItem(Func<TState, TRes> action, TState state, TaskCreationOptions creationOptions)
+            : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
+        {
+            Contract.Requires(action != null);
+            _action = action;
+            _state = state;
+            _completionSource = new TaskCompletionSource<TRes>(creationOptions);
+        }
+        /// <summary>
+        /// Конструктор TaskFuncThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Исполняемое действие</param>
+        /// <param name="state">Параметр состояния</param>
+        public TaskFuncThreadPoolWorkItem(Func<TState, TRes> action, TState state)
+            : this(action, state, TaskCreationOptions.None)
+        {
+
+        }
+
+        /// <summary>
+        /// Task
+        /// </summary>
+        public Task<TRes> Task { get { return _completionSource.Task; } }
+
+        /// <summary>
+        /// Метод исполнения задачи
+        /// </summary>
+        protected sealed override void RunInner()
+        {
+            try
+            {
+                var result = _action(_state);
+                _completionSource.SetResult(result);
+            }
+            catch (Exception ex)
+            {
+                _completionSource.SetException(ex);
+            }
+        }
+
+        /// <summary>
+        /// Уведомление об отмене операции
+        /// </summary>
+        protected sealed override void CancelInner()
+        {
+            _completionSource.SetCanceled();
+        }
+    }
+    
 
     /// <summary>
     /// Единица работы пула для SendOrPostCallback

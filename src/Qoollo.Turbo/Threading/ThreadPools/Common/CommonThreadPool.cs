@@ -434,7 +434,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (action == null)
                 throw new ArgumentNullException("action");
 
-            AddWorkItem(new ActionWithStateThreadPoolWorkItem<T>(action, state, true, preferFairness));
+            AddWorkItem(new ActionThreadPoolWorkItem<T>(action, state, true, preferFairness));
         }
 
         /// <summary>
@@ -451,7 +451,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (action == null)
                 throw new ArgumentNullException("action");
 
-            return TryAddWorkItem(new ActionWithStateThreadPoolWorkItem<T>(action, state, true, preferFairness));
+            return TryAddWorkItem(new ActionThreadPoolWorkItem<T>(action, state, true, preferFairness));
         }
 
 
@@ -462,48 +462,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <returns>Task</returns>
         public sealed override Task RunAsTask(Action action)
         {
-            if (action == null)
-                throw new ArgumentNullException("action");
-
-            if (_useOwnTaskScheduler)
-            {
-                var result = new Task(action);
-                result.Start(_taskScheduler);
-                return result;
-            }
-            else
-            {
-                var item = new TaskThreadPoolWorkItem(action, TaskCreationOptions.None);
-                AddWorkItem(item);
-                return item.Task;
-            }
+            return this.RunAsTask(action, TaskCreationOptions.None);
         }
-
-        /// <summary>
-        /// Запуск функции с обёртыванием в Task
-        /// </summary>
-        /// <typeparam name="T">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <returns>Task</returns>
-        public sealed override Task<T> RunAsTask<T>(Func<T> func)
-        {
-            if (func == null)
-                throw new ArgumentNullException("func");
-
-            if (_useOwnTaskScheduler)
-            {
-                var result = new Task<T>(func);
-                result.Start(_taskScheduler);
-                return result;
-            }
-            else
-            {
-                var item = new TaskThreadPoolWorkItem<T>(func, TaskCreationOptions.None);
-                AddWorkItem(item);
-                return item.Task;
-            }
-        }
-
         /// <summary>
         /// Запуск действия с обёртыванием в Task
         /// </summary>
@@ -530,26 +490,115 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
+        /// Запуск действия с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TState">Тип параметра состояния</typeparam>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <returns>Task</returns>
+        public sealed override Task RunAsTask<TState>(Action<TState> action, TState state)
+        {
+            return this.RunAsTask(action, state, TaskCreationOptions.None);
+        }
+        /// <summary>
+        /// Запуск действия с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TState">Тип параметра состояния</typeparam>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <param name="creationOptions">Параметры создания таска</param>
+        /// <returns>Task</returns>
+        public Task RunAsTask<TState>(Action<TState> action, TState state, TaskCreationOptions creationOptions)
+        {
+            if (action == null)
+                throw new ArgumentNullException("action");
+
+            if (_useOwnTaskScheduler)
+            {
+                var result = new Task(() => action(state), creationOptions);
+                result.Start(_taskScheduler);
+                return result;
+            }
+            else
+            {
+                var item = new TaskThreadPoolWorkItem<TState>(action, state, creationOptions);
+                AddWorkItem(item);
+                return item.Task;
+            }
+        }
+
+
+        /// <summary>
         /// Запуск функции с обёртыванием в Task
         /// </summary>
-        /// <typeparam name="T">Тип результата</typeparam>
+        /// <typeparam name="TRes">Тип результата</typeparam>
+        /// <param name="func">Функций</param>
+        /// <returns>Task</returns>
+        public sealed override Task<TRes> RunAsTask<TRes>(Func<TRes> func)
+        {
+            return this.RunAsTask<TRes>(func, TaskCreationOptions.None);
+        }
+        /// <summary>
+        /// Запуск функции с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TRes">Тип результата</typeparam>
         /// <param name="func">Функций</param>
         /// <param name="creationOptions">Параметры создания таска</param>
         /// <returns>Task</returns>
-        public Task<T> RunAsTask<T>(Func<T> func, TaskCreationOptions creationOptions)
+        public Task<TRes> RunAsTask<TRes>(Func<TRes> func, TaskCreationOptions creationOptions)
         {
             if (func == null)
                 throw new ArgumentNullException("func");
 
             if (_useOwnTaskScheduler)
             {
-                var result = new Task<T>(func, creationOptions);
+                var result = new Task<TRes>(func, creationOptions);
                 result.Start(_taskScheduler);
                 return result;
             }
             else
             {
-                var item = new TaskThreadPoolWorkItem<T>(func, creationOptions);
+                var item = new TaskFuncThreadPoolWorkItem<TRes>(func, creationOptions);
+                AddWorkItem(item);
+                return item.Task;
+            }
+        }
+
+        /// <summary>
+        /// Запуск функции с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TState">Тип параметра состояния</typeparam>
+        /// <typeparam name="TRes">Тип результата</typeparam>
+        /// <param name="func">Функций</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <returns>Task</returns>
+        public sealed override Task<TRes> RunAsTask<TState, TRes>(Func<TState, TRes> func, TState state)
+        {
+            return this.RunAsTask<TState, TRes>(func, state, TaskCreationOptions.None);
+        }
+        /// <summary>
+        /// Запуск функции с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TState">Тип параметра состояния</typeparam>
+        /// <typeparam name="TRes">Тип результата</typeparam>
+        /// <param name="func">Функций</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <param name="creationOptions">Параметры создания таска</param>
+        /// <returns>Task</returns>
+        public Task<TRes> RunAsTask<TState, TRes>(Func<TState, TRes> func, TState state, TaskCreationOptions creationOptions)
+        {
+            if (func == null)
+                throw new ArgumentNullException("func");
+
+            if (_useOwnTaskScheduler)
+            {
+                var result = new Task<TRes>(() => func(state), creationOptions);
+                result.Start(_taskScheduler);
+                return result;
+            }
+            else
+            {
+                var item = new TaskFuncThreadPoolWorkItem<TState, TRes>(func, state, creationOptions);
                 AddWorkItem(item);
                 return item.Task;
             }
@@ -1229,7 +1278,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         void IContextSwitchSupplier.RunWithState(Action<object> act, object state, bool flowContext)
         {
-            var item = new ActionWithStateThreadPoolWorkItem<object>(act, state, flowContext, false);
+            var item = new ActionThreadPoolWorkItem<object>(act, state, flowContext, false);
             this.AddWorkItem(item);
         }
 
