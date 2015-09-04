@@ -980,7 +980,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
             bool result = false;
 
-            if (GlobalQueueWorkItemCount < QueueCapacity)
+            if (QueueCapacity <= 0 || GlobalQueueWorkItemCount < QueueCapacity)
             {
                 this.PrepareWorkItem(item);
                 result = this.TryAddWorkItemToQueue(item);

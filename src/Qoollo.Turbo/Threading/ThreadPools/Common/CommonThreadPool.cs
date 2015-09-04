@@ -93,7 +93,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             /// <param name="task">Задача</param>
             protected override void QueueTask(Task task)
             {
-                _srcPool.AddWorkItem(new TaskEntryExecutionThreadPoolWorkItem(task, false));
+                ThreadPoolWorkItem poolItem = task.AsyncState as ThreadPoolWorkItem;
+                Contract.Assert(poolItem == null || 
+                                    (poolItem.GetType().IsGenericType && 
+                                    (poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<>) || 
+                                     poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>))));
+
+                if (poolItem != null)
+                    _srcPool.AddWorkItem(poolItem);
+                else
+                    _srcPool.AddWorkItem(new TaskEntryExecutionThreadPoolWorkItem(task, false));
             }
             /// <summary>
             /// Попробовать запустить синхронно
@@ -515,7 +524,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
             if (_useOwnTaskScheduler)
             {
-                var result = new Task(() => action(state), creationOptions);
+                var item = new TaskEntryExecutionWithClosureThreadPoolWorkItem<TState>(action, state, creationOptions);
+                var result = new Task(TaskEntryExecutionWithClosureThreadPoolWorkItem<TState>.RunRawAction, item, creationOptions);
+                item.SetTask(result);
                 result.Start(_taskScheduler);
                 return result;
             }
@@ -592,7 +603,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
             if (_useOwnTaskScheduler)
             {
-                var result = new Task<TRes>(() => func(state), creationOptions);
+                var item = new TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes>(func, state, creationOptions);
+                var result = new Task<TRes>(TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes>.RunRawAction, item, creationOptions);
+                item.SetTask(result);
                 result.Start(_taskScheduler);
                 return result;
             }

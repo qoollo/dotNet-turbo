@@ -596,4 +596,230 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.CancelTask(_task, false);
         }
     }
+
+
+    /// <summary>
+    /// Единица работы пула для исполнения Task
+    /// </summary>
+    /// <typeparam name="TState">Тип параметра состояния</typeparam>
+    public sealed class TaskEntryExecutionWithClosureThreadPoolWorkItem<TState> : ThreadPoolWorkItem
+    {
+        /// <summary>
+        /// Заранее созданный делегат на RunRaw
+        /// </summary>
+        internal static readonly Action<object> RunRawAction = new Action<object>(RunRaw);
+
+        /// <summary>
+        /// Запустить внутренний Action на выполнение
+        /// </summary>
+        /// <param name="closure">Объект TaskEntryExecutionWithClosureThreadPoolWorkItem</param>
+        private static void RunRaw(object closure)
+        {
+            var extractedClosure = (TaskEntryExecutionWithClosureThreadPoolWorkItem<TState>)closure;
+            Contract.Assert(extractedClosure != null);
+            extractedClosure._action(extractedClosure._state);
+        }
+
+        // ==================
+
+        private readonly Action<TState> _action;
+        private readonly TState _state;
+
+        private Task _task;
+        private int _taskProcessFlag;
+
+        /// <summary>
+        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <param name="allowExecutionContextFlow">Допустимо ли захватывать контекст исполнения</param>
+        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        public TaskEntryExecutionWithClosureThreadPoolWorkItem(Action<TState> action, TState state, bool allowExecutionContextFlow, bool preferFairness)
+            : base(allowExecutionContextFlow, preferFairness)
+        {
+            Contract.Requires(action != null);
+            _action = action;
+            _state = state;
+            _taskProcessFlag = 0;
+        }
+        /// <summary>
+        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <param name="creationOptions">Параметры создания таска</param>
+        public TaskEntryExecutionWithClosureThreadPoolWorkItem(Action<TState> action, TState state, TaskCreationOptions creationOptions)
+            : this(action, state, false, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
+        {
+
+        }
+        /// <summary>
+        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        public TaskEntryExecutionWithClosureThreadPoolWorkItem(Action<TState> action, TState state)
+            : this(action, state, false, false)
+        {
+
+        }
+
+        /// <summary>
+        /// Установить таск
+        /// </summary>
+        /// <param name="task">Task</param>
+        public void SetTask(Task task)
+        {
+            Contract.Requires(task != null);
+            if (_task != null)
+                throw new InvalidOperationException("Task already setted");
+            if (!object.ReferenceEquals(task.AsyncState, this))
+                throw new ArgumentException("Task.AsyncState should be set to this object");
+            _task = task;
+
+        }
+
+        /// <summary>
+        /// Метод исполнения задачи
+        /// </summary>
+        protected sealed override void RunInner()
+        {
+            if (_task == null && Volatile.Read(ref _taskProcessFlag) == 0)
+                throw new InvalidOperationException("Can't execute TaskEntryExecutionWithClosureThreadPoolWorkItem without Task");
+            if (Interlocked.Exchange(ref _taskProcessFlag, 1) != 0)
+                throw new InvalidOperationException("Can't execute TaskEntryExecutionWithClosureThreadPoolWorkItem cause it was already executed or cancelled");
+
+            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(_task, true);
+            _task = null;
+        }
+
+        /// <summary>
+        /// Уведомление об отмене операции
+        /// </summary>
+        protected sealed override void CancelInner()
+        {
+            if (_task == null && Volatile.Read(ref _taskProcessFlag) == 0)
+                throw new InvalidOperationException("Can't cancel TaskEntryExecutionWithClosureThreadPoolWorkItem without Task");
+            if (Interlocked.Exchange(ref _taskProcessFlag, 1) != 0)
+                return;
+
+            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.CancelTask(_task, false);
+            _task = null;
+        }
+    }
+
+
+    /// <summary>
+    /// Единица работы пула для исполнения Task
+    /// </summary>
+    /// <typeparam name="TState">Тип параметра состояния</typeparam>
+    /// <typeparam name="TRes">Тип результата</typeparam>
+    public sealed class TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes> : ThreadPoolWorkItem
+    {
+        /// <summary>
+        /// Заранее созданный делегат на RunRaw
+        /// </summary>
+        internal static readonly Func<object, TRes> RunRawAction = new Func<object, TRes>(RunRaw);
+
+        /// <summary>
+        /// Запустить внутренний Action на выполнение
+        /// </summary>
+        /// <param name="closure">Объект TaskEntryExecutionWithClosureThreadPoolWorkItem</param>
+        /// <returns>Результат исполнения</returns>
+        private static TRes RunRaw(object closure)
+        {
+            var extractedClosure = (TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes>)closure;
+            Contract.Assert(extractedClosure != null);
+            return extractedClosure._action(extractedClosure._state);
+        }
+
+        // ==================
+
+        private readonly Func<TState, TRes> _action;
+        private readonly TState _state;
+
+        private Task<TRes> _task;
+        private int _taskProcessFlag;
+
+        /// <summary>
+        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <param name="allowExecutionContextFlow">Допустимо ли захватывать контекст исполнения</param>
+        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        public TaskEntryExecutionWithClosureThreadPoolWorkItem(Func<TState, TRes> action, TState state, bool allowExecutionContextFlow, bool preferFairness)
+            : base(allowExecutionContextFlow, preferFairness)
+        {
+            Contract.Requires(action != null);
+            _action = action;
+            _state = state;
+            _taskProcessFlag = 0;
+        }
+        /// <summary>
+        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <param name="creationOptions">Параметры создания таска</param>
+        public TaskEntryExecutionWithClosureThreadPoolWorkItem(Func<TState, TRes> action, TState state, TaskCreationOptions creationOptions)
+            : this(action, state, false, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
+        {
+
+        }
+        /// <summary>
+        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// </summary>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        public TaskEntryExecutionWithClosureThreadPoolWorkItem(Func<TState, TRes> action, TState state)
+            : this(action, state, false, false)
+        {
+
+        }
+
+        /// <summary>
+        /// Установить таск
+        /// </summary>
+        /// <param name="task">Task</param>
+        public void SetTask(Task<TRes> task)
+        {
+            Contract.Requires(task != null);
+            if (_task != null)
+                throw new InvalidOperationException("Task already setted");
+            if (!object.ReferenceEquals(task.AsyncState, this))
+                throw new ArgumentException("Task.AsyncState should be set to this object");
+            _task = task;
+
+        }
+
+        /// <summary>
+        /// Метод исполнения задачи
+        /// </summary>
+        protected sealed override void RunInner()
+        {
+            if (_task == null && Volatile.Read(ref _taskProcessFlag) == 0)
+                throw new InvalidOperationException("Can't execute TaskEntryExecutionWithClosureThreadPoolWorkItem without Task");
+            if (Interlocked.Exchange(ref _taskProcessFlag, 1) != 0)
+                throw new InvalidOperationException("Can't execute TaskEntryExecutionWithClosureThreadPoolWorkItem cause it was already executed or cancelled");
+
+            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(_task, true);
+            _task = null;
+        }
+
+        /// <summary>
+        /// Уведомление об отмене операции
+        /// </summary>
+        protected sealed override void CancelInner()
+        {
+            if (_task == null && Volatile.Read(ref _taskProcessFlag) == 0)
+                throw new InvalidOperationException("Can't cancel TaskEntryExecutionWithClosureThreadPoolWorkItem without Task");
+            if (Interlocked.Exchange(ref _taskProcessFlag, 1) != 0)
+                return;
+
+            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.CancelTask(_task, false);
+            _task = null;
+        }
+    }
 }
