@@ -90,6 +90,22 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         }
 
         [TestMethod]
+        public void TestTryRunWork()
+        {
+            using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 100, "name"))
+            {
+                int wasExecuted = 0;
+                bool wasRunned = testInst.TryRun(() =>
+                    {
+                        Interlocked.Exchange(ref wasExecuted, 1);
+                    });
+
+                Assert.IsTrue(wasRunned);
+                TimingAssert.AreEqual(5000, 1, () => Volatile.Read(ref wasExecuted));
+            }
+        }
+
+        [TestMethod]
         public void TestQueueCapacityBound()
         {
             using (StaticThreadPool testInst = new StaticThreadPool(Environment.ProcessorCount, 10, "name"))
