@@ -12,6 +12,89 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
+    /// Параметры для StaticThreadPool
+    /// </summary>
+    public class DynamicThreadPoolOptions
+    {
+        /// <summary>
+        /// Стандартные опции
+        /// </summary>
+        internal static readonly DynamicThreadPoolOptions Default = new DynamicThreadPoolOptions();
+
+        /// <summary>
+        /// Стандартный период уменьшения числа потоков при их неиспользовании в миллисекундах
+        /// </summary>
+        public const int DefaultNoWorkItemTrimPeriod = 5 * 60 * 1000;
+        /// <summary>
+        /// Стандартный период сна между проверкой возможности похитить элемент из соседних локальных очередей
+        /// </summary>
+        public const int DefaultQueueStealAwakePeriod = 2000;
+        /// <summary>
+        /// Максимальная величина расширения очереди по-умолчанию
+        /// </summary>
+        public const int DefaultMaxQueueCapacityExtension = 256;
+        /// <summary>
+        /// Стандартный период работы обслуживающего потока
+        /// </summary>
+        public const int DefaultManagementProcessPeriod = 500;
+        /// <summary>
+        /// Стандартное значения для параметра использования своего шедуллера задач
+        /// </summary>
+        public const bool DefaultUseOwnTaskScheduler = true;
+        /// <summary>
+        /// Стандартное значения для параметра использования своего контекста синхронизации
+        /// </summary>
+        public const bool DefaultUseOwnSyncContext = true;
+        /// <summary>
+        /// Стандартное значения для параметра протаскивания контекст исполнения
+        /// </summary>
+        public const bool DefaultFlowExecutionContext = false;
+
+        /// <summary>
+        /// Конструктор DynamicThreadPoolOptions
+        /// </summary>
+        public DynamicThreadPoolOptions()
+        {
+            NoWorkItemTrimPeriod = DefaultNoWorkItemTrimPeriod;
+            QueueStealAwakePeriod = DefaultQueueStealAwakePeriod;
+            ManagementProcessPeriod = DefaultManagementProcessPeriod;
+            MaxQueueCapacityExtension = DefaultMaxQueueCapacityExtension;
+            UseOwnTaskScheduler = DefaultUseOwnTaskScheduler;
+            UseOwnSyncContext = DefaultUseOwnSyncContext;
+            FlowExecutionContext = DefaultFlowExecutionContext;
+        }
+
+        /// <summary>
+        /// Периоды уменьшения числа потоков при их неиспользовании в миллисекундах (-1 - бесконечность)
+        /// </summary>
+        public int NoWorkItemTrimPeriod { get; set; } 
+        /// <summary>
+        /// Периоды сна между проверкой возможности похитить элемент из соседних локальных очередей
+        /// </summary>
+        public int QueueStealAwakePeriod { get; set; }
+        /// <summary>
+        /// Максимальная величина расширения очереди
+        /// </summary>
+        public int MaxQueueCapacityExtension { get; set; }
+        /// <summary>
+        /// Период работы обслуживающего потока
+        /// </summary>
+        public int ManagementProcessPeriod { get; set; }
+        /// <summary>
+        /// Использовать ли свой шедуллер задач
+        /// </summary>
+        public bool UseOwnTaskScheduler { get; set; }
+        /// <summary>
+        /// Использовать ли свой контекст синхронизации
+        /// </summary>
+        public bool UseOwnSyncContext { get; set; }
+        /// <summary>
+        /// Протаскивать ли контекст исполнения
+        /// </summary>
+        public bool FlowExecutionContext { get; set; }      
+    }
+
+    /// <summary>
     /// Пул потоков с динамическим изменением числа задействованных потоков
     /// </summary>
     public class DynamicThreadPool: Common.CommonThreadPool
@@ -47,10 +130,6 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
         internal static bool DisableCritical = false;
 
-        private const int DefaultQueueStealAwakePeriod = 2000;
-        private const int DefaultMaxQueueCapacityExtension = 256;
-        private const int DefaultNoWorkItemTrimPeriod = 5 * 60 * 1000;
-        private const int DefaultManagementProcessPeriod = 500;
         private const int WorkItemPerThreadLimit = 32;
         private const int NoWorkItemPreventDeactivationPeriod = 2 * 1000;
         /// <summary>
@@ -92,24 +171,17 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
         /// <param name="name">Имена потоков</param>
         /// <param name="isBackground">Использовать ли фоновые потоки</param>
-        /// <param name="noWorkItemTrimPeriod">Периоды уменьшения числа потоков при их неиспользовании в миллисекундах (-1 - бесконечность)</param>
-        /// <param name="queueStealAwakePeriod">Периоды сна между проверкой возможности похитить элемент из соседних локальных очередей</param>
-        /// <param name="maxQueueCapacityExtension">Максимальная величина расширения очереди</param>
-        /// <param name="managementProcessPeriod">Период работы обслуживающего потока</param>
-        /// <param name="useOwnTaskScheduler">Использовать ли свой шедулер задач</param>
-        /// <param name="useOwnSyncContext">Использовать ли свой контекст синхронизации</param>
-        /// <param name="flowExecutionContext">Протаскивать ли контекст исполнения</param>
-        public DynamicThreadPool(int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name, bool isBackground,
-                                 int noWorkItemTrimPeriod, int queueStealAwakePeriod, int maxQueueCapacityExtension, int managementProcessPeriod,
-                                 bool useOwnTaskScheduler, bool useOwnSyncContext, bool flowExecutionContext)
-            : base(queueBoundedCapacity, queueStealAwakePeriod, isBackground, name, useOwnTaskScheduler, useOwnSyncContext, flowExecutionContext)
+        /// <param name="options">Расширенные настройки пула потоков</param>
+        private DynamicThreadPool(DynamicThreadPoolOptions options, int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name, bool isBackground)
+            : base(queueBoundedCapacity, options.QueueStealAwakePeriod, isBackground, name, options.UseOwnTaskScheduler, options.UseOwnSyncContext, options.FlowExecutionContext)
         {
+            Contract.Requires<ArgumentNullException>(options != null);
             Contract.Requires<ArgumentException>(minThreadCount >= 0);
             Contract.Requires<ArgumentException>(maxThreadCount > 0);
             Contract.Requires<ArgumentException>(maxThreadCount >= minThreadCount);
             Contract.Requires<ArgumentException>(maxThreadCount < 4096);
-            Contract.Requires<ArgumentException>(maxQueueCapacityExtension >= 0);
-            Contract.Requires<ArgumentException>(managementProcessPeriod > 0);
+            Contract.Requires<ArgumentException>(options.MaxQueueCapacityExtension >= 0);
+            Contract.Requires<ArgumentException>(options.ManagementProcessPeriod > 0);
 
             _minThreadCount = minThreadCount;
             _maxThreadCount = maxThreadCount;
@@ -117,9 +189,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             _fastSpawnThreadCountLimit = Math.Max(_minThreadCount, Math.Min(_maxThreadCount, FastSpawnThreadCountLimit));
             _reasonableThreadCount = Math.Max(_minThreadCount, Math.Min(_maxThreadCount, ReasonableThreadCount));
 
-            _managementProcessPeriod = managementProcessPeriod;
-            _maxQueueCapacityExtension = maxQueueCapacityExtension;
-            _noWorkItemTrimPeriod = noWorkItemTrimPeriod >= 0 ? noWorkItemTrimPeriod : -1;
+            _managementProcessPeriod = options.ManagementProcessPeriod;
+            _maxQueueCapacityExtension = options.MaxQueueCapacityExtension;
+            _noWorkItemTrimPeriod = options.NoWorkItemTrimPeriod >= 0 ? options.NoWorkItemTrimPeriod : -1;
 
             _throughoutTracker = new ExecutionThroughoutTrackerUpDownCorrection(_maxThreadCount, _reasonableThreadCount);
             _wasSomeProcessByThreadsFlag = false;
@@ -140,9 +212,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
         /// <param name="name">Имена потоков</param>
         /// <param name="isBackground">Использовать ли фоновые потоки</param>
+        /// <param name="options">Расширенные настройки пула потоков</param>
+        public DynamicThreadPool(int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name, bool isBackground, DynamicThreadPoolOptions options)
+            : this(options ?? DynamicThreadPoolOptions.Default, minThreadCount, maxThreadCount, queueBoundedCapacity, name, isBackground)
+        {
+        }
+        /// <summary>
+        /// Конструктор DynamicThreadPool
+        /// </summary>
+        /// <param name="minThreadCount">Минимальное число потоков</param>
+        /// <param name="maxThreadCount">Максимальное число потоков</param>
+        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
+        /// <param name="name">Имена потоков</param>
+        /// <param name="isBackground">Использовать ли фоновые потоки</param>
         public DynamicThreadPool(int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name, bool isBackground)
-            : this(minThreadCount, maxThreadCount, queueBoundedCapacity, name, isBackground,
-                   DefaultNoWorkItemTrimPeriod, DefaultQueueStealAwakePeriod, DefaultMaxQueueCapacityExtension, DefaultManagementProcessPeriod, true, true, false)
+            : this(DynamicThreadPoolOptions.Default, minThreadCount, maxThreadCount, queueBoundedCapacity, name, isBackground)
         {
         }
         /// <summary>
@@ -153,8 +237,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
         /// <param name="name">Имена потоков</param>
         public DynamicThreadPool(int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name)
-            : this(minThreadCount, maxThreadCount, queueBoundedCapacity, name, false,
-                   DefaultNoWorkItemTrimPeriod, DefaultQueueStealAwakePeriod, DefaultMaxQueueCapacityExtension, DefaultManagementProcessPeriod, true, true, false)
+            : this(DynamicThreadPoolOptions.Default, minThreadCount, maxThreadCount, queueBoundedCapacity, name, false)
         {
         }
         /// <summary>
@@ -164,8 +247,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="maxThreadCount">Максимальное число потоков</param>
         /// <param name="name">Имена потоков</param>
         public DynamicThreadPool(int minThreadCount, int maxThreadCount, string name)
-            : this(minThreadCount, maxThreadCount, -1, name, false,
-                   DefaultNoWorkItemTrimPeriod, DefaultQueueStealAwakePeriod, DefaultMaxQueueCapacityExtension, DefaultManagementProcessPeriod, true, true, false)
+            : this(DynamicThreadPoolOptions.Default, minThreadCount, maxThreadCount, -1, name, false)
         {
         }
         /// <summary>
@@ -174,8 +256,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="maxThreadCount">Максимальное число потоков</param>
         /// <param name="name">Имена потоков</param>
         public DynamicThreadPool(int maxThreadCount, string name)
-            : this(0, maxThreadCount, -1, name, false,
-                   DefaultNoWorkItemTrimPeriod, DefaultQueueStealAwakePeriod, DefaultMaxQueueCapacityExtension, DefaultManagementProcessPeriod, true, true, false)
+            : this(DynamicThreadPoolOptions.Default, 0, maxThreadCount, -1, name, false)
         {
         }
         /// <summary>
@@ -183,8 +264,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// </summary>
         /// <param name="name">Имена потоков</param>
         public DynamicThreadPool(string name)
-            : this(0, 8 * Environment.ProcessorCount, -1, name, false,
-                   DefaultNoWorkItemTrimPeriod, DefaultQueueStealAwakePeriod, DefaultMaxQueueCapacityExtension, DefaultManagementProcessPeriod, true, true, false)
+            : this(DynamicThreadPoolOptions.Default, 0, 2 * Environment.ProcessorCount + 1, -1, name, false)
         {
         }
 
@@ -780,7 +860,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             }
 
 
-            if (elapsedMs < DefaultManagementProcessPeriod)
+            if (elapsedMs < _managementProcessPeriod)
                 return false;
 
 

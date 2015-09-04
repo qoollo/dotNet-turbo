@@ -310,7 +310,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         [TestMethod]
         public void TestTaskSchedulerWork()
         {
-            using (StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, 2000, 2000, 256, true, true, false))
+            using (StaticThreadPool testInst = new StaticThreadPool(4, -1, "name", false, new StaticThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
             {
                 bool firstTaskInPool = false;
                 bool secondTaskInPool = false;

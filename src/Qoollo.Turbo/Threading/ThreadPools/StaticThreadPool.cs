@@ -11,15 +11,85 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
+    /// Параметры для StaticThreadPool
+    /// </summary>
+    public class StaticThreadPoolOptions
+    {
+        /// <summary>
+        /// Стандартные опции
+        /// </summary>
+        internal static readonly StaticThreadPoolOptions Default = new StaticThreadPoolOptions();
+
+        /// <summary>
+        /// Стандартный период сна между проверкой возможности похитить элемент из соседних локальных очередей
+        /// </summary>
+        public const int DefaultQueueStealAwakePeriod = 1000;
+        /// <summary>
+        /// Стандартный период проверки переполненности очереди
+        /// </summary>
+        public const int DefaultQueueBlockedCheckPeriod = 2000;
+        /// <summary>
+        /// Максимальная величина расширения очереди по-умолчанию
+        /// </summary>
+        public const int DefaultMaxQueueCapacityExtension = 256;
+        /// <summary>
+        /// Стандартное значения для параметра использования своего шедуллера задач
+        /// </summary>
+        public const bool DefaultUseOwnTaskScheduler = true;
+        /// <summary>
+        /// Стандартное значения для параметра использования своего контекста синхронизации
+        /// </summary>
+        public const bool DefaultUseOwnSyncContext = true;
+        /// <summary>
+        /// Стандартное значения для параметра протаскивания контекст исполнения
+        /// </summary>
+        public const bool DefaultFlowExecutionContext = false;
+
+        /// <summary>
+        /// Конструктор StaticThreadPoolOptions
+        /// </summary>
+        public StaticThreadPoolOptions()
+        {
+            QueueStealAwakePeriod = DefaultQueueStealAwakePeriod;
+            QueueBlockedCheckPeriod = DefaultQueueBlockedCheckPeriod;
+            MaxQueueCapacityExtension = DefaultMaxQueueCapacityExtension;
+            UseOwnTaskScheduler = DefaultUseOwnTaskScheduler;
+            UseOwnSyncContext = DefaultUseOwnSyncContext;
+            FlowExecutionContext = DefaultFlowExecutionContext;
+        }
+
+        /// <summary>
+        /// Периоды сна между проверкой возможности похитить элемент из соседних локальных очередей
+        /// </summary>
+        public int QueueStealAwakePeriod { get; set; }
+        /// <summary>
+        /// Период проверки переполненности очереди
+        /// </summary>
+        public int QueueBlockedCheckPeriod { get; set; }
+        /// <summary>
+        /// Максимальная величина расширения очереди
+        /// </summary>
+        public int MaxQueueCapacityExtension { get; set; }
+        /// <summary>
+        /// Использовать ли свой шедуллер задач
+        /// </summary>
+        public bool UseOwnTaskScheduler { get; set; }
+        /// <summary>
+        /// Использовать ли свой контекст синхронизации
+        /// </summary>
+        public bool UseOwnSyncContext { get; set; }
+        /// <summary>
+        /// Протаскивать ли контекст исполнения
+        /// </summary>
+        public bool FlowExecutionContext { get; set; }
+    }
+
+    /// <summary>
     /// Пул потоков с фиксированным числом потоков.
     /// Тем не менее изменение числа потоков возможно путём явного вызова соостветствующих методов класса.
     /// </summary>
     public class StaticThreadPool: Common.CommonThreadPool
     {
-        private const int DefaultQueueStealAwakePeriod = 1000;
-        private const int DefaultMaxQueueCapacityExtension = 256;
-        private const int DefaultQueueBlockedCheckPeriod = 2000;
-
         private readonly int _maxQueueCapacityExtension;
         private readonly int _queueBlockedCheckPeriod;
 
@@ -37,25 +107,20 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
         /// <param name="name">Имена потоков</param>
         /// <param name="isBackground">Использовать ли фоновые потоки</param>
-        /// <param name="queueStealAwakePeriod">Периоды сна между проверкой возможности похитить элемент из соседних локальных очередей</param>
-        /// <param name="queueBlockedCheckPeriod">Период проверки переполненности очереди</param>
-        /// <param name="maxQueueCapacityExtension">Максимальная величина расширения очереди</param>
-        /// <param name="useOwnTaskScheduler">Использовать ли свой шедуллер задач</param>
-        /// <param name="useOwnSyncContext">Использовать ли свой контекст синхронизации</param>
-        /// <param name="flowExecutionContext">Протаскивать ли контекст исполнения</param>
-        public StaticThreadPool(int initialThreadCount, int queueBoundedCapacity, string name, bool isBackground, 
-                                int queueStealAwakePeriod, int queueBlockedCheckPeriod, int maxQueueCapacityExtension, bool useOwnTaskScheduler, bool useOwnSyncContext, bool flowExecutionContext)
-            : base(queueBoundedCapacity, queueStealAwakePeriod, isBackground, name, useOwnTaskScheduler, useOwnSyncContext, flowExecutionContext)
+        /// <param name="options">Расширенные настройки пула потоков</param>
+        private StaticThreadPool(StaticThreadPoolOptions options, int initialThreadCount, int queueBoundedCapacity, string name, bool isBackground)
+            : base(queueBoundedCapacity, options.QueueStealAwakePeriod, isBackground, name, options.UseOwnTaskScheduler, options.UseOwnSyncContext, options.FlowExecutionContext)
         {
+            Contract.Requires<ArgumentNullException>(options != null);
             Contract.Requires<ArgumentException>(initialThreadCount >= 0);
-            Contract.Requires<ArgumentException>(maxQueueCapacityExtension >= 0);
+            Contract.Requires<ArgumentException>(options.MaxQueueCapacityExtension >= 0);
 
-            _maxQueueCapacityExtension = maxQueueCapacityExtension > 0 ? maxQueueCapacityExtension : 0;
-            _queueBlockedCheckPeriod = queueBlockedCheckPeriod > 0 ? queueBlockedCheckPeriod : 0;
+            _maxQueueCapacityExtension = options.MaxQueueCapacityExtension > 0 ? options.MaxQueueCapacityExtension : 0;
+            _queueBlockedCheckPeriod = options.QueueBlockedCheckPeriod > 0 ? options.QueueBlockedCheckPeriod : 0;
 
             _wasSomeProcessByThreadsFlag = false;
 
-            if (queueBoundedCapacity > 0 && _maxQueueCapacityExtension > 0 && _queueBlockedCheckPeriod > 0) 
+            if (queueBoundedCapacity > 0 && _maxQueueCapacityExtension > 0 && _queueBlockedCheckPeriod > 0)
                 Qoollo.Turbo.Threading.ServiceStuff.ManagementThreadController.Instance.RegisterCallback(ManagementThreadProc);
 
             AddThreads(initialThreadCount);
@@ -67,8 +132,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
         /// <param name="name">Имена потоков</param>
         /// <param name="isBackground">Использовать ли фоновые потоки</param>
+        /// <param name="options">Расширенные настройки пула потоков</param>
+        public StaticThreadPool(int initialThreadCount, int queueBoundedCapacity, string name, bool isBackground, StaticThreadPoolOptions options)
+            : this(options ?? StaticThreadPoolOptions.Default, initialThreadCount, queueBoundedCapacity, name, isBackground)
+        {
+
+        }
+        /// <summary>
+        /// Конструктор StaticThreadPool
+        /// </summary>
+        /// <param name="initialThreadCount">Начальное число потоков в пуле</param>
+        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
+        /// <param name="name">Имена потоков</param>
+        /// <param name="isBackground">Использовать ли фоновые потоки</param>
         public StaticThreadPool(int initialThreadCount, int queueBoundedCapacity, string name, bool isBackground)
-            : this(initialThreadCount, queueBoundedCapacity, name, isBackground, DefaultQueueStealAwakePeriod, DefaultQueueBlockedCheckPeriod, DefaultMaxQueueCapacityExtension, true, true, false)
+            : this(StaticThreadPoolOptions.Default, initialThreadCount, queueBoundedCapacity, name, isBackground)
         {
         }
         /// <summary>
@@ -78,7 +156,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
         /// <param name="name">Имена потоков</param>
         public StaticThreadPool(int initialThreadCount, int queueBoundedCapacity, string name)
-            : this(initialThreadCount, queueBoundedCapacity, name, false, DefaultQueueStealAwakePeriod, DefaultQueueBlockedCheckPeriod, DefaultMaxQueueCapacityExtension, true, true, false)
+            : this(StaticThreadPoolOptions.Default, initialThreadCount, queueBoundedCapacity, name, false)
         {
         }
         /// <summary>
@@ -87,7 +165,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="initialThreadCount">Начальное число потоков в пуле</param>
         /// <param name="name">Имена потоков</param>
         public StaticThreadPool(int initialThreadCount, string name)
-            : this(initialThreadCount, -1, name, false, DefaultQueueStealAwakePeriod, DefaultQueueBlockedCheckPeriod, DefaultMaxQueueCapacityExtension, true, true, false)
+            : this(StaticThreadPoolOptions.Default, initialThreadCount, -1, name, false)
         {
         }
 
