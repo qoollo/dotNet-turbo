@@ -15,6 +15,53 @@ namespace Qoollo.Turbo.Threading.ThreadPools
     public sealed class SystemThreadPool: ThreadPoolBase, IContextSwitchSupplier
     {
         /// <summary>
+        /// Прамаетризованный объект замыкания
+        /// </summary>
+        /// <typeparam name="TState">Тип состояния</typeparam>
+        private class ParameterizedClosure<TState>
+        {
+            public static readonly Action<object> RunAction = new Action<object>(Run);
+            /// <summary>
+            /// Запуск замыкания
+            /// </summary>
+            /// <param name="closure">Объект замыкания</param>
+            public static void Run(object closure)
+            {
+                var unwrapClosure = (ParameterizedClosure<TState>)closure;
+                Contract.Assert(unwrapClosure != null);
+                unwrapClosure.Action(unwrapClosure.State);
+            }
+
+            public Action<TState> Action;
+            public TState State;
+        }
+        /// <summary>
+        /// Прамаетризованный объект замыкания
+        /// </summary>
+        /// <typeparam name="TState">Тип состояния</typeparam>
+        /// <typeparam name="TRes">Тип результата</typeparam>
+        private class ParameterizedClosure<TState, TRes>
+        {
+            public static readonly Func<object, TRes> RunAction = new Func<object, TRes>(Run);
+            /// <summary>
+            /// Запуск замыкания
+            /// </summary>
+            /// <param name="closure">Объект замыкания</param>
+            /// <returns>Результат</returns>
+            public static TRes Run(object closure)
+            {
+                var unwrapClosure = (ParameterizedClosure<TState, TRes>)closure;
+                Contract.Assert(unwrapClosure != null);
+                return unwrapClosure.Action(unwrapClosure.State);
+            }
+
+            public Func<TState, TRes> Action;
+            public TState State;
+        }
+        
+        // =========
+
+        /// <summary>
         /// Максимальное количество потоков в пуле
         /// </summary>
         public static int MaxThreadCount
@@ -193,16 +240,45 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         {
             return System.Threading.Tasks.Task.Run(action);
         }
+        /// <summary>
+        /// Запуск действия с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TState">Тип параметра состояния</typeparam>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <returns>Task</returns>
+        public sealed override System.Threading.Tasks.Task RunAsTask<TState>(Action<TState> action, TState state)
+        {
+            if (action == null)
+                throw new ArgumentNullException("action");
+            var workItem = new ParameterizedClosure<TState>() { Action = action, State = state };
+            return System.Threading.Tasks.Task.Factory.StartNew(ParameterizedClosure<TState>.RunAction, workItem);
+        }
 
         /// <summary>
         /// Запуск функции с обёртыванием в Task
         /// </summary>
-        /// <typeparam name="T">Тип результата</typeparam>
+        /// <typeparam name="TRes">Тип результата</typeparam>
         /// <param name="func">Функций</param>
         /// <returns>Task</returns>
-        public sealed override System.Threading.Tasks.Task<T> RunAsTask<T>(Func<T> func)
+        public sealed override System.Threading.Tasks.Task<TRes> RunAsTask<TRes>(Func<TRes> func)
         {
             return System.Threading.Tasks.Task.Run(func);
+        }
+        /// <summary>
+        /// Запуск функции с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TState">Тип параметра состояния</typeparam>
+        /// <typeparam name="TRes">Тип результата</typeparam>
+        /// <param name="func">Функций</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <returns>Task</returns>
+        public sealed override System.Threading.Tasks.Task<TRes> RunAsTask<TState, TRes>(Func<TState, TRes> func, TState state)
+        {
+            if (func == null)
+                throw new ArgumentNullException("func");
+            var workItem = new ParameterizedClosure<TState, TRes>() { Action = func, State = state };
+            return System.Threading.Tasks.Task.Factory.StartNew(ParameterizedClosure<TState, TRes>.RunAction, workItem);
         }
     }
 }

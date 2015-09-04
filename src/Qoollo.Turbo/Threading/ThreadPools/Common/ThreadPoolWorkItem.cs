@@ -44,6 +44,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     {
         internal static readonly ContextCallback RunContextCallback = new ContextCallback(RunInnerHelper);
         internal static readonly WaitCallback RunWaitCallback = new WaitCallback(RunInnerHelper);
+        internal static readonly Action<object> RunAction = new Action<object>(RunInnerHelper);
 
         /// <summary>
         /// Выполнение действия

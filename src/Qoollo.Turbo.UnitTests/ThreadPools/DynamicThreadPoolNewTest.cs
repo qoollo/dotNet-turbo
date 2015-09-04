@@ -292,7 +292,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         [TestMethod]
         public void TestTaskSchedulerWork()
         {
-            using (DynamicThreadPool testInst = new DynamicThreadPool(0, Environment.ProcessorCount, -1, "name", false, 15000, 2000, 256, 500, true, true, false))
+            using (DynamicThreadPool testInst = new DynamicThreadPool(0, Environment.ProcessorCount, -1, "name", false, new DynamicThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
             {
                 bool firstTaskInPool = false;
                 bool secondTaskInPool = false;
@@ -320,7 +320,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         [TestMethod]
         public void TestAwaitThroughSyncContext()
         {
-            using (DynamicThreadPool testInst = new DynamicThreadPool(0, 2 * Environment.ProcessorCount, -1, "name", false, 15000, 2000, 256, 500, true, true, false))
+            using (DynamicThreadPool testInst = new DynamicThreadPool(0, 2 * Environment.ProcessorCount, -1, "name", false, new DynamicThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
             {
                 bool isNotFailed = false;
                 bool isThreadPool = false;

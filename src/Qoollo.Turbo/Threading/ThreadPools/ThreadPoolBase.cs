@@ -66,7 +66,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             if (action == null)
                 throw new ArgumentNullException("action");
 
-            AddWorkItem(new ActionWithStateThreadPoolWorkItem<T>(action, state));
+            AddWorkItem(new ActionThreadPoolWorkItem<T>(action, state));
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             if (action == null)
                 throw new ArgumentNullException("action");
 
-            return TryAddWorkItem(new ActionWithStateThreadPoolWorkItem<T>(action, state));
+            return TryAddWorkItem(new ActionThreadPoolWorkItem<T>(action, state));
         }
 
 
@@ -101,20 +101,55 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             AddWorkItem(item);
             return item.Task;
         }
+        /// <summary>
+        /// Запуск действия с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TState">Тип параметра состояния</typeparam>
+        /// <param name="action">Действие</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <returns>Task</returns>
+        public virtual Task RunAsTask<TState>(Action<TState> action, TState state)
+        {
+            Contract.Requires(action != null);
+            if (action == null)
+                throw new ArgumentNullException("action");
+
+            var item = new TaskThreadPoolWorkItem<TState>(action, state);
+            AddWorkItem(item);
+            return item.Task;
+        }
 
         /// <summary>
         /// Запуск функции с обёртыванием в Task
         /// </summary>
-        /// <typeparam name="T">Тип результата</typeparam>
+        /// <typeparam name="TRes">Тип результата</typeparam>
         /// <param name="func">Функций</param>
         /// <returns>Task</returns>
-        public virtual Task<T> RunAsTask<T>(Func<T> func)
+        public virtual Task<TRes> RunAsTask<TRes>(Func<TRes> func)
         {
             Contract.Requires(func != null);
             if (func == null)
                 throw new ArgumentNullException("func");
 
-            var item = new TaskThreadPoolWorkItem<T>(func);
+            var item = new TaskFuncThreadPoolWorkItem<TRes>(func);
+            AddWorkItem(item);
+            return item.Task;
+        }
+        /// <summary>
+        /// Запуск функции с обёртыванием в Task
+        /// </summary>
+        /// <typeparam name="TState">Тип параметра состояния</typeparam>
+        /// <typeparam name="TRes">Тип результата</typeparam>
+        /// <param name="func">Функций</param>
+        /// <param name="state">Параметр состояния</param>
+        /// <returns>Task</returns>
+        public virtual Task<TRes> RunAsTask<TState, TRes>(Func<TState, TRes> func, TState state)
+        {
+            Contract.Requires(func != null);
+            if (func == null)
+                throw new ArgumentNullException("func");
+
+            var item = new TaskFuncThreadPoolWorkItem<TState, TRes>(func, state);
             AddWorkItem(item);
             return item.Task;
         }
