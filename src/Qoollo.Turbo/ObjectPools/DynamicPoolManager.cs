@@ -622,6 +622,9 @@ namespace Qoollo.Turbo.ObjectPools
             if (isUserCall)
             {
                 this.DisposePool(false);
+#if DEBUG
+                _elementsContainer.ProcessAllElements(o => o.SetPoolDisposed());
+#endif
             }
             else
             {

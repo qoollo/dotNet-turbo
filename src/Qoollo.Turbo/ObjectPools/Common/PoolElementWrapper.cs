@@ -196,6 +196,8 @@ namespace Qoollo.Turbo.ObjectPools.Common
         private int _numberOfTimesWasRented;
         private int _numberOfTimesWasReleased;
 
+        private bool _sourcePoolDisposed;
+
         /// <summary>
         /// Конструктор PoolElementWrapper
         /// </summary>
@@ -224,6 +226,11 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// Имя пула-владельца
         /// </summary>
         internal string SourcePoolName { get { return _sourcePoolName; } }
+
+        /// <summary>
+        /// Уничтожен ли родительский пул
+        /// </summary>
+        internal bool SourcePoolDisposed { get { return _sourcePoolDisposed; } }
 
         /// <summary>
         /// Иия метода, в котором произошло последнее получение элемента пула
@@ -264,6 +271,14 @@ namespace Qoollo.Turbo.ObjectPools.Common
             _sourcePoolName = name;
         }
         /// <summary>
+        /// Помечает, что родительский пул уничтожен
+        /// </summary>
+        internal void SetPoolDisposed()
+        {
+            _sourcePoolDisposed = true;
+        }
+
+        /// <summary>
         /// Обновить статистику при аренде
         /// </summary>
         /// <param name="memberName">Имя метода</param>
@@ -296,11 +311,12 @@ namespace Qoollo.Turbo.ObjectPools.Common
         {
             StringBuilder res = new StringBuilder();
             res.AppendFormat("PoolName = '{0}', ", _sourcePoolName ?? "");
+            res.AppendFormat("SourcePoolDisposed = {0}, ", SourcePoolDisposed);
             res.AppendFormat("IsBusy = {0}, ", IsBusy);
             res.AppendFormat("IsRemoved = {0}, ", IsRemoved);
             res.AppendFormat("IsDestroyed = {0}, ", IsElementDestroyed);
             res.AppendFormat("NumberOfTimesRented = {0}, ", _numberOfTimesWasRented);
-            res.AppendFormat("NumberOfTimesReleased = {0}, ", _numberOfTimesWasReleased);
+            res.AppendFormat("NumberOfTimesReleased = {0}", _numberOfTimesWasReleased);
             return res.ToString();
         }
 #endif
