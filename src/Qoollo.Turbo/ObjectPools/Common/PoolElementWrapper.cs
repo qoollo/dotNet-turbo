@@ -149,6 +149,15 @@ namespace Qoollo.Turbo.ObjectPools.Common
         private bool _finalizerReRegistered;
 
         /// <summary>
+        /// Get string with diagnostic info for this wrapper
+        /// </summary>
+        /// <returns>Diagnostic</returns>
+        protected virtual string CollectDiagnosticInfo()
+        {
+            return string.Empty;
+        }
+
+        /// <summary>
         /// Финализатор
         /// </summary>
         ~PoolElementWrapper()
@@ -156,11 +165,12 @@ namespace Qoollo.Turbo.ObjectPools.Common
             if (!this.IsElementDestroyed && !_finalizerReRegistered)
             {
                 GC.ReRegisterForFinalize(this);
-                _finalizerReRegistered = true;
+                if (GC.GetGeneration(this) >= GC.MaxGeneration)
+                    _finalizerReRegistered = true;
             }
             else
             {
-                Contract.Assert(this.IsElementDestroyed, "Element should be destroyed before removing the PoolElementWrapper");
+                Contract.Assert(this.IsElementDestroyed, "Element should be destroyed before removing the PoolElementWrapper. Probably you forget to call Dispose on the owner pool. Info: " + this.CollectDiagnosticInfo());
             }
         }
 #endif
@@ -275,5 +285,24 @@ namespace Qoollo.Turbo.ObjectPools.Common
         {
             Interlocked.Increment(ref _numberOfTimesWasReleased);
         }
+
+
+#if DEBUG
+        /// <summary>
+        /// Get string with diagnostic info for this wrapper
+        /// </summary>
+        /// <returns>Diagnostic</returns>
+        protected override string CollectDiagnosticInfo()
+        {
+            StringBuilder res = new StringBuilder();
+            res.AppendFormat("PoolName = '{0}', ", _sourcePoolName ?? "");
+            res.AppendFormat("IsBusy = {0}, ", IsBusy);
+            res.AppendFormat("IsRemoved = {0}, ", IsRemoved);
+            res.AppendFormat("IsDestroyed = {0}, ", IsElementDestroyed);
+            res.AppendFormat("NumberOfTimesRented = {0}, ", _numberOfTimesWasRented);
+            res.AppendFormat("NumberOfTimesReleased = {0}, ", _numberOfTimesWasReleased);
+            return res.ToString();
+        }
+#endif
     }
 }
