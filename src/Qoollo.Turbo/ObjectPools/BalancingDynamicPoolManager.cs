@@ -649,6 +649,10 @@ namespace Qoollo.Turbo.ObjectPools
         {
             if (!_disposeCancellation.IsCancellationRequested)
             {
+#if DEBUG
+                _elementsContainer.ProcessAllElements(o => o.SetPoolDisposed());
+#endif
+
                 _disposeCancellation.Cancel();
 
                 try { }
@@ -695,9 +699,6 @@ namespace Qoollo.Turbo.ObjectPools
             if (isUserCall)
             {
                 this.DisposePool(false);
-#if DEBUG
-                _elementsContainer.ProcessAllElements(o => o.SetPoolDisposed());
-#endif
             }
             else
             {

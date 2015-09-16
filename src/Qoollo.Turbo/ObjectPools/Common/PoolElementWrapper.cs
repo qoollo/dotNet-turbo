@@ -196,7 +196,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         private int _numberOfTimesWasRented;
         private int _numberOfTimesWasReleased;
 
-        private bool _sourcePoolDisposed;
+        private bool _isSourcePoolDisposed;
 
         /// <summary>
         /// Конструктор PoolElementWrapper
@@ -230,7 +230,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// <summary>
         /// Уничтожен ли родительский пул
         /// </summary>
-        internal bool SourcePoolDisposed { get { return _sourcePoolDisposed; } }
+        internal bool IsSourcePoolDisposed { get { return _isSourcePoolDisposed; } }
 
         /// <summary>
         /// Иия метода, в котором произошло последнее получение элемента пула
@@ -275,7 +275,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// </summary>
         internal void SetPoolDisposed()
         {
-            _sourcePoolDisposed = true;
+            _isSourcePoolDisposed = true;
         }
 
         /// <summary>
@@ -311,7 +311,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         {
             StringBuilder res = new StringBuilder();
             res.AppendFormat("PoolName = '{0}', ", _sourcePoolName ?? "");
-            res.AppendFormat("SourcePoolDisposed = {0}, ", SourcePoolDisposed);
+            res.AppendFormat("IsSourcePoolDisposed = {0}, ", IsSourcePoolDisposed);
             res.AppendFormat("IsBusy = {0}, ", IsBusy);
             res.AppendFormat("IsRemoved = {0}, ", IsRemoved);
             res.AppendFormat("IsDestroyed = {0}, ", IsElementDestroyed);
