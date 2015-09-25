@@ -17,6 +17,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
     {
         private readonly ThreadLocal<ThreadPoolThreadLocals> _perThreadData;
         private readonly ThreadPoolQueueController _queues;
+        private readonly string _ownerPoolName;
         private volatile bool _isDisposed;
 
 
@@ -25,10 +26,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// </summary>
         /// <param name="queueBoundedCapacity">Ограничение на размер очереди</param>
         /// <param name="queueStealAwakePeriod">Периоды сна между проверкой возможности похитить элемент из соседних локальных очередей</param>
-        public ThreadPoolGlobals(int queueBoundedCapacity, int queueStealAwakePeriod)
+        /// <param name="ownerPoolName">Имя пула, к которому относится данный контейнер</param>
+        public ThreadPoolGlobals(int queueBoundedCapacity, int queueStealAwakePeriod, string ownerPoolName)
         {
             _perThreadData = new ThreadLocal<ThreadPoolThreadLocals>(true);
             _queues = new ThreadPoolQueueController(queueBoundedCapacity, queueStealAwakePeriod);
+            _ownerPoolName = ownerPoolName ?? "unknown";
             _isDisposed = false;
         }
 
@@ -44,7 +47,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// Разреженный массив локальных очередей для потоков
         /// </summary>
         public ThreadPoolLocalQueue[] LocalQueues { get { return _queues.LocalQueues; } }
-
+        /// <summary>
+        /// Имя пула, к которому относится данный контейнер
+        /// </summary>
+        public string OwnerPoolName { get { return _ownerPoolName; } }
 
         /// <summary>
         /// Получить или создать данные для текущего потока.
@@ -223,7 +229,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 _isDisposed = true;
 
 
-                Contract.Assert(isUserCall, "Finalizer called for ThreadPoolGlobals. It should be disposed explicitly.");
+                Contract.Assert(isUserCall, "Finalizer called for ThreadPoolGlobals. It should be disposed explicitly by calling Dispose on ThreadPool. ThreadPoolName: " + this.OwnerPoolName);
 
                 if (isUserCall)
                 {
