@@ -598,7 +598,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         {
             if (!this.IsStopRequestedOrStopped)
             {
-                Contract.Assume(isUserCall, "ThreadSetManager destructor: Better to dispose by user. Закомментируй, если не нравится.");
+                Contract.Assume(isUserCall, "ThreadSetManager finalizer called. You should dispose ThreadSetManager explicitly. ThreadSetManagerName: " + this.Name);
 
                 if (isUserCall)
                     StopThreadManager(true);
