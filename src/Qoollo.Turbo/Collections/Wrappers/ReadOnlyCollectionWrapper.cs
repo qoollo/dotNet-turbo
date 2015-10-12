@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Коллекция в режиме только для чтения
+    /// Read-only wrapper around ICollection
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">The type of the element in collection</typeparam>
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [System.Diagnostics.DebuggerTypeProxy(typeof(Qoollo.Turbo.Collections.ServiceStuff.CollectionDebugView<>))]
     [Serializable]
@@ -20,7 +20,7 @@ namespace Qoollo.Turbo.Collections
     {
         private static readonly ReadOnlyCollectionWrapper<T> _empty = new ReadOnlyCollectionWrapper<T>(new T[0]);
         /// <summary>
-        /// Пустая коллекция
+        /// Empty collection
         /// </summary>
         public static ReadOnlyCollectionWrapper<T> Empty
         {
@@ -38,7 +38,7 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -47,9 +47,9 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyCollectionWrapper
+        /// ReadOnlyCollectionWrapper constructor
         /// </summary>
-        /// <param name="collection">Обёртываемая коллекция</param>
+        /// <param name="collection">The collection to wrap</param>
         public ReadOnlyCollectionWrapper(ICollection<T> collection)
         {
             Contract.Requires<ArgumentNullException>(collection != null);
@@ -58,25 +58,25 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Обёртываемая коллекция
+        /// Wrapped collection
         /// </summary>
         protected ICollection<T> Items { get { return _collection; } }
 
         /// <summary>
-        /// Проверка наличия элемента в коллекции
+        /// Determines whether the collection contains a specific value.
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Есть ли он в коллекции</returns>
+        /// <param name="item">The object to locate in the collection</param>
+        /// <returns>True if item is found</returns>
         [Pure]
         public bool Contains(T item)
         {
             return _collection.Contains(item);
         }
         /// <summary>
-        /// Копирование коллекции в массив начиная с заданного индекса
+        /// Copies the elements of the Collection to an Array, starting at a particular index
         /// </summary>
-        /// <param name="array">Массив, в который копируем</param>
-        /// <param name="arrayIndex">Индекс внутри массива</param>
+        /// <param name="array">The array that is the destination of the elements</param>
+        /// <param name="arrayIndex">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
             Contract.Requires(array != null);
@@ -86,14 +86,14 @@ namespace Qoollo.Turbo.Collections
             _collection.CopyTo(array, arrayIndex);
         }
         /// <summary>
-        /// Число элементов в коллекции
+        /// Gets the number of elements contained in the collection
         /// </summary>
         public int Count
         {
             get { return _collection.Count; }
         }
         /// <summary>
-        /// Получение Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         public IEnumerator<T> GetEnumerator()
@@ -105,16 +105,16 @@ namespace Qoollo.Turbo.Collections
         #region Реализация интерфейсов
 
         /// <summary>
-        /// Добавление элемента в конец (не поддерживается)
+        /// Adds an item to the collection (not supported)
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">New item</param>
         void ICollection<T>.Add(T item)
         {
             throw new NotSupportedException("Add is not supported for ReadOnlyCollectionWrapper");
         }
 
         /// <summary>
-        /// Оичтка коллекции (не поддерживается)
+        /// Removes all items from the collection (not supported)
         /// </summary>
         void ICollection<T>.Clear()
         {
@@ -122,27 +122,27 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Содержится ли элемент в коллекции
+        /// Determines whether the collection contains a specific value.
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Содержится ли</returns>
+        /// <param name="item">The object to locate in the collection</param>
+        /// <returns>True if item is found</returns>
         bool ICollection<T>.Contains(T item)
         {
             return _collection.Contains(item);
         }
 
         /// <summary>
-        /// Скопировать данные коллекции в массив
+        /// Copies the elements of the Collection to an Array, starting at a particular index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="arrayIndex">Индекс, с которого начинается вставка</param>
+        /// <param name="array">The array that is the destination of the elements</param>
+        /// <param name="arrayIndex">Index in array at which copying begins</param>
         void ICollection<T>.CopyTo(T[] array, int arrayIndex)
         {
             _collection.CopyTo(array, arrayIndex);
         }
 
         /// <summary>
-        /// Количество элементов в коллекции
+        /// Gets the number of elements contained in the collection
         /// </summary>
         int ICollection<T>.Count
         {
@@ -150,7 +150,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Только для чтения
+        /// Gets a value indicating whether the Collection is read-only
         /// </summary>
         bool ICollection<T>.IsReadOnly
         {
@@ -158,17 +158,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Удалить элемент (не поддерживается)
+        /// Removes the first occurrence of a specific item from the Collection (not supported)
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Удалился ли</returns>
+        /// <param name="item">Item</param>
+        /// <returns>True if item was removed</returns>
         bool ICollection<T>.Remove(T item)
         {
             throw new NotSupportedException("Remove is not supported for ReadOnlyCollectionWrapper");
         }
 
         /// <summary>
-        /// Получение Enumerator'а
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -177,7 +177,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получение Enumerator'а
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
@@ -186,17 +186,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Скопировать содержимое в массив
+        /// Copies the elements of the Collection to an Array, starting at a particular index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Стартовый индекс</param>
+        /// <param name="array">The array that is the destination of the elements</param>
+        /// <param name="index">Index in array at which copying begins</param>
         void ICollection.CopyTo(Array array, int index)
         {
             (_collection as ICollection).CopyTo(array, index);
         }
 
         /// <summary>
-        /// Количество элементов в коллекции
+        /// Gets the number of elements contained in the collection
         /// </summary>
         int ICollection.Count
         {
@@ -204,7 +204,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Синхронизирован ли доступ
+        /// Is Synchronized
         /// </summary>
         bool ICollection.IsSynchronized
         {
@@ -212,7 +212,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Объект синхронизации
+        /// Sync root object
         /// </summary>
         object ICollection.SyncRoot
         {
@@ -235,7 +235,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Количество элементов в коллекции
+        /// Gets the number of elements contained in the collection
         /// </summary>
         int IReadOnlyCollection<T>.Count
         {
