@@ -14,9 +14,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
 {
 #pragma warning disable 0420
     /// <summary>
-    /// Блокирующая очередь
+    /// Queue with blocking and bounding capabilities
     /// </summary>
-    /// <typeparam name="T">Тип элементов очереди</typeparam>
+    /// <remarks>
+    /// Faster than BlockingCollection
+    /// </remarks>
+    /// <typeparam name="T">The type of elements in collection</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     public class BlockingQueue<T>: ICollection, IEnumerable<T>, IDisposable
     {
@@ -38,9 +41,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Конструктор BlockingQueue 
+        /// BlockingQueue constructor
         /// </summary>
-        /// <param name="boundedCapacity">Верхнее ограничение по размеру (нет ограничения, если меньше 0)</param>
+        /// <param name="boundedCapacity">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
         public BlockingQueue(int boundedCapacity)
         {
             _innerQueue = new ConcurrentQueue<T>();
@@ -56,7 +59,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             _occupiedNodes = new SemaphoreLight(0);
         }
         /// <summary>
-        /// Конструктор BlockingQueue
+        /// BlockingQueue constructor
         /// </summary>
         public BlockingQueue()
             : this(-1)
@@ -65,25 +68,25 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Ограничение максимального размера очереди
+        /// The bounded size of the queue
         /// </summary>
         public int BoundedCapacity { get { return _boundedCapacity; } }
         /// <summary>
-        /// Завершено ли добавление в очередь
+        /// Is queue marked as Completed for Adding
         /// </summary>
         public bool IsAddingCompleted { get { return _currentAdders == COMPLETE_ADDING_ON_MASK; } }
         /// <summary>
-        /// Завершена ли полная обработка очереди (нельзя добавлять и нечего удалять)
+        /// Is queue is empty and Adding completed
         /// </summary>
         public bool IsCompleted { get { return (IsAddingCompleted && (_occupiedNodes.CurrentCount == 0)); } }
         /// <summary>
-        /// Количество элементов в очереди
+        /// Number of items inside the queue
         /// </summary>
         public int Count { get { return _occupiedNodes.CurrentCount; } }
 
 
         /// <summary>
-        /// Проверка, что очередь не освобождена
+        /// Checks if queue is disposed
         /// </summary>
         private void CheckDisposed()
         {
@@ -92,9 +95,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
 
         /// <summary>
-        /// Увеличить расширить ограничение на вместимость очереди
+        /// Increase queue bounded capacity
         /// </summary>
-        /// <param name="increaseValue">Величина расширения</param>
+        /// <param name="increaseValue">The number of items by which the bounded capacity should be increased</param>
         public void IncreaseBoundedCapacity(int increaseValue)
         {
             CheckDisposed();
@@ -116,9 +119,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
 
         /// <summary>
-        /// Обновить значение поля с числом отложенных уменьшений вместимости у семафора
+        /// Updates the inner filed to track the value of delayed capacity decreasing
         /// </summary>
-        /// <param name="decreaseValue">Величина, на которую вместимость должна уменьшиться</param>
+        /// <param name="decreaseValue">The number of items by which the bounded capacity should be decreased</param>
         private void UpdateDelayedBoundedCapacityDecreaseField(int decreaseValue)
         {
             Contract.Requires(decreaseValue >= 0);
@@ -132,9 +135,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
             }
         }
         /// <summary>
-        /// Уменьшить величину максимальной вместимости очереди
+        /// Decrease queue bounded capacity
         /// </summary>
-        /// <param name="decreaseValue">Величина уменьшения</param>
+        /// <param name="decreaseValue">The number of items by which the bounded capacity should be decreased</param>
         public void DecreaseBoundedCapacity(int decreaseValue)
         {
             CheckDisposed();
@@ -175,9 +178,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
             }
         }
         /// <summary>
-        /// Задать новую вместимость очереди
+        /// Sets new bounded capacity for the queue
         /// </summary>
-        /// <param name="newBoundedCapacity">Новая вместимость</param>
+        /// <param name="newBoundedCapacity">New bounded size of the queue</param>
         public void SetBoundedCapacity(int newBoundedCapacity)
         {
             CheckDisposed();
@@ -202,9 +205,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Форсированное добавление в очередь (даже если превышен максимальный её размер)
+        /// Adds new item to the queue, even when the bounded capacity reached
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">New item</param>
         public void EnqueueForced(T item)
         {
             CheckDisposed();
@@ -225,10 +228,10 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Быстрый метод добавления элемента в очередь
+        /// Add new item to queue (simple and fast version)
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="item">New item</param>
+        /// <returns>True if item was added, otherwise false</returns>
         internal bool TryEnqueueFast(T item)
         {
             CheckDisposed();
@@ -257,12 +260,16 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Внутренний метод добавления элемента в очередь
+        /// Adds new item to the tail of the queue (inner core method)
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">New item</param>
+        /// <param name="timeout">Adding timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Was added sucessufully</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
+        /// <exception cref="InvalidOperationException">Adding was completed</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         private bool TryEnqueueInner(T item, int timeout, CancellationToken token)
         {
             CheckDisposed();
@@ -364,19 +371,26 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Добавить элемент в очередь
+        /// Adds the item to the tail of the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">New item</param>
+        /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
+        /// <exception cref="InvalidOperationException">Adding was completed</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public void Enqueue(T item)
         {
             bool addResult = TryEnqueueInner(item, Timeout.Infinite, new CancellationToken());
             Contract.Assert(addResult);
         }
         /// <summary>
-        /// Добавить элемент в очередь
+        /// Adds the item to the tail of the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <param name="token">Токен отмены</param>
+        /// <param name="item">New item</param>
+        /// <param name="token">Cancellation token</param>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
+        /// <exception cref="InvalidOperationException">Adding was completed</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public void Enqueue(T item, CancellationToken token)
         {
             bool addResult = TryEnqueueInner(item, Timeout.Infinite, token);
@@ -384,20 +398,25 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
 
         /// <summary>
-        /// Попытаться добавить элемент в очередь
+        /// Attempts to add new item to tail of the the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="item">New item</param>
+        /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="InvalidOperationException">Adding was completed</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryEnqueue(T item)
         {
             return TryEnqueueInner(item, 0, new CancellationToken());
         }
         /// <summary>
-        /// Попытаться добавить элемент в очередь
+        /// Attempts to add new item to tail of the the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="item">New item</param>
+        /// <param name="timeout">Adding timeout</param>
+        /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
+        /// <exception cref="InvalidOperationException">Adding was completed</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryEnqueue(T item, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -409,11 +428,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return TryEnqueueInner(item, (int)timeoutMs, new CancellationToken());
         }
         /// <summary>
-        /// Попытаться добавить элемент в очередь
+        /// Attempts to add new item to tail of the the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="item">New item</param>
+        /// <param name="timeout">Adding timeout</param>
+        /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
+        /// <exception cref="InvalidOperationException">Adding was completed</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryEnqueue(T item, int timeout)
         {
             if (timeout < 0)
@@ -421,12 +443,16 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return TryEnqueueInner(item, timeout, new CancellationToken());
         }
         /// <summary>
-        /// Попытаться добавить элемент в очередь
+        /// Attempts to add new item to the tail of the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="item">New item</param>
+        /// <param name="timeout">Adding timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
+        /// <exception cref="InvalidOperationException">Adding was completed</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryEnqueue(T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -437,10 +463,10 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Попытаться выбрать элемент с минимальной задержкой
+        /// Attempts to remove item from queue (simple and fast version)
         /// </summary>
-        /// <param name="item">Выбранный элемент</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">The item removed from queue</param>
+        /// <returns>True if the item was removed</returns>
         internal bool TryDequeueFast(out T item)
         {
             CheckDisposed();
@@ -484,13 +510,15 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Внутренний метод извлечения элемента из очереди
+        /// Removes item from the head of the queue (inner core method)
         /// </summary>
-        /// <param name="item">Извлечённый элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать исключение при отмене по токену</param>
-        /// <returns>Удалось ли извлечь элемент</returns>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Removing timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Should throw OperationCancelledException when Cancellation requested or just return false</param>
+        /// <returns>True if the item was removed</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         private bool TryDequeueInner(out T item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             CheckDisposed();
@@ -568,9 +596,10 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Извлечь элемент из очереди
+        /// Removes item from the head of the queue
         /// </summary>
-        /// <returns>Элемент</returns>
+        /// <returns>The item removed from queue</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Dequeue()
         {
             T result;
@@ -580,10 +609,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return result;
         }
         /// <summary>
-        /// Извлечь элемент из очереди
+        /// Removes item from the head of the queue
         /// </summary>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Элемент</returns>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>The item removed from queue</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Dequeue(CancellationToken token)
         {
             T result;
@@ -594,20 +625,22 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
  
         /// <summary>
-        /// Попытаться извлечь элемент из головы очереди
+        /// Attempts to remove item from the head of the queue
         /// </summary>
-        /// <param name="item">Извлечённый элемент (если удалось)</param>
-        /// <returns>Успешность извлечения</returns>
+        /// <param name="item">The item removed from queue</param>
+        /// <returns>True if the item was removed</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryDequeue(out T item)
         {
             return TryDequeueInner(out item, 0, CancellationToken.None, true);
         }
         /// <summary>
-        /// Попытаться извлечь элемент из головы очереди
+        /// Attempts to remove item from the head of the queue
         /// </summary>
-        /// <param name="item">Извлечённый элемент (если удалось)</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>Успешность извлечения</returns>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Removing timeout</param>
+        /// <returns>True if the item was removed</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryDequeue(out T item, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -619,11 +652,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return TryDequeueInner(out item, (int)timeoutMs, new CancellationToken(), true);
         }
         /// <summary>
-        /// Попытаться извлечь элемент из головы очереди
+        /// Attempts to remove item from the head of the queue
         /// </summary>
-        /// <param name="item">Извлечённый элемент (если удалось)</param>
-        /// <param name="timeout">Таймаут в миллисекундах</param>
-        /// <returns>Успешность извлечения</returns>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Removing timeout in milliseconds</param>
+        /// <returns>True if the item was removed</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryDequeue(out T item, int timeout)
         {
             if (timeout < 0)
@@ -631,12 +665,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return TryDequeueInner(out item, timeout, new CancellationToken(), true);
         }
         /// <summary>
-        /// Попытаться извлечь элемент из головы очереди
+        /// Attempts to remove item from the head of the queue
         /// </summary>
-        /// <param name="item">Извлечённый элемент (если удалось)</param>
-        /// <param name="timeout">Таймаут в миллисекундах</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Успешность извлечения</returns>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Removing timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the item was removed</returns>
         public bool TryDequeue(out T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -644,13 +678,15 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return TryDequeueInner(out item, timeout, token, true);
         }
         /// <summary>
-        /// Попытаться извлечь элемент из головы очереди
+        /// Attempts to remove item from the head of the queue
         /// </summary>
-        /// <param name="item">Извлечённый элемент (если удалось)</param>
-        /// <param name="timeout">Таймаут в миллисекундах</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене</param>
-        /// <returns>Успешность извлечения</returns>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Removing timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Should throw OperationCancelledException when Cancellation requested or just return false</param>
+        /// <returns>True if the item was removed</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         internal bool TryDequeue(out T item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             if (timeout < 0)
@@ -663,12 +699,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Внутренний метод чтения элемента из головы очереди без удаления
+        /// Returns the item at the head of the queue without removing it (inner core method)
         /// </summary>
-        /// <param name="item">Ситанный элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">The item at the head of the queue</param>
+        /// <param name="timeout">Peeking timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the item was read</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         private bool TryPeekInner(out T item, int timeout, CancellationToken token)
         {
             CheckDisposed();
@@ -734,10 +772,10 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Прочитать элемент из головы очереди без удаления.
-        /// Если элемента нет, то ждёт его появления
+        /// Returns the item at the head of the queue without removing it (blocks the Thread when queue is empty)
         /// </summary>
-        /// <returns>Считанный элемент</returns>
+        /// <returns>The item at the head of the queue</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Peek()
         {
             T result;
@@ -747,11 +785,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return result;
         }
         /// <summary>
-        /// Прочитать элемент из головы очереди без удаления.
-        /// Если элемента нет, то ждёт его появления
+        /// Returns the item at the head of the queue without removing it (blocks the Thread when queue is empty)
         /// </summary>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Считанный элемент</returns>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>The item at the head of the queue</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Peek(CancellationToken token)
         {
             T result;
@@ -762,20 +801,22 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
 
         /// <summary>
-        /// Попытаться прочитать элемент из головы очереди без удаления
+        /// Attempts to read the item at the head of the queue without removing it
         /// </summary>
-        /// <param name="item">Считанный элемент</param>
-        /// <returns>Успешность считывания</returns>
+        /// <param name="item">The item at the head of the queue</param>
+        /// <returns>True if the item was read</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryPeek(out T item)
         {
             return _innerQueue.TryPeek(out item);
         }
         /// <summary>
-        /// Попытаться прочитать элемент из головы очереди без удаления
+        /// Attempts to read the item at the head of the queue without removing it
         /// </summary>
-        /// <param name="item">Считанный элемент</param>
-        /// <param name="timeout">Таймаут ожидания элемента</param>
-        /// <returns>Успешность считывания</returns>
+        /// <param name="item">The item at the head of the queue</param>
+        /// <param name="timeout">Peeking timeout</param>
+        /// <returns>True if the item was read</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryPeek(out T item, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -790,11 +831,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return TryPeekInner(out item, (int)timeoutMs, new CancellationToken());
         }
         /// <summary>
-        /// Попытаться прочитать элемент из головы очереди без удаления
+        /// Attempts to read the item at the head of the queue without removing it
         /// </summary>
-        /// <param name="item">Считанный элемент</param>
-        /// <param name="timeout">Таймаут ожидания элемента в миллисекундах</param>
-        /// <returns>Успешность считывания</returns>
+        /// <param name="item">The item at the head of the queue</param>
+        /// <param name="timeout">Peeking timeout in milliseconds</param>
+        /// <returns>True if the item was read</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryPeek(out T item, int timeout)
         {
             if (timeout < 0)
@@ -806,12 +848,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return TryPeekInner(out item, timeout, new CancellationToken());
         }
         /// <summary>
-        /// Попытаться прочитать элемент из головы очереди без удаления
+        /// Attempts to read the item at the head of the queue without removing it
         /// </summary>
-        /// <param name="item">Считанный элемент</param>
-        /// <param name="timeout">Таймаут ожидания элемента в миллисекундах</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Успешность считывания</returns>
+        /// <param name="item">The item at the head of the queue</param>
+        /// <param name="timeout">Peeking timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the item was read</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryPeek(out T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -827,7 +871,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
  
  
         /// <summary>
-        /// Завершить добавление элементов
+        /// Marks queue as completed for adding
         /// </summary>
         public void CompleteAdding()
         {
@@ -870,19 +914,19 @@ namespace Qoollo.Turbo.Collections.Concurrent
  
  
         /// <summary>
-        /// Создать массив из элементов очереди
+        /// Copies all items from queue into a new array
         /// </summary>
-        /// <returns>Массив</returns>
+        /// <returns>An array</returns>
         public T[] ToArray()
         {
             return _innerQueue.ToArray();
         }
  
         /// <summary>
-        /// Скопировать данные очереди в массив
+        /// Copies all items from queue into a specified array
         /// </summary>
-        /// <param name="array">Массив, в который копируем</param>
-        /// <param name="index">Начальный индекс внутри массива</param>
+        /// <param name="array">Array that is the destination of the elements copied</param>
+        /// <param name="index">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int index)
         {
             Contract.Requires(array != null);
@@ -893,7 +937,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
  
 
         /// <summary>
-        /// Получить Enumerator
+        /// Returns Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -903,7 +947,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
  
         }
         /// <summary>
-        /// Получить Enumerator
+        /// Returns Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
@@ -912,11 +956,11 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
 
         /// <summary>
-        /// Синхронизированная ли коллекция
+        /// Is synchronized collection
         /// </summary>
         bool ICollection.IsSynchronized { get { return false; } }
         /// <summary>
-        /// Объект синхронизации (не поддерживается)
+        /// Sychronization object (not supported)
         /// </summary>
         object ICollection.SyncRoot
         {
@@ -927,10 +971,10 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
 
         /// <summary>
-        /// Скопировать элементы очереди в массив
+        /// Copy queue items to the array
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Начальный индекс</param>
+        /// <param name="array">Target array</param>
+        /// <param name="index">Start index</param>
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
@@ -955,9 +999,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
 
         /// <summary>
-        /// Внутренний код освобождения ресурсов
+        /// Clean-up all resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли пользователем</param>
+        /// <param name="isUserCall">Was called by user</param>
         protected virtual void Dispose(bool isUserCall)
         {
             if (!_isDisposed)
@@ -967,7 +1011,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Clean-up all resources
         /// </summary>
         public void Dispose()
         {
