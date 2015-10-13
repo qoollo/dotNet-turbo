@@ -142,7 +142,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 int index = 0;
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
-                    col.Enqueue(index - 1);
+                    col.Add(index - 1);
                     Thread.SpinWait(addSpin);
                 }
 
@@ -162,7 +162,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     while (!srcCancel.IsCancellationRequested)
                     {
                         int val = 0;
-                        val = col.Dequeue(myToken);
+                        val = col.Take(myToken);
 
                         valList.Add(val);
                         Thread.SpinWait(takeSpin);
@@ -173,7 +173,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 }
 
                 int val2 = 0;
-                while (col.TryDequeue(out val2))
+                while (col.TryTake(out val2))
                     valList.Add(val2);
 
                 barierTakers.SignalAndWait();

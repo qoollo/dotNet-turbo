@@ -20,13 +20,13 @@ namespace Qoollo.Turbo.UnitTests.Collections
             for (int i = 0; i < 100; i++)
             {
                 Assert.AreEqual(i, col.Count);
-                col.Enqueue(i);
+                col.Add(i);
             }
 
             for (int i = 0; i < 100; i++)
             {
                 Assert.AreEqual(100 - i, col.Count);
-                Assert.AreEqual(i, col.Dequeue());
+                Assert.AreEqual(i, col.Take());
             }
         }
 
@@ -37,15 +37,15 @@ namespace Qoollo.Turbo.UnitTests.Collections
             BlockingQueue<int> col = new BlockingQueue<int>(100);
 
             for (int i = 0; i < 100; i++)
-                col.Enqueue(i);
+                col.Add(i);
 
-            Assert.IsFalse(col.TryEnqueue(int.MaxValue));
+            Assert.IsFalse(col.TryAdd(int.MaxValue));
 
             for (int i = 0; i < 100; i++)
-                Assert.AreEqual(i, col.Dequeue());
+                Assert.AreEqual(i, col.Take());
 
             int resItem = 0;
-            Assert.IsFalse(col.TryDequeue(out resItem));
+            Assert.IsFalse(col.TryTake(out resItem));
         }
 
         [TestMethod]
@@ -56,7 +56,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
             for (int i = 0; i < 100; i++)
             {
                 Assert.AreEqual(i, col.Count);
-                col.Enqueue(i);
+                col.Add(i);
                 Assert.AreEqual(0, col.Peek());
             }
 
@@ -66,7 +66,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
             for (int i = 0; i < 100; i++)
             {
                 Assert.AreEqual(i, col.Peek());
-                Assert.AreEqual(i, col.Dequeue());
+                Assert.AreEqual(i, col.Take());
             }
 
             Assert.IsFalse(col.TryPeek(out item));
@@ -89,7 +89,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
             Thread.Sleep(100);
             Assert.AreEqual(0, peekVal);
 
-            col.Enqueue(100);
+            col.Add(100);
 
             TimingAssert.AreEqual(5000, 100, () => Volatile.Read(ref peekVal));
             TimingAssert.AreEqual(5000, 1, () => col.Count);
@@ -101,9 +101,9 @@ namespace Qoollo.Turbo.UnitTests.Collections
             BlockingQueue<int> col = new BlockingQueue<int>(100);
 
             for (int i = 0; i < 100; i++)
-                col.Enqueue(i);
+                col.Add(i);
 
-            Assert.IsFalse(col.TryEnqueue(int.MaxValue));
+            Assert.IsFalse(col.TryAdd(int.MaxValue));
             Assert.AreEqual(100, col.BoundedCapacity);
 
             col.IncreaseBoundedCapacity(10);
@@ -111,12 +111,12 @@ namespace Qoollo.Turbo.UnitTests.Collections
 
 
             for (int i = 100; i < 110; i++)
-                col.Enqueue(i);
+                col.Add(i);
 
             Assert.AreEqual(110, col.Count);
 
             for (int i = 0; i < 110; i++)
-                Assert.AreEqual(i, col.Dequeue());
+                Assert.AreEqual(i, col.Take());
 
             Assert.AreEqual(0, col.Count);
             Assert.AreEqual(110, col.BoundedCapacity);
@@ -129,22 +129,22 @@ namespace Qoollo.Turbo.UnitTests.Collections
             Assert.AreEqual(110, col.BoundedCapacity);
 
             for (int i = 0; i < 100; i++)
-                col.Enqueue(i);
+                col.Add(i);
 
             col.DecreaseBoundedCapacity(10);        
             Assert.AreEqual(100, col.BoundedCapacity);
-            Assert.IsFalse(col.TryEnqueue(int.MaxValue));
+            Assert.IsFalse(col.TryAdd(int.MaxValue));
 
             col.DecreaseBoundedCapacity(10);
             Assert.AreEqual(90, col.BoundedCapacity);
             Assert.AreEqual(100, col.Count);
-            Assert.IsFalse(col.TryEnqueue(int.MaxValue));
+            Assert.IsFalse(col.TryAdd(int.MaxValue));
 
 
             for (int i = 0; i < 10; i++)
             {
-                Assert.AreEqual(i, col.Dequeue());
-                Assert.IsFalse(col.TryEnqueue(int.MaxValue));
+                Assert.AreEqual(i, col.Take());
+                Assert.IsFalse(col.TryAdd(int.MaxValue));
             }
 
             Assert.AreEqual(90, col.BoundedCapacity);
@@ -152,7 +152,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
 
             for (int i = 10; i < 100; i++)
             {
-                Assert.AreEqual(i, col.Dequeue());
+                Assert.AreEqual(i, col.Take());
             }
         }
 
@@ -174,23 +174,23 @@ namespace Qoollo.Turbo.UnitTests.Collections
         {
             BlockingQueue<int> col = new BlockingQueue<int>(100);
             for (int i = 0; i < 100; i++)
-                col.Enqueue(i);
+                col.Add(i);
 
             Assert.AreEqual(100, col.Count);
-            Assert.IsFalse(col.TryEnqueue(int.MaxValue));
+            Assert.IsFalse(col.TryAdd(int.MaxValue));
 
-            col.EnqueueForced(100);
+            col.AddForced(100);
             Assert.AreEqual(101, col.Count);
             Assert.AreEqual(100, col.BoundedCapacity);
-            Assert.IsFalse(col.TryEnqueue(int.MaxValue));
+            Assert.IsFalse(col.TryAdd(int.MaxValue));
 
-            Assert.AreEqual(0, col.Dequeue());
+            Assert.AreEqual(0, col.Take());
             Assert.AreEqual(100, col.Count);
             Assert.AreEqual(100, col.BoundedCapacity);
-            Assert.IsFalse(col.TryEnqueue(int.MaxValue));
+            Assert.IsFalse(col.TryAdd(int.MaxValue));
 
             for (int i = 1; i < 101; i++)
-                Assert.AreEqual(i, col.Dequeue());
+                Assert.AreEqual(i, col.Take());
         }
 
 
@@ -220,9 +220,9 @@ namespace Qoollo.Turbo.UnitTests.Collections
                         break;
 
                     if (rnd.Next(100) == 0)
-                        q.EnqueueForced(item);
+                        q.AddForced(item);
                     else
-                        q.Enqueue(item);
+                        q.Add(item);
 
 
                     int sleepTime = rnd.Next(100);
@@ -255,7 +255,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
                     while (Volatile.Read(ref addFinished) < thCount)
                     {
                         int tmp = 0;
-                        if (q.TryDequeue(out tmp, -1, tokSrc.Token))
+                        if (q.TryTake(out tmp, -1, tokSrc.Token))
                             data.Add((int)tmp);
 
                         int sleepTime = rnd.Next(100);
@@ -266,7 +266,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
                 catch (OperationCanceledException) { }
 
                 int tmp2;
-                while (q.TryDequeue(out tmp2))
+                while (q.TryTake(out tmp2))
                     data.Add((int)tmp2);
 
                 lock (global)
