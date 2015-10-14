@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Обёртка множества в режиме только для чтения
+    /// Read-only wrapper around HashSet class
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">The type of the element in hash set</typeparam>
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [System.Diagnostics.DebuggerTypeProxy(typeof(Qoollo.Turbo.Collections.ServiceStuff.CollectionDebugView<>))]
     [Serializable]
@@ -19,7 +19,7 @@ namespace Qoollo.Turbo.Collections
     {
         private static readonly ReadOnlyHashSet<T> _empty = new ReadOnlyHashSet<T>(new HashSet<T>());
         /// <summary>
-        /// Пустое множество
+        /// Empty hash set
         /// </summary>
         public static ReadOnlyHashSet<T> Empty
         {
@@ -37,7 +37,7 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -46,7 +46,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyHashSet
+        /// ReadOnlyHashSet constructor
         /// </summary>
         protected ReadOnlyHashSet()
         {
@@ -54,9 +54,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyHashSet
+        /// ReadOnlyHashSet constructor
         /// </summary>
-        /// <param name="set">Обёртываемое множество</param>
+        /// <param name="set">Hash set to be wrapped</param>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public ReadOnlyHashSet(HashSet<T> set)
         {
             Contract.Requires<ArgumentNullException>(set != null);
@@ -65,9 +66,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyHashSet
+        /// ReadOnlyHashSet constructor
         /// </summary>
-        /// <param name="set">Исходные элементы</param>
+        /// <param name="set">The collection whose elements are copied to the new set</param>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public ReadOnlyHashSet(IEnumerable<T> set)
         {
             Contract.Requires<ArgumentNullException>(set != null);
@@ -76,10 +78,11 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyHashSet
+        /// ReadOnlyHashSet constructor
         /// </summary>
-        /// <param name="set">Исходные элементы</param>
-        /// <param name="eqCmp">Компаратор данных</param>
+        /// <param name="set">The collection whose elements are copied to the new set</param>
+        /// <param name="eqCmp">Items equality comparer</param>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public ReadOnlyHashSet(IEnumerable<T> set, IEqualityComparer<T> eqCmp)
         {
             Contract.Requires<ArgumentNullException>(set != null);
@@ -89,15 +92,16 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Обёртываемое множество
+        /// Wrapped hash set
         /// </summary>
         protected HashSet<T> Items { get { return _set; } }
 
         /// <summary>
-        /// Явлется ли множество строгим подмножеством коллекции other
+        /// Determines whether the current set is a proper subset of the specified collection
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Является ли строгим подмножеством</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is a proper subset of collection 'other'</returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
             Contract.Requires(other != null);
@@ -105,10 +109,11 @@ namespace Qoollo.Turbo.Collections
             return _set.IsProperSubsetOf(other);
         }
         /// <summary>
-        /// Явлется ли множество строгим надмножеством коллекции other
+        /// Determines whether the current set is a proper superset of the specified collection
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Является ли строгим надмножеством</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is a proper superset of collection 'other'</returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
             Contract.Requires(other != null);
@@ -117,10 +122,11 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Явлется ли множество подмножеством коллекции other
+        /// Determines whether the current set is a subset of the specified collection
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Является ли подмножеством</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is a subset of collection 'other'</returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public bool IsSubsetOf(IEnumerable<T> other)
         {
             Contract.Requires(other != null);
@@ -128,10 +134,11 @@ namespace Qoollo.Turbo.Collections
             return _set.IsSubsetOf(other);
         }
         /// <summary>
-        /// Явлется ли множество надмножеством коллекции other
+        /// Determines whether the current set is a superset of the specified collection
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Является ли надмножеством</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is a superset of collection 'other'</returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public bool IsSupersetOf(IEnumerable<T> other)
         {
             Contract.Requires(other != null);
@@ -139,10 +146,11 @@ namespace Qoollo.Turbo.Collections
             return _set.IsSupersetOf(other);
         }
         /// <summary>
-        /// Пересекаются ли множества
+        /// Determines whether the current set and a specified collection share common elements
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Пересекаются ли</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current seet and 'other' has at least one common element</returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public bool Overlaps(IEnumerable<T> other)
         {
             Contract.Requires(other != null);
@@ -150,10 +158,11 @@ namespace Qoollo.Turbo.Collections
             return _set.Overlaps(other);
         }
         /// <summary>
-        /// Эквивалентны ли множества
+        /// Determines whether the current set and the specified collection contain the same elements
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Эквивалентны ли</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is equal to 'other'</returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public bool SetEquals(IEnumerable<T> other)
         {
             Contract.Requires(other != null);
@@ -163,10 +172,10 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Проверка наличия элемента в коллекции
+        /// Determines whether the hash set contains a specific value
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Есть ли он в коллекции</returns>
+        /// <param name="item">The object to locate in the set</param>
+        /// <returns>True if item is found</returns>
         [Pure]
         public bool Contains(T item)
         {
@@ -174,10 +183,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Копирование коллекции в массив начиная с заданного индекса
+        /// Copies the elements of the ReadOnlyHashSet to an Array, starting at a particular index
         /// </summary>
-        /// <param name="array">Массив, в который копируем</param>
-        /// <param name="arrayIndex">Индекс внутри массива</param>
+        /// <param name="array">The array that is the destination of the elements</param>
+        /// <param name="arrayIndex">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
             Contract.Requires(array != null);
@@ -188,7 +197,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Число элементов в множестве
+        /// The number of elements that are contained in a set
         /// </summary>
         public int Count
         {
@@ -196,7 +205,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получение Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         public HashSet<T>.Enumerator GetEnumerator()
@@ -208,121 +217,120 @@ namespace Qoollo.Turbo.Collections
         #region Реализация интерфейсов
 
         /// <summary>
-        /// Добавление элемента в множество (не поддерживается)
+        /// Adds an element to the current set (not supported)
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">Element</param>
         bool ISet<T>.Add(T item)
         {
             throw new NotSupportedException("Add is not supported for ReadOnlySetWrapper");
         }
 
         /// <summary>
-        /// Исключить элементы из множества (не поддерживается)
+        /// Removes all elements in the specified collection from the current set (not supported)
         /// </summary>
-        /// <param name="other">Перечень элементов</param>
+        /// <param name="other">The collection of items</param>
         void ISet<T>.ExceptWith(IEnumerable<T> other)
         {
             throw new NotSupportedException("ExceptWith is not supported for ReadOnlySetWrapper");
         }
 
         /// <summary>
-        /// Пересечь с элементами из перечня (не поддерживается)
+        /// Intersect current set with the specified collection (not supported)
         /// </summary>
-        /// <param name="other">Перечень элементов</param>
+        /// <param name="other">The collection of items</param>
         void ISet<T>.IntersectWith(IEnumerable<T> other)
         {
             throw new NotSupportedException("IntersectWith is not supported for ReadOnlySetWrapper");
         }
 
         /// <summary>
-        /// Явлется ли множество строгим подмножеством коллекции other
+        /// Determines whether the current set is a proper subset of the specified collection
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Является ли строгим подмножеством</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is a proper subset of collection 'other'</returns>
         bool ISet<T>.IsProperSubsetOf(IEnumerable<T> other)
         {
             return _set.IsProperSubsetOf(other);
         }
 
         /// <summary>
-        /// Явлется ли множество строгим надмножеством коллекции other
+        /// Determines whether the current set is a proper superset of the specified collection
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Является ли строгим надмножеством</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is a proper superset of collection 'other'</returns>
         bool ISet<T>.IsProperSupersetOf(IEnumerable<T> other)
         {
             return _set.IsProperSupersetOf(other);
         }
 
         /// <summary>
-        /// Явлется ли множество подмножеством коллекции other
+        /// Determines whether the current set is a subset of the specified collection
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Является ли подмножеством</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is a subset of collection 'other'</returns>
         bool ISet<T>.IsSubsetOf(IEnumerable<T> other)
         {
             return _set.IsSubsetOf(other);
         }
 
         /// <summary>
-        /// Явлется ли множество надмножеством коллекции other
+        /// Determines whether the current set is a superset of the specified collection
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Является ли надмножеством</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is a superset of collection 'other'</returns>
         bool ISet<T>.IsSupersetOf(IEnumerable<T> other)
         {
             return _set.IsSupersetOf(other);
         }
         /// <summary>
-        /// Пересекаются ли множества
+        /// Determines whether the current set and a specified collection share common elements
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Пересекаются ли</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current seet and 'other' has at least one common element</returns>
         bool ISet<T>.Overlaps(IEnumerable<T> other)
         {
             return _set.Overlaps(other);
         }
         /// <summary>
-        /// Эквивалентны ли множества
+        /// Determines whether the current set and the specified collection contain the same elements
         /// </summary>
-        /// <param name="other">Коллекция для проверки</param>
-        /// <returns>Эквивалентны ли</returns>
+        /// <param name="other">The collection to compare</param>
+        /// <returns>True if the current set is equal to 'other'</returns>
         bool ISet<T>.SetEquals(IEnumerable<T> other)
         {
             return _set.SetEquals(other);
         }
 
         /// <summary>
-        /// Симметричное исключение элементов. 
-        /// В результате содержится либо элементы исходного множества, либо другого, но не обоих вместе.
-        /// (не поддерживается)
+        /// Modifies the current set so that it contains only elements that are present either in the current set or in the specified collection, but not both 
+        /// (not supported)
         /// </summary>
-        /// <param name="other">Перечень элементов</param>
+        /// <param name="other">The collection of items</param>
         void ISet<T>.SymmetricExceptWith(IEnumerable<T> other)
         {
             throw new NotSupportedException("SymmetricExceptWith is not supported for ReadOnlySetWrapper");
         }
 
         /// <summary>
-        /// Объеденить с множеством (не поддерживается)
+        /// Set union (not supported)
         /// </summary>
-        /// <param name="other">Множество элементов</param>
+        /// <param name="other">The collection of items</param>
         void ISet<T>.UnionWith(IEnumerable<T> other)
         {
             throw new NotSupportedException("UnionWith is not supported for ReadOnlySetWrapper");
         }
 
         /// <summary>
-        /// Добавление элемента в множество (не поддерживается)
+        /// Adds an element to the current set (not supported)
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">Element</param>
         void ICollection<T>.Add(T item)
         {
             throw new NotSupportedException("Add is not supported for ReadOnlySetWrapper");
         }
 
         /// <summary>
-        /// Оичтка множества (не поддерживается)
+        /// Clear set (not supported)
         /// </summary>
         void ICollection<T>.Clear()
         {
@@ -330,27 +338,27 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Содержится ли элемент в множестве
+        /// Determines whether the hash set contains a specific value
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Содержится ли</returns>
+        /// <param name="item">The object to locate in the set</param>
+        /// <returns>True if item is found</returns>
         bool ICollection<T>.Contains(T item)
         {
             return _set.Contains(item);
         }
 
         /// <summary>
-        /// Скопировать данные множества в массив
+        /// Copies the elements of the ReadOnlyHashSet to an Array, starting at a particular index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="arrayIndex">Индекс, с которого начинается вставка</param>
+        /// <param name="array">The array that is the destination of the elements</param>
+        /// <param name="arrayIndex">Index in array at which copying begins</param>
         void ICollection<T>.CopyTo(T[] array, int arrayIndex)
         {
             _set.CopyTo(array, arrayIndex);
         }
 
         /// <summary>
-        /// Количество элементов
+        /// The number of elements that are contained in a set
         /// </summary>
         int ICollection<T>.Count
         {
@@ -358,7 +366,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Только для чтения
+        /// Is collection read-only
         /// </summary>
         bool ICollection<T>.IsReadOnly
         {
@@ -366,17 +374,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Удалить элемент (не поддерживается)
+        /// Remove element from the current set (not supported)
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Удалился ли</returns>
+        /// <param name="item">Element</param>
+        /// <returns>True if item was removed</returns>
         bool ICollection<T>.Remove(T item)
         {
             throw new NotSupportedException("Remove is not supported for ReadOnlySetWrapper");
         }
 
         /// <summary>
-        /// Получение Enumerator'а
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -385,7 +393,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получение Enumerator'а
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -394,17 +402,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Скопировать содержимое в массив
+        /// Copies the elements of the ReadOnlyHashSet to an Array, starting at a particular index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Стартовый индекс</param>
+        /// <param name="array">The array that is the destination of the elements</param>
+        /// <param name="index">Index in array at which copying begins</param>
         void ICollection.CopyTo(Array array, int index)
         {
             (_set as ICollection).CopyTo(array, index);
         }
 
         /// <summary>
-        /// Количество элементов
+        /// The number of elements that are contained in a set
         /// </summary>
         int ICollection.Count
         {
@@ -412,7 +420,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Синхронизирован ли доступ
+        /// Is collection synchronized
         /// </summary>
         bool ICollection.IsSynchronized
         {
@@ -420,7 +428,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Объект синхронизации
+        /// Sync root object
         /// </summary>
         object ICollection.SyncRoot
         {
@@ -443,7 +451,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Количество элементов
+        /// The number of elements that are contained in a set
         /// </summary>
         int IReadOnlyCollection<T>.Count
         {
