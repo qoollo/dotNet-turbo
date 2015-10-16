@@ -20,7 +20,7 @@ namespace Qoollo.Turbo.Collections
     {
         private static readonly ReadOnlyCollectionWrapper<T> _empty = new ReadOnlyCollectionWrapper<T>(new T[0]);
         /// <summary>
-        /// Empty collection
+        /// Empty ReadOnlyCollectionWrapper
         /// </summary>
         public static ReadOnlyCollectionWrapper<T> Empty
         {

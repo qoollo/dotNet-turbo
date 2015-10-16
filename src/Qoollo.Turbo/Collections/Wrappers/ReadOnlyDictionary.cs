@@ -18,7 +18,7 @@ namespace Qoollo.Turbo.Collections
     {
         private static readonly ReadOnlyDictionary<TKey, TValue> _empty = new ReadOnlyDictionary<TKey, TValue>(new Dictionary<TKey, TValue>());
         /// <summary>
-        /// Empty dictionary wrapper
+        /// Empty ReadOnlyDictionary
         /// </summary>
         public static ReadOnlyDictionary<TKey, TValue> Empty
         {

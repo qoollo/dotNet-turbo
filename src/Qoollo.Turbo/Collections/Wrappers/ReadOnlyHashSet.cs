@@ -19,7 +19,7 @@ namespace Qoollo.Turbo.Collections
     {
         private static readonly ReadOnlyHashSet<T> _empty = new ReadOnlyHashSet<T>(new HashSet<T>());
         /// <summary>
-        /// Empty hash set
+        /// Empty ReadOnlyHashSet
         /// </summary>
         public static ReadOnlyHashSet<T> Empty
         {
