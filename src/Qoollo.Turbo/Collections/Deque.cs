@@ -10,16 +10,16 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Дек. Позволяет добавлять и извлекать элементы из начала и конца.
+    /// Deque (double-ended queue) - collection of elements that can be expanded or contracted on both ends
     /// </summary>
-    /// <typeparam name="T">Тип элементов</typeparam>
+    /// <typeparam name="T">The type of elements in the deque</typeparam>
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [System.Diagnostics.DebuggerTypeProxy(typeof(Qoollo.Turbo.Collections.ServiceStuff.CollectionDebugView<>))]
     [Serializable]
     public class Deque<T> : IEnumerable<T>, IReadOnlyCollection<T>, ICollection, IEnumerable
     {
         /// <summary>
-        /// Enumerator для дека
+        /// Deque enumerator
         /// </summary>
 		[Serializable]
 		public struct Enumerator : IEnumerator<T>, IDisposable, IEnumerator
@@ -31,9 +31,9 @@ namespace Qoollo.Turbo.Collections
 
 
             /// <summary>
-            /// Конструктор Enumerator
+            /// Enumerator constructor
             /// </summary>
-            /// <param name="srcDeque">Дек, по которому проходимся</param>
+            /// <param name="srcDeque">Source deque to enumerate</param>
             internal Enumerator(Deque<T> srcDeque)
             {
                 Contract.Requires(srcDeque != null);
@@ -44,7 +44,7 @@ namespace Qoollo.Turbo.Collections
             }
 
             /// <summary>
-            /// Текущий элемент
+            /// Gets the element at the current position of the enumerator
             /// </summary>
 			public T Current
 			{
@@ -62,7 +62,7 @@ namespace Qoollo.Turbo.Collections
 			}
 
             /// <summary>
-            /// Перейти к следующему элементу
+            /// Advances the enumerator to the next element
             /// </summary>
             /// <returns></returns>
 			public bool MoveNext()
@@ -85,7 +85,7 @@ namespace Qoollo.Turbo.Collections
 			}
 
             /// <summary>
-            /// Удалить ресурсы
+            /// Clean-up resources
             /// </summary>
             public void Dispose()
             {
@@ -94,7 +94,7 @@ namespace Qoollo.Turbo.Collections
             }
 
             /// <summary>
-            /// Текущий элемент
+            /// Gets the element at the current position of the enumerator
             /// </summary>
             object IEnumerator.Current
             {
@@ -102,7 +102,7 @@ namespace Qoollo.Turbo.Collections
             }
 
             /// <summary>
-            /// Сбросить перечисление
+            /// Sets the enumerator to its initial position
             /// </summary>
 			void IEnumerator.Reset()
 			{
@@ -117,19 +117,19 @@ namespace Qoollo.Turbo.Collections
         private static readonly T[] EmptyArray = new T[0];
 
         /// <summary>
-        /// Минимальный размер, на который увеличивается внутренний массив
+        /// Minimum grow step
         /// </summary>
         private const int MinimumGrow = 4;
         /// <summary>
-        /// Порог обрезания размера внутреннего массива (Count &lt; ShrinkRate * Capacity)
+        /// Factor, when array compaction is required (Count &lt; ShrinkRate * Capacity)
         /// </summary>
         private const double ShrinkRate = 0.9;
         /// <summary>
-        /// Степень расширения массива при нехватке элементов
+        /// Capacity grow factor
         /// </summary>
         private const int GrowFactor = 2;
         /// <summary>
-        /// Вместимость по умолчанию
+        /// Initial capacity for non-empty deque
         /// </summary>
         private const int DefaultCapacity = 4;
 
@@ -144,7 +144,7 @@ namespace Qoollo.Turbo.Collections
 		private object _syncRoot;
 
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -158,7 +158,7 @@ namespace Qoollo.Turbo.Collections
         }
 		
         /// <summary>
-        /// Конструктор Deque
+        /// Deque constructor
         /// </summary>
 		public Deque()
 		{
@@ -166,9 +166,9 @@ namespace Qoollo.Turbo.Collections
 		}
 
         /// <summary>
-        /// Конструктор Deque с преаллокацией
+        /// Deque constructor with specified initial capacity
         /// </summary>
-        /// <param name="capacity">Начальная вместимость</param>
+        /// <param name="capacity">Initial capacity</param>
 		public Deque(int capacity)
 		{
             Contract.Requires<ArgumentOutOfRangeException>(capacity >= 0);
@@ -180,9 +180,9 @@ namespace Qoollo.Turbo.Collections
 		}
 
         /// <summary>
-        /// Конструктор Deque
+        /// Deque constructor
         /// </summary>
-        /// <param name="collection">Исходная коллекция</param>
+        /// <param name="collection">The collection whose elements are copied to the new deque</param>
         public Deque(IEnumerable<T> collection)
 		{
             Contract.Requires<ArgumentNullException>(collection != null);
@@ -215,7 +215,7 @@ namespace Qoollo.Turbo.Collections
 		}
 
         /// <summary>
-        /// Количество элементов
+        /// Gets the number of elements in the deque
         /// </summary>
         public int Count
         {
@@ -223,7 +223,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Внутренняя вместимость
+        /// Gets the capacity of the deque
         /// </summary>
         public int Capacity
         {
@@ -231,10 +231,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получить элемент с определённым индексом
+        /// Get element at specified index from the begining of the deque
         /// </summary>
-        /// <param name="i">Индекс</param>
-        /// <returns>Элемент</returns>
+        /// <param name="i">Index of the element</param>
+        /// <returns>Element at specified index</returns>
         [Pure]
         internal T GetElement(int i)
         {
@@ -245,7 +245,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Очистить дек
+        /// Removes all elements from the deque
         /// </summary>
 		public void Clear()
 		{
@@ -267,10 +267,10 @@ namespace Qoollo.Turbo.Collections
 		}
 
         /// <summary>
-        /// Скопировать содержимое в массив
+        /// Copies the deque elements to an existing array, starting at the specified array index.
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Начальный индекс</param>
+        /// <param name="array">Destination array</param>
+        /// <param name="index">Starting index</param>
 		public void CopyTo(T[] array, int index)
 		{
             Contract.Requires<ArgumentNullException>(array != null);
@@ -295,9 +295,9 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Добавить элемент в конец
+        /// Adds an element to the end of the deque
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">Element to add</param>
 		public void AddToBack(T item)
 		{
             Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
@@ -316,9 +316,9 @@ namespace Qoollo.Turbo.Collections
 		}
 
         /// <summary>
-        /// Добавить элемент в начало
+        /// Adds an element to the begining of the deque
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">Element to add</param>
         public void AddToFront(T item)
         {
             Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
@@ -338,9 +338,9 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Просмотреть элемент в начале
+        /// Returns the element at the beginning of the deque without removing it
         /// </summary>
-        /// <returns>Элемент</returns>
+        /// <returns>The element at the beginning of the deque</returns>
         [Pure]
         public T PeekAtFront()
         {
@@ -352,9 +352,9 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Просмотреть элемент в конце
+        /// Returns the element at the ending of the deque without removing it
         /// </summary>
-        /// <returns>Элемент</returns>
+        /// <returns>The element at the ending of the deque</returns>
         [Pure]
         public T PeekAtEnd()
         {
@@ -368,9 +368,9 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Удалить из начала
+        /// Removes an element at the begining of the deque
         /// </summary>
-        /// <returns>Элемент</returns>
+        /// <returns>The element at the beginning of the deque</returns>
 		public T RemoveFromFront()
 		{
             Contract.Requires(this.Count > 0);
@@ -388,9 +388,9 @@ namespace Qoollo.Turbo.Collections
 		}
 
         /// <summary>
-        /// Удалить из конца
+        /// Removes an element at the ending of the deque
         /// </summary>
-        /// <returns>Элемент</returns>
+        /// <returns>The element at the ending of the deque</returns>
         public T RemoveFromBack()
         {
             Contract.Requires(this.Count > 0);
@@ -409,10 +409,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Содержится ли элемент в деке
+        /// Determines whether an element is in the deque
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Содержится ли</returns>
+        /// <param name="item">The element to locate</param>
+        /// <returns>True if the item is found</returns>
         [Pure]
 		public bool Contains(T item)
 		{
@@ -437,9 +437,9 @@ namespace Qoollo.Turbo.Collections
 		}
 
         /// <summary>
-        /// Скопировать в массив
+        /// Copies the deque elements to a new array
         /// </summary>
-        /// <returns>Массив</returns>
+        /// <returns>A new array containing elements copied from the deque</returns>
 		public T[] ToArray()
 		{
             Contract.Ensures(Contract.Result<T[]>() != null);
@@ -462,7 +462,7 @@ namespace Qoollo.Turbo.Collections
 		}
 
         /// <summary>
-        /// Обрезать размеры внутреннего массива
+        /// Sets the capacity to the actual number of elements in the deque, if that number is less than 90 percent of current capacity.
         /// </summary>
         public void TrimExcess()
         {
@@ -474,10 +474,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Задать размер внутреннего массива
+        /// Sets the capacity of the deque (resize internal array)
         /// </summary>
-        /// <param name="headOffset">Смещение данных от начала</param>
-        /// <param name="capacity">Желаемая вместимость</param>
+        /// <param name="headOffset">Desired head offset</param>
+        /// <param name="capacity">Desired capacity</param>
 		private void SetCapacity(int headOffset, int capacity)
 		{
             Contract.Requires(capacity >= this.Count);
@@ -510,7 +510,7 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Получить Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         public Deque<T>.Enumerator GetEnumerator()
@@ -519,7 +519,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получить Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -527,7 +527,7 @@ namespace Qoollo.Turbo.Collections
             return new Deque<T>.Enumerator(this);
         }
         /// <summary>
-        /// Получить Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
@@ -536,10 +536,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Скопировать данные в массив
+        /// Copies the deque elements to an existing array, starting at the specified array index.
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Начальный индекс</param>
+        /// <param name="array">Destination array</param>
+        /// <param name="index">Starting index</param>
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
@@ -576,7 +576,7 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Синхронизирована ли коллекция
+        /// Is collection synchronized
         /// </summary>
         bool ICollection.IsSynchronized
         {
@@ -584,7 +584,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Объект инхронизации
+        /// Synchronization object
         /// </summary>
         object ICollection.SyncRoot
         {
