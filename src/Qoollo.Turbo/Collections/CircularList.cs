@@ -146,7 +146,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         private const int GrowFactor = 2;
         /// <summary>
-        /// Initial capacity for non-empty deque
+        /// Initial capacity for non-empty circular list
         /// </summary>
         private const int DefaultCapacity = 4;
 
@@ -159,6 +159,22 @@ namespace Qoollo.Turbo.Collections
 
         [NonSerialized]
         private object _syncRoot;
+
+
+        /// <summary>
+        /// Code contracts
+        /// </summary>
+        [ContractInvariantMethod]
+        private void Invariant()
+        {
+            Contract.Invariant(_elemArray != null);
+            Contract.Invariant(_head >= 0);
+            Contract.Invariant(_head < _elemArray.Length);
+            Contract.Invariant(_tail >= 0);
+            Contract.Invariant(_tail < _elemArray.Length);
+            Contract.Invariant(_size >= 0);
+            Contract.Invariant(((_head + _size) % _elemArray.Length) == _tail);
+        }
 
         /// <summary>
         /// CircularList constructor
@@ -212,8 +228,8 @@ namespace Qoollo.Turbo.Collections
                 _head = 0;
                 _tail = 0;
 
-                //foreach (var elem in collection)
-                //    AddToBack(elem);
+                foreach (var elem in collection)
+                    this.Add(elem);
             }
 		}
 
@@ -269,32 +285,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool Contains(T item)
         {
-            int curPos = this._head;
-            int restCount = this._size;
-
-            if (item == null)
-            {
-                while (restCount-- > 0)
-                {
-                    if (this._elemArray[curPos] == null)
-                        return true;
-
-                    curPos = (curPos + 1) % this._elemArray.Length;
-                }
-
-                return false;
-            }
-
-
-            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
-            while (restCount-- > 0)
-            {
-                if (this._elemArray[curPos] != null && comparer.Equals(this._elemArray[curPos], item))
-                    return true;
-
-                curPos = (curPos + 1) % this._elemArray.Length;
-            }
-            return false;
+            return this.IndexOf(item, 0, this.Count) >= 0;
         }
 
 
@@ -352,14 +343,355 @@ namespace Qoollo.Turbo.Collections
         }
 
 
+        /// <summary>
+        /// Searches for the specified 'item' and returns the index of the first occurrence of the item inside list
+        /// </summary>
+        /// <param name="item">The item to locate inside the list</param>
+        /// <returns>The index of element inside the list, if found. -1 otherwise</returns>
+        [Pure]
         public int IndexOf(T item)
         {
-            throw new NotImplementedException();
+            return this.IndexOf(item, 0, this.Count);
+        }
+        /// <summary>
+        /// Searches for the specified 'item' and returns the index of the first occurrence of the item inside list
+        /// </summary>
+        /// <param name="item">The item to locate inside the list</param>
+        /// <param name="index">Starting index of the search</param>
+        /// <param name="count">The number of elements in the section to search</param>
+        /// <returns>The index of element inside the list, if found. -1 otherwise</returns>
+        [Pure]
+        public int IndexOf(T item, int index, int count)
+        {
+            if (index < 0 || index >= this.Count)
+                throw new ArgumentOutOfRangeException("index");
+            if (count < 0 || count > this.Count - index)
+                throw new ArgumentOutOfRangeException("count");
+
+            int curPos = (this._head + index) % this._elemArray.Length;
+            int end = index + count;
+
+            if (item == null)
+            {
+                for (int curIndex = 0; curIndex < end; curIndex++)
+                {
+                    if (this._elemArray[curPos] == null)
+                        return curIndex;
+
+                    curPos = (curPos + 1) % this._elemArray.Length;
+                }
+
+                return -1;
+            }
+
+
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            for (int curIndex = 0; curIndex < end; curIndex++)
+            {
+                if (this._elemArray[curPos] != null && comparer.Equals(this._elemArray[curPos], item))
+                    return curIndex;
+
+                curPos = (curPos + 1) % this._elemArray.Length;
+            }
+            return -1;
         }
 
+        /// <summary>
+        /// Searches for the specified 'item' and returns the index of the last occurrence of the item inside list
+        /// </summary>
+        /// <param name="item">The item to locate inside the list</param>
+        /// <returns>The index of element inside the list, if found. -1 otherwise</returns>
+        [Pure]
+        public int LastIndexOf(T item)
+        {
+            return this.LastIndexOf(item, this.Count - 1, this.Count);
+        }
+        /// <summary>
+        /// Searches for the specified 'item' and returns the index of the last occurrence of the item inside list
+        /// </summary>
+        /// <param name="item">The item to locate inside the list</param>
+        /// <param name="index">Starting index of the search</param>
+        /// <param name="count">The number of elements in the section to search</param>
+        /// <returns>The index of element inside the list, if found. -1 otherwise</returns>
+        [Pure]
+        public int LastIndexOf(T item, int index, int count)
+        {
+            if (this.Count > 0 && index < 0)
+                throw new ArgumentOutOfRangeException("index");
+            if (this.Count == 0 && index != -1)
+                throw new ArgumentOutOfRangeException("index");
+            if (index >= this.Count)
+                throw new ArgumentOutOfRangeException("index");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count");
+            if (count > index + 1)
+                throw new ArgumentOutOfRangeException("count");
+
+            if (this.Count == 0)
+                return -1;
+
+            int curPos = (this._head + index) % this._elemArray.Length;
+            int start = index - count;
+
+            if (item == null)
+            {
+                for (int curIndex = index; curIndex > start; curIndex--)
+                {
+                    Contract.Assert(curIndex >= 0);
+
+                    if (this._elemArray[curPos] == null)
+                        return curIndex;
+
+                    curPos = (curPos + this._elemArray.Length - 1) % this._elemArray.Length;
+                }
+
+                return -1;
+            }
+
+
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            for (int curIndex = index; curIndex > start; curIndex--)
+            {
+                Contract.Assert(curIndex >= 0);
+
+                if (this._elemArray[curPos] != null && comparer.Equals(this._elemArray[curPos], item))
+                    return curIndex;
+
+                curPos = (curPos + this._elemArray.Length - 1) % this._elemArray.Length;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified predicate and returns its index
+        /// </summary>
+        /// <param name="match">Predicate</param>
+        /// <returns>The index of element inside the list, if found. -1 otherwise</returns>
+        public int FindIndex(Predicate<T> match)
+        {
+            if (match == null)
+                throw new ArgumentNullException("match");
+
+            int curPos = this._head;
+
+            for (int i = 0; i < this._size; i++)
+            {
+                if (match(this._elemArray[curPos]))
+                    return i;
+
+                curPos = (curPos + 1) % this._elemArray.Length;
+            }
+            return -1;
+        }
+
+
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified predicate and returns the index of the last occurrence
+        /// </summary>
+        /// <param name="match">Predicate</param>
+        /// <returns>The index of element inside the list, if found. -1 otherwise</returns>
+        public int FindLastIndex(Predicate<T> match)
+        {
+            if (match == null)
+                throw new ArgumentNullException("match");
+
+            int curPos = (this._tail + this._elemArray.Length - 1) % this._elemArray.Length;
+
+            for (int i = this.Count - 1; i >= 0; i--)
+            {
+                if (match(this._elemArray[curPos]))
+                    return i;
+
+                curPos = (curPos + this._elemArray.Length - 1) % this._elemArray.Length;
+            }
+            return -1;
+        }
+
+
+        /// <summary>
+        /// Search for the fist element that match the conditions defined by the specified predicate
+        /// </summary>
+        /// <param name="match">Predicate</param>
+        /// <returns>The first element that matches the condition, if found; otherwise, the default value for type T</returns>
+        public T Find(Predicate<T> match)
+        {
+            Contract.Requires(match != null);
+
+            int index = this.FindIndex(match);
+            return index < 0 ? default(T) : this[index];
+        }
+
+        /// <summary>
+        /// Determines whether the list contains elements that match the conditions defined by the specified predicate
+        /// </summary>
+        /// <param name="match">Predicate</param>
+        /// <returns>True if the list contains elements that match the condition</returns>
+        [Pure]
+        public bool Exists(Predicate<T> match)
+        {
+            Contract.Requires(match != null);
+
+            return this.FindIndex(match) >= 0;
+        }
+
+        /// <summary>
+        /// Performs the specified action on each element of the list
+        /// </summary>
+        /// <param name="action">Action</param>
+        public void ForEach(Action<T> action)
+        {
+            if (action == null)
+                throw new ArgumentNullException("action");
+
+            int version = this._version;
+            int curPos = this._head;
+
+            for (int i = 0; i < this._size && version == this._version; i++)
+            {
+                action(this._elemArray[curPos]);
+                curPos = (curPos + 1) % this._elemArray.Length;
+            }
+
+            if (version != this._version)
+                throw new InvalidOperationException("Collection was changed while executing ForEach method");
+        }
+
+
+        /// <summary>
+        /// Inserts an item to the list at the specified index
+        /// </summary>
+        /// <param name="index">Index</param>
+        /// <param name="item">New element</param>
         public void Insert(int index, T item)
         {
-            throw new NotImplementedException();
+            Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
+
+            if (index < 0 || index > this.Count)
+                throw new ArgumentOutOfRangeException("index");
+
+            bool moveToBeginning = index < this.Count / 2;
+            
+            if (_size == _elemArray.Length)
+                this.EnsureCapacity(moveToBeginning ? 1 : 0, this.Count + 1);
+
+            if (moveToBeginning)
+            {
+                int insertPosition = (index + _head + _elemArray.Length - 1) % _elemArray.Length;
+                var newHead = (_head - 1 + _elemArray.Length) % _elemArray.Length;
+
+                //if (_head < insertPosition)
+                //{
+                //    if (_head != 0)
+                //    {
+                //        Array.Copy(_elemArray, _head, _elemArray, newHead, insertPosition - _head);
+                //    }
+                //    else
+                //    {
+                //        _elemArray[newHead] = _elemArray[_head];
+                //        Array.Copy(_elemArray, _head, _elemArray, newHead, insertPosition - _head);
+                //    }
+                //}
+                //else
+                //{
+                //    var countToEnd = _elemArray.Length - _head;
+                //    Array.Copy(_elemArray, _head, array, headOffset, countToEnd);
+                //    Array.Copy(_elemArray, 0, array, headOffset + countToEnd, _tail);
+                //}
+
+                _elemArray[insertPosition] = item;
+                _head = newHead;
+            }
+            else
+            {
+
+            }
+
+            _size++;
+            _version++;
+        }
+
+
+        /// <summary>
+        /// Adds an element to the begining of the list
+        /// </summary>
+        /// <param name="item">Element to add</param>
+        public void AddFirst(T item)
+        {
+            Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
+
+            if (_size == _elemArray.Length)
+                this.EnsureCapacity(1, this.Count + 1);
+            var newHead = (_head - 1 + _elemArray.Length) % _elemArray.Length;
+            _elemArray[newHead] = item;
+            _head = newHead;
+            _size++;
+            _version++;
+        }
+
+        /// <summary>
+        /// Adds an element to the end of the list
+        /// </summary>
+        /// <param name="item">Element to add</param>
+        public void AddLast(T item)
+        {
+            Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
+
+            if (_size == _elemArray.Length)
+                this.EnsureCapacity(0, this.Count + 1);
+            _elemArray[_tail] = item;
+            _tail = (_tail + 1) % _elemArray.Length;
+            _size++;
+            _version++;
+        }
+
+        /// <summary>
+        /// Adds an element to the end of the list
+        /// </summary>
+        /// <param name="item">Element to add</param>
+        public void Add(T item)
+        {
+            this.AddLast(item);
+        }
+
+        /// <summary>
+        /// Removes an element at the begining of the circular list
+        /// </summary>
+        /// <returns>The element at the beginning of the list</returns>
+        public T RemoveFirst()
+        {
+            Contract.Requires(this.Count > 0);
+            Contract.Ensures(this.Count == Contract.OldValue(this.Count) - 1);
+
+            if (this._size == 0)
+                throw new InvalidOperationException("Collection is empty");
+
+            T result = _elemArray[this._head];
+            _elemArray[this._head] = default(T);
+            _head = (_head + 1) % _elemArray.Length;
+            _size--;
+            _version++;
+            return result;
+        }
+
+        /// <summary>
+        /// Removes an element at the ending of the circular list
+        /// </summary>
+        /// <returns>The element at the ending of the list</returns>
+        public T RemoveLast()
+        {
+            Contract.Requires(this.Count > 0);
+            Contract.Ensures(this.Count == Contract.OldValue(this.Count) - 1);
+
+            if (this._size == 0)
+                throw new InvalidOperationException("Collection is empty");
+
+            var lastElem = (_tail - 1 + _elemArray.Length) % _elemArray.Length;
+            T result = _elemArray[lastElem];
+            _elemArray[lastElem] = default(T);
+            _tail = lastElem;
+            _size--;
+            _version++;
+            return result;
         }
 
         public void RemoveAt(int index)
@@ -367,18 +699,21 @@ namespace Qoollo.Turbo.Collections
             throw new NotImplementedException();
         }
 
-        public void Add(T item)
-        {
-            throw new NotImplementedException();
-        }
-
+        /// <summary>
+        /// Removes the first occurrence of a specific object from the circular list
+        /// </summary>
+        /// <param name="item">The object to remove from the list</param>
+        /// <returns>True if 'item' is successfully removed; otherwise, false</returns>
         public bool Remove(T item)
         {
-            throw new NotImplementedException();
+            int index = this.IndexOf(item);
+            if (index >= 0)
+            {
+                this.RemoveAt(index);
+                return true;
+            }
+            return false;
         }
-
-
-
 
 
         /// <summary>
@@ -414,6 +749,28 @@ namespace Qoollo.Turbo.Collections
             int minSize = (int)((double)_elemArray.Length * ShrinkRate);
             if (_size < minSize)
                 this.SetCapacity(0, _size);
+        }
+
+
+        /// <summary>
+        /// Ensures that the list has enough space
+        /// </summary>
+        /// <param name="headOffset">Desired head offset on the grow</param>
+        /// <param name="capacity">Desired capacity</param>
+        private void EnsureCapacity(int headOffset, int capacity)
+        {
+            if (capacity < 0)
+                throw new OverflowException("Capacity overflowed. Collection is too large");
+
+            if (this._elemArray.Length < capacity)
+            {
+                int newSize = _elemArray.Length * GrowFactor;
+                if (newSize < _elemArray.Length + MinimumGrow)
+                    newSize = _elemArray.Length + MinimumGrow;
+                if (newSize < capacity)
+                    newSize = capacity;
+                this.SetCapacity(headOffset, newSize);
+            }
         }
 
         /// <summary>

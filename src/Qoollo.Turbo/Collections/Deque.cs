@@ -155,6 +155,7 @@ namespace Qoollo.Turbo.Collections
             Contract.Invariant(_tail >= 0);
             Contract.Invariant(_tail < _elemArray.Length);
             Contract.Invariant(_size >= 0);
+            Contract.Invariant(((_head + _size) % _elemArray.Length) == _tail);
         }
 		
         /// <summary>
