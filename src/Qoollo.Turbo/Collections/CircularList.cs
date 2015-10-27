@@ -173,11 +173,11 @@ namespace Qoollo.Turbo.Collections
         {
             Contract.Invariant(_elemArray != null);
             Contract.Invariant(_head >= 0);
-            Contract.Invariant(_head < _elemArray.Length);
+            Contract.Invariant((_head < _elemArray.Length) || (_elemArray.Length == 0 && _head == 0));
             Contract.Invariant(_tail >= 0);
-            Contract.Invariant(_tail < _elemArray.Length);
+            Contract.Invariant((_tail < _elemArray.Length) || (_elemArray.Length == 0 && _tail == 0));
             Contract.Invariant(_size >= 0);
-            Contract.Invariant(((_head + _size) % _elemArray.Length) == _tail);
+            Contract.Invariant(_elemArray.Length == 0 || (((_head + _size) % _elemArray.Length) == _tail));
         }
 
         /// <summary>
@@ -380,7 +380,7 @@ namespace Qoollo.Turbo.Collections
 
             if (item == null)
             {
-                for (int curIndex = 0; curIndex < end; curIndex++)
+                for (int curIndex = index; curIndex < end; curIndex++)
                 {
                     if (this._elemArray[curPos] == null)
                         return curIndex;
@@ -393,7 +393,7 @@ namespace Qoollo.Turbo.Collections
 
 
             EqualityComparer<T> comparer = EqualityComparer<T>.Default;
-            for (int curIndex = 0; curIndex < end; curIndex++)
+            for (int curIndex = index; curIndex < end; curIndex++)
             {
                 if (this._elemArray[curPos] != null && comparer.Equals(this._elemArray[curPos], item))
                     return curIndex;
