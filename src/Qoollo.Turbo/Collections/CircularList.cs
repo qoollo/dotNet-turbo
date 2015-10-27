@@ -8,6 +8,11 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Collections
 {
+    /// <summary>
+    /// Represents a strongly typed list of objects that can be accessed by index.
+    /// Equivalent to BCL List, but uses circular buffer inside, which gives O(1) insert and remove complexity on both ends of the list.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the CircularList</typeparam>
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [System.Diagnostics.DebuggerTypeProxy(typeof(Qoollo.Turbo.Collections.ServiceStuff.CollectionDebugView<>))]
     [Serializable]
@@ -113,7 +118,6 @@ namespace Qoollo.Turbo.Collections
         /// <summary>
         /// Detemines whether the object is compatible with type
         /// </summary>
-        /// <typeparam name="T">The type to which cast checked</typeparam>
         /// <param name="value">Source object</param>
         /// <returns>Can be casted to type T</returns>
         private static bool IsCompatibleObject(object value)
@@ -296,9 +300,12 @@ namespace Qoollo.Turbo.Collections
         /// <param name="index">Starting index</param>
         public void CopyTo(T[] array, int index)
         {
-            Contract.Requires<ArgumentNullException>(array != null);
-            Contract.Requires<ArgumentOutOfRangeException>(index >= 0 && index < array.Length);
-            Contract.Requires<ArgumentException>(index <= array.Length - this.Count);
+            if (array == null)
+                throw new ArgumentNullException("array");
+            if (index < 0 || index >= array.Length)
+                throw new ArgumentOutOfRangeException("index");
+            if (index > array.Length - this.Count)
+                throw new ArgumentException("index");
 
             if (this._size == 0)
                 return;
@@ -566,7 +573,7 @@ namespace Qoollo.Turbo.Collections
         {
             Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
 
-            if (index < 0 || index > this.Count)
+            if (index < 0 || index > _size)
                 throw new ArgumentOutOfRangeException("index");
 
             bool moveToBeginning = index < this.Count / 2;
@@ -576,34 +583,50 @@ namespace Qoollo.Turbo.Collections
 
             if (moveToBeginning)
             {
-                int insertPosition = (index + _head + _elemArray.Length - 1) % _elemArray.Length;
-                var newHead = (_head - 1 + _elemArray.Length) % _elemArray.Length;
+                int insertPos = (index + _head + _elemArray.Length - 1) % _elemArray.Length;
+                int newHead = (_head - 1 + _elemArray.Length) % _elemArray.Length;
 
-                //if (_head < insertPosition)
-                //{
-                //    if (_head != 0)
-                //    {
-                //        Array.Copy(_elemArray, _head, _elemArray, newHead, insertPosition - _head);
-                //    }
-                //    else
-                //    {
-                //        _elemArray[newHead] = _elemArray[_head];
-                //        Array.Copy(_elemArray, _head, _elemArray, newHead, insertPosition - _head);
-                //    }
-                //}
-                //else
-                //{
-                //    var countToEnd = _elemArray.Length - _head;
-                //    Array.Copy(_elemArray, _head, array, headOffset, countToEnd);
-                //    Array.Copy(_elemArray, 0, array, headOffset + countToEnd, _tail);
-                //}
+                if (index > 0)
+                {
+                    if (_head + index <= _elemArray.Length)
+                    {
+                        Array.Copy(_elemArray, _head, _elemArray, _head - 1, index);
+                    }
+                    else
+                    {
+                        Array.Copy(_elemArray, _head, _elemArray, _head - 1, _elemArray.Length - _head);
+                        _elemArray[_elemArray.Length - 1] = _elemArray[0];
+                        if (insertPos != 0)
+                            Array.Copy(_elemArray, 1, _elemArray, 0, insertPos);
+                    }
+                }
 
-                _elemArray[insertPosition] = item;
+                _elemArray[insertPos] = item;
                 _head = newHead;
             }
             else
             {
+                int insertPos = (index + _head) % _elemArray.Length;
+                int newTail = (_tail + 1) % _elemArray.Length;
 
+                if (index < _size)
+                {
+                    if (insertPos <= _tail)
+                    {
+                        Array.Copy(_elemArray, insertPos, _elemArray, insertPos + 1, _tail - insertPos + 1);
+                    }
+                    else
+                    {
+                        Array.Copy(_elemArray, 0, _elemArray, 1, _tail + 1);
+                        _elemArray[0] = _elemArray[_elemArray.Length - 1];
+                        if (insertPos != _elemArray.Length - 1)
+                            Array.Copy(_elemArray, insertPos, _elemArray, insertPos + 1, _elemArray.Length - insertPos - 1);
+                    }
+                }
+
+
+                _elemArray[insertPos] = item;
+                _tail = newTail;
             }
 
             _size++;
@@ -694,9 +717,67 @@ namespace Qoollo.Turbo.Collections
             return result;
         }
 
+        /// <summary>
+        /// Removes the item at the specified index
+        /// </summary>
+        /// <param name="index">Index of item to remove</param>
         public void RemoveAt(int index)
         {
-            throw new NotImplementedException();
+            Contract.Ensures(this.Count == Contract.OldValue(this.Count) - 1);
+
+            if (index < 0 || index >= _size)
+                throw new ArgumentOutOfRangeException("index");
+
+            bool moveFromBeginning = index < this.Count / 2;
+            int removePos = (index + _head) % _elemArray.Length;
+
+            if (moveFromBeginning)
+            {
+                int newHead = (_head + 1) % _elemArray.Length;
+
+                if (index > 0)
+                {
+                    if (_head + index < _elemArray.Length)
+                    {
+                        Array.Copy(_elemArray, _head, _elemArray, _head + 1, index);
+                    }
+                    else
+                    {
+                        if (removePos != 0)
+                            Array.Copy(_elemArray, 0, _elemArray, 1, removePos);
+                        _elemArray[0] = _elemArray[_elemArray.Length - 1];
+                        Array.Copy(_elemArray, _head, _elemArray, _head + 1, _elemArray.Length - _head - 1);
+                    }
+                }
+
+                _elemArray[_head] = default(T);
+                _head = newHead;
+            }
+            else
+            {
+                int newTail = (_tail - 1 + _elemArray.Length) % _elemArray.Length;
+
+                if (index < _size - 1)
+                {
+                    if (removePos <= _tail)
+                    {
+                        Array.Copy(_elemArray, removePos + 1, _elemArray, removePos, _tail - removePos);
+                    }
+                    else
+                    {
+                        if (removePos != _elemArray.Length - 1)
+                            Array.Copy(_elemArray, removePos + 1, _elemArray, removePos, _elemArray.Length - removePos - 1);
+                        _elemArray[_elemArray.Length - 1] = _elemArray[0];
+                        Array.Copy(_elemArray, 1, _elemArray, 0, _tail);
+                    }
+                }
+
+                _elemArray[_tail] = default(T);
+                _tail = newTail;
+            }
+
+            _size--;
+            _version++;
         }
 
         /// <summary>
@@ -783,7 +864,7 @@ namespace Qoollo.Turbo.Collections
             Contract.Requires(capacity >= this.Count);
 
             if (headOffset < 0)
-                headOffset = 0;
+                headOffset = (capacity - _size) / 2;
             else if (capacity - headOffset < _size)
                 headOffset = capacity - _size;
 
@@ -989,6 +1070,15 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
+        /// Removes the item at the specified index
+        /// </summary>
+        /// <param name="index">Index of item to remove</param>
+        void IList.RemoveAt(int index)
+        {
+            this.RemoveAt(index);
+        }
+
+        /// <summary>
         /// Removes the first occurrence of a specific item from the list
         /// </summary>
         /// <param name="value">Item</param>
@@ -1025,6 +1115,17 @@ namespace Qoollo.Turbo.Collections
                     throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), "value");
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Gets element of the list at specified index
+        /// </summary>
+        /// <param name="index">Element index</param>
+        /// <returns>Element of the list</returns>
+        T IReadOnlyList<T>.this[int index]
+        {
+            get { return this[index]; }
         }
     }
 }
