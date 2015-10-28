@@ -387,7 +387,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use Add")]
+        [Obsolete("Method was renamed. Consider to use 'Add' instead")]
         public void Enqueue(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
@@ -402,7 +402,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use Add")]
+        [Obsolete("Method was renamed. Consider to use 'Add' instead")]
         public void Enqueue(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
@@ -416,7 +416,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>True if item was added, otherwise false</returns>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use TryAdd")]
+        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead")]
         public bool TryEnqueue(T item)
         {
             return TryAddInner(item, 0, new CancellationToken());
@@ -430,7 +430,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use TryAdd")]
+        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead")]
         public bool TryEnqueue(T item, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -450,7 +450,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use TryAdd")]
+        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead")]
         public bool TryEnqueue(T item, int timeout)
         {
             if (timeout < 0)
@@ -468,7 +468,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use TryAdd")]
+        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead")]
         public bool TryEnqueue(T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -706,7 +706,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// </summary>
         /// <returns>The item removed from queue</returns>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use Take")]
+        [Obsolete("Method was renamed. Consider to use 'Take' instead")]
         public T Dequeue()
         {
             T result;
@@ -722,7 +722,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>The item removed from queue</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use Take")]
+        [Obsolete("Method was renamed. Consider to use 'Take' instead")]
         public T Dequeue(CancellationToken token)
         {
             T result;
@@ -738,7 +738,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="item">The item removed from queue</param>
         /// <returns>True if the item was removed</returns>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use TryTake")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
         public bool TryDequeue(out T item)
         {
             return TryTakeInner(out item, 0, CancellationToken.None, true);
@@ -750,7 +750,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="timeout">Removing timeout</param>
         /// <returns>True if the item was removed</returns>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use TryTake")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
         public bool TryDequeue(out T item, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -768,7 +768,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="timeout">Removing timeout in milliseconds</param>
         /// <returns>True if the item was removed</returns>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use TryTake")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
         public bool TryDequeue(out T item, int timeout)
         {
             if (timeout < 0)
@@ -782,7 +782,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="timeout">Removing timeout in milliseconds</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the item was removed</returns>
-        [Obsolete("Use TryTake")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
         public bool TryDequeue(out T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -799,7 +799,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>True if the item was removed</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Use TryTake")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
         internal bool TryDequeue(out T item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             if (timeout < 0)
