@@ -16,7 +16,7 @@ namespace Qoollo.Turbo.Collections
     [Serializable]
     public class OutOfTurnQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ICollection, IEnumerable
     {
-        private readonly Deque<T> _deque;
+        private readonly CircularList<T> _circularList;
 
         /// <summary>
         /// Code contracts
@@ -24,7 +24,7 @@ namespace Qoollo.Turbo.Collections
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_deque != null);
+            Contract.Invariant(_circularList != null);
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         public OutOfTurnQueue()
         {
-            _deque = new Deque<T>();
+            _circularList = new CircularList<T>();
         }
 
         /// <summary>
@@ -41,9 +41,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="capacity">Initial capacity</param>
         public OutOfTurnQueue(int capacity)
         {
-            Contract.Requires(capacity >= 0);
+            Contract.Requires<ArgumentException>(capacity >= 0);
 
-            _deque = new Deque<T>(capacity);
+            _circularList = new CircularList<T>(capacity);
         }
 
         /// <summary>
@@ -52,9 +52,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="collection">The collection whose elements are copied to the new queue</param>
         public OutOfTurnQueue(IEnumerable<T> collection)
         {
-            Contract.Requires(collection != null);
+            Contract.Requires<ArgumentNullException>(collection != null);
 
-            _deque = new Deque<T>(collection);
+            _circularList = new CircularList<T>(collection);
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         public int Count
         {
-            get { return _deque.Count; }
+            get { return _circularList.Count; }
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         public int Capacity
         {
-            get { return _deque.Capacity; }
+            get { return _circularList.Capacity; }
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         public void Clear()
         {
-            _deque.Clear();
+            _circularList.Clear();
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Qoollo.Turbo.Collections
             Contract.Requires(index >= 0);
             Contract.Requires(index <= array.Length - this.Count);
 
-            _deque.CopyTo(array, index);
+            _circularList.CopyTo(array, index);
         }
 
         /// <summary>
@@ -101,16 +101,26 @@ namespace Qoollo.Turbo.Collections
         /// <param name="item">The item to add to the queue</param>
         public void Enqueue(T item)
         {
-            _deque.AddToBack(item);
+            _circularList.AddLast(item);
         }
+
 
         /// <summary>
         /// Adds an object to the head of the queue
         /// </summary>
         /// <param name="item">The item to add to the queue</param>
+        public void EnqueueFirst(T item)
+        {
+            _circularList.AddFirst(item);
+        }
+        /// <summary>
+        /// Adds an object to the head of the queue
+        /// </summary>
+        /// <param name="item">The item to add to the queue</param>
+        [Obsolete("Method was renamed. Consider to use 'EnqueueFirst' instead")]
         public void EnqueueToFront(T item)
         {
-            _deque.AddToFront(item);
+            _circularList.AddFirst(item);
         }
 
         /// <summary>
@@ -119,9 +129,10 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The item at the head of the queue</returns>
         public T Peek()
         {
-            Contract.Requires(this.Count > 0);
+            if (_circularList.Count == 0)
+                throw new InvalidOperationException("Collection is empty");
 
-            return _deque.PeekAtFront();
+            return _circularList[0];
         }
 
         /// <summary>
@@ -132,7 +143,7 @@ namespace Qoollo.Turbo.Collections
         {
             Contract.Requires(this.Count > 0);
 
-            return _deque.RemoveFromFront();
+            return _circularList.RemoveFirst();
         }
 
         /// <summary>
@@ -143,7 +154,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool Contains(T item)
         {
-            return _deque.Contains(item);
+            return _circularList.Contains(item);
         }
 
         /// <summary>
@@ -154,7 +165,7 @@ namespace Qoollo.Turbo.Collections
         {
             Contract.Ensures(Contract.Result<T[]>() != null);
 
-            return _deque.ToArray();
+            return _circularList.ToArray();
         }
 
         /// <summary>
@@ -162,16 +173,16 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         public void TrimExcess()
         {
-            _deque.TrimExcess();
+            _circularList.TrimExcess();
         }
 
         /// <summary>
         /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
-        public Deque<T>.Enumerator GetEnumerator()
+        public CircularList<T>.Enumerator GetEnumerator()
         {
-            return _deque.GetEnumerator();
+            return _circularList.GetEnumerator();
         }
 
         /// <summary>
@@ -180,7 +191,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>Enumerator</returns>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
-            return _deque.GetEnumerator();
+            return _circularList.GetEnumerator();
         }
 
         /// <summary>
@@ -189,7 +200,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return _deque.GetEnumerator();
+            return _circularList.GetEnumerator();
         }
 
         /// <summary>
@@ -199,7 +210,7 @@ namespace Qoollo.Turbo.Collections
         /// <param name="index">Index in array at which copying begins</param>
         void ICollection.CopyTo(Array array, int index)
         {
-            (_deque as ICollection).CopyTo(array, index);
+            (_circularList as ICollection).CopyTo(array, index);
         }
 
         /// <summary>
@@ -207,7 +218,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         int ICollection.Count
         {
-            get { return _deque.Count; }
+            get { return _circularList.Count; }
         }
 
         /// <summary>
@@ -215,7 +226,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         bool ICollection.IsSynchronized
         {
-            get { return (_deque as ICollection).IsSynchronized; }
+            get { return (_circularList as ICollection).IsSynchronized; }
         }
 
         /// <summary>
@@ -223,7 +234,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         object ICollection.SyncRoot
         {
-            get { return (_deque as ICollection).SyncRoot; }
+            get { return (_circularList as ICollection).SyncRoot; }
         }
 
         /// <summary>
@@ -231,7 +242,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         int IReadOnlyCollection<T>.Count
         {
-            get { return _deque.Count; }
+            get { return _circularList.Count; }
         }
     }
 }

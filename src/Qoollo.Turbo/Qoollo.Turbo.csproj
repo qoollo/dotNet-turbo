@@ -241,6 +241,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\CircularList.cs" />
     <Compile Include="Collections\Concurrent\BlockingQueue.cs" />
     <Compile Include="Common\EventTimingTracker.cs" />
     <Compile Include="Exceptions\OperationInterruptedException.cs" />
