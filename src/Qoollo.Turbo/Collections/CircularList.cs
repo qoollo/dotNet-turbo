@@ -370,7 +370,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public int IndexOf(T item, int index, int count)
         {
-            if (index < 0 || index >= this.Count)
+            if (index < 0 || index > this.Count)
                 throw new ArgumentOutOfRangeException("index");
             if (count < 0 || count > this.Count - index)
                 throw new ArgumentOutOfRangeException("count");
@@ -576,7 +576,7 @@ namespace Qoollo.Turbo.Collections
             if (index < 0 || index > _size)
                 throw new ArgumentOutOfRangeException("index");
 
-            bool moveToBeginning = index < this.Count / 2;
+            bool moveToBeginning = index <= this.Count / 2;
             
             if (_size == _elemArray.Length)
                 this.EnsureCapacity(moveToBeginning ? 1 : 0, this.Count + 1);
@@ -588,9 +588,18 @@ namespace Qoollo.Turbo.Collections
 
                 if (index > 0)
                 {
-                    if (_head + index <= _elemArray.Length)
+                    if (_head <= _elemArray.Length - index)
                     {
-                        Array.Copy(_elemArray, _head, _elemArray, _head - 1, index);
+                        if (_head > 0)
+                        {
+                            Array.Copy(_elemArray, _head, _elemArray, _head - 1, index);
+                        }
+                        else
+                        {
+                            Contract.Assert(_head == 0);
+                            _elemArray[_elemArray.Length - 1] = _elemArray[0];
+                            Array.Copy(_elemArray, 1, _elemArray, 0, insertPos);
+                        }
                     }
                     else
                     {
@@ -613,7 +622,7 @@ namespace Qoollo.Turbo.Collections
                 {
                     if (insertPos <= _tail)
                     {
-                        Array.Copy(_elemArray, insertPos, _elemArray, insertPos + 1, _tail - insertPos + 1);
+                        Array.Copy(_elemArray, insertPos, _elemArray, insertPos + 1, _tail - insertPos);
                     }
                     else
                     {
@@ -884,7 +893,9 @@ namespace Qoollo.Turbo.Collections
             }
             _elemArray = array;
             _head = headOffset;
-            _tail = ((_size == capacity) ? 0 : this._size);
+            _tail = _elemArray.Length > 0 ? ((_head + _size) % _elemArray.Length) : 0;
+            Contract.Assert(_tail == ((_size == capacity) ? 0 : this._size + headOffset));
+
             _version++;
         }
 
