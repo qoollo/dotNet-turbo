@@ -10,18 +10,18 @@ using System.Threading.Tasks;
 namespace System.Collections.Generic
 {
     /// <summary>
-    /// Расширения для стандартных коллекций
+    /// Extension methods for BCL collections
     /// </summary>
-    public static class CollectionExtensions
+    public static class QoolloCollectionExtensions
     {
         /// <summary>
-        /// Содержится ли ключ в коллекции ключей словаря
+        /// Determines whether the Dictionary KeyCollection contains a specific key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип значения</typeparam>
-        /// <param name="dictKeyCol">Коллекция ключей</param>
-        /// <param name="item">Проверяемое значение</param>
-        /// <returns>Содержится ли</returns>
+        /// <typeparam name="TKey">The type of the keys in the dictionary</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary</typeparam>
+        /// <param name="dictKeyCol">Source Dictionary KeyCollection</param>
+        /// <param name="item">The key to locate in the KeyCollection</param>
+        /// <returns>True if the collection contains a key</returns>
         public static bool Contains<TKey, TValue>(this Dictionary<TKey, TValue>.KeyCollection dictKeyCol, TKey item)
         {
             Contract.Requires(dictKeyCol != null);
@@ -30,11 +30,11 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Обернуть список в список ReadOnlyList только для чтения
+        /// Wraps existed List with ReadOnlyList
         /// </summary>
-        /// <typeparam name="T">Тип элементов</typeparam>
-        /// <param name="list">Список</param>
-        /// <returns>Обёрнутый список только для чтения</returns>
+        /// <typeparam name="T">The type of elements in the list</typeparam>
+        /// <param name="list">Source list of items</param>
+        /// <returns>ReadOnlyList that wraps specified List instance</returns>
         public static ReadOnlyList<T> AsReadOnlyList<T>(this List<T> list)
         {
             Contract.Requires(list != null);
@@ -44,11 +44,11 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Обернуть список в список ReadOnlyListWrapper только для чтения
+        /// Wraps existed IList collection with ReadOnlyListWrapper
         /// </summary>
-        /// <typeparam name="T">Тип элементов</typeparam>
-        /// <param name="list">Список</param>
-        /// <returns>Обёрнутый список только для чтения</returns>
+        /// <typeparam name="T">The type of elements in the list</typeparam>
+        /// <param name="list">Source list of items</param>
+        /// <returns>ReadOnlyListWrapper that wraps specified IList instance</returns>
         public static ReadOnlyListWrapper<T> AsReadOnlyListWrapper<T>(this IList<T> list)
         {
             Contract.Requires(list != null);
@@ -58,11 +58,11 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Обернуть коллекцию в ReadOnlyCollectionWrapper только для чтения
+        /// Wraps existed ICollection with ReadOnlyCollectionWrapper
         /// </summary>
-        /// <typeparam name="T">Тип элементов</typeparam>
-        /// <param name="col">Коллекция</param>
-        /// <returns>Обёрнутая коллекция только для чтения</returns>
+        /// <typeparam name="T">The type of elements in the collection</typeparam>
+        /// <param name="col">Source collection</param>
+        /// <returns>ReadOnlyCollectionWrapper that wraps specified ICollection instance</returns>
         public static ReadOnlyCollectionWrapper<T> AsReadOnlyCollectionWrapper<T>(this ICollection<T> col)
         {
             Contract.Requires(col != null);
@@ -72,11 +72,11 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Обернуть множество в ReadOnlySetWrapper
+        /// Wraps existed ISet with ReadOnlySetWrapper
         /// </summary>
-        /// <typeparam name="T">Тип элементов</typeparam>
-        /// <param name="set">Множество</param>
-        /// <returns>Обёрнутое множество только для чтения</returns>
+        /// <typeparam name="T">The type of elements in the set</typeparam>
+        /// <param name="set">Source set</param>
+        /// <returns>ReadOnlySetWrapper that wraps specified ISet instance</returns>
         public static ReadOnlySetWrapper<T> AsReadOnlySetWrapper<T>(this ISet<T> set)
         {
             Contract.Requires(set != null);
@@ -86,11 +86,11 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Обернуть множество в ReadOnlyHashSet
+        /// Wraps existed Set instance with ReadOnlyHashSet
         /// </summary>
-        /// <typeparam name="T">Тип элементов</typeparam>
-        /// <param name="set">Множество</param>
-        /// <returns>Обёрнутое множество только для чтения</returns>
+        /// <typeparam name="T">The type of elements in the set</typeparam>
+        /// <param name="set">Source HashSet</param>
+        /// <returns>ReadOnlyHashSet that wraps specified HashSet instance</returns>
         public static ReadOnlyHashSet<T> AsReadOnlyHashSet<T>(this HashSet<T> set)
         {
             Contract.Requires(set != null);
@@ -100,12 +100,12 @@ namespace System.Collections.Generic
         }
         
         /// <summary>
-        /// Обернуть словарь в ReadOnlyDictionaryWrapper
+        /// Wraps existed IDictionary instance with ReadOnlyDictionaryWrapper
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип значения</typeparam>
-        /// <param name="dict">Словарь</param>
-        /// <returns>Обёрнутый словарь</returns>
+        /// <typeparam name="TKey">The type of keys in the dictionary</typeparam>
+        /// <typeparam name="TValue">The type of values in the dictionary</typeparam>
+        /// <param name="dict">Source dictionary</param>
+        /// <returns>ReadOnlyDictionaryWrapper that wraps specified IDictionary instance</returns>
         public static ReadOnlyDictionaryWrapper<TKey, TValue> AsReadOnlyDictionaryWrapper<TKey, TValue>(this IDictionary<TKey, TValue> dict)
         {
             Contract.Requires(dict != null);
@@ -115,12 +115,12 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Обернуть словарь в ReadOnlyDictionary
+        /// Wraps existed Dictionary instance with ReadOnlyDictionary
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип значения</typeparam>
-        /// <param name="dict">Словарь</param>
-        /// <returns>Обёрнутый словарь</returns>
+        /// <typeparam name="TKey">The type of keys in the dictionary</typeparam>
+        /// <typeparam name="TValue">The type of values in the dictionary</typeparam>
+        /// <param name="dict">Source dictionary</param>
+        /// <returns>ReadOnlyDictionary that wraps specified Dictionary instance</returns>
         public static ReadOnlyDictionary<TKey, TValue> AsReadOnlyDictionary<TKey, TValue>(this Dictionary<TKey, TValue> dict)
         {
             Contract.Requires(dict != null);
@@ -131,13 +131,13 @@ namespace System.Collections.Generic
 
 
         /// <summary>
-        /// Получить список с преобразованием элементов на лету
+        /// Creates TransformedReadOnlyListWrapper from the current IList instace with specified transformation
         /// </summary>
-        /// <typeparam name="TIn">Исходный тип элементов</typeparam>
-        /// <typeparam name="TOut">Выходной тип элементов</typeparam>
-        /// <param name="list">Исходный список</param>
-        /// <param name="selector">Преобразователь</param>
-        /// <returns>Список</returns>
+        /// <typeparam name="TIn">he type of the element in the source list</typeparam>
+        /// <typeparam name="TOut">The output type of the element in the current transformed list</typeparam>
+        /// <param name="list">Source list</param>
+        /// <param name="selector">Transformation function that will be applied to source elements</param>
+        /// <returns>Created TransformedReadOnlyListWrapper instance</returns>
         public static TransformedReadOnlyListWrapper<TIn, TOut> AsTransformedReadOnlyList<TIn, TOut>(this IList<TIn> list, Func<TIn, TOut> selector)
         {
             Contract.Requires(list != null);
