@@ -14,7 +14,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         {
             try
             {
-                ExceptionExtensions.ThrowException<TExc>("test message");
+                QoolloExceptionExtensions.ThrowException<TExc>("test message");
                 Assert.Fail("Should throw exception");
             }
             catch (Exception ex)
@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         {
             try
             {
-                ExceptionExtensions.ThrowException<TExc>();
+                QoolloExceptionExtensions.ThrowException<TExc>();
                 Assert.Fail("Should throw exception");
             }
             catch (Exception ex)

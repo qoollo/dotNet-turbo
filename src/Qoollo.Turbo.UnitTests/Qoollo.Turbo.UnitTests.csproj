@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="Collections\BlockingQueueTest.cs" />
     <Compile Include="Collections\CircularListTest.cs" />
+    <Compile Include="Common\ConcurrentDictionaryExtensionsTests.cs" />
     <Compile Include="Common\EventTimingTrackerTest.cs" />
     <Compile Include="Common\ExceptionExtensionsTest.cs" />
     <Compile Include="ExecutionQuantizers\OnRequestExecutionQuantizerTest.cs" />
