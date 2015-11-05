@@ -244,6 +244,7 @@
     <Compile Include="Collections\CircularList.cs" />
     <Compile Include="Collections\Concurrent\BlockingQueue.cs" />
     <Compile Include="Common\EventTimingTracker.cs" />
+    <Compile Include="Common\ExceptionHelper.cs" />
     <Compile Include="Exceptions\OperationInterruptedException.cs" />
     <Compile Include="Exceptions\ThreadSetManagerException.cs" />
     <Compile Include="ObjectPools\Common\DefaultPoolElementComparer.cs" />

@@ -162,7 +162,7 @@ namespace Qoollo.Turbo.Threading
         public EntryCountingEventGuard EnterClientGuarded<TException>(string message) where TException: Exception
         {
             if (!TryEnterClient())
-                ExceptionExtensions.ThrowException<TException>(message);
+                ExceptionHelper.ThrowException<TException>(message);
             return new EntryCountingEventGuard(this);
         }
         /// <summary>
@@ -173,7 +173,7 @@ namespace Qoollo.Turbo.Threading
         public EntryCountingEventGuard EnterClientGuarded<TException>() where TException : Exception
         {
             if (!TryEnterClient())
-                ExceptionExtensions.ThrowException<TException>();
+                ExceptionHelper.ThrowException<TException>();
             return new EntryCountingEventGuard(this);
         }
 
