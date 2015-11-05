@@ -47,13 +47,24 @@ namespace System.Linq
             if (predicate == null)
                 throw new ArgumentNullException("predicate");
 
-            List<T> list = collection as List<T>;
-            if (list != null)
-                return list.FindIndex(predicate);
+            IList<T> iList = collection as IList<T>;
+            if (iList != null)
+            {
+                List<T> list = collection as List<T>;
+                if (list != null)
+                    return list.FindIndex(predicate);
 
-            T[] array = collection as T[];
-            if (array != null)
-                return Array.FindIndex(array, predicate);
+                T[] array = collection as T[];
+                if (array != null)
+                    return Array.FindIndex(array, predicate);
+
+                int count = iList.Count;
+                for (int i = 0; i < count; i++)
+                    if (predicate(iList[i]))
+                        return i;
+
+                return -1;
+            }
 
 
             int index = 0;

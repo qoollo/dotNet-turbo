@@ -296,13 +296,13 @@
     <Compile Include="Collections\Wrappers\ReadOnlyListWrapper.cs" />
     <Compile Include="Collections\Wrappers\ReadOnlySetWrapper.cs" />
     <Compile Include="Collections\Wrappers\TransformedReadOnlyListWrapper.cs" />
-    <Compile Include="Common\Extensions\CollectionExtensions.cs" />
-    <Compile Include="Common\Extensions\ExceptionExtensions.cs" />
+    <Compile Include="Common\Extensions\QoolloCollectionExtensions.cs" />
+    <Compile Include="Common\Extensions\QoolloExceptionExtensions.cs" />
     <Compile Include="Common\Interfaces\IConsumer.cs" />
     <Compile Include="Common\Interfaces\IFreezable.cs" />
     <Compile Include="Common\Interfaces\IProducer.cs" />
     <Compile Include="Common\Interfaces\IProducerConsumer.cs" />
-    <Compile Include="Common\Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Common\Extensions\QoolloEnumerableExtensions.cs" />
     <Compile Include="Common\Console\ConsoleHelper.cs" />
     <Compile Include="Exceptions\CantInitThreadException.cs" />
     <Compile Include="Exceptions\CantRetrieveElementException.cs" />
@@ -405,7 +405,7 @@
     <Compile Include="Threading\OldThreadPools\StaticThreadPool.cs" />
     <Compile Include="Threading\OldThreadPools\SystemThreadPool.cs" />
     <Compile Include="Threading\OldThreadPools\ThreadPoolBase.cs" />
-    <Compile Include="Common\Extensions\TypeExtensions.cs" />
+    <Compile Include="Common\Extensions\QoolloTypeExtensions.cs" />
     <Compile Include="Common\Throttling\CPUThrottleBehavior.cs" />
     <Compile Include="Common\Throttling\ThrottleBehavior.cs" />
     <Compile Include="Common\WeakEvent\IWeakEventReferenceStorage.cs" />

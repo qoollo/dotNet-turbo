@@ -7,19 +7,22 @@ using System.Diagnostics.Contracts;
 namespace System
 {
     /// <summary>
-    /// Расширение для исключений
+    /// Extension methods for Exception objects
     /// </summary>
-    public static class ExceptionExtensions
+    public static class QoolloExceptionExtensions
     {
         /// <summary>
-        /// Получение подробного описания исключения
+        /// Produces full description for the Exception (almost equivalent to ToString results)
         /// </summary>
-        /// <param name="ex">Исключение</param>
-        /// <returns>Описание</returns>
+        /// <param name="ex">Source exception</param>
+        /// <returns>Full description for the exception</returns>
         public static string GetFullDescription(this Exception ex)
         {
             Contract.Requires(ex != null);
             Contract.Ensures(Contract.Result<string>() != null);
+
+            if (ex == null)
+                throw new ArgumentNullException("ex");
 
             StringBuilder builder = new StringBuilder(1000);
             builder.Append(ex.GetType().Name).Append(": ").Append(ex.Message).AppendLine();
@@ -39,14 +42,17 @@ namespace System
         }
 
         /// <summary>
-        /// Получение краткого описания исключения (без StackTrace)
+        /// Produces full description for the Exception (without StackTrace)
         /// </summary>
-        /// <param name="ex">Исключение</param>
-        /// <returns>Описание</returns>
+        /// <param name="ex">Source exception</param>
+        /// <returns>Full description for the exception</returns>
         public static string GetShortDescription(this Exception ex)
         {
             Contract.Requires(ex != null);
             Contract.Ensures(Contract.Result<string>() != null);
+
+            if (ex == null)
+                throw new ArgumentNullException("ex");
 
             StringBuilder builder = new StringBuilder(256);
             builder.Append(ex.GetType().Name).Append(": ").Append(ex.Message).AppendLine();
@@ -65,10 +71,10 @@ namespace System
         private const string CodeContractAssemblyName = "System.Diagnostics.Contracts";
 
         /// <summary>
-        /// Является ли исключение - исключением из библиотеки контрактов
+        /// Gets a value indicating whether the Excpetion is an instance of CodeContractException type
         /// </summary>
-        /// <param name="ex">Исключение</param>
-        /// <returns>Является ли</returns>
+        /// <param name="ex">Source exception</param>
+        /// <returns>True if the CodeContract exception</returns>
         public static bool IsCodeContractException(this Exception ex)
         {
             Contract.Requires(ex != null);
@@ -79,10 +85,10 @@ namespace System
 
 
         /// <summary>
-        /// Выбросить исключение указанного типа
+        /// Throws the exception of the specified type with the specified message
         /// </summary>
-        /// <param name="exceptionType">Тип исключения</param>
-        /// <param name="message">Сообщение (может отсутствовать)</param>
+        /// <param name="exceptionType">Type of the exceptional object to throw</param>
+        /// <param name="message">Message, that will be passed to Exception constructor (can be null)</param>
         public static void ThrowException(Type exceptionType, string message)
         {
             Contract.Requires<ArgumentNullException>(exceptionType != null);
@@ -147,18 +153,18 @@ namespace System
         }
 
         /// <summary>
-        /// Выбросить исключение типа TException
+        /// Throws the exception of the TException type with specified message
         /// </summary>
-        /// <typeparam name="TException">Тип исключения</typeparam>
-        /// <param name="message">Сообщение</param>
+        /// <typeparam name="TException">Type of the exception to throw</typeparam>
+        /// <param name="message">Message, that will be passed to Exception constructor (can be null)</param>
         public static void ThrowException<TException>(string message) where TException: Exception
         {
             ThrowException(typeof(TException), message);
         }
         /// <summary>
-        /// Выбросить исключение типа TException
+        /// Throws the exception of the TException type
         /// </summary>
-        /// <typeparam name="TException">Тип исключения</typeparam>
+        /// <typeparam name="TException">Type of the exception to throw</typeparam>
         public static void ThrowException<TException>() where TException : Exception
         {
             ThrowException(typeof(TException), null);
