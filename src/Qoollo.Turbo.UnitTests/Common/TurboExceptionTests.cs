@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class ExceptionExtensionsTest
+    public class TurboExceptionTests
     {
         private void TestTypedExceptionWithMessage<TExc>() where TExc: Exception
         {
             try
             {
-                QoolloExceptionExtensions.ThrowException<TExc>("test message");
+                TurboException.Throw<TExc>("test message");
                 Assert.Fail("Should throw exception");
             }
             catch (Exception ex)
@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.UnitTests.Common
         {
             try
             {
-                QoolloExceptionExtensions.ThrowException<TExc>();
+                TurboException.Throw<TExc>();
                 Assert.Fail("Should throw exception");
             }
             catch (Exception ex)
@@ -99,6 +99,27 @@ namespace Qoollo.Turbo.UnitTests.Common
         {
             TestTypedExceptionWithMessage<KeyNotFoundException>();
             TestTypedExceptionWithoutMessage<KeyNotFoundException>();
+        }
+
+
+        [TestMethod]
+        public void TestAssertNotTriggered()
+        {
+            TurboException.Assert<ArgumentException>(true, "message");
+        }
+
+        [TestMethod]
+        public void TestAssertTriggered()
+        {
+            try
+            {
+                TurboException.Assert<ArgumentException>(false, "message");
+                Assert.Fail("Should throw exception");
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(ex.GetType() == typeof(ArgumentException));
+            }
         }
     }
 }

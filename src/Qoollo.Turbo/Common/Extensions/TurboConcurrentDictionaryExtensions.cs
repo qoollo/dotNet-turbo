@@ -14,7 +14,7 @@ namespace System.Collections.Concurrent
     /// <summary>
     /// Extension methods for ConcurrentDictionary
     /// </summary>
-    public static class QoolloConcurrentDictionaryExtensions
+    public static class TurboConcurrentDictionaryExtensions
     {
         /// <summary>
         /// Reflection based estimate count calculator
@@ -28,6 +28,9 @@ namespace System.Collections.Concurrent
 
             private static readonly object _syncObj = new object();
 
+            /// <summary>
+            /// Preload required FildInfo metadata
+            /// </summary>
             private static void InitField()
             {
                 if (_mCountField != null)
@@ -48,6 +51,11 @@ namespace System.Collections.Concurrent
                 }
             }
 
+            /// <summary>
+            /// Returns estimate number of elements contained in the  ConcurrentDictionary
+            /// </summary>
+            /// <param name="dictionary"></param>
+            /// <returns></returns>
             public static int GetEstimateCount(ConcurrentDictionary<TKey, TValue> dictionary)
             {
                 Contract.Requires(dictionary != null);
@@ -79,6 +87,10 @@ namespace System.Collections.Concurrent
 
             private static readonly object _syncObj = new object();
 
+            /// <summary>
+            /// Compiles delegate to calculate estimate count
+            /// </summary>
+            /// <returns></returns>
             private static GetEstimateCountDelegate CreateGetEstimateCountDelegate()
             {
                 var mTablesField = typeof(ConcurrentDictionary<TKey, TValue>).GetField("m_tables", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
@@ -124,8 +136,7 @@ namespace System.Collections.Concurrent
                 ilGen.Emit(OpCodes.Ldloc_1);
                 ilGen.Emit(OpCodes.Ldloc_0);
                 ilGen.Emit(OpCodes.Ldloc_2);
-                ilGen.Emit(OpCodes.Ldelema, typeof(int));
-                ilGen.EmitCall(OpCodes.Call, volatileReadMethod, null);
+                ilGen.Emit(OpCodes.Ldelem_I4);
                 ilGen.Emit(OpCodes.Add);
                 ilGen.Emit(OpCodes.Stloc_1);
 
@@ -148,6 +159,9 @@ namespace System.Collections.Concurrent
                 return (GetEstimateCountDelegate)method.CreateDelegate(typeof(GetEstimateCountDelegate));
             }
 
+            /// <summary>
+            /// Compiles and saves delegate to calculate estimate count
+            /// </summary>
             private static void InitGetEstimateCount()
             {
                 if (_getEstimateCount == null)
@@ -160,6 +174,11 @@ namespace System.Collections.Concurrent
                 }
             }
 
+            /// <summary>
+            /// Returns estimate number of elements contained in the  ConcurrentDictionary
+            /// </summary>
+            /// <param name="dictionary"></param>
+            /// <returns></returns>
             public static int GetEstimateCount(ConcurrentDictionary<TKey, TValue> dictionary)
             {
                 Contract.Requires(dictionary != null);

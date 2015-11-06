@@ -12,7 +12,7 @@ namespace System.Collections.Generic
     /// <summary>
     /// Extension methods for BCL collections
     /// </summary>
-    public static class QoolloCollectionExtensions
+    public static class TurboCollectionExtensions
     {
         /// <summary>
         /// Determines whether the Dictionary KeyCollection contains a specific key

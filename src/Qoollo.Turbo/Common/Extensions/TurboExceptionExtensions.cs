@@ -9,7 +9,7 @@ namespace System
     /// <summary>
     /// Extension methods for Exception objects
     /// </summary>
-    public static class QoolloExceptionExtensions
+    public static class TurboExceptionExtensions
     {
         /// <summary>
         /// Produces full description for the Exception (almost equivalent to ToString results)
@@ -91,67 +91,11 @@ namespace System
         /// <param name="message">Message, that will be passed to Exception constructor (can be null)</param>
         public static void ThrowException(Type exceptionType, string message)
         {
-            Contract.Requires<ArgumentNullException>(exceptionType != null);
-            Contract.Requires<ArgumentException>(exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception)));
+            Contract.Requires(exceptionType != null);
+            Contract.Requires(exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception)));
 
-
-            Exception ex = null;
-
-            if (message == null)
-            {
-                var emptyArgConstructor = exceptionType.GetConstructor(Type.EmptyTypes);
-                if (emptyArgConstructor != null)
-                    ex = emptyArgConstructor.Invoke(null) as Exception;
-            }
-
-            if (ex == null)
-            {
-                var singleArgConstructor = exceptionType.GetConstructor(new Type[] { typeof(string) });
-                if (singleArgConstructor != null && singleArgConstructor.GetParameters()[0].Name == "message")
-                    ex = singleArgConstructor.Invoke(new object[] { message }) as Exception;
-            }
-
-            if (ex == null)
-            {
-                var messageExcConstructor = exceptionType.GetConstructor(new Type[] { typeof(string), typeof(Exception) });
-                var messageExcConstructorParams = messageExcConstructor != null ? messageExcConstructor.GetParameters() : null;
-                if (messageExcConstructor != null && messageExcConstructorParams[0].Name == "message" && messageExcConstructorParams[1].Name == "innerException")
-                    ex = messageExcConstructor.Invoke(new object[] { message, null }) as Exception;
-            }
-
-            if (ex == null)
-            {
-                var doubleArgConstructor = exceptionType.GetConstructor(new Type[] { typeof(string), typeof(string) });
-                if (doubleArgConstructor != null)
-                {
-                    var constructorParams = doubleArgConstructor.GetParameters();
-                    if ((constructorParams[0].Name == "paramName" || constructorParams[0].Name == "objectName") && constructorParams[1].Name == "message")
-                        ex = doubleArgConstructor.Invoke(new object[] { null, message }) as Exception;
-                    else if (constructorParams[0].Name == "message")
-                        ex = doubleArgConstructor.Invoke(new object[] { message, null }) as Exception;
-                }
-            }
-
-            if (ex == null)
-            {
-                var singleArgConstructor = exceptionType.GetConstructor(new Type[] { typeof(string) });
-                if (singleArgConstructor != null)
-                    ex = singleArgConstructor.Invoke(new object[] { message ?? "" }) as Exception;
-            }
-
-            if (ex == null && message != null)
-            {
-                var emptyArgConstructor = exceptionType.GetConstructor(Type.EmptyTypes);
-                if (emptyArgConstructor != null)
-                    ex = emptyArgConstructor.Invoke(null) as Exception;
-            }
-
-            if (ex == null)
-                throw new ArgumentException("Can't throw Exception of type '" + exceptionType.Name + "' with message '" + (message ?? "") + "'");
-
-            throw ex;
+            Qoollo.Turbo.TurboException.Throw(exceptionType, message);
         }
-
         /// <summary>
         /// Throws the exception of the TException type with specified message
         /// </summary>
@@ -159,7 +103,7 @@ namespace System
         /// <param name="message">Message, that will be passed to Exception constructor (can be null)</param>
         public static void ThrowException<TException>(string message) where TException: Exception
         {
-            ThrowException(typeof(TException), message);
+            Qoollo.Turbo.TurboException.Throw<TException>(message);
         }
         /// <summary>
         /// Throws the exception of the TException type
@@ -167,7 +111,29 @@ namespace System
         /// <typeparam name="TException">Type of the exception to throw</typeparam>
         public static void ThrowException<TException>() where TException : Exception
         {
-            ThrowException(typeof(TException), null);
+            Qoollo.Turbo.TurboException.Throw<TException>();
+        }
+
+        /// <summary>
+        /// Checks for a condition. Throws Exception if the condition is false
+        /// </summary>
+        /// <typeparam name="TException">The exception to throw if the condition is false</typeparam>
+        /// <param name="condition">The conditional expression to test</param>
+        /// <param name="message">A message to display if the condition is not met</param>
+        public static void Assert<TException>(bool condition, string message) where TException : Exception
+        {
+            if (!condition)
+                Qoollo.Turbo.TurboException.Throw<TException>(message);
+        }
+        /// <summary>
+        /// Checks for a condition. Throws Exception if the condition is false
+        /// </summary>
+        /// <typeparam name="TException">The exception to throw if the condition is false</typeparam>
+        /// <param name="condition">The conditional expression to test</param>
+        public static void Assert<TException>(bool condition) where TException : Exception
+        {
+            if (!condition)
+                Qoollo.Turbo.TurboException.Throw<TException>();
         }
     }
 }

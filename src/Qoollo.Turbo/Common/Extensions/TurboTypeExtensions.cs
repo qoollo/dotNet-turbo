@@ -10,7 +10,7 @@ namespace System
     /// <summary>
     /// Extension methods for the Type objects
     /// </summary>
-    public static class QoolloTypeExtensions
+    public static class TurboTypeExtensions
     {
         /// <summary>
         /// Gets a value indicating whether the 'null' is a valid value for the Type

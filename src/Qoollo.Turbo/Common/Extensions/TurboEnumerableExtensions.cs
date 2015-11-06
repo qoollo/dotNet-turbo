@@ -9,7 +9,7 @@ namespace System.Linq
     /// <summary>
     /// Additional LINQ to Object extension methods
     /// </summary>
-    public static class QoolloEnumerableExtensions
+    public static class TurboEnumerableExtensions
     {
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified predicate and returns its index
