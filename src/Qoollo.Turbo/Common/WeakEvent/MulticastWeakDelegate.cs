@@ -6,13 +6,13 @@ using System.Diagnostics.Contracts;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Слабо связанное событие
+    /// Represents a weak multicast delegate
     /// </summary>
-    /// <typeparam name="T">Тип делегата</typeparam>
+    /// <typeparam name="T">Type of the original delegate</typeparam>
     public class MulticastWeakDelegate<T> where T : class
     {
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -21,30 +21,26 @@ namespace Qoollo.Turbo
             Contract.Invariant(_handlers != null);
         }
  
-        private object _locker;
-        private List<WeakDelegate> _handlers;
+        private readonly object _locker;
+        private readonly List<WeakDelegate> _handlers;
+
 
         /// <summary>
-        /// Статический конструктор для проверки валидности типа T
-        /// </summary>
-        static MulticastWeakDelegate()
-        {
-            Contract.Assume(typeof(T).IsSubclassOf(typeof(Delegate)));
-        }
-
-        /// <summary>
-        /// Конструктор MulitcastWeakDelegate
+        /// MulitcastWeakDelegate constructor
         /// </summary>
         public MulticastWeakDelegate()
         {
+            if (!typeof(T).IsSubclassOf(typeof(Delegate)))
+                throw new InvalidOperationException("Can't create MulticastWeakDelegate for non delegate type: " + typeof(T).Name);
+
             _locker = new object();
             _handlers = new List<WeakDelegate>();
         }
 
         /// <summary>
-        /// Подписка на событие
+        /// Add subscription to the current delegate
         /// </summary>
-        /// <param name="reference">Делегат</param>
+        /// <param name="reference">New subscriber</param>
         public void Add(T reference)
         {
             Contract.Requires(reference != null);
@@ -73,9 +69,9 @@ namespace Qoollo.Turbo
         }
 
         /// <summary>
-        /// Отписка от события
+        /// Remove subscription from the current delegate
         /// </summary>
-        /// <param name="reference">Делегат</param>
+        /// <param name="reference">Subscriber that will be removed</param>
         public void Remove(T reference)
         {
             Contract.Requires(reference != null);
@@ -99,12 +95,13 @@ namespace Qoollo.Turbo
         }
 
         /// <summary>
-        /// Получить делегат, содержащий все делегаты для живых объектов
+        /// Builds the strongly referenced delegate from the current weak delegate
         /// </summary>
-        /// <returns>Делегат для инициализации события</returns>
+        /// <returns>Constructed delegate</returns>
         public T GetDelegate()
         {
-            List<Delegate> activeHandlers = new List<Delegate>(_handlers.Count);
+            Delegate result = null;
+
             lock (_locker)
             {
                 for (int i = 0; i < _handlers.Count; i++)
@@ -114,7 +111,7 @@ namespace Qoollo.Turbo
                     var newDeleg = _handlers[i].GetDelegate();
                     if (newDeleg != null)
                     {
-                        activeHandlers.Add(newDeleg);
+                        result = Delegate.Combine(result, newDeleg);
                     }
                     else
                     {
@@ -124,7 +121,7 @@ namespace Qoollo.Turbo
                 }
             }
 
-            return Delegate.Combine(activeHandlers.ToArray()) as T;
+            return (result as T);
         }
     }
 }

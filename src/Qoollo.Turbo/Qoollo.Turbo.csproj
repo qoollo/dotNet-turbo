@@ -410,7 +410,7 @@
     <Compile Include="Common\Extensions\TurboTypeExtensions.cs" />
     <Compile Include="Common\Throttling\CPUThrottleBehavior.cs" />
     <Compile Include="Common\Throttling\ThrottleBehavior.cs" />
-    <Compile Include="Common\WeakEvent\IWeakEventReferenceStorage.cs" />
+    <Compile Include="Common\WeakEvent\WeakEventReferenceStorageBase.cs" />
     <Compile Include="Common\WeakEvent\StrongReferenceStorage.cs" />
     <Compile Include="Common\WeakEvent\MulticastWeakDelegate.cs" />
     <Compile Include="Common\WeakEvent\WeakDelegate.cs" />

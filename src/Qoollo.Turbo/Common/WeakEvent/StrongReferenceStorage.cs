@@ -1,30 +1,28 @@
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Жёсткая ссылка на объект (держит GC)
+    /// Strong reference to the object
     /// </summary>
-    class StrongReferenceStorage : IWeakEventReferenceStorage
+    internal class StrongReferenceStorage : WeakEventReferenceStorageBase
     {
         private object _target = null;
 
         /// <summary>
-        /// Собственно объект
+        /// StrongReferenceStorage constructor
         /// </summary>
-        public object Target
-        {
-            get
-            {
-                return _target;
-            }
-        }
-
-        /// <summary>
-        /// Конструктор StrongReferenceStorage
-        /// </summary>
-        /// <param name="target">Хранимый объект</param>
+        /// <param name="target">Object to store</param>
         public StrongReferenceStorage(object target)
         {
             _target = target;
         }
+
+        /// <summary>
+        /// Gets the object from the storage
+        /// </summary>
+        public override object Target { get { return _target; } }
+        /// <summary>
+        /// Is stored object still alive
+        /// </summary>
+        public override bool IsAlive { get { return true; } }
     }
 }
