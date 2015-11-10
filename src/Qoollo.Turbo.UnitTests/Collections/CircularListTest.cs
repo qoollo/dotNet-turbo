@@ -722,10 +722,8 @@ namespace Qoollo.Turbo.UnitTests.Collections
         }
 
 
-        private void RunCompexTest(CircularList<int> testInst, List<int> cmpLst, int iterationCount)
+        private void RunCompexTest(CircularList<int> testInst, List<int> cmpLst, Random rnd, int rndSeed, int iterationCount)
         {
-            Random rnd = new Random();
-
             for (int i = 0; i < iterationCount; i++)
             {
                 bool add = testInst.Count < 200 || (testInst.Count < 2000 && rnd.Next(2) == 0);
@@ -770,12 +768,12 @@ namespace Qoollo.Turbo.UnitTests.Collections
             }
 
 
-            AreEqual(cmpLst, testInst, "ComplexTest");
+            AreEqual(cmpLst, testInst, "ComplexTest. RandomSeed = " + rndSeed.ToString());
 
             for (int i = 0; i < cmpLst.Count; i++)
             {
-                Assert.AreEqual(cmpLst.IndexOf(cmpLst[i]), testInst.IndexOf(cmpLst[i]), "IndexOf");
-                Assert.AreEqual(cmpLst.LastIndexOf(cmpLst[i]), testInst.LastIndexOf(cmpLst[i]), "LastIndexOf");
+                Assert.AreEqual(cmpLst.IndexOf(cmpLst[i]), testInst.IndexOf(cmpLst[i]), "IndexOf. RandomSeed = " + rndSeed.ToString());
+                Assert.AreEqual(cmpLst.LastIndexOf(cmpLst[i]), testInst.LastIndexOf(cmpLst[i]), "LastIndexOf. RandomSeed = " + rndSeed.ToString());
             }
         }
 
@@ -786,8 +784,11 @@ namespace Qoollo.Turbo.UnitTests.Collections
             var testInst = new CircularList<int>();
             var cmpList = new List<int>();
 
+            int rndSeed = Environment.TickCount;
+            Random rnd = new Random(rndSeed);
+
             for (int i = 0; i < 100; i++)
-                RunCompexTest(testInst, cmpList, 100);
+                RunCompexTest(testInst, cmpList, rnd, rndSeed, 100);
         }
     }
 }
