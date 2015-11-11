@@ -7,37 +7,31 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Исключение, когда не найден элемент
+    /// The exception that is thrown when item is not found in collection
     /// </summary>
     [Serializable]
     public class ItemNotFoundException: SystemException
     {
         /// <summary>
-        /// Конструктор ItemNotFoundException
+        /// ItemNotFoundException constructor
         /// </summary>
         public ItemNotFoundException() : base("Item was not found") { }
         /// <summary>
-        /// Конструктор ItemNotFoundException
+        /// ItemNotFoundException constructor with error message
         /// </summary>
-        /// <param name="message">Сообщение</param>
+        /// <param name="message">Error message</param>
         public ItemNotFoundException(string message) : base(message) { }
         /// <summary>
-        /// Конструктор ItemNotFoundException
+        /// ItemNotFoundException constructor with error message and innerException
         /// </summary>
-        /// <param name="message">Сообщение</param>
-        /// <param name="innerException">Внутреннее исключение</param>
-        public ItemNotFoundException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
+        public ItemNotFoundException(string message, Exception innerException) : base(message, innerException) { }
         /// <summary>
-        ///  Конструктор ItemNotFoundException для деериализации
+        /// ItemNotFoundException constructor for deserialization
         /// </summary>
-        /// <param name="info">info</param>
-        /// <param name="context">context</param>
-        protected ItemNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-            : base(info, context)
-        {
-        }
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected ItemNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }

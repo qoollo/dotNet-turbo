@@ -244,6 +244,8 @@
     <Compile Include="Collections\CircularList.cs" />
     <Compile Include="Collections\Concurrent\BlockingQueue.cs" />
     <Compile Include="Common\EventTimingTracker.cs" />
+    <Compile Include="Exceptions\TurboAssertionException.cs" />
+    <Compile Include="Exceptions\InvalidTypeException.cs" />
     <Compile Include="Exceptions\TurboException.cs" />
     <Compile Include="Common\Extensions\TurboConcurrentDictionaryExtensions.cs" />
     <Compile Include="Exceptions\OperationInterruptedException.cs" />

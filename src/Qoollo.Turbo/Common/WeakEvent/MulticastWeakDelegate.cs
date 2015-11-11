@@ -31,7 +31,7 @@ namespace Qoollo.Turbo
         public MulticastWeakDelegate()
         {
             if (!typeof(T).IsSubclassOf(typeof(Delegate)))
-                throw new InvalidOperationException("Can't create MulticastWeakDelegate for non delegate type: " + typeof(T).Name);
+                throw new InvalidTypeException("Can't create MulticastWeakDelegate for non delegate type: " + typeof(T).Name);
 
             _locker = new object();
             _handlers = new List<WeakDelegate>();

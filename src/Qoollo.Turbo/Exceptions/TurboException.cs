@@ -123,22 +123,22 @@ namespace Qoollo.Turbo
             Throw(typeof(TException), null);
         }
         /// <summary>
-        /// Throws TurboException with specified message
+        /// Throws TurboAssertionException with specified message
         /// </summary>
         /// <param name="message">Message, that will be passed to TurboException constructor (can be null)</param>
-        public static void Throw(string message)
+        private static void Throw(string message)
         {
             if (message == null)
-                throw new TurboException();
+                throw new TurboAssertionException();
 
-            throw new TurboException(message);
+            throw new TurboAssertionException(message);
         }
         /// <summary>
-        /// Throws TurboException
+        /// Throws TurboAssertionException
         /// </summary>
-        public static void Throw()
+        private static void Throw()
         {
-            throw new TurboException();
+            throw new TurboAssertionException();
         }
 
 
@@ -168,7 +168,7 @@ namespace Qoollo.Turbo
         }
 
         /// <summary>
-        /// Checks for a condition. Throws Exception if the condition is false
+        /// Checks for a condition. Throws TurboAssertionException if the condition is false
         /// </summary>
         /// <param name="condition">The conditional expression to test</param>
         /// <param name="message">A message to display if the condition is not met</param>
@@ -179,7 +179,7 @@ namespace Qoollo.Turbo
                 Throw(message);
         }
         /// <summary>
-        /// Checks for a condition. Throws Exception if the condition is false
+        /// Checks for a condition. Throws TurboAssertionException if the condition is false
         /// </summary>
         /// <param name="condition">The conditional expression to test</param>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]

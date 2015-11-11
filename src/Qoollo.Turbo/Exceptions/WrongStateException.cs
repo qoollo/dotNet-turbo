@@ -6,25 +6,31 @@ using System.Text;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Исключение для ситуаций, когда объект находится в состоянии, недопустимом для данной операции
+    /// The exception that is thrown when attempting to perform an operation that is invalid for the current state of the object
     /// </summary>
     [Serializable]
     public class WrongStateException : InvalidOperationException
     {
         /// <summary>
-        /// Конструктор WrongStateException без параметров
+        /// WrongStateException constructor
         /// </summary>
-        public WrongStateException() : base("Object has inappropriate state for requested operation") { }
+        public WrongStateException() : base("Object has inappropriate state for the requested operation") { }
         /// <summary>
-        /// Конструктор WrongStateException с сообщением об ошибке
+        /// WrongStateException constructor with error message
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
+        /// <param name="message">Error message</param>
         public WrongStateException(string message) : base(message) { }
         /// <summary>
-        /// Конструктор WrongStateException с сообщением об ошибке и внутренним исключением
+        /// WrongStateException constructor with error message and innerException
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        /// <param name="innerException">Внутреннее исключение</param>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
         public WrongStateException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// WrongStateException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected WrongStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }
