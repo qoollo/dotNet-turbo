@@ -82,14 +82,20 @@ namespace Qoollo.Turbo
 
                 lock (_locker)
                 {
-                    _handlers.RemoveAll(x => !x.IsActive || invList.Contains(x.GetDelegate()));
+                    int index = _handlers.FindIndex(x => Array.IndexOf(invList, x.GetDelegate()) >= 0);
+                    if (index >= 0)
+                        _handlers.RemoveAt(index);
+                    _handlers.RemoveAll(x => !x.IsActive);
                 }
             }
             else
             {
                 lock (_locker)
                 {
-                    _handlers.RemoveAll(x => !x.IsActive || reference.Equals(x.GetDelegate()));
+                    int index = _handlers.FindIndex(x => reference.Equals(x.GetDelegate()));
+                    if (index >= 0)
+                        _handlers.RemoveAt(index);
+                    _handlers.RemoveAll(x => !x.IsActive);
                 }
             }
         }

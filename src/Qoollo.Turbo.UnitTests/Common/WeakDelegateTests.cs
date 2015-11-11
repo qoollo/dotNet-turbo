@@ -81,5 +81,34 @@ namespace Qoollo.Turbo.UnitTests.Common
             var d = testInst.GetDelegate();
             Assert.IsNull(d);
         }
+
+
+        [TestMethod]
+        public void TestUnsubscribeWorks()
+        {
+            TargetClass target = new TargetClass();
+            MulticastWeakDelegate<Action> testInst = new MulticastWeakDelegate<Action>();
+
+            testInst.Add(target.TestMethod);
+            testInst.GetDelegate()();
+            Assert.AreEqual(1, target.CallCount);
+
+            testInst.Remove(target.TestMethod);
+            var d = testInst.GetDelegate();
+            Assert.IsNull(d);
+        }
+
+        [TestMethod]
+        public void TestDoubleSubscribeRemove()
+        {
+            TargetClass target = new TargetClass();
+            MulticastWeakDelegate<Action> testInst = new MulticastWeakDelegate<Action>();
+
+            testInst.Add(target.TestMethod);
+            testInst.Add(target.TestMethod);
+            testInst.Remove(target.TestMethod);
+            testInst.GetDelegate()();
+            Assert.AreEqual(1, target.CallCount);
+        }
     }
 }
