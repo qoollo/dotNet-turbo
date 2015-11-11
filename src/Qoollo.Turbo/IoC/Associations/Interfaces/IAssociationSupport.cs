@@ -8,40 +8,40 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.IoC.Associations
 {
     /// <summary>
-    /// Интерфейс для поддержки добавления произвольных Lifetime контейнеров в контейнер ассоциаций
+    /// Interface that indicates the ability to add custom lifetime object containers to the Association Container
     /// </summary>
-    /// <typeparam name="TKey">Тип ключа контейнера ассоциаций</typeparam>
+    /// <typeparam name="TKey">The type of the key in association container</typeparam>
     [ContractClass(typeof(ICustomAssociationSupportCodeContractCheck<>))]
-    public interface ICustomAssociationSupport<in TKey>
+    public interface ICustomAssociationSupport<TKey>
     {
         /// <summary>
-        /// Добавить ассоциацию с заднным Lifetime контейнером
+        /// Adds a lifetime object container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="lifetimeContainer">Lifetime контейнер</param>
+        /// <param name="key">Key</param>
+        /// <param name="lifetimeContainer">Lifetime object container to add</param>
         void AddAssociation(TKey key, Lifetime.LifetimeBase lifetimeContainer);
         /// <summary>
-        /// Добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+        /// Adds a lifetime object container created by the 'factory' for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
-        /// <param name="factory">Фабрика</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
         void AddAssociation(TKey key, Type objType, Lifetime.Factories.LifetimeFactory factory);
 
         /// <summary>
-        /// Попытаться добавить ассоциацию с заднным Lifetime контейнером
+        /// Attempts to add a lifetime object container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="lifetimeContainer">Lifetime контейнер</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="lifetimeContainer">Lifetime object container to add</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         bool TryAddAssociation(TKey key, Lifetime.LifetimeBase lifetimeContainer);
         /// <summary>
-        /// Попытаться добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+        /// Attempts to add a lifetime object container created by the 'factory' for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
-        /// <param name="factory">Фабрика</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         bool TryAddAssociation(TKey key, Type objType, Lifetime.Factories.LifetimeFactory factory);
     }
 
@@ -53,7 +53,7 @@ namespace Qoollo.Turbo.IoC.Associations
     /// </summary>
     /// <typeparam name="TKey">Тип ключа контейнера ассоциаций</typeparam>
     [ContractClass(typeof(ISingletonAssociationSupportCodeContractCheck<>))]
-    public interface ISingletonAssociationSupport<in TKey>
+    public interface ISingletonAssociationSupport<TKey>
     {
         /// <summary>
         /// Добавить синглтон
@@ -78,7 +78,7 @@ namespace Qoollo.Turbo.IoC.Associations
     /// </summary>
     /// <typeparam name="TKey">Тип ключа контейнера ассоциаций</typeparam>
     [ContractClass(typeof(IDirectSingletonAssociationSupportCodeContractCheck<>))]
-    public interface IDirectSingletonAssociationSupport<in TKey>
+    public interface IDirectSingletonAssociationSupport<TKey>
     {
         /// <summary>
         /// Добавить синглтон
@@ -103,7 +103,7 @@ namespace Qoollo.Turbo.IoC.Associations
     /// </summary>
     /// <typeparam name="TKey">Тип ключа контейнера ассоциаций</typeparam>
     [ContractClass(typeof(IDeferedSingletonAssociationSupportCodeContractCheck<>))]
-    public interface IDeferedSingletonAssociationSupport<in TKey>
+    public interface IDeferedSingletonAssociationSupport<TKey>
     {
         /// <summary>
         /// Добавить синглтон отложенной инициализации
@@ -128,7 +128,7 @@ namespace Qoollo.Turbo.IoC.Associations
     /// </summary>
     /// <typeparam name="TKey">Тип ключа контейнера ассоциаций</typeparam>
     [ContractClass(typeof(IPerThreadAssociationSupportCodeContractCheck<>))]
-    public interface IPerThreadAssociationSupport<in TKey>
+    public interface IPerThreadAssociationSupport<TKey>
     {
         /// <summary>
         /// Добавить PerThread
@@ -152,7 +152,7 @@ namespace Qoollo.Turbo.IoC.Associations
     /// </summary>
     /// <typeparam name="TKey">Тип ключа контейнера ассоциаций</typeparam>
     [ContractClass(typeof(IPerCallAssociationSupportCodeContractCheck<>))]
-    public interface IPerCallAssociationSupport<in TKey>
+    public interface IPerCallAssociationSupport<TKey>
     {
         /// <summary>
         /// Добавить PerCall
@@ -175,7 +175,7 @@ namespace Qoollo.Turbo.IoC.Associations
     /// </summary>
     /// <typeparam name="TKey">Тип ключа контейнера ассоциаций</typeparam>
     [ContractClass(typeof(IPerCallInlinedParamsAssociationSupportCodeContractCheck<>))]
-    public interface IPerCallInlinedParamsAssociationSupport<in TKey>
+    public interface IPerCallInlinedParamsAssociationSupport<TKey>
     {
         /// <summary>
         /// Добавить PerCall с зашитыми параметрами создания

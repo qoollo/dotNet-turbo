@@ -10,7 +10,7 @@ namespace Qoollo.Turbo.IoC.Injections
     /// Источник инъекций
     /// </summary>
     /// <typeparam name="TKey">Тип ключа для извлечения инъекций</typeparam>
-    public interface IInjectionSource<in TKey>
+    public interface IInjectionSource<TKey>
     {
         /// <summary>
         /// Получение инъекции по ключу
