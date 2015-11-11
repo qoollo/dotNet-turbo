@@ -626,7 +626,7 @@ namespace Qoollo.Turbo.Collections
                     }
                     else
                     {
-                        Array.Copy(_elemArray, 0, _elemArray, 1, _tail + 1);
+                        Array.Copy(_elemArray, 0, _elemArray, 1, _tail);
                         _elemArray[0] = _elemArray[_elemArray.Length - 1];
                         if (insertPos != _elemArray.Length - 1)
                             Array.Copy(_elemArray, insertPos, _elemArray, insertPos + 1, _elemArray.Length - insertPos - 1);
@@ -781,7 +781,7 @@ namespace Qoollo.Turbo.Collections
                     }
                 }
 
-                _elemArray[_tail] = default(T);
+                _elemArray[newTail] = default(T);
                 _tail = newTail;
             }
 
