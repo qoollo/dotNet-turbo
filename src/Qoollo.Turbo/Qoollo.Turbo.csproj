@@ -241,6 +241,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\ArrayBasedContainers\ArrayBasedContainer.cs" />
+    <Compile Include="Collections\ArrayBasedContainers\ArrayBasedContainerRef.cs" />
+    <Compile Include="Collections\ArrayBasedContainers\ArrayBasedContainerVal.cs" />
     <Compile Include="Collections\CircularList.cs" />
     <Compile Include="Collections\Concurrent\BlockingQueue.cs" />
     <Compile Include="Common\EventTimingTracker.cs" />
