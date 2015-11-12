@@ -253,6 +253,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <returns>True if the association was presented in container</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public bool RemoveAssociation(TKey key)
         {
             Contract.Requires(key != null);
@@ -270,6 +271,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <returns>True if the association is presented in container</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public bool Contains(TKey key)
         {
             Contract.Requires(key != null);

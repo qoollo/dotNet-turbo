@@ -11,10 +11,10 @@ using Qoollo.Turbo.IoC.Lifetime;
 namespace Qoollo.Turbo.IoC.Associations
 {
     /// <summary>
-    /// Контейнер ассоциаций для IoC с произвольным типом ключа.
-    /// Подходит для однопоточных сценариев и многопоточных сценариев с обязательным замораживанием доступа
+    /// Stores association between custom 'key' and 'object-lifetime-container'.
+    /// In multithreaded scenarious should be frozen explicitly (simultanious add and get is not supported)
     /// </summary>
-    /// <typeparam name="TKey">Тип ключа</typeparam>
+    /// <typeparam name="TKey">The type of the key in association container</typeparam>
     [ContractClass(typeof(FreezeRequiredGenericAssociationContainerCodeContractCheck<>))]
     public abstract class FreezeRequiredGenericAssociationContainer<TKey> : GenericAssociationContainerBase<TKey>, IAssociationSource<TKey>
     {
@@ -27,7 +27,7 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Конструктор FreezeRequiredGenericAssociationContainer
+        /// FreezeRequiredGenericAssociationContainer constructor
         /// </summary>
         public FreezeRequiredGenericAssociationContainer()
         {
@@ -36,24 +36,26 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Внутренний метод добавления ассоциации
+        /// Adds a new association to the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта</param>
+        /// <param name="key">Key</param>
+        /// <param name="val">Lifetime object container to add</param>
         protected sealed override void AddAssociationInner(TKey key, LifetimeBase val)
         {
             lock (_storage)
             {
-                _storage[key] = val;
+                if (_storage.ContainsKey(key))
+                    throw new ItemAlreadyExistsException(string.Format("AssociationContainer already contains the association for the key ({0})", key));
+
+                _storage.Add(key, val);
             }
         }
-
         /// <summary>
-        /// Внутренний метод попытки добавить ассоциацию в контейнер
+        /// Attempts to add a new association to the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Lifetime object container to add</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddAssociationInner(TKey key, LifetimeBase val)
         {
             lock (_storage)
@@ -61,31 +63,34 @@ namespace Qoollo.Turbo.IoC.Associations
                 if (_storage.ContainsKey(key))
                     return false;
 
-                _storage[key] = val;
+                _storage.Add(key, val);
             }
             return true;
         }
         /// <summary>
-        /// Внутренний метод добавления ассоциации в контейнер с использованием фабрики формирования Lifetime контейнера
+        /// Adds a new association to the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, разрешаемый по ключу</param>
-        /// <param name="val">Фабрика созадания Lifetime контейнера</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
         protected sealed override void AddAssociationInner(TKey key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            var lfInf = ProduceResolveInfo(key, objType, val);
             lock (_storage)
             {
-                _storage[key] = lfInf;
+                if (_storage.ContainsKey(key))
+                    throw new ItemAlreadyExistsException(string.Format("AssociationContainer already contains the association for the key ({0})", key));
+
+                var lfInf = ProduceResolveInfo(key, objType, val);
+                _storage.Add(key, lfInf);
             }
         }
         /// <summary>
-        /// Внутренний метод попытки добавления ассоциации в контейнер с использованием фабрики формирования Lifetime контейнера
+        /// Attempts to add a new association to the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, разрешаемый по ключу</param>
-        /// <param name="val">Фабрика созадания Lifetime контейнера</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddAssociationInner(TKey key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
             lock (_storage)
@@ -94,25 +99,25 @@ namespace Qoollo.Turbo.IoC.Associations
                     return false;
 
                 var lfInf = ProduceResolveInfo(key, objType, val);
-                _storage[key] = lfInf;
+                _storage.Add(key, lfInf);
             }
             return true;
         }
         /// <summary>
-        /// Внетренний метод попытки получить ассоциацию
+        /// Attempts to get an association from the container by the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Lifetime container for the specified key (in case of success)</param>
+        /// <returns>True if the AssociationContainer contains the lifetime container for the specified key</returns>
         protected sealed override bool TryGetAssociationInner(TKey key, out LifetimeBase val)
         {
             return _storage.TryGetValue(key, out val);
         }
         /// <summary>
-        /// Внутренний метод удаления ассоциации из контейнера
+        /// Removes the association from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Удалили ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the association was presented in container</returns>
         protected sealed override bool RemoveAssociationInner(TKey key)
         {
             lock (_storage)
@@ -121,51 +126,52 @@ namespace Qoollo.Turbo.IoC.Associations
             }
         }
         /// <summary>
-        /// Внутренний метод проверки наличия ассоциации в контейнере
+        /// Checks whether the AssociationContainer contains the lifetime container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Есть ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the association is presented in container</returns>
         protected sealed override bool ContainsInner(TKey key)
         {
             return _storage.ContainsKey(key);
         }
 
         /// <summary>
-        /// Содержит ли контейнер ассоциацию
+        /// Determines whether the AssociationContainer contains the lifetime container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Содержит ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the association is presented in container</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public new bool Contains(TKey key)
         {
             return _storage.ContainsKey(key);
         }
 
         /// <summary>
-        /// Получить ассоциацию в виде контейнера управления жизнью объекта
+        /// Gets the lifetime object container by its key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Контейнер управления жизнью объекта</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Lifetime container for the specified key</returns>
         LifetimeBase IAssociationSource<TKey>.GetAssociation(TKey key)
         {
             return _storage[key];
         }
 
         /// <summary>
-        /// Попытаться получить ассоциацию в виде контейнера управления жизнью объекта
+        /// Attempts to get the lifetime object container by its key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Associated lifetime container (null when key not exists)</param>
+        /// <returns>True if the lifetime container for the speicifed key exists in AssociatnioContainer</returns>
         bool IAssociationSource<TKey>.TryGetAssociation(TKey key, out LifetimeBase val)
         {
             return _storage.TryGetValue(key, out val);
         }
 
         /// <summary>
-        /// Содержит ли контейнер ассоциацию
+        /// Determines whether the AssociationContainer contains the key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Содержит ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the AssociationSource contains the key</returns>
         bool IAssociationSource<TKey>.Contains(TKey key)
         {
             return _storage.ContainsKey(key);
@@ -173,21 +179,24 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Получить ассоциацию в виде контейнера управления жизнью объекта
+        /// Gets the lifetime object container by its key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Контейнер управления жизнью объекта</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Lifetime container for the specified key</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="KeyNotFoundException"></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal LifetimeBase GetAssociation(TKey key)
         {
             return _storage[key];
         }
         /// <summary>
-        /// Попытаться получить ассоциацию в виде контейнера управления жизнью объекта
+        /// Attempts to get the lifetime object container by its key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Associated lifetime container (null when key not exists)</param>
+        /// <returns>True if the lifetime container for the speicifed key exists in AssociatnioContainer</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetAssociation(TKey key, out LifetimeBase val)
         {
@@ -196,9 +205,9 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Внутреннее освобождение ресурсов
+        /// Cleans-up all resources
         /// </summary>
-        /// <param name="isUserCall">True - вызвано пользователем, False - вызвано деструктором</param>
+        /// <param name="isUserCall">True when called explicitly by user from Dispose method</param>
         protected override void Dispose(bool isUserCall)
         {
             if (isUserCall)
@@ -227,12 +236,12 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(FreezeRequiredGenericAssociationContainer<>))]
     abstract class FreezeRequiredGenericAssociationContainerCodeContractCheck<T> : FreezeRequiredGenericAssociationContainer<T>
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private FreezeRequiredGenericAssociationContainerCodeContractCheck() { }
 
 
