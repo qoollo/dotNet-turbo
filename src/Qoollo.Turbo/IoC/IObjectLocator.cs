@@ -12,7 +12,7 @@ namespace Qoollo.Turbo.IoC
     /// </summary>
     /// <typeparam name="TKey">Тип ключа локатора</typeparam>
     [ContractClass(typeof(IObjectLocatorCodeContractCheck<>))]
-    public interface IObjectLocator<in TKey>
+    public interface IObjectLocator<TKey>
     {
         /// <summary>
         /// Получить объект по ключу

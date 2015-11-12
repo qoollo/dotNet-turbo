@@ -331,7 +331,7 @@
     <Compile Include="IoC\Associations\TypeStrict\TypeStrictAssociationExtension.cs" />
     <Compile Include="IoC\Associations\TypeStrict\TypeStrictFreezeRequiredAssociationContainer.cs" />
     <Compile Include="IoC\CommonCaseIoC\CommonObjectLocator.cs" />
-    <Compile Include="IoC\CommonCaseIoC\DirectTypeAssociationContainer.cs" />
+    <Compile Include="IoC\Associations\TypeStrict\DirectTypeAssociationContainer.cs" />
     <Compile Include="IoC\CommonCaseIoC\SimpleObjectLocator.cs" />
     <Compile Include="IoC\CommonEnums.cs" />
     <Compile Include="IoC\DefaultConstructorAttribute.cs" />
