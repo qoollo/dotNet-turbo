@@ -55,6 +55,7 @@
     <Compile Include="Common\ConcurrentDictionaryExtensionsTests.cs" />
     <Compile Include="Common\EventTimingTrackerTest.cs" />
     <Compile Include="Common\TurboExceptionTests.cs" />
+    <Compile Include="Common\TypeUIDResolverTests.cs" />
     <Compile Include="Common\WeakDelegateTests.cs" />
     <Compile Include="ExecutionQuantizers\OnRequestExecutionQuantizerTest.cs" />
     <Compile Include="ObjectPools\BunchElementStorageTest.cs" />
