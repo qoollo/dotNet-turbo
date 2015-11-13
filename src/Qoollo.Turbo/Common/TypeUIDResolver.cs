@@ -100,7 +100,16 @@ namespace Qoollo.Turbo
         /// <summary>
         /// UID for the type 'T'
         /// </summary>
-        private static int _myId = 0;
+        private static int _myId;
+
+        /// <summary>
+        /// Static constructor
+        /// </summary>
+        static TypeUIDResolver()
+        {
+            _myId = 0;
+            GenerateNewId<int>(ref _myId);
+        }
 
         /// <summary>
         /// Gets or generates the identifier for the type 'T' (extremely fast) 
@@ -109,9 +118,6 @@ namespace Qoollo.Turbo
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static int GetMyId()
         {
-            if (_myId == 0)
-                GenerateNewId<T>(ref _myId);
-
             return _myId;
         }
     }
