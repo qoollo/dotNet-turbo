@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Simple thread-safe array based container that automatically grows if the index is outside the current array bounds.
+    /// Simple array based container that automatically grows if the index is outside the current array bounds.
     /// Works only with reference types. Null is not valid value.
     /// </summary>
     /// <typeparam name="T">The type of the elements in the ArrayBasedContainer</typeparam>
-    public class ArrayBasedContainerRef<T> : IEnumerable<T> where T : class
+    public class IndexedContainerRef<T> : IEnumerable<T> where T : class
     {
         /// <summary>
-        /// ArrayBasedContainerRef Enumerator
+        /// IndexedContainerRef enumerator
         /// </summary>
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
@@ -27,8 +27,8 @@ namespace Qoollo.Turbo.Collections
             /// <summary>
             /// Enumerator constructor
             /// </summary>
-            /// <param name="container">ArrayBasedContainerRef</param>
-            public Enumerator(ArrayBasedContainerRef<T> container)
+            /// <param name="container">IndexedContainerRef</param>
+            public Enumerator(IndexedContainerRef<T> container)
             {
                 Contract.Requires<ArgumentNullException>(container != null);
 
@@ -106,26 +106,37 @@ namespace Qoollo.Turbo.Collections
 
         // ==============
 
+        private static readonly T[] _emptyArray = new T[0];
+
         private readonly object _lockObject = new object();
         private T[] _data;
 
         /// <summary>
-        /// ArrayBasedContainerRef constructor
+        /// IndexedContainerRef constructor
         /// </summary>
         /// <param name="initialSize">Initial size</param>
-        public ArrayBasedContainerRef(int initialSize)
+        public IndexedContainerRef(int initialSize)
         {
             Contract.Requires<ArgumentException>(initialSize >= 0);
 
             _data = new T[initialSize];
         }
         /// <summary>
-        /// ArrayBasedContainerRef constructor
+        /// IndexedContainerRef constructor
         /// </summary>
-        public ArrayBasedContainerRef()
-            : this(0)
+        public IndexedContainerRef()
         {
+            _data = _emptyArray;
         }
+
+        /// <summary>
+        /// Gets the capacity of the container
+        /// </summary>
+        public int Capacity { get { return _data.Length; } }
+        /// <summary>
+        /// Gets the internal data array
+        /// </summary>
+        protected T[] DataArray { get { return _data; } }
 
         /// <summary>
         /// Removes all items from the container and sets size to zero
@@ -134,7 +145,7 @@ namespace Qoollo.Turbo.Collections
         {
             lock (_lockObject)
             {
-                _data = new T[0];
+                _data = _emptyArray;
             }
         }
 
@@ -200,7 +211,7 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Gets an item at the specified index. Returns 'null' if item is not a part of the container
+        /// Gets an item at the specified index. Returns 'null' if the index is outside the array
         /// </summary>
         /// <param name="index">Index</param>
         /// <returns>Value at the specified 'index'</returns>
@@ -223,21 +234,29 @@ namespace Qoollo.Turbo.Collections
             throw new IndexOutOfRangeException("Container does not contains item with index = " + index.ToString());
         }
         /// <summary>
+        /// Throws ItemNotFoundException
+        /// </summary>
+        /// <param name="index"></param>
+        private static void ThrowItemNotFoundException(int index)
+        {
+            throw new ItemNotFoundException("Container does not contains item with index = " + index.ToString());
+        }
+        /// <summary>
         /// Gets an item at the specified index
         /// </summary>
         /// <param name="index">Index</param>
         /// <returns>Value at the specified 'index'</returns>
-        /// <exception cref="IndexOutOfRangeException"></exception>
+        /// <exception cref="ItemNotFoundException"></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetItem(int index)
         {
             var localData = _data;
             if (index < 0 || index >= localData.Length)
-                ThrowIndexOutOfRangeException(index);
+                ThrowItemNotFoundException(index);
 
             var result = localData[index];
             if (result == null)
-                ThrowIndexOutOfRangeException(index);
+                ThrowItemNotFoundException(index);
 
             return result;
         }

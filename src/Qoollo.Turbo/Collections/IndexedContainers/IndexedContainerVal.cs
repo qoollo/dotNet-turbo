@@ -13,7 +13,7 @@ namespace Qoollo.Turbo.Collections
     /// Track items explicitly. 
     /// </summary>
     /// <typeparam name="T">The type of the elements in the ArrayBasedContainer</typeparam>
-    internal class ArrayBasedContainerVal<T> : IEnumerable<T>
+    internal class IndexedContainerVal<T> : IEnumerable<T>
     {
         /// <summary>
         /// Item container
@@ -33,7 +33,7 @@ namespace Qoollo.Turbo.Collections
         // ==============
 
         /// <summary>
-        /// ArrayBasedContainerVal enumerator
+        /// IndexedContainerVal enumerator
         /// </summary>
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
@@ -45,7 +45,7 @@ namespace Qoollo.Turbo.Collections
             /// Enumerator constructor
             /// </summary>
             /// <param name="container">ArrayBasedContainerVal</param>
-            public Enumerator(ArrayBasedContainerVal<T> container)
+            public Enumerator(IndexedContainerVal<T> container)
             {
                 Contract.Requires<ArgumentNullException>(container != null);
 
@@ -117,19 +117,19 @@ namespace Qoollo.Turbo.Collections
         private ItemContainer[] _data;
 
         /// <summary>
-        /// ArrayBasedContainerVal constructor
+        /// IndexedContainerVal constructor
         /// </summary>
         /// <param name="initialSize">Initial size</param>
-        public ArrayBasedContainerVal(int initialSize)
+        public IndexedContainerVal(int initialSize)
         {
             Contract.Requires<ArgumentException>(initialSize >= 0);
 
             _data = new ItemContainer[initialSize];
         }
         /// <summary>
-        /// ArrayBasedContainerVal constructor
+        /// IndexedContainerVal constructor
         /// </summary>
-        public ArrayBasedContainerVal()
+        public IndexedContainerVal()
             : this(0)
         {
         }

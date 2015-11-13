@@ -9,31 +9,42 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Simple thread-safe array based container that automatically grows if the index is outside the current array bounds
+    /// Simple array based container that automatically grows if the index is outside the current array bounds
     /// </summary>
-    /// <typeparam name="T">The type of the elements in the ArrayBasedContainer</typeparam>
-    public class ArrayBasedContainer<T>
+    /// <typeparam name="T">The type of the elements in the container</typeparam>
+    public class IndexedContainer<T>
     {
+        private static readonly T[] _emptyArray = new T[0];
+
         private readonly object _lockObject = new object();
         private T[] _data;
 
         /// <summary>
-        /// ArrayBasedContainer constructor
+        /// IndexedContainer constructor
         /// </summary>
         /// <param name="initialSize">Initial size</param>
-        public ArrayBasedContainer(int initialSize)
+        public IndexedContainer(int initialSize)
         {
             Contract.Requires<ArgumentException>(initialSize >= 0);
 
             _data = new T[initialSize];
         }
         /// <summary>
-        /// ArrayBasedContainer constructor
+        /// IndexedContainer constructor
         /// </summary>
-        public ArrayBasedContainer()
-            : this(0)
+        public IndexedContainer()
         {
+            _data = _emptyArray;
         }
+
+        /// <summary>
+        /// Gets the capacity of the container
+        /// </summary>
+        public int Capacity { get { return _data.Length; } }
+        /// <summary>
+        /// Gets the internal data array
+        /// </summary>
+        protected T[] DataArray { get { return _data; } }
 
         /// <summary>
         /// Removes all items from the container and sets size to zero
@@ -42,7 +53,7 @@ namespace Qoollo.Turbo.Collections
         {
             lock (_lockObject)
             {
-                _data = new T[0];
+                _data = _emptyArray;
             }
         }
 
@@ -75,7 +86,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Gets the value at the specified index. Returns default(T) if value is not a part of the container.
+        /// Gets the value at the specified index. Returns default(T) if the index is outside the array
         /// </summary>
         /// <param name="index">Index</param>
         /// <returns>Value at the specified 'index'</returns>
