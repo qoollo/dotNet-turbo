@@ -8,31 +8,28 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.IoC.Associations
 {
     /// <summary>
-    /// Контейнер ассоциаций с ключём типа Type.
-    /// Поддерживает многопоточность
+    /// Stores association between Type and 'object-lifetime-container'
     /// </summary>
     public abstract class TypeStrictAssociationContainer : ConcurrentGenericAssociationContainer<Type>,
         ISingletonAssociationSupport<Type>, IDeferedSingletonAssociationSupport<Type>,
         IPerThreadAssociationSupport<Type>, IPerCallAssociationSupport<Type>, IPerCallInlinedParamsAssociationSupport<Type>,
         IDirectSingletonAssociationSupport<Type>, ICustomAssociationSupport<Type>
     {
-
         /// <summary>
-        /// Добавить синглтон
+        /// Adds an object with singleton lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект синглтона</param>
+        /// <param name="key">Key</param>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
         public void AddSingleton(Type key, object val)
         {
             base.AddAssociation(key, new Lifetime.SingletonLifetime(val));
         }
-
         /// <summary>
-        /// Добавить синглтон
+        /// Adds an object with singleton lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект синглтона</param>
-        /// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+        /// <param name="key">Key</param>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
         public void AddSingleton(Type key, object val, bool disposeWithContainer)
         {
             Contract.Requires<ArgumentNullException>(key != null);
@@ -42,23 +39,22 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить синглтон
+        /// Attempts to add an object with singleton lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект синглтона</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public bool TryAddSingleton(Type key, object val)
         {
             return base.TryAddAssociation(key, new Lifetime.SingletonLifetime(val));
         }
-
         /// <summary>
-        /// Попытаться добавить синглтон
+        /// Attempts to add an object with singleton lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект синглтона</param>
-        /// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public bool TryAddSingleton(Type key, object val, bool disposeWithContainer)
         {
             Contract.Requires<ArgumentNullException>(key != null);
@@ -71,150 +67,152 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Добавить ассоциацию с заднным Lifetime контейнером
+        /// Adds a lifetime object container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="lifetimeContainer">Lifetime контейнер</param>
+        /// <param name="key">Key</param>
+        /// <param name="lifetimeContainer">Lifetime object container to add</param>
         public new void AddAssociation(Type key, Lifetime.LifetimeBase lifetimeContainer)
         {
             base.AddAssociation(key, lifetimeContainer);
         }
-
         /// <summary>
-        /// Добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+        /// Adds a lifetime object container created by the 'factory' for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
-        /// <param name="factory">Фабрика</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
         public new void AddAssociation(Type key, Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
             base.AddAssociation(key, objType, factory);
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию с заднным Lifetime контейнером
+        /// Attempts to add a lifetime object container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="lifetimeContainer">Lifetime контейнер</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="lifetimeContainer">Lifetime object container to add</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public new bool TryAddAssociation(Type key, Lifetime.LifetimeBase lifetimeContainer)
         {
             return base.TryAddAssociation(key, lifetimeContainer);
         }
-
         /// <summary>
-        /// Попытаться добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+        /// Attempts to add a lifetime object container created by the 'factory' for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
-        /// <param name="factory">Фабрика</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public new bool TryAddAssociation(Type key, Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
             return base.TryAddAssociation(key, objType, factory);
         }
 
 
+
         /// <summary>
-        /// Добавить ассоциацию типа 'синглтон'
+        /// Adds an object with singleton lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the singleton lifetime container</param>
         public void AddSingleton(Type key, Type objType)
         {
             base.AddAssociation(key, objType, LifetimeFactories.Singleton);
         }
-
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'синглтон'
+        /// Attempts to add an object with singleton lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the singleton lifetime container</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public bool TryAddSingleton(Type key, Type objType)
         {
             return base.TryAddAssociation(key, objType, LifetimeFactories.Singleton);
         }
 
+
+
         /// <summary>
-        /// Добавить ассоциацию типа 'отложенный синглтон'
+        /// Adds an object with lazily initialized singleton lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the defered singleton lifetime container</param>
         public void AddDeferedSingleton(Type key, Type objType)
         {
             base.AddAssociation(key, objType, LifetimeFactories.DeferedSingleton);
         }
-
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'отложенный синглтон'
+        /// Attempts to add an object with lazily initialized singleton lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the defered singleton lifetime container</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public bool TryAddDeferedSingleton(Type key, Type objType)
         {
             return base.TryAddAssociation(key, objType, LifetimeFactories.DeferedSingleton);
         }
 
+
+
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на поток'
+        /// Adds an object with per thread lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the PerThread lifetime container</param>
         public void AddPerThread(Type key, Type objType)
         {
             base.AddAssociation(key, objType, LifetimeFactories.PerThread);
         }
-
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на поток'
+        /// Attempts to add an object with per thread lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the PerThread lifetime container</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public bool TryAddPerThread(Type key, Type objType)
         {
             return base.TryAddAssociation(key, objType, LifetimeFactories.PerThread);
         }
 
+
+
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов'
+        /// Adds an object with per call lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the PerCall lifetime container</param>
         public void AddPerCall(Type key, Type objType)
         {
             base.AddAssociation(key, objType, LifetimeFactories.PerCall);
         }
-
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов'
+        /// Attempts to add an object with per call lifetime for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the PerCall lifetime container</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public bool TryAddPerCall(Type key, Type objType)
         {
             return base.TryAddAssociation(key, objType, LifetimeFactories.PerCall);
         }
 
+
+
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
+        /// Adds an object with per call lifetime with inlined constructor parameters for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the PerCallInlinedParams lifetime container</param>
         public void AddPerCallInlinedParams(Type key, Type objType)
         {
             base.AddAssociation(key, objType, LifetimeFactories.PerCallInlinedParams);
         }
-
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
+        /// Attempts to add an object with per call lifetime with inlined constructor parameters for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the PerCallInlinedParams lifetime container</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         public bool TryAddPerCallInlinedParams(Type key, Type objType)
         {
             return base.TryAddAssociation(key, objType, LifetimeFactories.PerCallInlinedParams);
