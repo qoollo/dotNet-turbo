@@ -108,7 +108,7 @@ namespace Qoollo.Turbo
         static TypeUIDResolver()
         {
             _myId = 0;
-            GenerateNewId<int>(ref _myId);
+            GenerateNewId<T>(ref _myId);
         }
 
         /// <summary>
