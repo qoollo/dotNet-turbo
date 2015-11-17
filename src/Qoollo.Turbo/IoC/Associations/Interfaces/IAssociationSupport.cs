@@ -33,7 +33,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <param name="lifetimeContainer">Lifetime object container to add</param>
-        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         bool TryAddAssociation(TKey key, Lifetime.LifetimeBase lifetimeContainer);
         /// <summary>
         /// Attempts to add a lifetime object container created by the 'factory' for the specified key
@@ -41,7 +41,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="key">Key</param>
         /// <param name="objType">The type of the object that will be held by the lifetime container</param>
         /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
-        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         bool TryAddAssociation(TKey key, Type objType, Lifetime.Factories.LifetimeFactory factory);
     }
 
@@ -66,7 +66,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <param name="objType">The type of the object that will be held by the singleton lifetime container</param>
-        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         bool TryAddSingleton(TKey key, Type objType);
     }
 
@@ -91,7 +91,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <param name="val">The object that will be held by the singleton lifetime container</param>
-        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         bool TryAddSingleton(TKey key, object val);
     }
 
@@ -116,7 +116,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <param name="objType">The type of the object that will be held by the defered singleton lifetime container</param>
-        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         bool TryAddDeferedSingleton(TKey key, Type objType);
     }
 
@@ -141,7 +141,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <param name="objType">The type of the object that will be held by the PerThread lifetime container</param>
-        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         bool TryAddPerThread(TKey key, Type objType);
     }
 
@@ -165,7 +165,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <param name="objType">The type of the object that will be held by the PerCall lifetime container</param>
-        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         bool TryAddPerCall(TKey key, Type objType);
     }
 
@@ -188,7 +188,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <param name="objType">The type of the object that will be held by the PerCallInlinedParams lifetime container</param>
-        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         bool TryAddPerCallInlinedParams(TKey key, Type objType);
     }
 

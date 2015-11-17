@@ -32,6 +32,25 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
+        /// Association container
+        /// </summary>
+        private class AssociationContainer: DirectTypeAssociationContainer
+        {
+            private readonly IInjectionResolver _resolver;
+
+            public AssociationContainer(IInjectionResolver resolver)
+            {
+                Contract.Requires(resolver != null);
+                _resolver = resolver;
+            }
+
+            protected override Lifetime.LifetimeBase ProduceResolveInfo(Type key, Type objType, Lifetime.Factories.LifetimeFactory val)
+            {
+                return val.Create(objType, _resolver, null);
+            }
+        }
+
+        /// <summary>
         /// Специальный резолвер инъекций, который сначала проверяет в контейнере инъекций, а потом в контейнере ассоциаций
         /// </summary>
         private class InjectionThenAssociationResolver : IInjectionResolver
@@ -111,7 +130,7 @@ namespace Qoollo.Turbo.IoC
             else
                 _resolver = _injection.GetDirectInjectionResolver();
 
-            _association = new DirectTypeAssociationContainer(_resolver);
+            _association = new AssociationContainer(_resolver);
         }
 
         /// <summary>

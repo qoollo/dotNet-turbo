@@ -9,47 +9,16 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Associations
 {
     /// <summary>
-    /// Контейнер ассоциаций, в котором ключ - тип, являющийся базовым для типа значения (делает разрешение по иерархии наследования)
+    /// Stores association between Type and 'object-lifetime-container' that helds the object with the same or derived Type.
     /// </summary>
-    public class DirectTypeAssociationContainer: TypeStrictAssociationContainer
+    public abstract class DirectTypeAssociationContainer: TypeStrictAssociationContainer
     {
-        private readonly IInjectionResolver _injResolver;
-
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            Contract.Invariant(_injResolver != null);
-        }
-
         /// <summary>
-        /// Конструктор DirectTypeAssociationContainer
+        /// Checks whether the object type is appropriate for the specified key
         /// </summary>
-        /// <param name="injResolver">Резолвер инъекций</param>
-        public DirectTypeAssociationContainer(IInjectionResolver injResolver)
-        {
-            Contract.Requires<ArgumentNullException>(injResolver != null);
-
-            _injResolver = injResolver;
-        }
-
-        /// <summary>
-        /// Сформировать Lifetime контейнер по типу и фабрике 
-        /// </summary>
-        /// <param name="key">Ключ, по которому будет сохранён контейнер</param>
-        /// <param name="objType">Тип объекта, который будет обрабатывать Lifetime контейнер</param>
-        /// <param name="val">Фабрика для создания Lifetime контейнера</param>
-        /// <returns>Lifetime контейнер</returns>
-        protected override Lifetime.LifetimeBase ProduceResolveInfo(Type key, Type objType, Lifetime.Factories.LifetimeFactory val)
-        {
-            return val.Create(objType, _injResolver, null);
-        }
-
-        /// <summary>
-        /// Подходит ли переданный тип для заданного ключа
-        /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта</param>
-        /// <returns>Подходит ли</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">Object type</param>
+        /// <returns>True if the object with 'objType' can be used by container with specified 'key'</returns>
         protected override bool IsGoodTypeForKey(Type key, Type objType)
         {
             return (key == objType) || (key.IsAssignableFrom(objType));
@@ -57,10 +26,10 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Добавить синглтон
+        /// Adds an object with singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TType">Тип синглтона</typeparam>
-        /// <param name="val">Значение синглтона</param>
+        /// <typeparam name="TType">The type of the object that will be held by the singleton lifetime container</typeparam>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
         public void AddSingleton<TType>(TType val)
         {
             Contract.Requires<ArgumentNullException>((object)val != null);
@@ -69,11 +38,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить синглтон
+        /// Adds an object with singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TType">Тип синглтона</typeparam>
-        /// <param name="val">Значение синглтона</param>
-        /// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
+        /// <typeparam name="TType">The type of the object that will be held by the singleton lifetime container</typeparam>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
         public void AddSingleton<TType>(TType val, bool disposeWithContainer)
         {
             Contract.Requires<ArgumentNullException>((object)val != null);
@@ -82,11 +51,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить синглтон
+        /// Attempts to add an object with singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TType">Тип синглтона</typeparam>
-        /// <param name="val">Значение синглтона</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TType">The type of the object that will be held by the singleton lifetime container</typeparam>
+        /// <param name="val">>The object that will be held by the singleton lifetime container</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddSingleton<TType>(TType val)
         {
             Contract.Requires<ArgumentNullException>((object)val != null);
@@ -95,12 +64,12 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить синглтон
+        /// Attempts to add an object with singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TType">Тип синглтона</typeparam>
-        /// <param name="val">Значение синглтона</param>
-        /// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TType">The type of the object that will be held by the singleton lifetime container</typeparam>
+        /// <param name="val">>The object that will be held by the singleton lifetime container</param>
+        /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddSingleton<TType>(TType val, bool disposeWithContainer)
         {
             Contract.Requires<ArgumentNullException>((object)val != null);
@@ -111,10 +80,10 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Добавить ассоциацию
+        /// Adds a lifetime object container for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="lifetimeContainer">Lifetime контейнер</param>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="lifetimeContainer">Lifetime object container to add</param>
         public void AddAssociation<TKey>(Lifetime.LifetimeBase lifetimeContainer)
         {
             Contract.Requires<ArgumentNullException>(lifetimeContainer != null);
@@ -123,11 +92,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию
+        /// Adds a lifetime object container created by the 'factory' for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
-        /// <param name="factory">Фабрика</param>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
         public void AddAssociation<TKey>(Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -137,11 +106,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию
+        /// Attemts to add a lifetime object container for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="lifetimeContainer">Lifetime контейнер</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="lifetimeContainer">Lifetime object container to add</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddAssociation<TKey>(Lifetime.LifetimeBase lifetimeContainer)
         {
             Contract.Requires<ArgumentNullException>(lifetimeContainer != null);
@@ -150,12 +119,12 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию
+        /// Attempts to add a lifetime object container created by the 'factory' for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
-        /// <param name="factory">Фабрика</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddAssociation<TKey>(Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -165,11 +134,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+        /// Adds a lifetime object container created by the 'factory' for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <typeparam name="TValue">Тип объекта, которым будет управлять Lifetime контейнер</typeparam>
-        /// <param name="factory">Фабрика</param>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the lifetime container</typeparam>
+        /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
         public void AddAssociation<TKey, TValue>(Lifetime.Factories.LifetimeFactory factory)
         {
             Contract.Requires<ArgumentNullException>(factory != null);
@@ -178,12 +147,12 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
+        /// Attempts to add a lifetime object container created by the 'factory' for the specified k
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <typeparam name="TValue">Тип объекта, которым будет управлять Lifetime контейнер</typeparam>
-        /// <param name="factory">Фабрика</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the lifetime container</typeparam>
+        /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddAssociation<TKey, TValue>(Lifetime.Factories.LifetimeFactory factory)
         {
             Contract.Requires<ArgumentNullException>(factory != null);
@@ -200,9 +169,9 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Добавить ассоциацию типа 'синглтон'
+        /// Adds an object with singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
         /// <param name="objType">Тип инстанцируемого объекта</param>
         public void AddSingleton<TKey>(Type objType)
         {
@@ -212,11 +181,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'синглтон'
+        /// Attempts to add an object with singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the singleton lifetime container</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddSingleton<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -225,10 +194,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'синглтон'
+        /// Adds an object with singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the singleton lifetime container</typeparam>
         public void AddSingleton<TKey, TValue>()
             where TValue : TKey
         {
@@ -236,11 +205,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'синглтон'
+        /// Attempts to add an object with singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the singleton lifetime container</typeparam>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddSingleton<TKey, TValue>()
             where TValue : TKey
         {
@@ -248,10 +217,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'отложенный синглтон'
+        /// Adds an object with lazily initialized singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the singleton lifetime container</param>
         public void AddDeferedSingleton<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -260,11 +229,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'отложенный синглтон'
+        /// Attempts to add an object with lazily initialized singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the DeferedSingleton lifetime container</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddDeferedSingleton<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -273,10 +242,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'отложенный синглтон'
+        /// Adds an object with lazily initialized singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the DeferedSingleton lifetime container</typeparam>
         public void AddDeferedSingleton<TKey, TValue>()
             where TValue : TKey
         {
@@ -284,11 +253,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'отложенный синглтон'
+        /// Attempts to add an object with lazily initialized singleton lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the DeferedSingleton lifetime container</typeparam>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddDeferedSingleton<TKey, TValue>()
             where TValue : TKey
         {
@@ -296,10 +265,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на поток'
+        /// Adds an object with per thread lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the PerThread lifetime container</param>
         public void AddPerThread<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -308,11 +277,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на поток'
+        /// Attempts to add an object with per thread lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the PerThread lifetime container</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerThread<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -321,10 +290,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на поток'
+        /// Adds an object with per thread lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the PerThread lifetime container</typeparam>
         public void AddPerThread<TKey, TValue>()
             where TValue : TKey
         {
@@ -332,11 +301,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на поток'
+        /// Attempts to add an object with per thread lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the PerThread lifetime container</typeparam>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerThread<TKey, TValue>()
             where TValue : TKey
         {
@@ -344,10 +313,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов'
+        /// Adds an object with per call lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the PerCall lifetime container</param>
         public void AddPerCall<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -356,11 +325,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов'
+        /// Attempts to add an object with per call lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the PerCall lifetime container</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerCall<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -369,10 +338,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов'
+        /// Adds an object with per call lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the PerCall lifetime container</typeparam>
         public void AddPerCall<TKey, TValue>()
             where TValue : TKey
         {
@@ -380,11 +349,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов'
+        /// Attempts to add an object with per call lifetime for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the PerCall lifetime container</typeparam>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerCall<TKey, TValue>()
             where TValue : TKey
         {
@@ -392,10 +361,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
+        /// Adds an object with per call lifetime with inlined constructor parameters for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the PerCallInlinedParams lifetime container</param>
         public void AddPerCallInlinedParams<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -404,11 +373,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
+        /// Attempts to add an object with per call lifetime with inlined constructor parameters for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <param name="objType">The type of the object that will be held by the PerCallInlinedParams lifetime container</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerCallInlinedParams<TKey>(Type objType)
         {
             Contract.Requires<ArgumentNullException>(objType != null);
@@ -417,10 +386,10 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
+        /// Adds an object with per call lifetime with inlined constructor parameters for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the PerCallInlinedParams lifetime container</typeparam>
         public void AddPerCallInlinedParams<TKey, TValue>()
             where TValue : TKey
         {
@@ -428,11 +397,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
+        /// Attempts to add an object with per call lifetime with inlined constructor parameters for the specified key
         /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="TKey">The type that will be used as a key</typeparam>
+        /// <typeparam name="TValue">The type of the object that will be held by the PerCallInlinedParams lifetime container</typeparam>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerCallInlinedParams<TKey, TValue>()
             where TValue : TKey
         {
