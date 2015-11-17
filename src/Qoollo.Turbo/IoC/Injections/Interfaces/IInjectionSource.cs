@@ -7,31 +7,31 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.IoC.Injections
 {
     /// <summary>
-    /// Источник инъекций
+    /// Represents the source of injections
     /// </summary>
-    /// <typeparam name="TKey">Тип ключа для извлечения инъекций</typeparam>
+    /// <typeparam name="TKey">The type of the key in injection container</typeparam>
     public interface IInjectionSource<TKey>
     {
         /// <summary>
-        /// Получение инъекции по ключу
+        /// Gets the injection object for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Инъекция</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Resolved object to be injected</returns>
         object GetInjection(TKey key);
 
         /// <summary>
-        /// Пытается получить инъекцию по ключу
+        /// Attempts to get the injection object for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Значение, если найдено</param>
-        /// <returns>Удалось ли получить значение</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Resolved object to be injected if found</param>
+        /// <returns>True if the injection object is registered for the specified key; overwise false</returns>
         bool TryGetInjection(TKey key, out object val);
 
         /// <summary>
-        /// Содержит ли контейнер инъекцию
+        /// Determines whether the InjectionSource contains the key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Есть или нет</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the InjectionSource contains the key</returns>
         bool Contains(TKey key);
     }
 }
