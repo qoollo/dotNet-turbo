@@ -180,7 +180,15 @@ namespace Qoollo.Turbo.IoC
 
         object IInjectionResolver.Resolve(Type reqObjectType, string paramName, Type forType, object extData)
         {
-            return this.Resolve(reqObjectType);
+            if (reqObjectType == null)
+                throw new ArgumentNullException("reqObjectType", "Requested object type cannot be null");
+
+            Lifetime.LifetimeBase life = null;
+            if (!this.TryGetAssociation(reqObjectType, out life))
+                throw new ObjectCannotBeResolvedException(string.Format("Object of type {0} cannot be resolved by IoC container. That object is required as the parameter ({2}) to create another object of type {1}.", reqObjectType, forType, paramName));
+
+            Contract.Assume(life != null);
+            return life.GetInstance(this);
         }
 
         T IInjectionResolver.Resolve<T>(Type forType)
