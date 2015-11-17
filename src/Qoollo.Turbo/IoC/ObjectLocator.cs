@@ -18,6 +18,7 @@ namespace Qoollo.Turbo.IoC
     /// <typeparam name="TInjKey">Тип ключа инъекций</typeparam>
     /// <typeparam name="TAssociation">Тип контейнера ассоциаций</typeparam>
     /// <typeparam name="TAssocKey">Тип ключа ассоциаций</typeparam>
+    [Obsolete("Do not use this class as a base for your custom IoC containers. Please, implement them from the core by hand.")]
     public abstract class ObjectLocator<TInjection, TInjKey, TAssociation, TAssocKey>: IObjectLocator<TAssocKey>, IDisposable
         where TInjection: IInjectionSource<TInjKey>
         where TAssociation: IAssociationSource<TAssocKey>

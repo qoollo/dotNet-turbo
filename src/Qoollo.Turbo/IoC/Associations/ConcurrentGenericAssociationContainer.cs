@@ -191,17 +191,11 @@ namespace Qoollo.Turbo.IoC.Associations
         {
             if (isUserCall)
             {
-                List<KeyValuePair<TKey, LifetimeBase>> toDispose = _storage.ToList();
-
+                var toDispose = _storage.ToArray();
                 _storage.Clear();
 
-                if (toDispose != null)
-                {
-                    foreach (var elem in toDispose)
-                    {
-                        elem.Value.Dispose();
-                    }
-                }
+                for (int i = 0; i < toDispose.Length; i++)
+                    toDispose[i].Value.Dispose();
             }
             base.Dispose(isUserCall);
         }

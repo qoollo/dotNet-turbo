@@ -96,6 +96,35 @@ namespace Qoollo.Turbo
     }
 
 
+    /// <summary>
+    /// The exception that is thrown when object cannot be resolved by IoC container
+    /// </summary>
+    [Serializable]
+    public class ObjectCannotBeResolvedException : CommonIoCException
+    {
+        /// <summary>
+        /// ObjectCannotBeResolvedException constructor
+        /// </summary>
+        public ObjectCannotBeResolvedException() : base("Object for the specified key cannot be resolved by the IoC container") { }
+        /// <summary>
+        /// ObjectCannotBeResolvedException constructor with error message
+        /// </summary>
+        /// <param name="message">Error message</param>
+        public ObjectCannotBeResolvedException(string message) : base(message) { }
+        /// <summary>
+        /// ObjectCannotBeResolvedException constructor with error message and innerException
+        /// </summary>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
+        public ObjectCannotBeResolvedException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// ObjectCannotBeResolvedException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected ObjectCannotBeResolvedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
 
     /// <summary>
     /// The exception that is thrown when trying to register a new association with inappropriate key

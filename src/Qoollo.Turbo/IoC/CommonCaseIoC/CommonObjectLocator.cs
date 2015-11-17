@@ -14,6 +14,7 @@ namespace Qoollo.Turbo.IoC
     /// <summary>
     /// Локатор объектов для общего случая (когда тип аллоцируемого объекта является дочерним к типу ключа)
     /// </summary>
+    [Obsolete("This container is obsolete. Please, use TurboContainer instead.")]
     public class CommonObjectLocator: IObjectLocator<Type>, IDisposable
     {
         private bool _disposeInjectionWithBuilder;

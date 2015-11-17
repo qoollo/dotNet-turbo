@@ -216,17 +216,11 @@ namespace Qoollo.Turbo.IoC.Associations
                 lock (_storage)
                 {
                     toDispose = _storage.ToList();
-
                     _storage.Clear();
                 }
 
-                if (toDispose != null)
-                {
-                    foreach (var elem in toDispose)
-                    {
-                        elem.Value.Dispose();
-                    }
-                }
+                foreach (var elem in toDispose)
+                    elem.Value.Dispose();
             }
 
             base.Dispose(isUserCall);
