@@ -11,8 +11,7 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC
 {
     /// <summary>
-    /// Простой локатор объектов
-    /// Инъекции имитируются синглтонами
+    /// Simple IoC container and object locator (without separated injection container)
     /// </summary>
     [Obsolete("This container is obsolete. Please, use TurboContainer instead.")]
     public class SimpleObjectLocator : DirectTypeAssociationContainer, IObjectLocator<Type>
@@ -26,7 +25,7 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Объект для резолва инъекций
+        /// Injection resolver for SimpleObjectLocator
         /// </summary>
         private class InnerInjectionResolver : IInjectionResolver
         {
@@ -39,9 +38,9 @@ namespace Qoollo.Turbo.IoC
             }
 
             /// <summary>
-            /// Конструктор InnerInjectionResolver
+            /// InnerInjectionResolver constructor
             /// </summary>
-            /// <param name="locator">Локатор</param>
+            /// <param name="locator">Owner</param>
             public InnerInjectionResolver(SimpleObjectLocator locator)
             {
                 Contract.Requires(locator != null);
@@ -49,25 +48,10 @@ namespace Qoollo.Turbo.IoC
                 _locator = locator;
             }
 
-            /// <summary>
-            /// Разрешить зависимость на основе подробной информации
-            /// </summary>
-            /// <param name="reqObjectType">Тип объекта, который требуется вернуть</param>
-            /// <param name="paramName">Имя параметра, для которого разрешается зависимость (если применимо)</param>
-            /// <param name="forType">Тип, для которого разрешается зависимость (если применимо)</param>
-            /// <param name="extData">Расширенные данные для разрешения зависимости (если есть)</param>
-            /// <returns>Найденный объект запрашиваемого типа</returns>
             public object Resolve(Type reqObjectType, string paramName, Type forType, object extData)
             {
                 return _locator.Resolve(reqObjectType);
             }
-
-            /// <summary>
-            /// Упрощённое разрешение зависимости
-            /// </summary>
-            /// <typeparam name="T">Тип объекта, который требуется вернуть</typeparam>
-            /// <param name="forType">Тип, для которого разрешается зависимость</param>
-            /// <returns>Найденный объект запрашиваемого типа</returns>
             public T Resolve<T>(Type forType)
             {
                 return _locator.Resolve<T>();
@@ -75,7 +59,7 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Конструктор SimpleObjectLocator
+        /// SimpleObjectLocator constructor
         /// </summary>
         public SimpleObjectLocator()
         {
@@ -96,10 +80,10 @@ namespace Qoollo.Turbo.IoC
 
 
         /// <summary>
-        /// Получить объект по ключу
+        /// Resolves object of the specified type from the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="key">The type of the object to be resolved</param>
+        /// <returns>Resolved object</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object Resolve(Type key)
         {
@@ -111,11 +95,11 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Попытаться получить объект по ключу
+        /// Attempts to resolves object of the specified type from the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">The type of the object to be resolved</param>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution is successful (specified type and all required injections registered in the container); overwise false</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryResolve(Type key, out object val)
         {
@@ -135,10 +119,10 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Можно ли получить объект по ключу
+        /// Determines whether the object of the specified type can be resolved by the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Можно ли</returns>
+        /// <param name="key">The type of an object to be checked</param>
+        /// <returns>True if the object can be resolved</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanResolve(Type key)
         {
@@ -149,10 +133,10 @@ namespace Qoollo.Turbo.IoC
 
 
         /// <summary>
-        /// Получить объект по его типу
+        /// Resolves object of the specified type from the container
         /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <returns>Полученное значение</returns>
+        /// <typeparam name="T">The type of the object to be resolved</typeparam>
+        /// <returns>Resolved object</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Resolve<T>()
         {
@@ -162,11 +146,11 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Попытаться получить объект по его типу
+        /// Attempts to resolves object of the specified type from the container
         /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <param name="val">Полученное значение в случае успеха</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="T">The type of the object to be resolved</typeparam>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution is successful (specified type and all required injections registered in the container); overwise false</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryResolve<T>(out T val)
         {
@@ -190,23 +174,11 @@ namespace Qoollo.Turbo.IoC
             return false;
         }
 
-
         /// <summary>
-        /// Создаёт объект типа T с использованием инъекций
+        /// Determines whether the object of the specified type can be resolved by the container
         /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <returns>Созданный объект</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T CreateObject<T>()
-        {
-            return InstantiationService.CreateObject<T>(_resolver);
-        }
-
-        /// <summary>
-        /// Можно ли получить объект по его типу
-        /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <returns>Можно ли</returns>
+        /// <typeparam name="T">The type of an object to be checked</typeparam>
+        /// <returns>True if the object can be resolved</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanResolve<T>()
         {
@@ -215,31 +187,42 @@ namespace Qoollo.Turbo.IoC
 
 
         /// <summary>
-        /// Получить объект по ключу
+        /// Creates an instance of an object of type 'T' using the default constructor.
+        /// The type of an object can be not registered in the container.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Полученный объект</returns>
+        /// <typeparam name="T">The type of the object to be created</typeparam>
+        /// <returns>Created object</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CreateObject<T>()
+        {
+            return InstantiationService.CreateObject<T>(_resolver);
+        }
+
+
+        /// <summary>
+        /// Resolves object from the container for the specified key
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <returns>Resolved object</returns>
         object IObjectLocator<Type>.Resolve(Type key)
         {
             return this.Resolve(key);
         }
-
         /// <summary>
-        /// Попытаться получить объект по ключу
+        /// Attempts to resolve object from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution succeeded; overwise false</returns>
         bool IObjectLocator<Type>.TryResolve(Type key, out object val)
         {
             return this.TryResolve(key, out val);
         }
-
         /// <summary>
-        /// Можно ли получить объект по ключу
+        /// Determines whether the object can be resolved by the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Можно ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the object can be resolved</returns>
         bool IObjectLocator<Type>.CanResolve(Type key)
         {
             return this.CanResolve(key);
