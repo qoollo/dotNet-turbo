@@ -2,59 +2,59 @@
 namespace Qoollo.Turbo.IoC
 {
     /// <summary>
-    /// Способ инстанцирования объекта
+    /// Specifies an instantiation mode of the object inside IoC container
     /// </summary>
     public enum ObjectInstantiationMode
     {
         /// <summary>
-        /// Использовать единую копию объекта
+        /// Always use a single instance of the object (SingletonLifetime container)
         /// </summary>
         Singleton,
         /// <summary>
-        /// Единая копия объекта с инициализацией при первом обращении
+        /// Use a single lazily initialized instance of the object (DeferedSingletonLifetime container)
         /// </summary>
         DeferedSingleton,
         /// <summary>
-        /// Одна копия объекта на каждый поток
+        /// Create a separate instance for every thread (PerThreadLifetime container)
         /// </summary>
         PerThread,
         /// <summary>
-        /// Создавать объект при каждом вызове
+        /// Create a separate instance on every call (PerCallLifetime container)
         /// </summary>
         PerCall,
         /// <summary>
-        /// Создавать объект при каждом вызове, но параметры конструктора получить лишь 1 раз при инициализации
+        /// Create a separate instance on every call (PerCallInlinedParamsLifetime container). Constructor parameters resolves only once.
         /// </summary>
         PerCallInlinedParams
     }
 
     /// <summary>
-    /// Переопределение режима инстанцирования
+    /// Specifies the overrided value for ObjectInstantiationMode
     /// </summary>
     public enum OverrideObjectInstantiationMode
     {
         /// <summary>
-        /// Не переопределять
+        /// Object instantiation mode should not be overrided
         /// </summary>
         None,
         /// <summary>
-        /// Переопределить в режим 'использование одной копии'
+        /// Overrides instantiation mode to Singleton
         /// </summary>
         ToSingleton,
         /// <summary>
-        /// Переопределить в режим 'отложенный синглтон'
+        /// Overrides instantiation mode to DeferedSingleton
         /// </summary>
         ToDeferedSingleton,
         /// <summary>
-        /// Переопределить в режим 'объект на поток'
+        /// Overrides instantiation mode to PerThread
         /// </summary>
         ToPerThread,
         /// <summary>
-        /// Переопределить в режим 'создания на каждый вызов'
+        /// Overrides instantiation mode to PerCall
         /// </summary>
         ToPerCall,
         /// <summary>
-        /// Переопределить в режим 'создания на каждый вызов с зашитыми параметрами'
+        /// Overrides instantiation mode to PerCallInlinedParams
         /// </summary>
         ToPerCallInlinedParams
     }
