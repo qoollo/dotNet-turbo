@@ -340,7 +340,7 @@
     <Compile Include="IoC\CommonCaseIoC\SimpleObjectLocator.cs" />
     <Compile Include="IoC\CommonEnums.cs" />
     <Compile Include="IoC\DefaultConstructorAttribute.cs" />
-    <Compile Include="IoC\Helpers\OnjectInstantiationHelper.cs" />
+    <Compile Include="IoC\Helpers\ObjectInstantiationHelper.cs" />
     <Compile Include="IoC\Injections\ConcurrentGenericInjectionContainer.cs" />
     <Compile Include="IoC\Injections\GenericInjectionContainerBase.cs" />
     <Compile Include="IoC\Injections\Interfaces\IInjectionSource.cs" />

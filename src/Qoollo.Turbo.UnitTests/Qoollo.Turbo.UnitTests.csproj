@@ -59,6 +59,8 @@
     <Compile Include="Common\TypeUIDResolverTests.cs" />
     <Compile Include="Common\WeakDelegateTests.cs" />
     <Compile Include="ExecutionQuantizers\OnRequestExecutionQuantizerTest.cs" />
+    <Compile Include="IoC\LifetimeFactoriesTests.cs" />
+    <Compile Include="IoC\ObjectInstantiationHelperTests.cs" />
     <Compile Include="ObjectPools\BunchElementStorageTest.cs" />
     <Compile Include="ObjectPools\BalancingDynamicPoolManagerTest.cs" />
     <Compile Include="ObjectPools\IndexedStackElementStorageTest.cs" />

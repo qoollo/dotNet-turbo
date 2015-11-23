@@ -39,7 +39,7 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Объект управления жизнью объекта</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var obj = OnjectInstantiationHelper.CreateObject(objType, injection, extInfo);
+            var obj = ObjectInstantiationHelper.CreateObject(objType, injection, extInfo);
             return new SingletonLifetime(obj);
         }
     }
@@ -58,7 +58,7 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Объект управления жизнью объекта</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var creationFunc = OnjectInstantiationHelper.GetReflectionBasedCreationFunction(objType, extInfo);
+            var creationFunc = ObjectInstantiationHelper.GetReflectionBasedCreationFunction(objType, extInfo);
             return new DeferedSingletonLifetime(creationFunc, objType);
         }
     }
@@ -77,7 +77,7 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Объект управления жизнью объекта</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var creationFunc = OnjectInstantiationHelper.GetCompiledCreationFunction(objType, extInfo);
+            var creationFunc = ObjectInstantiationHelper.GetCompiledCreationFunction(objType, extInfo);
             return new PerThreadLifetime(creationFunc, objType);
         }
     }
@@ -96,7 +96,7 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Объект управления жизнью объекта</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var creationObj = OnjectInstantiationHelper.BuildInstanceCreatorInDynAssembly(objType, extInfo);
+            var creationObj = ObjectInstantiationHelper.BuildInstanceCreatorInDynAssembly(objType, extInfo);
             return new PerCallInterfaceLifetime(objType, creationObj);
         }
     }
@@ -115,7 +115,7 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Объект управления жизнью объекта</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var creationObj = OnjectInstantiationHelper.BuildInstanceCreatorNoParamInDynAssembly(objType, injection, extInfo);
+            var creationObj = ObjectInstantiationHelper.BuildInstanceCreatorNoParamInDynAssembly(objType, injection, extInfo);
             return new PerCallInlinedParamsInterfaceLifetime(objType, creationObj);
         }
     }

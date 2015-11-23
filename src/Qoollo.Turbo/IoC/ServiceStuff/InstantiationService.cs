@@ -22,7 +22,7 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
         {
             Contract.Requires(objType != null);
 
-            return OnjectInstantiationHelper.CreateObject(objType);
+            return ObjectInstantiationHelper.CreateObject(objType);
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
         {
             Contract.Requires(resolver != null);
 
-            return (T)OnjectInstantiationHelper.CreateObject(typeof(T), resolver, null);
+            return (T)ObjectInstantiationHelper.CreateObject(typeof(T), resolver, null);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
             Contract.Requires(objType != null);
             Contract.Requires(resolver != null);
 
-            return OnjectInstantiationHelper.CreateObject(objType, resolver, null);
+            return ObjectInstantiationHelper.CreateObject(objType, resolver, null);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Qoollo.Turbo.IoC.Helpers
     /// <summary>
     /// Helper methods for IoC to instantiate objects
     /// </summary>
-    internal static class OnjectInstantiationHelper
+    internal static class ObjectInstantiationHelper
     {
         #region FindConstructor
 
@@ -137,13 +137,13 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             Contract.Ensures(Contract.Result<object>() != null);
 
-            var ci = OnjectInstantiationHelper.FindConstructor(objType, false);
+            var ci = ObjectInstantiationHelper.FindConstructor(objType, false);
 
             if (ci == null)
                 throw new CommonIoCException(
                     string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 
-            object res = OnjectInstantiationHelper.CreateObject(objType, ci, injection, extData);
+            object res = ObjectInstantiationHelper.CreateObject(objType, ci, injection, extData);
 
             Contract.Assume(res != null);
             return res;
@@ -166,7 +166,7 @@ namespace Qoollo.Turbo.IoC.Helpers
                 throw new CommonIoCException(
                     string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 
-            object res = OnjectInstantiationHelper.CreateObject(objType, ci);
+            object res = ObjectInstantiationHelper.CreateObject(objType, ci);
 
             Contract.Assume(res != null);
             return res;
@@ -480,7 +480,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <param name="constructor">Constructor</param>
         /// <param name="extData">Expression для получения расширенной информации для разрешения инъекций</param>
         /// <returns>Функция создания объекта</returns>
-        public static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, Expression extData)
+        private static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, Expression extData)
         {
             Contract.Requires(objType != null);
             Contract.Requires(constructor != null);
@@ -507,7 +507,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <param name="objType">The type of the object</param>
         /// <param name="extData">Expression для получения расширенной информации для разрешения инъекций</param>
         /// <returns>Функция создания объекта</returns>
-        public static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, Expression extData)
+        private static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, Expression extData)
         {
             Contract.Requires(objType != null);
             Contract.Requires(extData != null);
