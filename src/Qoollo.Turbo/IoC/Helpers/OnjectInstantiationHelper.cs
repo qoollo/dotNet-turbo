@@ -12,18 +12,18 @@ using System.Reflection.Emit;
 namespace Qoollo.Turbo.IoC.Helpers
 {
     /// <summary>
-    /// Набор вспомогательных методов для работы через Reflection
+    /// Helper methods for IoC to instantiate objects
     /// </summary>
     internal static class OnjectInstantiationHelper
     {
         #region FindConstructor
 
         /// <summary>
-        /// Ищет конструктор для объекта
+        /// Looks for the default constructor for the object of specified type
         /// </summary>
-        /// <param name="executerType">Тип объекта</param>
-        /// <param name="onlyPublic">Искать только public конструкторы</param>
-        /// <returns>Информация о конструкторе</returns>
+        /// <param name="executerType">Type of the object</param>
+        /// <param name="onlyPublic">Search only public constructors</param>
+        /// <returns>Found constructor</returns>
         public static ConstructorInfo FindConstructor(Type executerType, bool onlyPublic = false)
         {
             Contract.Requires(executerType != null);
@@ -60,13 +60,13 @@ namespace Qoollo.Turbo.IoC.Helpers
         #region CreateObject with constructor
 
         /// <summary>
-        /// Создаёт объект определённого типа с определённым коструктором и параметрами из injection
+        /// Creates instance of an object using Reflection
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="injection">Интерфейс для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения зависимостей</param>
-        /// <returns>Созданный объект</returns>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
+        /// <returns>Created object</returns>
         public static object CreateObject(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
             Contract.Requires(constructor != null);
@@ -93,11 +93,11 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт объект типа objType конструктором без параметров
+        /// Creates instance of an object using Reflection by the parameterless constructor
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <returns>Созданный объект</returns>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <returns>Created object</returns>
         public static object CreateObject(Type objType, ConstructorInfo constructor)
         {
             Contract.Requires(constructor != null);
@@ -124,12 +124,12 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт объект определённого типа с параметрами из injection
+        /// Creates instance of an object using Reflection
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
-        /// <returns>Созданный объект</returns>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
+        /// <returns>Created object</returns>
         public static object CreateObject(Type objType, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
@@ -151,9 +151,9 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт объект определённого типа с помощью конструктора без параметров
+        /// Creates instance of an object using Reflection by the parameterless constructor
         /// </summary>
-        /// <param name="objType"></param>
+        /// <param name="objType">The type of the object</param>
         /// <returns></returns>
         public static object CreateObject(Type objType)
         {
@@ -180,12 +180,12 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Возвращает функцию, которая создаёт объект типа objType при помощи рефлексии
+        /// Returns the delegate to create the object of specified type using Reflection
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
-        /// <returns>Функция создания объекта</returns>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
+        /// <returns>Function to create an instance of an object</returns>
         public static Func<IInjectionResolver, object> GetReflectionBasedCreationFunction(Type objType, ConstructorInfo constructor, object extData)
         {
             Contract.Requires(objType != null);
@@ -199,11 +199,11 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Возвращает функцию, которая создаёт объект типа objType при помощи рефлексии
+        /// Returns the delegate to create the object of specified type using Reflection
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
-        /// <returns>Функция создания объекта</returns>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
+        /// <returns>Function to create an instance of an object</returns>
         public static Func<IInjectionResolver, object> GetReflectionBasedCreationFunction(Type objType, object extData)
         {
             Contract.Requires(objType != null);
@@ -221,11 +221,11 @@ namespace Qoollo.Turbo.IoC.Helpers
         #region ExtractMethodInfo
 
         /// <summary>
-        /// Возвращает информацию о методе, вызываемом в переданном выражении
+        /// Extracts MethodInfo for instance methods from Expression tree
         /// </summary>
-        /// <typeparam name="InstT">Тип объекта, чей метод извлекается</typeparam>
-        /// <param name="methodCallExpr">Выражение с вызовом метода</param>
-        /// <returns>Информация о вызываемом методе</returns>
+        /// <typeparam name="InstT">The type of an object</typeparam>
+        /// <param name="methodCallExpr">Calling expression</param>
+        /// <returns>Extracted MethodInfo</returns>
         private static MethodInfo ExtractMethodInfo<InstT>(Expression<Action<InstT>> methodCallExpr)
         {
             Contract.Requires(methodCallExpr != null);
@@ -242,10 +242,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Возвращает информацию о методе, вызываемом в переданном выражении
+        /// Extracts MethodInfo for static methods from Expression tree
         /// </summary>
-        /// <param name="methodCallExpr">Выражение с вызовом метода</param>
-        /// <returns>Информация о вызываемом методе</returns>
+        /// <param name="methodCallExpr">Calling expression</param>
+        /// <returns>Extracted MethodInfo</returns>
         private static MethodInfo ExtractMethodInfo(Expression<Action> methodCallExpr)
         {
             Contract.Requires(methodCallExpr != null);
@@ -263,10 +263,10 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Возвращает информацию о конструкторе, вызываемом в переданном выражении
+        /// Extracts ConstructorInfo from Expression tree
         /// </summary>
-        /// <param name="constructorCallExpr">Выражение с созданием нового объекта</param>
-        /// <returns>Информация о вызываемом конструкторе</returns>
+        /// <param name="constructorCallExpr">Calling expression</param>
+        /// <returns>Extracted ConstructorInfo</returns>
         private static ConstructorInfo ExtractConstructorInfo(Expression<Action> constructorCallExpr)
         {
             Contract.Requires(constructorCallExpr != null);
@@ -294,7 +294,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Создаёт Expression для извлечения записи из конкретного объекта injection
         /// </summary>
         /// <param name="key">Ключ</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="paramName">Имя параметра, для которого разрешаем зависимость</param>
         /// <param name="forType">Тип, для которого разрешаем зависимость (передаётся в injection.Resolve)</param>
         /// <param name="extData">Расширенная информация для разрешения инъекций (передаётся в injection.Resolve)</param>
@@ -395,9 +395,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <summary>
         /// Возвращает LambdaExpression для создания объекта с передаваемым в качестве параметра объектом разрешения инъекций 
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="extData">Расширенные данные для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Сформированный LambdaExpression</returns>
         private static Expression<Func<IInjectionResolver, object>> GetObjectCreationExpression(Type objType, ConstructorInfo constructor, Expression extData)
         {
@@ -438,10 +438,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Функция представляет собой скомпилированное ExcpressionTree. 
         /// Аргументы извлекаются при каждом обращении из словаря инъекций injection, зашитом в данную функцию.
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Функция создания объекта</returns>
         public static Func<object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
@@ -476,8 +476,8 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Функция представляет собой скомпилированное ExcpressionTree. 
         /// Аргументы извлекаются при каждом обращении из словаря инъекций, передаваемом в качестве параметра
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="constructor">Конструктор</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
         /// <param name="extData">Expression для получения расширенной информации для разрешения инъекций</param>
         /// <returns>Функция создания объекта</returns>
         public static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, Expression extData)
@@ -504,7 +504,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Функция представляет собой скомпилированное ExcpressionTree. 
         /// Аргументы извлекаются при каждом обращении из словаря инъекций, передаваемом в качестве параметра
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
+        /// <param name="objType">The type of the object</param>
         /// <param name="extData">Expression для получения расширенной информации для разрешения инъекций</param>
         /// <returns>Функция создания объекта</returns>
         public static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, Expression extData)
@@ -529,8 +529,8 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Функция представляет собой скомпилированное ExcpressionTree. 
         /// Аргументы извлекаются при каждом обращении из словаря инъекций, передаваемом в качестве параметра
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Функция создания объекта</returns>
         public static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, object extData)
         {
@@ -560,10 +560,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Функция представляет собой скомпилированное ExcpressionTree. 
         /// Аргументы зашиты в функцию для ускорения процесса создания.
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Функция создания объекта</returns>
         public static Func<object> GetCompiledArgsInlinedCreationFunction(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
@@ -598,9 +598,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Функция представляет собой скомпилированное ExcpressionTree. 
         /// Аргументы зашиты в функцию для ускорения процесса создания.
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Функция создания объекта</returns>
         public static Func<object> GetCompiledArgsInlinedCreationFunction(Type objType, IInjectionResolver injection, object extData)
         {
@@ -718,9 +718,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <summary>
         /// Генерирует код метода для создания объекта типа objType конструктором constructor с расширенной информацией в поле extData
         /// </summary>
-        /// <param name="method">Построитель метода</param>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
+        /// <param name="method">MethodBuilder</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
         /// <param name="extData">Поле, в котором хранятся расширенные параметры</param>
         private static void EmitMethodWithResolver(MethodBuilder method, Type objType, ConstructorInfo constructor, FieldInfo extData)
         {
@@ -770,9 +770,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Все параметры для конструктора objType находятся в полях стоящегося объекта, переданных в массиве allFields.
         /// Порядок должен точно соответствовать
         /// </summary>
-        /// <param name="method">Построитель метода</param>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
+        /// <param name="method">MethodBuilder</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
         /// <param name="allFields">Массив полей, в которых хранятся параметры для конструктора объекта</param>
         private static void EmitMethodWithInlinedParams(MethodBuilder method, Type objType, ConstructorInfo constructor, FieldInfo[] allFields)
         {
@@ -808,8 +808,8 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <summary>
         /// Строит тип, реализующий интерфейс IInstanceCreator для создания объекта типа objType
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
         /// <returns>Построенный тип</returns>
         private static Type BuildTypeOfInstanceCreator(Type objType, ConstructorInfo constructor)
         {
@@ -855,8 +855,8 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Строит тип, реализующий интерфейс IInstanceCreatorNoParam для создания объекта типа objType.
         /// Параметры передаются в конструктор создаваемого объекта
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
         /// <returns>Построенный тип</returns>
         private static Type BuildTypeOfInstanceCreatorNoParam(Type objType, ConstructorInfo constructor)
         {
@@ -914,9 +914,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <summary>
         /// Создаёт объект, реализующий IInstanceCreator, для создания объекта типа objType конструктором constructor
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданный объект</returns>
         private static object GetInstanceCreatorObject(Type objType, ConstructorInfo constructor, object extData)
         {
@@ -937,10 +937,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Создаёт объект, реализующий IInstanceCreatorNoParam, для создания объекта типа objType конструктором constructor.
         /// Параметры конструктора извлекаются 1 раз и зашиваются в объект.
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданный объект</returns>
         private static object GetInstanceCreatorNoParamObject(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
@@ -963,9 +963,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Создаёт объект IInstanceCreator для создания объекта типа objType конструктором constructor.
         /// Тип объекта генерируется на лету внутри динамической сборки
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданный объект IInstanceCreator</returns>
         public static IInstanceCreator BuildInstanceCreatorInDynAssembly(Type objType, ConstructorInfo constructor, object extData)
         {
@@ -983,10 +983,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Тип объекта генерируется на лету внутри динамической сборки.
         /// Параметры для конструктора выбираются 1 раз и зашиваются в объект IInstanceCreatorNoParam
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданный объект IInstanceCreatorNoParam</returns>
         public static IInstanceCreatorNoParam BuildInstanceCreatorNoParamInDynAssembly(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
@@ -1005,9 +1005,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Создаёт функцию для создания объекта типа objType конструктором constructor.
         /// Тип объекта генерируется на лету внутри динамической сборки
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданная функция</returns>
         public static Func<IInjectionResolver, object> BuildCreatorFuncInDynAssembly(Type objType, ConstructorInfo constructor, object extData)
         {
@@ -1035,10 +1035,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Тип объекта генерируется на лету внутри динамической сборки.
         /// Параметры для конструктора выбираются 1 раз и зашиваются в объект создания
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="constructor">Конструктор</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="constructor">Constructor</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданная функция</returns>
         public static Func<object> BuildCreatorFuncNoParamInDynAssembly(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
@@ -1067,8 +1067,8 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Создаёт объект IInstanceCreator для создания объекта типа objType.
         /// Тип объекта генерируется на лету внутри динамической сборки
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданный объект IInstanceCreator</returns>
         public static IInstanceCreator BuildInstanceCreatorInDynAssembly(Type objType, object extData)
         {
@@ -1090,9 +1090,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Тип объекта генерируется на лету внутри динамической сборки.
         /// Параметры для конструктора выбираются 1 раз и зашиваются в объект IInstanceCreatorNoParam
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданный объект IInstanceCreatorNoParam</returns>
         public static IInstanceCreatorNoParam BuildInstanceCreatorNoParamInDynAssembly(Type objType, IInjectionResolver injection, object extData)
         {
@@ -1114,8 +1114,8 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Создаёт функцию для создания объекта типа objType.
         /// Тип объекта генерируется на лету внутри динамической сборки
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданная функция</returns>
         public static Func<IInjectionResolver, object> BuildCreatorFuncInDynAssembly(Type objType, object extData)
         {
@@ -1137,9 +1137,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Тип объекта генерируется на лету внутри динамической сборки.
         /// Параметры для конструктора выбираются 1 раз и зашиваются в объект создания
         /// </summary>
-        /// <param name="objType">Тип создаваемого объекта</param>
-        /// <param name="injection">Объект для разрешения инъекций</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций</param>
+        /// <param name="objType">The type of the object</param>
+        /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
+        /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
         /// <returns>Созданная функция</returns>
         public static Func<object> BuildCreatorFuncNoParamInDynAssembly(Type objType, IInjectionResolver injection, object extData)
         {
