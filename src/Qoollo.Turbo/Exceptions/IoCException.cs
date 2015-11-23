@@ -154,4 +154,34 @@ namespace Qoollo.Turbo
         /// <param name="context">StreamingContext</param>
         protected AssociationBadKeyForTypeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
+
+
+    /// <summary>
+    /// The exception that is thrown when trying to register a new injection with inappropriate key
+    /// </summary>
+    [Serializable]
+    public class BadKeyForInjectionException : ArgumentException
+    {
+        /// <summary>
+        /// BadKeyForInjectionException constructor
+        /// </summary>
+        public BadKeyForInjectionException() : base("Incorrect key for the specified value in IoC injection container") { }
+        /// <summary>
+        /// BadKeyForInjectionException constructor with error message
+        /// </summary>
+        /// <param name="message">Error message</param>
+        public BadKeyForInjectionException(string message) : base(message) { }
+        /// <summary>
+        /// BadKeyForInjectionException constructor with error message and innerException
+        /// </summary>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
+        public BadKeyForInjectionException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// BadKeyForInjectionException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected BadKeyForInjectionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
 }
