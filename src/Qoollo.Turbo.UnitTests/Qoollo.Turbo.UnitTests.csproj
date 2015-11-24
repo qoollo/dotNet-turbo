@@ -54,6 +54,7 @@
     <Compile Include="Collections\CircularListTest.cs" />
     <Compile Include="Collections\IndexedContainerTests.cs" />
     <Compile Include="Common\ConcurrentDictionaryExtensionsTests.cs" />
+    <Compile Include="Common\EnumerableExtensionsTest.cs" />
     <Compile Include="Common\EventTimingTrackerTest.cs" />
     <Compile Include="Common\TurboExceptionTests.cs" />
     <Compile Include="Common\TypeUIDResolverTests.cs" />

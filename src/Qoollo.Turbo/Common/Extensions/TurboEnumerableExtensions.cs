@@ -77,5 +77,76 @@ namespace System.Linq
 
             return -1;
         }
+
+
+        /// <summary>
+        /// Returns the maximum element in sequence using custom user 'comparer'
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements</typeparam>
+        /// <param name="source">A sequence of values</param>
+        /// <param name="comparer">Comparer to compare elements from sequence</param>
+        /// <returns>The maximum value in the sequence</returns>
+        internal static TSource Max<TSource>(this IEnumerable<TSource> source, IComparer<TSource> comparer)
+        {
+            Contract.Requires(source != null);
+
+            if (comparer == null)
+                return Enumerable.Max(source);
+
+            if (source == null)
+                throw new ArgumentNullException("source");
+
+            using (var enumerator = source.GetEnumerator())
+            {
+                if (!enumerator.MoveNext())
+                    throw new InvalidOperationException("Sequence contains no elements");
+
+                var max = enumerator.Current;
+                while (enumerator.MoveNext())
+                {
+                    var current = enumerator.Current;
+                    if (comparer.Compare(current, max) > 0)
+                        max = current;
+                }
+
+                return max;
+            }
+        }
+
+
+
+        /// <summary>
+        /// Returns the minimum element in sequence using custom user 'comparer'
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements</typeparam>
+        /// <param name="source">A sequence of values</param>
+        /// <param name="comparer">Comparer to compare elements from sequence</param>
+        /// <returns>The minimum value in the sequence</returns>
+        internal static TSource Min<TSource>(this IEnumerable<TSource> source, IComparer<TSource> comparer)
+        {
+            Contract.Requires(source != null);
+
+            if (comparer == null)
+                return Enumerable.Min(source);
+
+            if (source == null)
+                throw new ArgumentNullException("source");
+
+            using (var enumerator = source.GetEnumerator())
+            {
+                if (!enumerator.MoveNext())
+                    throw new InvalidOperationException("Sequence contains no elements");
+
+                var min = enumerator.Current;
+                while (enumerator.MoveNext())
+                {
+                    var current = enumerator.Current;
+                    if (comparer.Compare(current, min) < 0)
+                        min = current;
+                }
+
+                return min;
+            }
+        }
     }
 }
