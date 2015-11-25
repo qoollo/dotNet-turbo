@@ -148,5 +148,119 @@ namespace System.Linq
                 return min;
             }
         }
+
+
+
+
+
+        /// <summary>
+        /// Returns the element with maximum key from sequence using custom user 'comparer'
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements</typeparam>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <param name="source">A sequence of values</param>
+        /// <param name="keySelector">Selector to extract key from element</param>
+        /// <param name="comparer">Comparer to compare keys for elements from sequence</param>
+        /// <returns>The maximum value in the sequence</returns>
+        public static TSource MaxBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
+        {
+            Contract.Requires(source != null);
+
+            if (source == null)
+                throw new ArgumentNullException("source");
+
+            if (comparer == null)
+                comparer = Comparer<TKey>.Default;
+
+            using (var enumerator = source.GetEnumerator())
+            {
+                if (!enumerator.MoveNext())
+                    throw new InvalidOperationException("Sequence contains no elements");
+
+                var max = enumerator.Current;
+                var maxKey = keySelector(max);
+                while (enumerator.MoveNext())
+                {
+                    var current = enumerator.Current;
+                    var currentKey = keySelector(current);
+                    if (comparer.Compare(currentKey, maxKey) > 0)
+                    {
+                        max = current;
+                        maxKey = currentKey;
+                    }
+                }
+
+                return max;
+            }
+        }
+
+        /// <summary>
+        /// Returns the element with maximum key from sequence
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements</typeparam>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <param name="source">A sequence of values</param>
+        /// <param name="keySelector">Selector to extract key from element</param>
+        /// <returns>The value with maximum key in the sequence</returns>
+        public static TSource MaxBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        {
+            return MaxBy(source, keySelector, null);
+        }
+
+
+
+        /// <summary>
+        /// Returns the element with minimum key from sequence using custom user 'comparer'
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements</typeparam>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <param name="source">A sequence of values</param>
+        /// <param name="keySelector">Selector to extract key from element</param>
+        /// <param name="comparer">Comparer to compare keys for elements from sequence</param>
+        /// <returns>The minimum value in the sequence</returns>
+        public static TSource MinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
+        {
+            Contract.Requires(source != null);
+
+            if (source == null)
+                throw new ArgumentNullException("source");
+
+            if (comparer == null)
+                comparer = Comparer<TKey>.Default;
+
+            using (var enumerator = source.GetEnumerator())
+            {
+                if (!enumerator.MoveNext())
+                    throw new InvalidOperationException("Sequence contains no elements");
+
+                var min = enumerator.Current;
+                var minKey = keySelector(min);
+                while (enumerator.MoveNext())
+                {
+                    var current = enumerator.Current;
+                    var currentKey = keySelector(current);
+                    if (comparer.Compare(currentKey, minKey) < 0)
+                    {
+                        min = current;
+                        minKey = currentKey;
+                    }
+                }
+
+                return min;
+            }
+        }
+
+        /// <summary>
+        /// Returns the element with minimum key from sequence
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements</typeparam>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <param name="source">A sequence of values</param>
+        /// <param name="keySelector">Selector to extract key from element</param>
+        /// <returns>The value with minimum key in the sequence</returns>
+        public static TSource MinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        {
+            return MinBy(source, keySelector, null);
+        }
     }
 }

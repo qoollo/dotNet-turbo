@@ -26,6 +26,21 @@ namespace Qoollo.Turbo.UnitTests.Common
             }
         }
 
+        public class IntWrapper: IComparable<IntWrapper>
+        {
+            public readonly int Data;
+            public IntWrapper(int data)
+            {
+                Data = data;
+            }
+
+            public int CompareTo(IntWrapper other)
+            {
+                if (object.ReferenceEquals(other, null)) return -1;
+                return Data.CompareTo(other.Data);
+            }
+        }
+
         public class ReverseIntComparer: IComparer<int>
         {
             public int Compare(int x, int y)
@@ -40,12 +55,14 @@ namespace Qoollo.Turbo.UnitTests.Common
         public void TestFindIndex()
         {
             List<int> data = new List<int>(Enumerable.Range(0, 100));
+            var arrayData = data.ToArray();
             var enumWrapper = new EnumerableWrapper<int>(data);
 
             for (int i = -1; i < 100; i++)
             {
                 int expected = data.FindIndex(v => v == i);
                 Assert.AreEqual(expected, (data as IEnumerable<int>).FindIndex(v => v == i));
+                Assert.AreEqual(expected, (arrayData as IEnumerable<int>).FindIndex(v => v == i));
                 Assert.AreEqual(expected, enumWrapper.FindIndex(v => v == i));
             }
         }
@@ -67,6 +84,28 @@ namespace Qoollo.Turbo.UnitTests.Common
             Assert.AreEqual(0, data.Min());
             Assert.AreEqual(0, data.Min((IComparer<int>)null));
             Assert.AreEqual(99, data.Min(new ReverseIntComparer()));
+        }
+
+        [TestMethod]
+        public void TestMaxBy()
+        {
+            List<IntWrapper> data = new List<IntWrapper>(Enumerable.Range(0, 100).Select(o => new IntWrapper(o)));
+            var expected = data[99];
+            var expectedMin = data[0];
+            Assert.AreEqual(expected, data.MaxBy(v => v.Data));
+            Assert.AreEqual(expected, data.MaxBy(v => v.Data, null));
+            Assert.AreEqual(expectedMin, data.MaxBy(v => v.Data, new ReverseIntComparer()));
+        }
+
+        [TestMethod]
+        public void TestMinBy()
+        {
+            List<IntWrapper> data = new List<IntWrapper>(Enumerable.Range(0, 100).Select(o => new IntWrapper(o)));
+            var expected = data[0];
+            var expectedMax = data[99];
+            Assert.AreEqual(expected, data.MinBy(v => v.Data));
+            Assert.AreEqual(expected, data.MinBy(v => v.Data, null));
+            Assert.AreEqual(expectedMax, data.MinBy(v => v.Data, new ReverseIntComparer()));
         }
     }
 }
