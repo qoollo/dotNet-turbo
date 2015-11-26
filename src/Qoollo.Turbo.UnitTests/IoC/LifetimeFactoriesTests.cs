@@ -106,8 +106,10 @@ namespace Qoollo.Turbo.UnitTests.IoC
             var c = TestFactory<TestClassWithConstructor>(LifetimeFactories.PerThread);
             var inst1 = TestContainer<TestClassWithConstructor>(c);
             var inst2 = TestContainer<TestClassWithConstructor>(c);
+            var inst3 = Task.Run(() => TestContainer<TestClassWithConstructor>(c)).Result;
 
             Assert.AreSame(inst1, inst2);
+            Assert.AreNotSame(inst1, inst3);
         }
 
 

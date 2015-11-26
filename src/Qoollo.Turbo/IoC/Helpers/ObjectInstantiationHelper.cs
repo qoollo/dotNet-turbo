@@ -291,14 +291,14 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт Expression для извлечения записи из конкретного объекта injection
+        /// Creates an ExpressionTree to resolve the required injection object from IInjectionResolver
         /// </summary>
-        /// <param name="key">Ключ</param>
+        /// <param name="key">The type of the injection object to be resolved</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
-        /// <param name="paramName">Имя параметра, для которого разрешаем зависимость</param>
-        /// <param name="forType">Тип, для которого разрешаем зависимость (передаётся в injection.Resolve)</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций (передаётся в injection.Resolve)</param>
-        /// <returns>Expression для извлечения записи</returns>
+        /// <param name="paramName">The name of the parameter to that the injection will be performed (can be null, required for injection.Resolve)</param>
+        /// <param name="forType">The type of the object to be created (can be null, required for injection.Resolve)</param>
+        /// <param name="extData">Extended information supplied by the user (can be null, required for injection.Resolve)</param>
+        /// <returns>Expression Tree to resolve the injection from IInjectionResolver</returns>
         private static Expression CreateInjectionExtractionExpr(Type key, IInjectionResolver injection, string paramName, Type forType, object extData)
         {
             Contract.Requires(key != null);
@@ -322,14 +322,14 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт Expression для извлечения записи из IInjectionResolver, получаемого через выражение param
+        /// Creates an ExpressionTree to resolve the required injection object from IInjectionResolver, passed as Expression object ('param')
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="param">Expression для получения IInjectionResolver</param>
-        /// <param name="paramName">Имя параметра, для которого разрешаем зависимость</param>
-        /// <param name="forType">Тип, для которого разрешаем зависимость (передаётся в injection.Resolve)</param>
-        /// <param name="extData">Расширенная информация для разрешения инъекций (передаётся в injection.Resolve)</param>
-        /// <returns>Expression для извлечения записи</returns>
+        /// <param name="key">The type of the injection object to be resolved</param>
+        /// <param name="param">ExpressionTree that returns an IInjectionResolver</param>
+        /// <param name="paramName">The name of the parameter to that the injection will be performed (can be null, required for injection.Resolve)</param>
+        /// <param name="forType">The type of the object to be created (can be null, required for injection.Resolve)</param>
+        /// <param name="extData">Extended information supplied by the user (can be null, required for injection.Resolve)</param>
+        /// <returns>Expression Tree to resolve the injection from IInjectionResolver</returns>
         private static Expression CreateInjectionExtractionExpr(Type key, Expression param, string paramName, Type forType, object extData)
         {
             Contract.Requires(key != null);
@@ -354,14 +354,14 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Создаёт Expression для извлечения записи из IInjectionResolver, получаемого через выражение param
+        /// Creates an ExpressionTree to resolve the required injection object from IInjectionResolver, passed as Expression object ('param')
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="param">Expression для получения IInjectionResolver</param>
-        /// <param name="paramName">Expression для получения имени параметра, для которого разрешаем зависимость</param>
-        /// <param name="forType">Expression для получения типа, для которого разрешаем зависимость (передаётся в injection.Resolve)</param>
-        /// <param name="extData">Expression для получения расширенной информации для разрешения инъекций (передаётся в injection.Resolve)</param>
-        /// <returns>Expression для извлечения записи</returns>
+        /// <param name="key">The type of the injection object to be resolved</param>
+        /// <param name="param">ExpressionTree that returns an IInjectionResolver</param>
+        /// <param name="paramName">ExpressionTree that returns the name of the parameter to that the injection will be performed (required for injection.Resolve)</param>
+        /// <param name="forType">ExpressionTree that returns the type of the object to be created (required for injection.Resolve)</param>
+        /// <param name="extData">ExpressionTree that returns the extended information supplied by the user (required for injection.Resolve)</param>
+        /// <returns>Expression Tree to resolve the injection from IInjectionResolver</returns>
         private static Expression CreateInjectionExtractionExpr(Type key, Expression param, Expression paramName, Expression forType, Expression extData)
         {
             Contract.Requires(key != null);
@@ -393,12 +393,12 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Возвращает LambdaExpression для создания объекта с передаваемым в качестве параметра объектом разрешения инъекций 
+        /// Builds the LambdaExpression that creates an object of the specified type
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Сформированный LambdaExpression</returns>
+        /// <returns>Final LambdaExpression to create an object of specified type</returns>
         private static Expression<Func<IInjectionResolver, object>> GetObjectCreationExpression(Type objType, ConstructorInfo constructor, Expression extData)
         {
             Contract.Requires(objType != null);
@@ -478,7 +478,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
-        /// <param name="extData">Expression для получения расширенной информации для разрешения инъекций</param>
+        /// <param name="extData">ExpressionTree that returns the extended information supplied by the user (required for injection.Resolve)</param>
         /// <returns>Функция создания объекта</returns>
         private static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, Expression extData)
         {
@@ -505,7 +505,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// Аргументы извлекаются при каждом обращении из словаря инъекций, передаваемом в качестве параметра
         /// </summary>
         /// <param name="objType">The type of the object</param>
-        /// <param name="extData">Expression для получения расширенной информации для разрешения инъекций</param>
+        /// <param name="extData">ExpressionTree that returns the extended information supplied by the user (required for injection.Resolve)</param>
         /// <returns>Функция создания объекта</returns>
         private static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, Expression extData)
         {
