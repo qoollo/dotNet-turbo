@@ -434,15 +434,15 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Возвращает функцию, которая создаёт объект типа objType.
-        /// Функция представляет собой скомпилированное ExcpressionTree. 
-        /// Аргументы извлекаются при каждом обращении из словаря инъекций injection, зашитом в данную функцию.
+        /// Builds and compiles function to create object of type 'objType' with the specified constructor.
+        /// That function are built and compiled with ExpressionTree.
+        /// Arguments for injection are extracted from 'injection' object on every call.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Функция создания объекта</returns>
+        /// <returns>Function to create the instance of 'objType'</returns>
         public static Func<object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
@@ -472,14 +472,14 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Возвращает функцию, которая создаёт объект типа objType.
-        /// Функция представляет собой скомпилированное ExcpressionTree. 
-        /// Аргументы извлекаются при каждом обращении из словаря инъекций, передаваемом в качестве параметра
+        /// Builds and compiles function to create object of type 'objType' with the specified constructor.
+        /// That function are built and compiled with ExpressionTree.
+        /// Arguments for injection are extracted on every call.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="extData">ExpressionTree that returns the extended information supplied by the user (required for injection.Resolve)</param>
-        /// <returns>Функция создания объекта</returns>
+        /// <returns>Function to create the instance of 'objType'</returns>
         private static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, Expression extData)
         {
             Contract.Requires(objType != null);
@@ -500,13 +500,13 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Возвращает функцию, которая создаёт объект типа objType.
-        /// Функция представляет собой скомпилированное ExcpressionTree. 
-        /// Аргументы извлекаются при каждом обращении из словаря инъекций, передаваемом в качестве параметра
+        /// Builds and compiles function to create object of type 'objType' with the default constructor.
+        /// That function are built and compiled with ExpressionTree.
+        /// Arguments for injection are extracted on every call.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="extData">ExpressionTree that returns the extended information supplied by the user (required for injection.Resolve)</param>
-        /// <returns>Функция создания объекта</returns>
+        /// <returns>Function to create the instance of 'objType'</returns>
         private static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, Expression extData)
         {
             Contract.Requires(objType != null);
@@ -525,13 +525,13 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Возвращает функцию, которая создаёт объект типа objType.
-        /// Функция представляет собой скомпилированное ExcpressionTree. 
-        /// Аргументы извлекаются при каждом обращении из словаря инъекций, передаваемом в качестве параметра
+        /// Builds and compiles function to create object of type 'objType' with the default constructor.
+        /// That function are built and compiled with ExpressionTree.
+        /// Arguments for injection are extracted on every call.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Функция создания объекта</returns>
+        /// <returns>Function to create the instance of 'objType'</returns>
         public static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, object extData)
         {
             Contract.Requires(objType != null);
@@ -556,15 +556,15 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Возвращает функцию, которая создаёт объект типа objType.
-        /// Функция представляет собой скомпилированное ExcpressionTree. 
-        /// Аргументы зашиты в функцию для ускорения процесса создания.
+        /// Builds and compiles function to create object of type 'objType' with the specified constructor.
+        /// That function are built and compiled with ExpressionTree.
+        /// Arguments for injection are extracted only once during this call.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Функция создания объекта</returns>
+        /// <returns>Function to create the instance of 'objType'</returns>
         public static Func<object> GetCompiledArgsInlinedCreationFunction(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
@@ -594,14 +594,14 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Возвращает функцию, которая создаёт объект типа objType.
-        /// Функция представляет собой скомпилированное ExcpressionTree. 
-        /// Аргументы зашиты в функцию для ускорения процесса создания.
+        /// Builds and compiles function to create object of type 'objType' with the default constructor.
+        /// That function are built and compiled with ExpressionTree.
+        /// Arguments for injection are extracted only once during this call.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Функция создания объекта</returns>
+        /// <returns>Function to create the instance of 'objType'</returns>
         public static Func<object> GetCompiledArgsInlinedCreationFunction(Type objType, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
@@ -621,7 +621,7 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
 
-        #region Dynamic Assembly Code Emit supprot
+        #region Dynamic Assembly Code Emit support
 
         /// <summary>
         /// Динамическая сборка, внутри которой генерируются типы

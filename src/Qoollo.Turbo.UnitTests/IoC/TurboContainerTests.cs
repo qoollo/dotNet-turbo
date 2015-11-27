@@ -14,6 +14,7 @@ namespace Qoollo.Turbo.UnitTests.IoC
     {
         public interface ITestInterface { }
         public class TestImplementation : ITestInterface { }
+        public class TestClass { }
         public class TestInjectionToConstructor
         {
             public readonly double Value;
@@ -49,6 +50,7 @@ namespace Qoollo.Turbo.UnitTests.IoC
                 container.AddSingleton<int>(10);
                 container.AddSingleton<string>("value");
                 container.AddPerCall<ITestInterface, TestImplementation>();
+                container.AddAssociation<TestClass, TestClass>(LifetimeFactories.DeferedSingleton);
                 container.AddAssociation<double>(new PerCallLifetime(typeof(double), r => 15.0));
 
                 Assert.AreEqual("value", container.Resolve<string>());
@@ -58,6 +60,7 @@ namespace Qoollo.Turbo.UnitTests.IoC
                 Assert.IsNotNull(obj);
                 Assert.AreEqual(15.0, obj.Value);
                 Assert.AreEqual("value", obj.StrValue);
+                Assert.IsNotNull(container.Resolve<TestClass>());
             }
         }
     }
