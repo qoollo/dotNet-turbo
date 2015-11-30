@@ -16,7 +16,7 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
         /// <summary>
         /// Create an instance of an object. All required parameters can be acquired from injection resolver.
         /// </summary>
-        /// <param name="resolver">Injection resolver to aqcuire parameters</param>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
         /// <returns>Created object</returns>
         object CreateInstance(IInjectionResolver resolver);
     }

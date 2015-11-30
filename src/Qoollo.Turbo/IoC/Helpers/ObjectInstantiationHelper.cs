@@ -624,26 +624,26 @@ namespace Qoollo.Turbo.IoC.Helpers
         #region Dynamic Assembly Code Emit support
 
         /// <summary>
-        /// Динамическая сборка, внутри которой генерируются типы
+        /// Dynamic assembly to emit required types and methods
         /// </summary>
         private static AssemblyBuilder _dynamicAssembly;
         /// <summary>
-        /// Динамический модуль внутри _dynamicAssembly
+        /// Dynamic module inside _dynamicAssembly
         /// </summary>
         private static ModuleBuilder _dynamicModule;
         /// <summary>
-        /// Объект блокировки для создания _dynamicAssembly и _dynamicModule
+        /// Sync object to reliably create _dynamicAssembly and _dynamicModule
         /// </summary>
         private static readonly object _lockObjectForAssembly = new object();
         /// <summary>
-        /// Объект блокировки при работе с _dynamicModule
+        /// Sync object for emitting the code to _dynamicModule
         /// </summary>
         private static readonly object _singleThreadAccessToDynModule = new object();
 
         /// <summary>
-        /// Возвращает динамический модуль для формирования типов на лету
+        /// Returns the dynamic module, that can be used to emit the code
         /// </summary>
-        /// <returns>Построитель модуля</returns>
+        /// <returns>ModuleBuilder</returns>
         private static ModuleBuilder GetDynamicModule()
         {
             Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
@@ -667,10 +667,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Генерирует код конструктора с параметрами для заполнения полей объекта из storageFields
+        /// Emits class constructor that copies all arguments to the 'storageFields' fields
         /// </summary>
-        /// <param name="constr">Построитель конструктора</param>
-        /// <param name="storageFields">Поля класса, которые должны заполнятся в конструкторе из его параметров</param>
+        /// <param name="constr">Constructor builder</param>
+        /// <param name="storageFields">Fields that should be inited by the constructor</param>
         private static void EmitConstructor(ConstructorBuilder constr, params FieldInfo[] storageFields)
         {
             Contract.Requires(constr != null);
@@ -716,12 +716,12 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Генерирует код метода для создания объекта типа objType конструктором constructor с расширенной информацией в поле extData
+        /// Emits object creation method that parametrized with 'IInjectionResolver' object
         /// </summary>
         /// <param name="method">MethodBuilder</param>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
-        /// <param name="extData">Поле, в котором хранятся расширенные параметры</param>
+        /// <param name="extData">Field that stores the custom data passed by the user</param>
         private static void EmitMethodWithResolver(MethodBuilder method, Type objType, ConstructorInfo constructor, FieldInfo extData)
         {
             Contract.Requires(method != null);
@@ -766,14 +766,12 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Генерирует код метода для создания объекта типа objType конструктором constructor.
-        /// Все параметры для конструктора objType находятся в полях стоящегося объекта, переданных в массиве allFields.
-        /// Порядок должен точно соответствовать
+        /// Emits object creation method. All constructor parameters should be stored in fields 'allFields'
         /// </summary>
         /// <param name="method">MethodBuilder</param>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
-        /// <param name="allFields">Массив полей, в которых хранятся параметры для конструктора объекта</param>
+        /// <param name="allFields">Fields that strores the objects required for the constructor</param>
         private static void EmitMethodWithInlinedParams(MethodBuilder method, Type objType, ConstructorInfo constructor, FieldInfo[] allFields)
         {
             Contract.Requires(method != null);
@@ -806,11 +804,11 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Строит тип, реализующий интерфейс IInstanceCreator для создания объекта типа objType
+        /// Generates the dynamic type that implements 'IInstanceCreator' interface to create an instance of 'objType'
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
-        /// <returns>Построенный тип</returns>
+        /// <returns>Built type</returns>
         private static Type BuildTypeOfInstanceCreator(Type objType, ConstructorInfo constructor)
         {
             Contract.Requires(objType != null);
@@ -852,12 +850,12 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Строит тип, реализующий интерфейс IInstanceCreatorNoParam для создания объекта типа objType.
-        /// Параметры передаются в конструктор создаваемого объекта
+        /// Generates the dynamic type that implements 'IInstanceCreatorNoParam' interface to create an instance of 'objType'.
+        /// All constructor parameters resolves only once and stores internally in the fields.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
-        /// <returns>Построенный тип</returns>
+        /// <returns>Built type</returns>
         private static Type BuildTypeOfInstanceCreatorNoParam(Type objType, ConstructorInfo constructor)
         {
             Contract.Requires(objType != null);

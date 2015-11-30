@@ -187,7 +187,7 @@ namespace Qoollo.Turbo.IoC.Injections
                 throw new ArgumentNullException("key");
 
             if (!IsGoodInjectionForKey(key, val))
-                throw new BadKeyForInjectionException(string.Format("Bad key ({0}) for the supplied object", key));
+                throw new InjectionBadKeyForItemException(string.Format("Bad key ({0}) for the supplied object", key));
 
             CheckContainerState(true);
 
@@ -211,7 +211,7 @@ namespace Qoollo.Turbo.IoC.Injections
                 throw new ArgumentNullException("key");
 
             if (!IsGoodInjectionForKey(key, val))
-                throw new BadKeyForInjectionException(string.Format("Bad key ({0}) for the supplied object", key));
+                throw new InjectionBadKeyForItemException(string.Format("Bad key ({0}) for the supplied object", key));
 
             CheckContainerState(true);
 

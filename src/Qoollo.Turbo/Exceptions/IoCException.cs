@@ -160,28 +160,28 @@ namespace Qoollo.Turbo
     /// The exception that is thrown when trying to register a new injection with inappropriate key
     /// </summary>
     [Serializable]
-    public class BadKeyForInjectionException : ArgumentException
+    public class InjectionBadKeyForItemException : ArgumentException
     {
         /// <summary>
-        /// BadKeyForInjectionException constructor
+        /// InjectionBadKeyForItemException constructor
         /// </summary>
-        public BadKeyForInjectionException() : base("Incorrect key for the specified value in IoC injection container") { }
+        public InjectionBadKeyForItemException() : base("Incorrect key for the specified value in IoC injection container") { }
         /// <summary>
-        /// BadKeyForInjectionException constructor with error message
+        /// InjectionBadKeyForItemException constructor with error message
         /// </summary>
         /// <param name="message">Error message</param>
-        public BadKeyForInjectionException(string message) : base(message) { }
+        public InjectionBadKeyForItemException(string message) : base(message) { }
         /// <summary>
-        /// BadKeyForInjectionException constructor with error message and innerException
+        /// InjectionBadKeyForItemException constructor with error message and innerException
         /// </summary>
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
-        public BadKeyForInjectionException(string message, Exception innerException) : base(message, innerException) { }
+        public InjectionBadKeyForItemException(string message, Exception innerException) : base(message, innerException) { }
         /// <summary>
-        /// BadKeyForInjectionException constructor for deserialization
+        /// InjectionBadKeyForItemException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
-        protected BadKeyForInjectionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        protected InjectionBadKeyForItemException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }
