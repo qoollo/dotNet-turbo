@@ -56,6 +56,7 @@
     <Compile Include="Common\ConcurrentDictionaryExtensionsTests.cs" />
     <Compile Include="Common\EnumerableExtensionsTest.cs" />
     <Compile Include="Common\EventTimingTrackerTest.cs" />
+    <Compile Include="Common\StringDistanceTest.cs" />
     <Compile Include="Common\TurboExceptionTests.cs" />
     <Compile Include="Common\TypeUIDResolverTests.cs" />
     <Compile Include="Common\WeakDelegateTests.cs" />
