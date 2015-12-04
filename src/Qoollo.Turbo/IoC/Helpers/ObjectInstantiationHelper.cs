@@ -910,12 +910,13 @@ namespace Qoollo.Turbo.IoC.Helpers
         #region Build InstanceCreator in dynamic assembly
 
         /// <summary>
-        /// Создаёт объект, реализующий IInstanceCreator, для создания объекта типа objType конструктором constructor
+        /// Emits and creates an instance of an object that implements IInstanceCreator.
+        /// That object can be used to create an object of 'objType' with specified constructor
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданный объект</returns>
+        /// <returns>Instance of an object that implements IInstanceCreator</returns>
         private static object GetInstanceCreatorObject(Type objType, ConstructorInfo constructor, object extData)
         {
             Contract.Requires(objType != null);
@@ -932,14 +933,14 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Создаёт объект, реализующий IInstanceCreatorNoParam, для создания объекта типа objType конструктором constructor.
-        /// Параметры конструктора извлекаются 1 раз и зашиваются в объект.
+        /// Emits and creates an instance of an object that implements IInstanceCreatorNoParam.
+        /// That object can be used to create an object of 'objType' with specified constructor
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданный объект</returns>
+        /// <returns>Instance of an object that implements IInstanceCreatorNoParam</returns>
         private static object GetInstanceCreatorNoParamObject(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
@@ -958,13 +959,13 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт объект IInstanceCreator для создания объекта типа objType конструктором constructor.
-        /// Тип объекта генерируется на лету внутри динамической сборки
+        /// Emits and creates an instance of an object that implements IInstanceCreator.
+        /// That object can be used to create an object of 'objType' with specified constructor
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданный объект IInstanceCreator</returns>
+        /// <returns>IInstanceCreator to create 'objType' object</returns>
         public static IInstanceCreator BuildInstanceCreatorInDynAssembly(Type objType, ConstructorInfo constructor, object extData)
         {
             Contract.Requires(objType != null);
@@ -977,15 +978,15 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Создаёт объект IInstanceCreatorNoParam для создания объекта типа objType конструктором constructor.
-        /// Тип объекта генерируется на лету внутри динамической сборки.
-        /// Параметры для конструктора выбираются 1 раз и зашиваются в объект IInstanceCreatorNoParam
+        /// Emits and creates an instance of an object that implements IInstanceCreatorNoParam.
+        /// That object can be used to create an object of 'objType' with specified constructor.
+        /// All constructor parameters resolves only once and stores internally in the fields.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданный объект IInstanceCreatorNoParam</returns>
+        /// <returns>IInstanceCreatorNoParam to create 'objType' object</returns>
         public static IInstanceCreatorNoParam BuildInstanceCreatorNoParamInDynAssembly(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
@@ -1000,13 +1001,13 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт функцию для создания объекта типа objType конструктором constructor.
-        /// Тип объекта генерируется на лету внутри динамической сборки
+        /// Creates a delegate to the method, that can create an object of 'objType' with specified constructor.
+        /// That method emits in runtime to the dynamic assembly.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданная функция</returns>
+        /// <returns>Delegate for the emitted method</returns>
         public static Func<IInjectionResolver, object> BuildCreatorFuncInDynAssembly(Type objType, ConstructorInfo constructor, object extData)
         {
             Contract.Requires(objType != null);
@@ -1029,15 +1030,15 @@ namespace Qoollo.Turbo.IoC.Helpers
         }
 
         /// <summary>
-        /// Создаёт функцию для создания объекта типа objType конструктором constructor.
-        /// Тип объекта генерируется на лету внутри динамической сборки.
-        /// Параметры для конструктора выбираются 1 раз и зашиваются в объект создания
+        /// Creates a delegate to the method, that can create an object of 'objType' with specified constructor.
+        /// That method emits in runtime to the dynamic assembly.
+        /// All constructor parameters resolves only once and stores internally.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданная функция</returns>
+        /// <returns>Delegate for the emitted method</returns>
         public static Func<object> BuildCreatorFuncNoParamInDynAssembly(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
@@ -1062,12 +1063,12 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт объект IInstanceCreator для создания объекта типа objType.
-        /// Тип объекта генерируется на лету внутри динамической сборки
+        /// Emits and creates an instance of an object that implements IInstanceCreator.
+        /// That object can be used to create an object of 'objType' with the default constructor
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданный объект IInstanceCreator</returns>
+        /// <returns>IInstanceCreator to create 'objType' object</returns>
         public static IInstanceCreator BuildInstanceCreatorInDynAssembly(Type objType, object extData)
         {
             Contract.Requires(objType != null);
@@ -1084,14 +1085,14 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт объект IInstanceCreatorNoParam для создания объекта типа objType.
-        /// Тип объекта генерируется на лету внутри динамической сборки.
-        /// Параметры для конструктора выбираются 1 раз и зашиваются в объект IInstanceCreatorNoParam
+        /// Emits and creates an instance of an object that implements IInstanceCreatorNoParam.
+        /// That object can be used to create an object of 'objType' with the default constructor.
+        /// All constructor parameters resolves only once and stores internally in the fields.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданный объект IInstanceCreatorNoParam</returns>
+        /// <returns>IInstanceCreatorNoParam to create 'objType' object</returns>
         public static IInstanceCreatorNoParam BuildInstanceCreatorNoParamInDynAssembly(Type objType, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
@@ -1109,12 +1110,12 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт функцию для создания объекта типа objType.
-        /// Тип объекта генерируется на лету внутри динамической сборки
+        /// Creates a delegate to the method, that can create an object of 'objType' with the default constructor.
+        /// That method emits in runtime to the dynamic assembly.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданная функция</returns>
+        /// <returns>Delegate for the emitted method</returns>
         public static Func<IInjectionResolver, object> BuildCreatorFuncInDynAssembly(Type objType, object extData)
         {
             Contract.Requires(objType != null);
@@ -1131,14 +1132,14 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
         /// <summary>
-        /// Создаёт функцию для создания объекта типа objType.
-        /// Тип объекта генерируется на лету внутри динамической сборки.
-        /// Параметры для конструктора выбираются 1 раз и зашиваются в объект создания
+        /// Creates a delegate to the method, that can create an object of 'objType' with the default constructor.
+        /// That method emits in runtime to the dynamic assembly.
+        /// All constructor parameters resolves only once and stores internally.
         /// </summary>
         /// <param name="objType">The type of the object</param>
         /// <param name="injection">Injection resolver to get the objects required by the constructor</param>
         /// <param name="extData">Extended information supplied by the user for Injection Resolver</param>
-        /// <returns>Созданная функция</returns>
+        /// <returns>Delegate for the emitted method</returns>
         public static Func<object> BuildCreatorFuncNoParamInDynAssembly(Type objType, IInjectionResolver injection, object extData)
         {
             Contract.Requires(objType != null);
