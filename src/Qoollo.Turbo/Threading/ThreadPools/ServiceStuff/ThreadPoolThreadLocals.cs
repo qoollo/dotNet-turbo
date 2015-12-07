@@ -44,7 +44,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             {
                 _isDisposed = true;
 
-                Contract.Assert(isUserCall, "ThreadPoolThreadLocals should be disposed explicitly");
+                Contract.Assert(isUserCall, "ThreadPoolThreadLocals should be disposed explicitly by calling Dispose on ThreadPool. ThreadPoolName: " + (Globals != null ? Globals.OwnerPoolName : "unknown"));
                 if (!isUserCall)
                     throw new InvalidOperationException("ThreadPoolThreadLocals should be disposed explicitly");
             }

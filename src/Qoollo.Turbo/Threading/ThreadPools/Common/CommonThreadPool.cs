@@ -221,7 +221,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _synchroContext = new CommonThreadPoolSynchronizationContext(this);
             _taskScheduler = new CommonThreadPoolTaskScheduler(this);
 
-            _threadPoolGlobals = new ThreadPoolGlobals(queueBoundedCapacity, queueStealAwakePeriod);
+            _threadPoolGlobals = new ThreadPoolGlobals(queueBoundedCapacity, queueStealAwakePeriod, _name);
             _activeThread = new List<Thread>(Math.Min(100, Math.Max(2, ProcessorCount)));
             _activeThreadCount = 0;
 
@@ -1319,7 +1319,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
             if (State != ThreadPoolState.StopRequested && State != ThreadPoolState.Stopped)
             {
-                Contract.Assume(isUserCall, "ThreadPool destructor: Better to dispose by user. Закомментируй, если не нравится.");
+                Contract.Assume(isUserCall, "ThreadPool finalizer called. You should dispose ThreadPool by hand. ThreadPoolName: " + this.Name);
 
                 if (isUserCall)
                     StopThreadPool(true, false, true);
