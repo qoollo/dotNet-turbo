@@ -10,18 +10,18 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Lifetime.Factories
 {
     /// <summary>
-    /// Базовый класс для фабрики создания объектов управления временем жизни
+    /// Base class for LifetimeFactory that creates a Lifetime container for object
     /// </summary>
     [ContractClass(typeof(LifetimeFactoryCodeContractCheck))]
     public abstract class LifetimeFactory
     {
         /// <summary>
-        /// Создание объекта управления временем жизни
+        /// Creates a lifetime container that resolves an instance of the specified object type
         /// </summary>
-        /// <param name="objType">Тип хранимого объекта</param>
-        /// <param name="injection">Резолвер инъекций</param>
-        /// <param name="extInfo">Расширенная информация (если есть)</param>
-        /// <returns>Объект управления жизнью объекта</returns>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="injection">Injection resolver that will be used to create an instance if required</param>
+        /// <param name="extInfo">Extended information supplied by the user (can be null)</param>
+        /// <returns>Created lifetime container for the specified object type</returns>
         public abstract LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo);
     }
 
