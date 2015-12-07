@@ -306,9 +306,16 @@ namespace Qoollo.Turbo.ObjectPools
                 throw new InvalidOperationException("Trying to release same element several times in Pool: " + this.Name);
 
             if (_disposeCancellation.IsCancellationRequested)
+            {
                 DestroyAndRemoveElement(element);
+            }
             else
+            {
                 _elementsContainer.Release(element);
+
+                if (_disposeCancellation.IsCancellationRequested)
+                    TakeDestroyAndRemoveElement();
+            }
 
             if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
                 _stoppedEvent.Set();
