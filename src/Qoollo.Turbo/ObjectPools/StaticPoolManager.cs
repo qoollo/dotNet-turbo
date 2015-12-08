@@ -226,7 +226,7 @@ namespace Qoollo.Turbo.ObjectPools
             if (_disposeCancellation.IsCancellationRequested)
             {
                 if (throwOnUnavail)
-                    throw new ObjectDisposedException(this.GetType().Name);
+                    throw new CantRetrieveElementException("Rent from pool failed. Dispose was called.", new ObjectDisposedException(this.GetType().Name));
 
                 return null;
             }
@@ -278,7 +278,14 @@ namespace Qoollo.Turbo.ObjectPools
             if (throwOnUnavail && !elemWasTaken)
             {
                 if (_disposeCancellation.IsCancellationRequested)
+                {
+                    // We should attempt to destroy element that was potentially occupied for small amout of time
+                    this.TakeDestroyAndRemoveElement();
+                    if (_elementsContainer.Count == 0)
+                        _stoppedEvent.Set();
+
                     throw new CantRetrieveElementException("Rent from pool failed. Dispose was called.", new ObjectDisposedException(this.GetType().Name));
+                }
 
                 token.ThrowIfCancellationRequested();
 

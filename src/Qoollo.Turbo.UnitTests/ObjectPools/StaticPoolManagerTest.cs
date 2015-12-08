@@ -502,5 +502,92 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                 RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 100, true);
             }
         }
+
+
+
+        private void RunConcurrentUseWithDispose(int maxPoolElemCount, int threadCount, int opCount)
+        {
+            using (StaticPoolManager<int> testInst = new StaticPoolManager<int>())
+            {
+                for (int i = 0; i < maxPoolElemCount; i++)
+                    testInst.AddElement(i);
+
+                Thread[] threads = new Thread[threadCount];
+                Barrier startBar = new Barrier(threadCount + 1);
+
+                int totalExecutedOpCount = 0;
+
+                Action thAct = () =>
+                {
+                    Random localRand = new Random(Thread.CurrentThread.ManagedThreadId + Environment.TickCount);
+                    startBar.SignalAndWait();
+
+                    try
+                    {
+                        while (true)
+                        {
+                            int curSpinTime = localRand.Next(0, 10000);
+
+                            Interlocked.Increment(ref totalExecutedOpCount);
+                            using (var el = testInst.Rent(60 * 1000, throwOnUnavail: true))
+                            {
+                                if (curSpinTime > 5000)
+                                    Thread.Sleep(0);
+                                else
+                                    Thread.SpinWait(curSpinTime);
+                            }
+
+                        }
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+                    catch (CantRetrieveElementException)
+                    {
+                    }
+                };
+
+
+                for (int i = 0; i < threads.Length; i++)
+                    threads[i] = new Thread(new ThreadStart(thAct));
+
+                for (int i = 0; i < threads.Length; i++)
+                    threads[i].Start();
+
+                startBar.SignalAndWait();
+
+
+                while (Volatile.Read(ref totalExecutedOpCount) < opCount)
+                {
+                    Thread.Sleep(1);
+                }
+
+                testInst.Dispose();
+
+                for (int i = 0; i < threads.Length; i++)
+                    threads[i].Join();
+
+                Assert.AreEqual(testInst.ElementCount, testInst.FreeElementCount, "testInst.ElementCount != testInst.FreeElementCount");
+               // Assert.AreEqual(testInst.ElementsCreated, testInst.ElementsDestroyed, "ElementsCreated != ElementsDestroyed");
+            }
+        }
+
+
+        [TestMethod]
+        [Timeout(4 * 60 * 1000)]
+        public void ComplexDisposeInTheMiddle()
+        {
+            for (int i = 0; i < 500; i++)
+            {
+                RunConcurrentUseWithDispose((i % 10) + 1, Environment.ProcessorCount, 2000);
+
+                if (i % 100 == 0)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                }
+            }
+        }
     }
 }
