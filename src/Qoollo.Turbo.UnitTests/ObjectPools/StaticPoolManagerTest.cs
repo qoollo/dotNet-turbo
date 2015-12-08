@@ -351,6 +351,35 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
             }
         }
 
+        [TestMethod]
+        [ExpectedException(typeof(CantRetrieveElementException))]
+        public void TestRentOnDisposedPoolThrowsException()
+        {
+            using (StaticPoolManager<int> testInst = new StaticPoolManager<int>())
+            {
+                testInst.AddElement(1);
+                testInst.Dispose();
+                using (var item = testInst.Rent(true))
+                {
+                    Assert.IsFalse(item.IsValid);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestRentOnDisposedPoolWithoutThrowOnUnavail()
+        {
+            using (StaticPoolManager<int> testInst = new StaticPoolManager<int>())
+            {
+                testInst.AddElement(1);
+                testInst.Dispose();
+                using (var item = testInst.Rent(false))
+                {
+                    Assert.IsFalse(item.IsValid);
+                }
+            }
+        }
+
 
         private void RunFinalizerTest()
         {

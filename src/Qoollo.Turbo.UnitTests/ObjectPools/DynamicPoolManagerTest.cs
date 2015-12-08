@@ -397,6 +397,34 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
 
 
         [TestMethod]
+        [ExpectedException(typeof(CantRetrieveElementException))]
+        public void TestRentOnDisposedPoolThrowsException()
+        {
+            using (TestDynamicPool testInst = new TestDynamicPool(0, 1))
+            {
+                testInst.Dispose();
+                using (var item = testInst.Rent(true))
+                {
+                    Assert.IsFalse(item.IsValid);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestRentOnDisposedPoolWithoutThrowOnUnavail()
+        {
+            using (TestDynamicPool testInst = new TestDynamicPool(0, 1))
+            {
+                testInst.Dispose();
+                using (var item = testInst.Rent(false))
+                {
+                    Assert.IsFalse(item.IsValid);
+                }
+            }
+        }
+
+
+        [TestMethod]
         public void TestNotCreateMoreThanMax()
         {
             using (TestDynamicPool testInst = new TestDynamicPool(0, 10))
