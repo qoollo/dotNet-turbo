@@ -10,7 +10,8 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Lifetime
 {
     /// <summary>
-    /// Контейнер для синглтона с отложенным созданием объекта
+    /// Lifetime container that holds a single instance of an object. 
+    /// That instance is created lazily on the first call of 'GetInstance' method.
     /// </summary>
     public class DeferedSingletonLifetime: LifetimeBase
     {
@@ -20,7 +21,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         private volatile bool _isInited;
 
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -30,10 +31,10 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Конструктор DeferedSingletonLifetime
+        /// DeferedSingletonLifetime constructor
         /// </summary>
-        /// <param name="createInstanceFunc">Функция создания объекта</param>
-        /// <param name="objType">Тип создаваемого объекта</param>
+        /// <param name="createInstanceFunc">Instance creation method</param>
+        /// <param name="objType">The type of the object to be stored in the current Lifetime container</param>
         public DeferedSingletonLifetime(Func<IInjectionResolver, object> createInstanceFunc, Type objType)
             : base(objType)
         {
@@ -45,9 +46,9 @@ namespace Qoollo.Turbo.IoC.Lifetime
 
 
         /// <summary>
-        /// Создание инстанса (lock должен быть в отдельном методе для ускорения)
+        /// Core method to create an instance of an object (separated to improve the performance)
         /// </summary>
-        /// <param name="resolver">Резолвер</param>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
         private void CreateInstanceCore(IInjectionResolver resolver)
         {
             lock (_lockObj)
@@ -61,10 +62,11 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Возвращает объект, которым управляет данный контейнер
+        /// Resolves the object held by the container
         /// </summary>
-        /// <param name="resolver">Резолвер инъекций</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
+        /// <returns>Resolved instance of the object</returns>
+        /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
             if (!_isInited)
@@ -74,9 +76,9 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Внутренний метод освобождения ресурсов
+        /// Cleans-up all resources
         /// </summary>
-        /// <param name="isUserCall">Был ли вызван пользователем (false - вызван деструктором)</param>
+        /// <param name="isUserCall">True when called explicitly by user from Dispose method</param>
         protected override void Dispose(bool isUserCall)
         {
             IDisposable objDisp = _obj as IDisposable;

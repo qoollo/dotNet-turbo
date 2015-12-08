@@ -8,21 +8,21 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Потребитель элементов
+    /// Interface for data consumer
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">Type of the consuming elements</typeparam>
     public interface IConsumer<in T>
     {
         /// <summary>
-        /// Добавить элемент
+        /// Pushes new element to the consumer
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">Element</param>
         void Add(T item);
         /// <summary>
-        /// Попытаться добавить элемент
+        /// Attempts to push new element to the consumer
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">Element</param>
+        /// <returns>True if the element was consumed successfully</returns>
         bool TryAdd(T item);
     }
 }

@@ -11,10 +11,10 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC
 {
     /// <summary>
-    /// Простой локатор объектов
-    /// Инъекции имитируются синглтонами
+    /// Simple IoC container and object locator (without separated injection container)
     /// </summary>
-    public class SimpleObjectLocator : TypeStrictAssociationContainer, IObjectLocator<Type>
+    [Obsolete("This container is obsolete. Please, use TurboContainer instead.")]
+    public class SimpleObjectLocator : DirectTypeAssociationContainer, IObjectLocator<Type>
     {
         private readonly IInjectionResolver _resolver;
 
@@ -25,7 +25,7 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Объект для резолва инъекций
+        /// Injection resolver for SimpleObjectLocator
         /// </summary>
         private class InnerInjectionResolver : IInjectionResolver
         {
@@ -38,9 +38,9 @@ namespace Qoollo.Turbo.IoC
             }
 
             /// <summary>
-            /// Конструктор InnerInjectionResolver
+            /// InnerInjectionResolver constructor
             /// </summary>
-            /// <param name="locator">Локатор</param>
+            /// <param name="locator">Owner</param>
             public InnerInjectionResolver(SimpleObjectLocator locator)
             {
                 Contract.Requires(locator != null);
@@ -48,25 +48,10 @@ namespace Qoollo.Turbo.IoC
                 _locator = locator;
             }
 
-            /// <summary>
-            /// Разрешить зависимость на основе подробной информации
-            /// </summary>
-            /// <param name="reqObjectType">Тип объекта, который требуется вернуть</param>
-            /// <param name="paramName">Имя параметра, для которого разрешается зависимость (если применимо)</param>
-            /// <param name="forType">Тип, для которого разрешается зависимость (если применимо)</param>
-            /// <param name="extData">Расширенные данные для разрешения зависимости (если есть)</param>
-            /// <returns>Найденный объект запрашиваемого типа</returns>
             public object Resolve(Type reqObjectType, string paramName, Type forType, object extData)
             {
                 return _locator.Resolve(reqObjectType);
             }
-
-            /// <summary>
-            /// Упрощённое разрешение зависимости
-            /// </summary>
-            /// <typeparam name="T">Тип объекта, который требуется вернуть</typeparam>
-            /// <param name="forType">Тип, для которого разрешается зависимость</param>
-            /// <returns>Найденный объект запрашиваемого типа</returns>
             public T Resolve<T>(Type forType)
             {
                 return _locator.Resolve<T>();
@@ -74,7 +59,7 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Конструктор SimpleObjectLocator
+        /// SimpleObjectLocator constructor
         /// </summary>
         public SimpleObjectLocator()
         {
@@ -82,417 +67,23 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Сформировать Lifetime контейнер по типу и фабрике 
+        /// Creates a lifetime container by object type and lifetime factory
         /// </summary>
-        /// <param name="key">Ключ, по которому будет сохранён контейнер</param>
-        /// <param name="objType">Тип объекта, который будет обрабатывать Lifetime контейнер</param>
-        /// <param name="val">Фабрика для создания Lifetime контейнера</param>
-        /// <returns>Lifetime контейнер</returns>
+        /// <param name="key">The key that will be used to store lifetime container inside the current AssociationContainer</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>Created lifetime container</returns>
         protected override Lifetime.LifetimeBase ProduceResolveInfo(Type key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
             return val.Create(objType, _resolver, null);
         }
 
-        /// <summary>
-        /// Подходит ли переданный тип для заданного ключа
-        /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта</param>
-        /// <returns>Подходит ли</returns>
-        protected override bool IsGoodTypeForKey(Type key, Type objType)
-        {
-            return (key == objType) || (key.IsAssignableFrom(objType));
-        }
-
 
         /// <summary>
-        /// Добавить синглтон
+        /// Resolves object of the specified type from the container
         /// </summary>
-        /// <typeparam name="TType">Тип синглтона</typeparam>
-        /// <param name="val">Значение синглтона</param>
-        public void AddSingleton<TType>(TType val)
-        {
-            Contract.Requires<ArgumentNullException>((object)val != null);
-
-            base.AddSingleton(typeof(TType), (object)val);
-        }
-
-        /// <summary>
-        /// Добавить синглтон
-        /// </summary>
-        /// <typeparam name="TType">Тип синглтона</typeparam>
-        /// <param name="val">Значение синглтона</param>
-        /// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
-        public void AddSingleton<TType>(TType val, bool disposeWithContainer)
-        {
-            Contract.Requires<ArgumentNullException>((object)val != null);
-
-            base.AddSingleton(typeof(TType), (object)val, disposeWithContainer);
-        }
-
-        /// <summary>
-        /// Попытаться добавить синглтон
-        /// </summary>
-        /// <typeparam name="TType">Тип синглтона</typeparam>
-        /// <param name="val">Значение синглтона</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddSingleton<TType>(TType val)
-        {
-            Contract.Requires<ArgumentNullException>((object)val != null);
-
-            return base.TryAddSingleton(typeof(TType), (object)val);
-        }
-
-        /// <summary>
-        /// Попытаться добавить синглтон
-        /// </summary>
-        /// <typeparam name="TType">Тип синглтона</typeparam>
-        /// <param name="val">Значение синглтона</param>
-        /// <param name="disposeWithContainer">Освобождать ли объект синглтона вместе с контейнером</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddSingleton<TType>(TType val, bool disposeWithContainer)
-        {
-            Contract.Requires<ArgumentNullException>((object)val != null);
-
-            return base.TryAddSingleton(typeof(TType), (object)val, disposeWithContainer);
-        }
-
-
-
-        /// <summary>
-        /// Добавить ассоциацию
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="lifetimeContainer">Lifetime контейнер</param>
-        public void AddAssociation<TKey>(Lifetime.LifetimeBase lifetimeContainer)
-        {
-            Contract.Requires<ArgumentNullException>(lifetimeContainer != null);
-
-            base.AddAssociation(typeof(TKey), lifetimeContainer);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
-        /// <param name="factory">Фабрика</param>
-        public void AddAssociation<TKey>(Type objType, Lifetime.Factories.LifetimeFactory factory)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-            Contract.Requires<ArgumentNullException>(factory != null);
-
-            base.AddAssociation(typeof(TKey), objType, factory);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="lifetimeContainer">Lifetime контейнер</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddAssociation<TKey>(Lifetime.LifetimeBase lifetimeContainer)
-        {
-            Contract.Requires<ArgumentNullException>(lifetimeContainer != null);
-
-            return base.TryAddAssociation(typeof(TKey), lifetimeContainer);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип объекта, которым будет управлять Lifetime контейнер</param>
-        /// <param name="factory">Фабрика</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddAssociation<TKey>(Type objType, Lifetime.Factories.LifetimeFactory factory)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-            Contract.Requires<ArgumentNullException>(factory != null);
-
-            return base.TryAddAssociation(typeof(TKey), objType, factory);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <typeparam name="TValue">Тип объекта, которым будет управлять Lifetime контейнер</typeparam>
-        /// <param name="factory">Фабрика</param>
-        public void AddAssociation<TKey, TValue>(Lifetime.Factories.LifetimeFactory factory)
-        {
-            Contract.Requires<ArgumentNullException>(factory != null);
-
-            base.AddAssociation(typeof(TKey), typeof(TValue), factory);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию для заданного типа и фабрики создания Lifetime контейнера
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <typeparam name="TValue">Тип объекта, которым будет управлять Lifetime контейнер</typeparam>
-        /// <param name="factory">Фабрика</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddAssociation<TKey, TValue>(Lifetime.Factories.LifetimeFactory factory)
-        {
-            Contract.Requires<ArgumentNullException>(factory != null);
-
-            return base.TryAddAssociation(typeof(TKey), typeof(TValue), factory);
-        }
-
-
-
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'синглтон'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        public void AddSingleton<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-  
-            base.AddAssociation(typeof(TKey), objType, LifetimeFactories.Singleton);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'синглтон'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddSingleton<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            return base.TryAddAssociation(typeof(TKey), objType, LifetimeFactories.Singleton);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'синглтон'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        public void AddSingleton<TKey, TValue>()
-            where TValue : TKey
-        {
-            base.AddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.Singleton);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'синглтон'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
-        public bool TryAddSingleton<TKey, TValue>()
-            where TValue : TKey
-        {
-            return base.TryAddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.Singleton);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'отложенный синглтон'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        public void AddDeferedSingleton<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            base.AddAssociation(typeof(TKey), objType, LifetimeFactories.DeferedSingleton);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'отложенный синглтон'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddDeferedSingleton<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            return base.TryAddAssociation(typeof(TKey), objType, LifetimeFactories.DeferedSingleton);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'отложенный синглтон'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        public void AddDeferedSingleton<TKey, TValue>()
-            where TValue : TKey
-        {
-            base.AddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.DeferedSingleton);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'отложенный синглтон'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
-        public bool TryAddDeferedSingleton<TKey, TValue>()
-            where TValue : TKey
-        {
-            return base.TryAddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.DeferedSingleton);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на поток'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        public void AddPerThread<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            base.AddAssociation(typeof(TKey), objType, LifetimeFactories.PerThread);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на поток'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddPerThread<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            return base.TryAddAssociation(typeof(TKey), objType, LifetimeFactories.PerThread);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на поток'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        public void AddPerThread<TKey, TValue>()
-            where TValue : TKey
-        {
-            base.AddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.PerThread);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на поток'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
-        public bool TryAddPerThread<TKey, TValue>()
-            where TValue : TKey
-        {
-            return base.TryAddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.PerThread);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        public void AddPerCall<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            base.AddAssociation(typeof(TKey), objType, LifetimeFactories.PerCall);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddPerCall<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            return base.TryAddAssociation(typeof(TKey), objType, LifetimeFactories.PerCall);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        public void AddPerCall<TKey, TValue>()
-            where TValue : TKey
-        {
-            base.AddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.PerCall);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
-        public bool TryAddPerCall<TKey, TValue>()
-            where TValue : TKey
-        {
-            return base.TryAddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.PerCall);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        public void AddPerCallInlinedParams<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            base.AddAssociation(typeof(TKey), objType, LifetimeFactories.PerCallInlinedParams);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
-        /// </summary>
-        /// <typeparam name="TKey">Тип, используемый в качестве ключа</typeparam>
-        /// <param name="objType">Тип инстанцируемого объекта</param>
-        /// <returns>Успешность</returns>
-        public bool TryAddPerCallInlinedParams<TKey>(Type objType)
-        {
-            Contract.Requires<ArgumentNullException>(objType != null);
-
-            return base.TryAddAssociation(typeof(TKey), objType, LifetimeFactories.PerCallInlinedParams);
-        }
-
-        /// <summary>
-        /// Добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        public void AddPerCallInlinedParams<TKey, TValue>()
-            where TValue : TKey
-        {
-            base.AddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.PerCallInlinedParams);
-        }
-
-        /// <summary>
-        /// Попытаться добавить ассоциацию типа 'экземпляр на каждый вызов с зашитыми параметрами инстанцирования'
-        /// </summary>
-        /// <typeparam name="TKey">Тип ключа</typeparam>
-        /// <typeparam name="TValue">Тип инстанцируемого объекта</typeparam>
-        /// <returns>Успешность</returns>
-        public bool TryAddPerCallInlinedParams<TKey, TValue>()
-            where TValue : TKey
-        {
-            return base.TryAddAssociation(typeof(TKey), typeof(TValue), LifetimeFactories.PerCallInlinedParams);
-        }
-
-
-
-
-
-
-        /// <summary>
-        /// Получить объект по ключу
-        /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="key">The type of the object to be resolved</param>
+        /// <returns>Resolved object</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object Resolve(Type key)
         {
@@ -504,11 +95,11 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Попытаться получить объект по ключу
+        /// Attempts to resolves object of the specified type from the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">The type of the object to be resolved</param>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution is successful (specified type and all required injections registered in the container); overwise false</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryResolve(Type key, out object val)
         {
@@ -528,10 +119,10 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Можно ли получить объект по ключу
+        /// Determines whether the object of the specified type can be resolved by the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Можно ли</returns>
+        /// <param name="key">The type of an object to be checked</param>
+        /// <returns>True if the object can be resolved</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanResolve(Type key)
         {
@@ -542,10 +133,10 @@ namespace Qoollo.Turbo.IoC
 
 
         /// <summary>
-        /// Получить объект по его типу
+        /// Resolves object of the specified type from the container
         /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <returns>Полученное значение</returns>
+        /// <typeparam name="T">The type of the object to be resolved</typeparam>
+        /// <returns>Resolved object</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Resolve<T>()
         {
@@ -555,11 +146,11 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Попытаться получить объект по его типу
+        /// Attempts to resolves object of the specified type from the container
         /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <param name="val">Полученное значение в случае успеха</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="T">The type of the object to be resolved</typeparam>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution is successful (specified type and all required injections registered in the container); overwise false</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryResolve<T>(out T val)
         {
@@ -583,23 +174,11 @@ namespace Qoollo.Turbo.IoC
             return false;
         }
 
-
         /// <summary>
-        /// Создаёт объект типа T с использованием инъекций
+        /// Determines whether the object of the specified type can be resolved by the container
         /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <returns>Созданный объект</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T CreateObject<T>()
-        {
-            return InstantiationService.CreateObject<T>(_resolver);
-        }
-
-        /// <summary>
-        /// Можно ли получить объект по его типу
-        /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <returns>Можно ли</returns>
+        /// <typeparam name="T">The type of an object to be checked</typeparam>
+        /// <returns>True if the object can be resolved</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanResolve<T>()
         {
@@ -608,31 +187,42 @@ namespace Qoollo.Turbo.IoC
 
 
         /// <summary>
-        /// Получить объект по ключу
+        /// Creates an instance of an object of type 'T' using the default constructor.
+        /// The type of an object can be not registered in the container.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Полученный объект</returns>
+        /// <typeparam name="T">The type of the object to be created</typeparam>
+        /// <returns>Created object</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CreateObject<T>()
+        {
+            return InstantiationService.CreateObject<T>(_resolver);
+        }
+
+
+        /// <summary>
+        /// Resolves object from the container for the specified key
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <returns>Resolved object</returns>
         object IObjectLocator<Type>.Resolve(Type key)
         {
             return this.Resolve(key);
         }
-
         /// <summary>
-        /// Попытаться получить объект по ключу
+        /// Attempts to resolve object from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution succeeded; overwise false</returns>
         bool IObjectLocator<Type>.TryResolve(Type key, out object val)
         {
             return this.TryResolve(key, out val);
         }
-
         /// <summary>
-        /// Можно ли получить объект по ключу
+        /// Determines whether the object can be resolved by the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Можно ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the object can be resolved</returns>
         bool IObjectLocator<Type>.CanResolve(Type key)
         {
             return this.CanResolve(key);

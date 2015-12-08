@@ -12,12 +12,12 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC
 {
     /// <summary>
-    /// Фабрики для создания контейнеров, управляющих объектами
+    /// A set of default lifetime factories
     /// </summary>
     public static class LifetimeFactories
     {
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private static void Invariant()
@@ -33,7 +33,7 @@ namespace Qoollo.Turbo.IoC
 
         private static readonly SingletonLifetimeFactory _singleton = new SingletonLifetimeFactory();
         /// <summary>
-        /// Фабрика для синглтона
+        /// Gets a SingletonLifetimeFactory instance
         /// </summary>
         public static SingletonLifetimeFactory Singleton
         {
@@ -42,7 +42,7 @@ namespace Qoollo.Turbo.IoC
 
         private static readonly DeferedSingletonLifetimeFactory _deferedSingleton = new DeferedSingletonLifetimeFactory();
         /// <summary>
-        /// Фабрика для синглтона с отложенной инициализацией
+        /// Gets a DeferedSingletonLifetimeFactory instance
         /// </summary>
         public static DeferedSingletonLifetimeFactory DeferedSingleton
         {
@@ -51,7 +51,7 @@ namespace Qoollo.Turbo.IoC
 
         private static readonly PerThreadLifetimeFactory _perThread = new PerThreadLifetimeFactory();
         /// <summary>
-        /// Фабрика для контейнера хранения объекта на каждый поток
+        /// Gets a PerThreadLifetimeFactory instance
         /// </summary>
         public static PerThreadLifetimeFactory PerThread
         {
@@ -60,7 +60,7 @@ namespace Qoollo.Turbo.IoC
 
         private static readonly PerCallLifetimeFactory _perCall = new PerCallLifetimeFactory();
         /// <summary>
-        /// Фабрика для контейнера, который создаёт объект на каждый вызов
+        /// Gets a PerCallLifetimeFactory instance
         /// </summary>
         public static PerCallLifetimeFactory PerCall
         {
@@ -69,7 +69,7 @@ namespace Qoollo.Turbo.IoC
 
         private static readonly PerCallInlinedParamsLifetimeFactory _perCallInlinedParams = new PerCallInlinedParamsLifetimeFactory();
         /// <summary>
-        /// Фабрика для контейнера, который создаёт объект на каждый вызов с зашитыми параметрами
+        /// Gets a PerCallInlinedParamsLifetimeFactory instance
         /// </summary>
         public static PerCallInlinedParamsLifetimeFactory PerCallInlinedParams
         {
@@ -78,10 +78,10 @@ namespace Qoollo.Turbo.IoC
 
 
         /// <summary>
-        /// Получение фабрики по режиму инстанцирования объекта
+        /// Returns LifetimeFactory for the speicified instantiation mode
         /// </summary>
-        /// <param name="instMode">Режим инстанцирования</param>
-        /// <returns>Фабрика</returns>
+        /// <param name="instMode">Instantiation mode</param>
+        /// <returns>Corresponding LifetimeFactory</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LifetimeFactory GetLifetimeFactory(ObjectInstantiationMode instMode)
         {
@@ -100,8 +100,8 @@ namespace Qoollo.Turbo.IoC
                 case ObjectInstantiationMode.PerCallInlinedParams:
                     return LifetimeFactories.PerCallInlinedParams;
             }
-            Contract.Assert(false, "unknown ObjectInstantiationMode");
-            throw new CommonIoCException("unknown ObjectInstantiationMode");
+            Contract.Assert(false, "Unknown ObjectInstantiationMode");
+            throw new CommonIoCException("Unknown ObjectInstantiationMode");
         }
     }
 }

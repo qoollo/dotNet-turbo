@@ -8,54 +8,54 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.IoC
 {
     /// <summary>
-    /// Интерфейс локатора объектов
+    /// Interface for the IoC containers that declares methods to resolve the objects
     /// </summary>
-    /// <typeparam name="TKey">Тип ключа локатора</typeparam>
+    /// <typeparam name="TKey">The type of the key in object locator</typeparam>
     [ContractClass(typeof(IObjectLocatorCodeContractCheck<>))]
-    public interface IObjectLocator<in TKey>
+    public interface IObjectLocator<TKey>
     {
         /// <summary>
-        /// Получить объект по ключу
+        /// Resolves object from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Resolved object</returns>
         object Resolve(TKey key);
         /// <summary>
-        /// Попытаться получить объект по ключу
+        /// Attempts to resolve object from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution succeeded; overwise false</returns>
         bool TryResolve(TKey key, out object val);
         /// <summary>
-        /// Можно ли получить объект по ключу
+        /// Determines whether the object can be resolved by the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Можно ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the object can be resolved</returns>
         bool CanResolve(TKey key);
     }
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(IObjectLocator<>))]
     abstract class IObjectLocatorCodeContractCheck<T> : IObjectLocator<T>
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private IObjectLocatorCodeContractCheck() { }
 
 
         public object Resolve(T key)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryResolve(T key, out object val)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
             Contract.Ensures(Contract.Result<bool>() == true || (Contract.Result<bool>() == false && Contract.ValueAtReturn<object>(out val) == null));
 
             throw new NotImplementedException();
@@ -63,7 +63,7 @@ namespace Qoollo.Turbo.IoC
 
         public bool CanResolve(T key)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
 
             throw new NotImplementedException();
         }

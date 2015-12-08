@@ -9,7 +9,7 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Lifetime
 {
     /// <summary>
-    /// Контейнер для синглтона
+    /// Lifetime container that holds a single instance of an object
     /// </summary>
     public class SingletonLifetime: LifetimeBase
     {
@@ -17,41 +17,66 @@ namespace Qoollo.Turbo.IoC.Lifetime
         private readonly bool _disposeInnerObject;
 
         /// <summary>
-        /// Конструктор SingletonLifetime
+        /// SingletonLifetime constructor
         /// </summary>
-        /// <param name="obj">Объект, который будет хранится в контейнере</param>
-        public SingletonLifetime(object obj)
-            : base(obj.GetType())
+        /// <param name="obj">Instance of an object to be held in the current Singleton lifetime container (can be null)</param>
+        /// <param name="outType">The type of the object to be stored in the current Lifetime container</param>
+        /// <param name="disposeInnerObject">Indicates whether the instance should be disposed with the container</param>
+        public SingletonLifetime(object obj, Type outType, bool disposeInnerObject)
+            : base(outType)
         {
-            _obj = obj;
-            _disposeInnerObject = true;
-        }
-        /// <summary>
-        /// Конструктор SingletonLifetime
-        /// </summary>
-        /// <param name="obj">Объект, который будет хранится в контейнере</param>
-        /// <param name="disposeInnerObject">Вызывать ли Dispose у хранимого объекта при уничтожении контейнера</param>
-        public SingletonLifetime(object obj, bool disposeInnerObject)
-            : base(obj.GetType())
-        {
+            Contract.Requires<ArgumentException>((obj != null && obj.GetType() == outType) ||
+                                                 (obj == null && outType.IsAssignableFromNull()));
+
             _obj = obj;
             _disposeInnerObject = disposeInnerObject;
         }
+        /// <summary>
+        /// SingletonLifetime constructor
+        /// </summary>
+        /// <param name="obj">Instance of an object to be held in the current Singleton lifetime container (can be null)</param>
+        /// <param name="outType">The type of the object to be stored in the current Lifetime container</param>
+        public SingletonLifetime(object obj, Type outType)
+            : this(obj, outType, disposeInnerObject: false)
+        {
+        }
+        /// <summary>
+        /// SingletonLifetime constructor
+        /// </summary>
+        /// <param name="obj">Instance of an object to be held in the current Singleton lifetime container (cannot be null)</param>
+        /// <param name="disposeInnerObject">Indicates whether the instance should be disposed with the container</param>
+        public SingletonLifetime(object obj, bool disposeInnerObject)
+            : base(obj.GetType())
+        {
+            Contract.Requires<ArgumentNullException>(obj != null);
+
+            _obj = obj;
+            _disposeInnerObject = disposeInnerObject;
+        }
+        /// <summary>
+        /// SingletonLifetime constructor
+        /// </summary>
+        /// <param name="obj">Instance of an object to be held in the current Singleton lifetime container (cannot be null)</param>
+        public SingletonLifetime(object obj)
+            : this(obj, disposeInnerObject: false)
+        {
+        }
 
         /// <summary>
-        /// Возвращает объект, которым управляет данный контейнер
+        /// Resolves the object held by the container
         /// </summary>
-        /// <param name="resolver">Резолвер инъекций</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
+        /// <returns>Resolved instance of the object</returns>
+        /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
             return _obj;
         }
 
         /// <summary>
-        /// Возвращает объект, которым управляет данный контейнер
+        /// Resolves the object held by the container
         /// </summary>
-        /// <returns>Полученный объект</returns>
+        /// <returns>Resolved instance of the object</returns>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public object GetInstance()
         {
@@ -59,9 +84,9 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Внутренний метод освобождения ресурсов
+        /// Cleans-up all resources
         /// </summary>
-        /// <param name="isUserCall">Был ли вызван пользователем (false - вызван деструктором)</param>
+        /// <param name="isUserCall">True when called explicitly by user from Dispose method</param>
         protected override void Dispose(bool isUserCall)
         {
             if (_disposeInnerObject)

@@ -279,7 +279,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <param name="element">Элемент</param>
         protected void AddForced(T element)
         {
-            _queue.EnqueueForced(element);
+            _queue.AddForced(element);
             Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
         }
 
@@ -296,7 +296,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             if (IsAddingCompleted)
                 throw new InvalidOperationException("Adding was completed for QueueAsyncProcessor: " + this.Name);
 
-            var result = _queue.TryEnqueue(element, timeout, token);
+            var result = _queue.TryAdd(element, timeout, token);
             if (result)
                 Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
             else
@@ -407,7 +407,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         while (!stopRequestedToken.IsCancellationRequested)
                         {
                             elem = default(T);
-                            if (_queue.TryDequeue(out elem, Timeout.Infinite, stopRequestedToken, false))
+                            if (_queue.TryTake(out elem, Timeout.Infinite, stopRequestedToken, false))
                             {
                                 Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
 
@@ -445,7 +445,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         try
                         {
                             T elem = default(T);
-                            while (!stoppedToken.IsCancellationRequested && _queue.TryDequeue(out elem))
+                            while (!stoppedToken.IsCancellationRequested && _queue.TryTake(out elem))
                             {
                                 Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
 

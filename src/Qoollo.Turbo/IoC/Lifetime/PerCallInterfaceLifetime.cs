@@ -9,17 +9,17 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Lifetime
 {
     /// <summary>
-    /// Контейнер для создания нового объекта при каждом вызове
+    /// Lifetime container that creates an instance of an object on every call
     /// </summary>
     public class PerCallInterfaceLifetime: LifetimeBase
     {
         private readonly IInstanceCreator _createInstanceObj;
 
         /// <summary>
-        /// Конструктор PerCallInterfaceLifetime
+        /// PerCallInterfaceLifetime constructor
         /// </summary>
-        /// <param name="outType">Тип созаваемого объекта</param>
-        /// <param name="createInstanceObj">Интерфейс, который умеет создавать объект</param>
+        /// <param name="outType">The type of the object to be stored in the current Lifetime container</param>
+        /// <param name="createInstanceObj">Instance creator</param>
         public PerCallInterfaceLifetime(Type outType, IInstanceCreator createInstanceObj)
             : base(outType)
         {
@@ -29,10 +29,11 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Возвращает объект, которым управляет данный контейнер
+        /// Resolves the object held by the container
         /// </summary>
-        /// <param name="resolver">Резолвер инъекций</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
+        /// <returns>Resolved instance of the object</returns>
+        /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
             return _createInstanceObj.CreateInstance(resolver);

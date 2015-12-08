@@ -7,25 +7,31 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Исключение создания потока в пуле
+    /// Indicates error during a thread initialization in ThreadPool
     /// </summary>
     [Serializable]
-    public class CantInitThreadException : Exception
+    public class CantInitThreadException : TurboException
     {
         /// <summary>
-        /// Конструктор CantInitThreadException без параметров
+        /// CantInitThreadException constructor
         /// </summary>
         public CantInitThreadException() : base("Error during new thread initialization") { }
         /// <summary>
-        /// Конструктор CantInitThreadException с сообщением об ошибке
+        /// CantInitThreadException constructor with error message
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
+        /// <param name="message">Error message</param>
         public CantInitThreadException(string message) : base(message) { }
         /// <summary>
-        /// Конструктор CantInitThreadException с сообщением об ошибке и внутренним исключением
+        /// CantInitThreadException constructor with error message and innerException
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        /// <param name="innerException">Внутреннее исключение</param>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
         public CantInitThreadException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// CantInitThreadException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected CantInitThreadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }

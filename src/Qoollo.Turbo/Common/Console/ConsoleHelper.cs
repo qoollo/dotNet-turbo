@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo
 {
+    /// <summary>
+    /// Additional operations on Console Window 
+    /// </summary>
     internal static class ConsoleHelper
     {
         public enum CtrlTypes
@@ -84,6 +87,9 @@ namespace Qoollo.Turbo
         }
 
 
+        /// <summary>
+        /// Console closing event
+        /// </summary>
         public static event Action ConsoleClose
         {
             add
@@ -101,6 +107,9 @@ namespace Qoollo.Turbo
 
         // =============
 
+        /// <summary>
+        /// Disables console window close button
+        /// </summary>
         public static void DisableConsoleCloseButton()
         {
             var cnslWnd = GetConsoleWindow();
@@ -114,6 +123,9 @@ namespace Qoollo.Turbo
             EnableMenuItem(sysMenu, (uint)SysMenuElems.SC_CLOSE, 1);
         }
 
+        /// <summary>
+        /// Enables console window close button
+        /// </summary>
         public static void EnableConsoleCloseButton()
         {
             var cnslWnd = GetConsoleWindow();

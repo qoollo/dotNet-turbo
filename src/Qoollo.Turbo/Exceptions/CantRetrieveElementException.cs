@@ -6,25 +6,31 @@ using System.Text;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Исключение получения элемента (из пула)
+    /// Exception thrown by ObjectPool when element can't be retrieved due to disposing or some other error
     /// </summary>
     [Serializable]
-    public class CantRetrieveElementException : Exception
+    public class CantRetrieveElementException : TurboException
     {
         /// <summary>
-        /// Конструктор CantRetrieveElementException без параметров
+        /// CantRetrieveElementException constructor
         /// </summary>
         public CantRetrieveElementException() : base("Element was not retrieved due to some error") { }
         /// <summary>
-        /// Конструктор CantRetrieveElementException с сообщением об ошибке
+        /// CantRetrieveElementException constructor with error message
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
+        /// <param name="message">Error message</param>
         public CantRetrieveElementException(string message) : base(message) { }
         /// <summary>
-        /// Конструктор CantRetrieveElementException с сообщением об ошибке и внутренним исключением
+        /// CantRetrieveElementException constructor with error message and innerException
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        /// <param name="innerException">Внутреннее исключение</param>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
         public CantRetrieveElementException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// CantRetrieveElementException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected CantRetrieveElementException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }

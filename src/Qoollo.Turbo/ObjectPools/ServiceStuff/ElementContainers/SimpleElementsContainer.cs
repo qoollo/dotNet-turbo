@@ -191,7 +191,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
             bool removeFaulted = true;
             try
             {
-                token.ThrowIfCancellationRequested();
+                //token.ThrowIfCancellationRequested(); // TODO: Refactor the code
                 removeSucceeded = this.TryTakeCore(out element);
                 Contract.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;

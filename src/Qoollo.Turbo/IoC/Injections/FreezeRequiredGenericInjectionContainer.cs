@@ -9,11 +9,10 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.IoC.Injections
 {
     /// <summary>
-    /// Контейнер инъекций, использующий словарь для хранения.
-    /// Требуется внешний контроль для исключения ситуаций одновременного чтения и записи.
-    /// Может использоваться в однопоточных сценариях, либо в многопоточных с вызовом Freeze после занесения всех данных.
+    /// Stores association between 'key' and already instantiated 'object'.
+    /// In multithreaded scenarious should be frozen explicitly (simultanious add and get is not supported)
     /// </summary>
-    /// <typeparam name="TKey">Ключ разрешения инъекций</typeparam>
+    /// <typeparam name="TKey">The type of the key in injection container</typeparam>
     public class FreezeRequiredGenericInjectionContainer<TKey> : GenericInjectionContainerBase<TKey>, IInjectionSource<TKey>
     {
         private readonly Dictionary<TKey, object> _injections;
@@ -26,9 +25,9 @@ namespace Qoollo.Turbo.IoC.Injections
         }
 
         /// <summary>
-        /// Конструктор FreezeRequiredGenericInjectionContainer
+        /// FreezeRequiredGenericInjectionContainer constructor
         /// </summary>
-        /// <param name="disposeInjectionsWithBuilder">Вызывать ли Dispose у хранимых объектов при уничтожении контейнера</param>
+        /// <param name="disposeInjectionsWithBuilder">Indicates whether the all injected objects should be disposed with the container</param>
         public FreezeRequiredGenericInjectionContainer(bool disposeInjectionsWithBuilder)
         {
             _injections = new Dictionary<TKey, object>();
@@ -36,7 +35,7 @@ namespace Qoollo.Turbo.IoC.Injections
         }
 
         /// <summary>
-        /// Конструктор FreezeRequiredGenericInjectionContainer
+        /// FreezeRequiredGenericInjectionContainer constructor
         /// </summary>
         public FreezeRequiredGenericInjectionContainer()
             : this(true)
@@ -44,81 +43,77 @@ namespace Qoollo.Turbo.IoC.Injections
         }
 
         /// <summary>
-        /// Подходит ли данная инъекция для ключа
+        /// Checks whether the injection is appropriate for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="injection">Инъекция</param>
-        /// <returns>Подходит ли</returns>
-        protected virtual bool IsGoodInjectionForKey(TKey key, object injection)
+        /// <param name="key">Key</param>
+        /// <param name="injection">Object to store as injection</param>
+        /// <returns>True if the object with 'objType' can be used by container with specified 'key'</returns>
+        protected override bool IsGoodInjectionForKey(TKey key, object injection)
         {
-            Contract.Requires((object)key != null);
             return true;
         }
 
         /// <summary>
-        /// Внутренний метод попытки извлечь инъекцию
+        /// Attempts to get an injection from the container by the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Полученное значение в случа успеха</param>
-        /// <returns>Удалось ли извлечь</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Object for the specified key (in case of success)</param>
+        /// <returns>True if the InjectionContainer contains the object for the specified key</returns>
         protected sealed override bool TryGetInjectionInner(TKey key, out object val)
         {
             return _injections.TryGetValue(key, out val);
         }
 
         /// <summary>
-        /// Внутренний метод проверки наличия инъекции
+        /// Checks whether the InjectionContainer contains the object for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Есть ли инъекция в контейнере</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the injection is presented in container</returns>
         protected sealed override bool ContainsInner(TKey key)
         {
             return _injections.ContainsKey(key);
         }
 
         /// <summary>
-        /// Внутренний метод попытки добавить инъекцию в контейнер
+        /// Adds a new injection to the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Значение</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Object to add for the specified key</param>
+        protected sealed override void AddInjectionInner(TKey key, object val)
+        {
+            lock (_injections)
+            {
+                if (_injections.ContainsKey(key))
+                    throw new ItemAlreadyExistsException(string.Format("InjectionContainer already contains the injection for the key ({0})", key));
+
+                _injections.Add(key, val);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to add a new injection to the container
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <param name="val">Object to add for the specified key</param>
+        /// <returns>True if the injection was added, that is InjectionContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddInjectionInner(TKey key, object val)
         {
-            if (!IsGoodInjectionForKey(key, val))
-                return false;
-
             lock (_injections)
             {
                 if (_injections.ContainsKey(key))
                     return false;
 
-                _injections[key] = val;
+                _injections.Add(key, val);
             }
 
             return true;
         }
 
         /// <summary>
-        /// Внутренний метод добавления инъекции в контейнер
+        /// Removes the injection from the container for the specified key. Should be implemented in derived type.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Значение</param>
-        protected sealed override void AddInjectionInner(TKey key, object val)
-        {
-            if (!IsGoodInjectionForKey(key, val))
-                throw new InjectionIoCException(string.Format("Bad injection ({0}) for key ({1})", val, key));
-
-            lock (_injections)
-            {
-                _injections[key] = val;
-            }
-        }
-
-        /// <summary>
-        /// Внутренний метод удаления инъекции
-        /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Удалили ли инъекцию</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the injection was presented in container</returns>
         protected sealed override bool RemoveInjectionInner(TKey key)
         {
             lock (_injections)
@@ -128,10 +123,12 @@ namespace Qoollo.Turbo.IoC.Injections
         }
 
         /// <summary>
-        /// Получение инъекции по ключу
+        /// Gets the injection object for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Инъекция</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Resolved object to be injected</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new object GetInjection(TKey key)
         {
@@ -139,10 +136,12 @@ namespace Qoollo.Turbo.IoC.Injections
         }
 
         /// <summary>
-        /// Пытается получить инъекцию по ключу
+        /// Attempts to get the injection object for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Значение, если найдено</param>
+        /// <param name="key">Key</param>
+        /// <param name="val">Resolved object to be injected if found</param>
+        /// <returns>True if the injection object is registered for the specified key; overwise false</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new bool TryGetInjection(TKey key, out object val)
         {
@@ -150,10 +149,11 @@ namespace Qoollo.Turbo.IoC.Injections
         }
 
         /// <summary>
-        /// Содержит ли контейнер инъекцию
+        /// Determines whether the InjectionSource contains the key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Есть или нет</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the InjectionSource contains the key</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new bool Contains(TKey key)
         {
@@ -161,30 +161,29 @@ namespace Qoollo.Turbo.IoC.Injections
         }
 
         /// <summary>
-        /// Получение инъекции по ключу
+        /// Gets the injection object for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Инъекция</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Resolved object to be injected</returns>
         object IInjectionSource<TKey>.GetInjection(TKey key)
         {
             return _injections[key];
         }
-
         /// <summary>
-        /// Пытается получить инъекцию по ключу
+        /// Attempts to get the injection object for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Значение, если найдено</param>
+        /// <param name="key">Key</param>
+        /// <param name="val">Resolved object to be injected if found</param>
+        /// <returns>True if the injection object is registered for the specified key; overwise false</returns>
         bool IInjectionSource<TKey>.TryGetInjection(TKey key, out object val)
         {
             return _injections.TryGetValue(key, out val);
         }
-
         /// <summary>
-        /// Содержит ли контейнер инъекцию
+        /// Determines whether the InjectionSource contains the key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Есть или нет</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the InjectionSource contains the key</returns>
         bool IInjectionSource<TKey>.Contains(TKey key)
         {
             return _injections.ContainsKey(key);
@@ -192,29 +191,34 @@ namespace Qoollo.Turbo.IoC.Injections
 
 
         /// <summary>
-        /// Внутреннее освобождение ресурсов
+        /// Cleans-up all resources
         /// </summary>
-        /// <param name="isUserCall">True - вызвано пользователем, False - вызвано деструктором</param>
+        /// <param name="isUserCall">True when called explicitly by user from Dispose method</param>
         protected override void Dispose(bool isUserCall)
         {
             if (isUserCall)
             {
-                List<KeyValuePair<TKey, object>> toDispose = null;
-                lock (_injections)
+                if (_disposeInjectionsWithBuiler)
                 {
-                    if (_disposeInjectionsWithBuiler)
+                    List<KeyValuePair<TKey, object>> toDispose = null;
+                    lock (_injections)
+                    {
                         toDispose = _injections.ToList();
+                        _injections.Clear();
+                    }
 
-                    _injections.Clear();
-                }
-
-                if (toDispose != null)
-                {
                     foreach (var elem in toDispose)
                     {
                         IDisposable disp = elem.Value as IDisposable;
                         if (disp != null)
                             disp.Dispose();
+                    }
+                }
+                else
+                {
+                    lock (_injections)
+                    {
+                        _injections.Clear();
                     }
                 }
             }

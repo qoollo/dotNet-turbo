@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Очередь с фиксированным числом приоритетов
+    /// Priority queue with fixed number of priorities
     /// </summary>
-    /// <typeparam name="TElem">Тип элемента</typeparam>
-    /// <typeparam name="TPriority">Тип приоритета</typeparam>
+    /// <typeparam name="TElem">Specifies the type of elements in the queue</typeparam>
+    /// <typeparam name="TPriority">Specifies the type of priority marker</typeparam>
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [Serializable]
     [ContractClass(typeof(LimitedPriorityQueueBaseCodeContract<,>))]
@@ -25,6 +25,9 @@ namespace Qoollo.Turbo.Collections
         [NonSerialized]
         private object _syncRoot;
 
+        /// <summary>
+        /// Code contracts
+        /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
         {
@@ -34,9 +37,9 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор LimitedPriorityQueueBase
+        /// LimitedPriorityQueueBase constructor
         /// </summary>
-        /// <param name="priorityLevelsCount">Количество уровней приоритета</param>
+        /// <param name="priorityLevelsCount">The number of priority levels (the max value returned from MapPriority method)</param>
         public LimitedPriorityQueueBase(int priorityLevelsCount)
         {
             Contract.Requires<ArgumentException>(priorityLevelsCount > 0);
@@ -47,10 +50,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор LimitedPriorityQueueBase
+        /// LimitedPriorityQueueBase constructor
         /// </summary>
-        /// <param name="collection">Исходные данные (попадут в коллекцию с минимальным приоритетом)</param>
-        /// <param name="priorityLevelsCount">Количество уровней приоритета</param>
+        /// <param name="collection">The collection whose elements are copied to the new priority queue on the lowest priority level</param>
+        /// <param name="priorityLevelsCount">The number of priority levels (the max value returned from MapPriority method)</param>
         public LimitedPriorityQueueBase(IEnumerable<TElem> collection, int priorityLevelsCount)
         {
             Contract.Requires<ArgumentNullException>(collection != null);
@@ -63,14 +66,14 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Отображение типа приоритета на его номер
+        /// Convert priority marker to the according integral number of that priority
         /// </summary>
-        /// <param name="prior">Приоритет</param>
-        /// <returns>Номер приоритета</returns>
+        /// <param name="prior">Priority marker</param>
+        /// <returns>Integral priority level</returns>
         protected abstract int MapPriority(TPriority prior);
 
         /// <summary>
-        /// Количество уровней приоритета
+        /// Gets the number of priority levels of the queue
         /// </summary>
         protected int PriorityLevelsCount
         {
@@ -78,7 +81,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Количество элементов в очереди
+        /// Gets the number of elements contained in the priority queue
         /// </summary>
         public int Count
         {
@@ -86,7 +89,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Очистить очередь
+        /// Removes all objects from the priority queue
         /// </summary>
         public void Clear()
         {
@@ -100,10 +103,10 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Скопировать элементы в массив
+        /// Copies the queue elements to an Array, starting at the specified array index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Начальный индекс</param>
+        /// <param name="array">Destination array</param>
+        /// <param name="index">Index in array at which copying begins</param>
         public void CopyTo(TElem[] array, int index)
         {
             Contract.Requires<ArgumentNullException>(array != null);
@@ -119,10 +122,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Добавить элемент в очередь с указанным приоритетом
+        /// Adds an object to the priority queue at specified priority level
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <param name="priority">Приоритет</param>
+        /// <param name="item">The item to add to the queue</param>
+        /// <param name="priority">Priority marker</param>
         public void Enqueue(TElem item, TPriority priority)
         {
             Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
@@ -134,9 +137,9 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Просмотреть элемент с головы очереди
+        /// Returns the item at the head of the priority queue without removing it
         /// </summary>
-        /// <returns>Элемент</returns>
+        /// <returns>The item at the head of the queue</returns>
         public TElem Peek()
         {
             Contract.Requires(this.Count > 0);
@@ -154,9 +157,9 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Выбрать элемент с головы очереди
+        /// Removes and returns the item at the head of the priority queue (item with the highest available priority)
         /// </summary>
-        /// <returns>Элемент</returns>
+        /// <returns>The item that is removed from the head of the queue</returns>
         public TElem Dequeue()
         {
             Contract.Requires(this.Count > 0);
@@ -179,10 +182,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Содержит ли очередь элемент
+        /// Determines whether an element is in the priority queue
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Содержит ли</returns>
+        /// <param name="item">The element to locate</param>
+        /// <returns>True if the item is found</returns>
         public bool Contains(TElem item)
         {
             if (Count == 0)
@@ -198,9 +201,9 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Скопировать элементы в массив
+        /// Copies the priority queue elements to a new array
         /// </summary>
-        /// <returns>Массив</returns>
+        /// <returns>A new array containing elements copied from the queue</returns>
         public TElem[] ToArray()
         {
             Contract.Ensures(Contract.Result<TElem[]>() != null);
@@ -212,7 +215,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Удалить излишнее пустое место
+        /// Sets the capacity to the actual number of elements in the priority queue
         /// </summary>
         public void TrimExcess()
         {
@@ -223,7 +226,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получить Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         public IEnumerator<TElem> GetEnumerator()
@@ -236,7 +239,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получить Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
@@ -245,10 +248,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Скопировать данные в массив
+        /// Copies the queue elements to an Array, starting at the specified array index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Начальный индекс</param>
+        /// <param name="array">Destination array</param>
+        /// <param name="index">Index in array at which copying begins</param>
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
@@ -272,7 +275,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Синхронизирована ли коллекция
+        /// Is collection synchronized
         /// </summary>
         bool ICollection.IsSynchronized
         {
@@ -280,7 +283,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Объект инхронизации
+        /// Synchronization object
         /// </summary>
         object ICollection.SyncRoot
         {
@@ -299,10 +302,10 @@ namespace Qoollo.Turbo.Collections
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts for LimitedPriorityQueueBase
     /// </summary>
-    /// <typeparam name="TElem">Тип элемента</typeparam>
-    /// <typeparam name="TPriority">Тип приоритета</typeparam>
+    /// <typeparam name="TElem">Specifies the type of elements in the queue</typeparam>
+    /// <typeparam name="TPriority">Specifies the type of priority marker</typeparam>
     [ContractClassFor(typeof(LimitedPriorityQueueBase<,>))]
     abstract class LimitedPriorityQueueBaseCodeContract<TElem, TPriority> : LimitedPriorityQueueBase<TElem, TPriority>
     {

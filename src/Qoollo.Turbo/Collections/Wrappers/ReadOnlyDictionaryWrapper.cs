@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Словарь в режиме только для чтения
+    /// Read-only wrapper around IDictionary interface
     /// </summary>
-    /// <typeparam name="TKey">Тип ключа</typeparam>
-    /// <typeparam name="TValue">Тип значений</typeparam>
+    /// <typeparam name="TKey">The type of the keys in the dictionary</typeparam>
+    /// <typeparam name="TValue">The type of the values in the dictionary</typeparam>
     [Serializable]
     public class ReadOnlyDictionaryWrapper<TKey, TValue> : System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>
     {
         private static readonly ReadOnlyDictionaryWrapper<TKey, TValue> _empty = new ReadOnlyDictionaryWrapper<TKey, TValue>(new Dictionary<TKey, TValue>());
         /// <summary>
-        /// Пустой словарь
+        /// Empty ReadOnlyDictionaryWrapper
         /// </summary>
         public static ReadOnlyDictionaryWrapper<TKey, TValue> Empty
         {
@@ -30,9 +30,9 @@ namespace Qoollo.Turbo.Collections
         // ===========
 
         /// <summary>
-        /// Конструктор ReadOnlyDictionaryWrapper
+        /// ReadOnlyDictionaryWrapper constructor
         /// </summary>
-        /// <param name="dict">Обёртываемый словарь</param>
+        /// <param name="dict">Wrapped dictionary</param>
         public ReadOnlyDictionaryWrapper(IDictionary<TKey, TValue> dict)
             : base(dict)
         {

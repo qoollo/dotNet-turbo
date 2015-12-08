@@ -9,18 +9,18 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Lifetime
 {
     /// <summary>
-    /// Контейнер для создания нового объекта при каждом вызове. 
-    /// Параметры зашиты и не выбираются каждый раз из резолвера инъекций
+    /// Lifetime container that creates an instance of an object on every call.
+    /// All constructor parameters are resolved only once.
     /// </summary>
     public class PerCallInlinedParamsInterfaceLifetime : LifetimeBase
     {
         private readonly IInstanceCreatorNoParam _createInstanceObj;
 
         /// <summary>
-        /// Конструктор PerCallInlinedParamsInterfaceLifetime
+        /// PerCallInlinedParamsInterfaceLifetime constructor
         /// </summary>
-        /// <param name="outType">Тип созаваемого объекта</param>
-        /// <param name="createInstObj">Интерфейс, который умеет создавать объект</param>
+        /// <param name="outType">The type of the object to be stored in the current Lifetime container</param>
+        /// <param name="createInstObj">Instance creator</param>
         public PerCallInlinedParamsInterfaceLifetime(Type outType, IInstanceCreatorNoParam createInstObj)
             : base(outType)
         {
@@ -30,10 +30,11 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Возвращает объект, которым управляет данный контейнер
+        /// Resolves the object held by the container
         /// </summary>
-        /// <param name="resolver">Резолвер инъекций</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
+        /// <returns>Resolved instance of the object</returns>
+        /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
             return _createInstanceObj.CreateInstance();

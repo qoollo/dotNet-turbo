@@ -8,63 +8,63 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Работа с хранилищем данных в контексте исполнения
+    /// Helpers to store custom data inside ExecutionContext
     /// </summary>
-    public static class ExecutionContextStorage
+    internal static class ExecutionContextStorage
     {
         /// <summary>
-        /// Установить данные
+        /// Sets data by name
         /// </summary>
-        /// <param name="name">Имя</param>
-        /// <param name="data">Данные</param>
+        /// <param name="name">Name</param>
+        /// <param name="data">Data</param>
         public static void SetData(string name, object data)
         {
             CallContext.LogicalSetData(name, data);
         }
         /// <summary>
-        /// Считать данные по имени
+        /// Gets data by name
         /// </summary>
-        /// <param name="name">Имя</param>
-        /// <returns>Данные</returns>
+        /// <param name="name">Name</param>
+        /// <returns>Data</returns>
         public static object GetData(string name)
         {
             return CallContext.LogicalGetData(name);
         }
         /// <summary>
-        /// Установить данные
+        /// Sets data by name
         /// </summary>
-        /// <typeparam name="T">Тип данных</typeparam>
-        /// <param name="name">Имя</param>
-        /// <param name="data">Данные</param>
+        /// <typeparam name="T">Type of the data object</typeparam>
+        /// <param name="name">Name</param>
+        /// <param name="data">Data</param>
         public static void SetData<T>(string name, T data)
         {
             CallContext.LogicalSetData(name, data);
         }
         /// <summary>
-        /// Считать данные по имени
+        /// Gets data by name
         /// </summary>
-        /// <typeparam name="T">Тип данных</typeparam>
-        /// <param name="name">Имя</param>
-        /// <returns>Данные</returns>
+        /// <typeparam name="T">Type of the data object</typeparam>
+        /// <param name="name">Name</param>
+        /// <returns>Data</returns>
         public static T GetData<T>(string name)
         {
             return (T)CallContext.LogicalGetData(name);
         }
 
         /// <summary>
-        /// Проверить, установленны ли данные по имени
+        /// Checks whether the data setted for the specified name
         /// </summary>
-        /// <param name="name">Имя</param>
-        /// <returns>Да или Нет</returns>
+        /// <param name="name">Name</param>
+        /// <returns>True when setted</returns>
         public static bool HasData(string name)
         {
             return CallContext.LogicalGetData(name) != null;
         }
 
         /// <summary>
-        /// Удалить данные по имени
+        /// Removes data by name
         /// </summary>
-        /// <param name="name">Имя</param>
+        /// <param name="name">Name</param>
         public static void RemoveData(string name)
         {
             CallContext.FreeNamedDataSlot(name);
