@@ -15,6 +15,7 @@ namespace Qoollo.Turbo.UnitTests.IoC
         public interface ITestInterface { }
         public class TestImplementation : ITestInterface { }
         public class TestClass { }
+        public class TestDerivedClass : TestClass { }
         public class TestInjectionToConstructor
         {
             public readonly double Value;
@@ -61,6 +62,47 @@ namespace Qoollo.Turbo.UnitTests.IoC
                 Assert.AreEqual(15.0, obj.Value);
                 Assert.AreEqual("value", obj.StrValue);
                 Assert.IsNotNull(container.Resolve<TestClass>());
+            }
+        }
+
+
+        [TestMethod]
+        public void ResolveTheBaseClass()
+        {
+            using (var container = new TurboContainer())
+            {
+                container.AddSingleton<TestClass>(new TestDerivedClass());
+                var item = container.Resolve<TestClass>();
+                Assert.IsNotNull(item);
+
+                container.RemoveAssociation<TestClass>();
+
+                container.AddDeferedSingleton<TestClass, TestDerivedClass>();
+                var item2 = container.Resolve<TestClass>();
+                Assert.IsNotNull(item2);
+            }
+        }
+
+
+        [TestMethod]
+        public void NullSingleton()
+        {
+            using (var container = new TurboContainer())
+            {
+                container.AddSingleton<TestClass>((TestClass)null);
+                var item = container.Resolve<TestClass>();
+                Assert.IsNull(item);
+            }
+        }
+
+        [TestMethod]
+        public void NullDeferedSingleton()
+        {
+            using (var container = new TurboContainer())
+            {
+                container.AddAssociation<TestClass>(new DeferedSingletonLifetime(r => null, typeof(TestClass)));
+                var item = container.Resolve<TestClass>();
+                Assert.IsNull(item);
             }
         }
     }

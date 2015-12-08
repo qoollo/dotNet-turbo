@@ -14,7 +14,8 @@ namespace Qoollo.Turbo.UnitTests.IoC
     [TestClass]
     public class LifetimeFactoriesTests
     {
-        public class TestClassWithConstructor
+        public class TestBaseClass { }
+        public class TestClassWithConstructor : TestBaseClass
         {
             public readonly int Val;
 

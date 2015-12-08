@@ -11,7 +11,7 @@ namespace Qoollo.Turbo.IoC.Associations
     /// <summary>
     /// Stores association between Type and 'object-lifetime-container' that helds the object with the same or derived Type.
     /// </summary>
-    public abstract class DirectTypeAssociationContainer: TypeStrictAssociationContainer
+    public abstract class DirectTypeAssociationContainer : TypeStrictAssociationContainer, IDirectSingletonAssociationSupport<Type>
     {
         /// <summary>
         /// Checks whether the object type is appropriate for the specified key
@@ -24,6 +24,85 @@ namespace Qoollo.Turbo.IoC.Associations
             return (key == objType) || (key.IsAssignableFrom(objType));
         }
 
+        /// <summary>
+        /// Determines whether the AssociationContainer contains the lifetime container for the specified key
+        /// </summary>
+        /// <typeparam name="TKey">Key</typeparam>
+        /// <returns>True if the association is presented in container</returns>
+        public bool Contains<TKey>()
+        {
+            return this.Contains(typeof(TKey));
+        }
+
+        /// <summary>
+        /// Removes the association from the container for the specified key
+        /// </summary>
+        /// <typeparam name="TKey">Key</typeparam>
+        /// <returns>True if the association was presented in container</returns>
+        public bool RemoveAssociation<TKey>()
+        {
+            return this.RemoveAssociation(typeof(TKey));
+        }
+
+
+        /// <summary>
+        /// Adds an object with singleton lifetime for the specified key
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        public new void AddSingleton(Type key, object val)
+        {
+            if (val == null) 
+                base.AddAssociation(key, new Lifetime.SingletonLifetime(val, key));
+            else             
+                base.AddAssociation(key, new Lifetime.SingletonLifetime(val));
+        }
+        /// <summary>
+        /// Adds an object with singleton lifetime for the specified key
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
+        public new void AddSingleton(Type key, object val, bool disposeWithContainer)
+        {
+            Contract.Requires<ArgumentNullException>(key != null);
+
+            if (val == null)
+                base.AddAssociation(key, new Lifetime.SingletonLifetime(val, key, disposeWithContainer));
+            else
+                base.AddAssociation(key, new Lifetime.SingletonLifetime(val, disposeWithContainer));
+        }
+
+        /// <summary>
+        /// Attempts to add an object with singleton lifetime for the specified key
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
+        public new bool TryAddSingleton(Type key, object val)
+        {
+            if (val == null)
+                return base.TryAddAssociation(key, new Lifetime.SingletonLifetime(val, key));
+            else
+                return base.TryAddAssociation(key, new Lifetime.SingletonLifetime(val));
+        }
+        /// <summary>
+        /// Attempts to add an object with singleton lifetime for the specified key
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
+        /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
+        public new bool TryAddSingleton(Type key, object val, bool disposeWithContainer)
+        {
+            Contract.Requires<ArgumentNullException>(key != null);
+
+            if (val == null)
+                return base.TryAddAssociation(key, new Lifetime.SingletonLifetime(val, key, disposeWithContainer));
+            else
+                return base.TryAddAssociation(key, new Lifetime.SingletonLifetime(val, disposeWithContainer));
+        }
+
 
         /// <summary>
         /// Adds an object with singleton lifetime for the specified key
@@ -32,9 +111,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">The object that will be held by the singleton lifetime container</param>
         public void AddSingleton<TType>(TType val)
         {
-            Contract.Requires<ArgumentNullException>((object)val != null);
-
-            base.AddSingleton(typeof(TType), (object)val);
+            this.AddSingleton(typeof(TType), (object)val);
         }
 
         /// <summary>
@@ -45,9 +122,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
         public void AddSingleton<TType>(TType val, bool disposeWithContainer)
         {
-            Contract.Requires<ArgumentNullException>((object)val != null);
-
-            base.AddSingleton(typeof(TType), (object)val, disposeWithContainer);
+            this.AddSingleton(typeof(TType), (object)val, disposeWithContainer);
         }
 
         /// <summary>
@@ -58,9 +133,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddSingleton<TType>(TType val)
         {
-            Contract.Requires<ArgumentNullException>((object)val != null);
-
-            return base.TryAddSingleton(typeof(TType), (object)val);
+            return this.TryAddSingleton(typeof(TType), (object)val);
         }
 
         /// <summary>
@@ -72,9 +145,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddSingleton<TType>(TType val, bool disposeWithContainer)
         {
-            Contract.Requires<ArgumentNullException>((object)val != null);
-
-            return base.TryAddSingleton(typeof(TType), (object)val, disposeWithContainer);
+            return this.TryAddSingleton(typeof(TType), (object)val, disposeWithContainer);
         }
 
 

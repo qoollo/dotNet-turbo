@@ -21,6 +21,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// </summary>
         /// <param name="key">Key</param>
         /// <param name="val">The object that will be held by the singleton lifetime container</param>
+        [Obsolete("Do not use this method. If it is required, it should be implemented in the derived container.")]
         public void AddSingleton(Type key, object val)
         {
             base.AddAssociation(key, new Lifetime.SingletonLifetime(val));
@@ -31,6 +32,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="key">Key</param>
         /// <param name="val">The object that will be held by the singleton lifetime container</param>
         /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
+        [Obsolete("Do not use this method. If it is required, it should be implemented in the derived container.")]
         public void AddSingleton(Type key, object val, bool disposeWithContainer)
         {
             Contract.Requires<ArgumentNullException>(key != null);
@@ -45,6 +47,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="key">Key</param>
         /// <param name="val">The object that will be held by the singleton lifetime container</param>
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
+        [Obsolete("Do not use this method. If it is required, it should be implemented in the derived container.")]
         public bool TryAddSingleton(Type key, object val)
         {
             return base.TryAddAssociation(key, new Lifetime.SingletonLifetime(val));
@@ -56,6 +59,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">The object that will be held by the singleton lifetime container</param>
         /// <param name="disposeWithContainer">Indicates whether the lifetime container should also dispose the containing object</param>
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
+        [Obsolete("Do not use this method. If it is required, it should be implemented in the derived container.")]
         public bool TryAddSingleton(Type key, object val, bool disposeWithContainer)
         {
             Contract.Requires<ArgumentNullException>(key != null);
