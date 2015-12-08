@@ -10,24 +10,23 @@ using System.Diagnostics.Contracts;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Отслеживание событий для выполнения действий с минимально разрешённым периодом.
-    /// Применяется, если событие возникает часто, а действие нужно предпринимать с заданным интервалом времени.
-    /// Пример: логирование исключений
+    /// Tracks the time when some event happened and allows to execute action only for the first appearance of that event in the specified time interval
     /// </summary>
+    /// <example>Can be used to not log repeated exceptions all the time</example>
     public class EventTimingTracker
     {
         /// <summary>
-        /// Делегат для выполнения действий при наступлении события, когда отведённый период времени истёк
+        /// Represents the method that will be called on the first appearance of the event in the specified time interval
         /// </summary>
-        /// <param name="isFirstTime">Первое ли появление события</param>
+        /// <param name="isFirstTime">Is this is the very first registered appearance of the event</param>
         public delegate void ActionOnPeriodPassed(bool isFirstTime);
         
         // =========
         
         /// <summary>
-        /// Получение временной отметки в миллисекундах
+        /// Returns current time stamp in milliseconds
         /// </summary>
-        /// <returns>Временная метка</returns>
+        /// <returns>TimeStamp</returns>
         private static int GetTimeStamp()
         {
             int result = Environment.TickCount;
@@ -40,17 +39,17 @@ namespace Qoollo.Turbo
         private int _registeredTimeStamp;
 
         /// <summary>
-        /// Конструктор EventTimingTracker. 
-        /// Период по умолчанию: 5 минут.
+        /// EventTimingTracker constructor.
+        /// Default time interval: 5 minutes.
         /// </summary>
         public EventTimingTracker()
             : this(5 * 60 * 1000)
         {
         }
         /// <summary>
-        /// Конструктор EventTimingTracker
+        /// EventTimingTracker constructor
         /// </summary>
-        /// <param name="period">Период реагирования на событие</param>
+        /// <param name="period">Time interval between reactions on the event</param>
         public EventTimingTracker(TimeSpan period)
             : this((int)period.TotalMilliseconds)
         {
@@ -58,9 +57,9 @@ namespace Qoollo.Turbo
             Contract.Requires<ArgumentException>(period.TotalMilliseconds < int.MaxValue);
         }
         /// <summary>
-        /// Конструктор EventTimingTracker
+        /// EventTimingTracker constructor
         /// </summary>
-        /// <param name="periodMs">Период реагирования на событие</param>
+        /// <param name="periodMs">Time interval between reactions on the event</param>
         public EventTimingTracker(int periodMs)
         {
             Contract.Requires<ArgumentException>(periodMs >= 0);
@@ -70,11 +69,11 @@ namespace Qoollo.Turbo
         }
 
         /// <summary>
-        /// Зарегистрировано ли уже событие
+        /// Gets the value indicating whether the event was already registered
         /// </summary>
         public bool IsEventRegistered { get { return Volatile.Read(ref _registeredTimeStamp) != 0; } }
         /// <summary>
-        /// Прошёл ли период, через который нужно отреагировать на событие
+        /// Gets the value indicating whether the time interval elapsed
         /// </summary>
 		public bool IsPeriodPassed 
 		{
@@ -86,10 +85,10 @@ namespace Qoollo.Turbo
 		}
 
         /// <summary>
-        /// Зарегистрировать событие и получить информацию о необходимости реакции
+        /// Registers an event and returns true when it can be handled
         /// </summary>
-        /// <param name="firstTime">Первое ли появление события</param>
-        /// <returns>Нужно ли реагировать на это событие</returns>
+        /// <param name="firstTime">Is this is the very first appearance of the event</param>
+        /// <returns>True when event can be handled; overwise false</returns>
         public bool Register(out bool firstTime)
         {
             int newTimeStamp = GetTimeStamp();
@@ -105,9 +104,9 @@ namespace Qoollo.Turbo
             return false;
         }
         /// <summary>
-        /// Зарегистрировать событие и получить информацию о необходимости реакции
+        /// Registers an event and returns true when it can be handled
         /// </summary>
-        /// <returns>Нужно ли реагировать на это событие</returns>
+        /// <returns>True when event can be handled; overwise false</returns>
         public bool Register()
         {
             int newTimeStamp = GetTimeStamp();
@@ -122,9 +121,9 @@ namespace Qoollo.Turbo
             return false;
         }
 		/// <summary>
-        /// Зарегистрировать событие и вызвать делегат при необходимости обработки
+        /// Registers an event and calls the delegate when it can be handled
 		/// </summary>
-		/// <param name="action">Действие по реакции на событие</param>
+		/// <param name="action">Method to handle the event appearance</param>
 		public void Register(ActionOnPeriodPassed action)
 		{
 			if (action == null)
@@ -141,7 +140,7 @@ namespace Qoollo.Turbo
 		}
 
         /// <summary>
-        /// Сбросить флаг наличия события
+        /// Resets the registration of the event
         /// </summary>
         public void Reset()
         {

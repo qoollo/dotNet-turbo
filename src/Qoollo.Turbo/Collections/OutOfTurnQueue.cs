@@ -9,226 +9,240 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Очередь с возможностью добавления элементов в начало
+    /// Queue with possibility to add elements to the head
     /// </summary>
-    /// <typeparam name="T">Тип элементов</typeparam>
+    /// <typeparam name="T">The type of elements in the queue</typeparam>
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [Serializable]
     public class OutOfTurnQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ICollection, IEnumerable
     {
-        private readonly Deque<T> _deque;
+        private readonly CircularList<T> _circularList;
 
+        /// <summary>
+        /// Code contracts
+        /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_deque != null);
+            Contract.Invariant(_circularList != null);
         }
 
         /// <summary>
-        /// Конструктор OutOfTurnQueue
+        /// OutOfTurnQueue constructor
         /// </summary>
         public OutOfTurnQueue()
         {
-            _deque = new Deque<T>();
+            _circularList = new CircularList<T>();
         }
 
         /// <summary>
-        /// Конструктор OutOfTurnQueue
+        /// OutOfTurnQueue constructor
         /// </summary>
-        /// <param name="capacity">Начальная вместимость</param>
+        /// <param name="capacity">Initial capacity</param>
         public OutOfTurnQueue(int capacity)
         {
-            Contract.Requires(capacity >= 0);
+            Contract.Requires<ArgumentException>(capacity >= 0);
 
-            _deque = new Deque<T>(capacity);
+            _circularList = new CircularList<T>(capacity);
         }
 
         /// <summary>
-        /// Конструктор OutOfTurnQueue
+        /// OutOfTurnQueue constructor
         /// </summary>
-        /// <param name="collection">Начальные элементы</param>
+        /// <param name="collection">The collection whose elements are copied to the new queue</param>
         public OutOfTurnQueue(IEnumerable<T> collection)
         {
-            Contract.Requires(collection != null);
+            Contract.Requires<ArgumentNullException>(collection != null);
 
-            _deque = new Deque<T>(collection);
+            _circularList = new CircularList<T>(collection);
         }
 
         /// <summary>
-        /// Количество элементов в очереди
+        /// Gets the number of elements in the queue
         /// </summary>
         public int Count
         {
-            get { return _deque.Count; }
+            get { return _circularList.Count; }
         }
 
         /// <summary>
-        /// Вместимость очереди
+        /// Gets the capacity of the queue
         /// </summary>
         public int Capacity
         {
-            get { return _deque.Capacity; }
+            get { return _circularList.Capacity; }
         }
 
         /// <summary>
-        /// Очистить очередь
+        /// Removes all elements from the queue
         /// </summary>
         public void Clear()
         {
-            _deque.Clear();
+            _circularList.Clear();
         }
 
         /// <summary>
-        /// Скопировать элементы в массив
+        /// Copies the queue elements to an existing array, starting at the specified array index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Начальный индекс</param>
+        /// <param name="array">Destination array</param>
+        /// <param name="index">Starting index</param>
         public void CopyTo(T[] array, int index)
         {
             Contract.Requires(array != null);
             Contract.Requires(index >= 0);
             Contract.Requires(index <= array.Length - this.Count);
 
-            _deque.CopyTo(array, index);
+            _circularList.CopyTo(array, index);
         }
 
         /// <summary>
-        /// Добавить элемент в конец очереди
+        /// Adds an object to the tail of the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">The item to add to the queue</param>
         public void Enqueue(T item)
         {
-            _deque.AddToBack(item);
+            _circularList.AddLast(item);
         }
 
+
         /// <summary>
-        /// Добавить элемент в начало очереди
+        /// Adds an object to the head of the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">The item to add to the queue</param>
+        public void EnqueueFirst(T item)
+        {
+            _circularList.AddFirst(item);
+        }
+        /// <summary>
+        /// Adds an object to the head of the queue
+        /// </summary>
+        /// <param name="item">The item to add to the queue</param>
+        [Obsolete("Method was renamed. Consider to use 'EnqueueFirst' instead")]
         public void EnqueueToFront(T item)
         {
-            _deque.AddToFront(item);
+            _circularList.AddFirst(item);
         }
 
         /// <summary>
-        /// Просмотреть элемент в голове очереди
+        /// Returns the item at the head of the queue without removing it
         /// </summary>
-        /// <returns>Элемент</returns>
+        /// <returns>The item at the head of the queue</returns>
         public T Peek()
         {
-            Contract.Requires(this.Count > 0);
+            if (_circularList.Count == 0)
+                throw new InvalidOperationException("Collection is empty");
 
-            return _deque.PeekAtFront();
+            return _circularList[0];
         }
 
         /// <summary>
-        /// Вытащить элемент из головы очереди
+        /// Removes and returns the item at the head of the queue
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The item that is removed from the head of the queue</returns>
         public T Dequeue()
         {
             Contract.Requires(this.Count > 0);
 
-            return _deque.RemoveFromFront();
+            return _circularList.RemoveFirst();
         }
 
         /// <summary>
-        /// Содержит ли очередь элементы
+        /// Determines whether an element is in the queue
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Содержит ли</returns>
+        /// <param name="item">The element to locate</param>
+        /// <returns>True if the item is found</returns>
         [Pure]
         public bool Contains(T item)
         {
-            return _deque.Contains(item);
+            return _circularList.Contains(item);
         }
 
         /// <summary>
-        /// Скопировать элементы в массив
+        /// Copies the queue elements to a new array
         /// </summary>
-        /// <returns>Массив</returns>
+        /// <returns>A new array containing elements copied from the queue</returns>
         public T[] ToArray()
         {
             Contract.Ensures(Contract.Result<T[]>() != null);
 
-            return _deque.ToArray();
+            return _circularList.ToArray();
         }
 
         /// <summary>
-        /// Удалить лишнее пустое место
+        /// Sets the capacity to the actual number of elements in the queue
         /// </summary>
         public void TrimExcess()
         {
-            _deque.TrimExcess();
+            _circularList.TrimExcess();
         }
 
         /// <summary>
-        /// Получить Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
-        public Deque<T>.Enumerator GetEnumerator()
+        public CircularList<T>.Enumerator GetEnumerator()
         {
-            return _deque.GetEnumerator();
+            return _circularList.GetEnumerator();
         }
 
         /// <summary>
-        /// Получить Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
-            return _deque.GetEnumerator();
+            return _circularList.GetEnumerator();
         }
 
         /// <summary>
-        /// Получить Enumerator
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return _deque.GetEnumerator();
+            return _circularList.GetEnumerator();
         }
 
         /// <summary>
-        /// Скопировать данные в массив
+        /// Copies the queue elements to an Array, starting at the specified array index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Начальный индекс</param>
+        /// <param name="array">Destination array</param>
+        /// <param name="index">Index in array at which copying begins</param>
         void ICollection.CopyTo(Array array, int index)
         {
-            (_deque as ICollection).CopyTo(array, index);
+            (_circularList as ICollection).CopyTo(array, index);
         }
 
         /// <summary>
-        /// Количество элементов в очереди
+        /// Gets the number of elements contained in the queue
         /// </summary>
         int ICollection.Count
         {
-            get { return _deque.Count; }
+            get { return _circularList.Count; }
         }
 
         /// <summary>
-        /// Синхронизирована ли коллекция
+        /// Is collection synchronized
         /// </summary>
         bool ICollection.IsSynchronized
         {
-            get { return (_deque as ICollection).IsSynchronized; }
+            get { return (_circularList as ICollection).IsSynchronized; }
         }
 
         /// <summary>
-        /// Объект инхронизации
+        /// Synchronization object
         /// </summary>
         object ICollection.SyncRoot
         {
-            get { return (_deque as ICollection).SyncRoot; }
+            get { return (_circularList as ICollection).SyncRoot; }
         }
 
         /// <summary>
-        /// Количество элементов в очереди
+        /// Gets the number of elements contained in the queue
         /// </summary>
         int IReadOnlyCollection<T>.Count
         {
-            get { return _deque.Count; }
+            get { return _circularList.Count; }
         }
     }
 }

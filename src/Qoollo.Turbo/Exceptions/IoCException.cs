@@ -7,97 +7,181 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Исключение в IoC контейнере
+    /// The exception that is thrown when some error with IoC container occured
     /// </summary>
     [Serializable]
-    public class CommonIoCException : Exception
+    public class CommonIoCException : TurboException
     {
         /// <summary>
-        /// Конструктор CommonIoCException без параметров
+        /// CommonIoCException constructor
         /// </summary>
         public CommonIoCException() : base("Exception with IoC container") { }
         /// <summary>
-        /// Конструктор CommonIoCException с сообщением об ошибке
+        /// CommonIoCException constructor with error message
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
+        /// <param name="message">Error message</param>
         public CommonIoCException(string message) : base(message) { }
         /// <summary>
-        /// Конструктор CommonIoCException с сообщением об ошибке и внутренним исключением
+        /// CommonIoCException constructor with error message and innerException
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        /// <param name="innerException">Внутреннее исключение</param>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
         public CommonIoCException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// CommonIoCException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected CommonIoCException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
 
     /// <summary>
-    /// Исключение в IoC контейнере при работе с ассоциациями
+    /// The exception that is thrown when some error with IoC association container occured
     /// </summary>
     [Serializable]
     public class AssociationIoCException : CommonIoCException
     {
         /// <summary>
-        /// Конструктор AssociationIoCException без параметров
+        /// AssociationIoCException constructor
         /// </summary>
         public AssociationIoCException() : base("Exception inside IoC association container") { }
         /// <summary>
-        /// Конструктор AssociationIoCException с сообщением об ошибке
+        /// AssociationIoCException constructor with error message
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
+        /// <param name="message">Error message</param>
         public AssociationIoCException(string message) : base(message) { }
         /// <summary>
-        /// Конструктор AssociationIoCException с сообщением об ошибке и внутренним исключением
+        /// AssociationIoCException constructor with error message and innerException
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        /// <param name="innerException">Внутреннее исключение</param>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
         public AssociationIoCException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// AssociationIoCException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected AssociationIoCException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
 
     /// <summary>
-    /// Исключение в IoC контейнере при работе с ассоциациями
-    /// </summary>
-    [Serializable]
-    public class AssociationBadKeyForTypeException : ArgumentException
-    {
-        /// <summary>
-        /// Конструктор AssociationBadKeyForTypeException без параметров
-        /// </summary>
-        public AssociationBadKeyForTypeException() : base("Exception inside IoC injection container") { }
-        /// <summary>
-        /// Конструктор AssociationBadKeyForTypeException с сообщением об ошибке
-        /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        public AssociationBadKeyForTypeException(string message) : base(message) { }
-        /// <summary>
-        /// Конструктор AssociationBadKeyForTypeException с сообщением об ошибке и внутренним исключением
-        /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        /// <param name="innerException">Внутреннее исключение</param>
-        public AssociationBadKeyForTypeException(string message, Exception innerException) : base(message, innerException) { }
-    }
-
-
-    /// <summary>
-    /// Исключение в IoC контейнере при работе с инъекциями
+    /// The exception that is thrown when some error with IoC injection container occured
     /// </summary>
     [Serializable]
     public class InjectionIoCException : CommonIoCException
     {
         /// <summary>
-        /// Конструктор InjectionIoCException без параметров
+        /// InjectionIoCException constructor
         /// </summary>
-        public InjectionIoCException() { }
+        public InjectionIoCException() : base("Exception inside IoC injection container") { }
         /// <summary>
-        /// Конструктор InjectionIoCException с сообщением об ошибке
+        /// InjectionIoCException constructor with error message
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
+        /// <param name="message">Error message</param>
         public InjectionIoCException(string message) : base(message) { }
         /// <summary>
-        /// Конструктор InjectionIoCException с сообщением об ошибке и внутренним исключением
+        /// InjectionIoCException constructor with error message and innerException
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        /// <param name="innerException">Внутреннее исключение</param>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
         public InjectionIoCException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// InjectionIoCException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected InjectionIoCException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+
+    /// <summary>
+    /// The exception that is thrown when object cannot be resolved by IoC container
+    /// </summary>
+    [Serializable]
+    public class ObjectCannotBeResolvedException : CommonIoCException
+    {
+        /// <summary>
+        /// ObjectCannotBeResolvedException constructor
+        /// </summary>
+        public ObjectCannotBeResolvedException() : base("Object for the specified key cannot be resolved by the IoC container") { }
+        /// <summary>
+        /// ObjectCannotBeResolvedException constructor with error message
+        /// </summary>
+        /// <param name="message">Error message</param>
+        public ObjectCannotBeResolvedException(string message) : base(message) { }
+        /// <summary>
+        /// ObjectCannotBeResolvedException constructor with error message and innerException
+        /// </summary>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
+        public ObjectCannotBeResolvedException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// ObjectCannotBeResolvedException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected ObjectCannotBeResolvedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+
+    /// <summary>
+    /// The exception that is thrown when trying to register a new association with inappropriate key
+    /// </summary>
+    [Serializable]
+    public class AssociationBadKeyForTypeException : ArgumentException
+    {
+        /// <summary>
+        /// AssociationBadKeyForTypeException constructor
+        /// </summary>
+        public AssociationBadKeyForTypeException() : base("Incorrect key for the specified value in IoC association container") { }
+        /// <summary>
+        /// AssociationBadKeyForTypeException constructor with error message
+        /// </summary>
+        /// <param name="message">Error message</param>
+        public AssociationBadKeyForTypeException(string message) : base(message) { }
+        /// <summary>
+        /// AssociationBadKeyForTypeException constructor with error message and innerException
+        /// </summary>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
+        public AssociationBadKeyForTypeException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// AssociationBadKeyForTypeException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected AssociationBadKeyForTypeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+
+    /// <summary>
+    /// The exception that is thrown when trying to register a new injection with inappropriate key
+    /// </summary>
+    [Serializable]
+    public class InjectionBadKeyForItemException : ArgumentException
+    {
+        /// <summary>
+        /// InjectionBadKeyForItemException constructor
+        /// </summary>
+        public InjectionBadKeyForItemException() : base("Incorrect key for the specified value in IoC injection container") { }
+        /// <summary>
+        /// InjectionBadKeyForItemException constructor with error message
+        /// </summary>
+        /// <param name="message">Error message</param>
+        public InjectionBadKeyForItemException(string message) : base(message) { }
+        /// <summary>
+        /// InjectionBadKeyForItemException constructor with error message and innerException
+        /// </summary>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
+        public InjectionBadKeyForItemException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// InjectionBadKeyForItemException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected InjectionBadKeyForItemException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }

@@ -7,21 +7,21 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Поставщик элементов
+    /// Interface for data producer
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">Type of the produced elements</typeparam>
     public interface IProducer<T>
     {
         /// <summary>
-        /// Взять элемент
+        /// Takes new item from the producer
         /// </summary>
-        /// <returns>Выбранный элемент</returns>
+        /// <returns>Taken item</returns>
         T Take();
         /// <summary>
-        /// Попытаться взять элемент
+        /// Attempts to take new item from the producer
         /// </summary>
-        /// <param name="item">Выбранный элемент</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">Taken item</param>
+        /// <returns>True if item was taken successfully</returns>
         bool TryTake(out T item);
     }
 }

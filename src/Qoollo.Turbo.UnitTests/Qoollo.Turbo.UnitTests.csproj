@@ -51,9 +51,19 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Collections\BlockingQueueTest.cs" />
+    <Compile Include="Collections\CircularListTest.cs" />
+    <Compile Include="Collections\IndexedContainerTests.cs" />
+    <Compile Include="Common\ConcurrentDictionaryExtensionsTests.cs" />
+    <Compile Include="Common\EnumerableExtensionsTest.cs" />
     <Compile Include="Common\EventTimingTrackerTest.cs" />
-    <Compile Include="Common\ExceptionExtensionsTest.cs" />
+    <Compile Include="Common\StringDistanceTest.cs" />
+    <Compile Include="Common\TurboExceptionTests.cs" />
+    <Compile Include="Common\TypeUIDResolverTests.cs" />
+    <Compile Include="Common\WeakDelegateTests.cs" />
     <Compile Include="ExecutionQuantizers\OnRequestExecutionQuantizerTest.cs" />
+    <Compile Include="IoC\LifetimeFactoriesTests.cs" />
+    <Compile Include="IoC\ObjectInstantiationHelperTests.cs" />
+    <Compile Include="IoC\TurboContainerTests.cs" />
     <Compile Include="ObjectPools\BunchElementStorageTest.cs" />
     <Compile Include="ObjectPools\BalancingDynamicPoolManagerTest.cs" />
     <Compile Include="ObjectPools\IndexedStackElementStorageTest.cs" />

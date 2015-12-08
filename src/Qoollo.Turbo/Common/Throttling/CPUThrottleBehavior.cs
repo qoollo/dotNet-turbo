@@ -9,15 +9,14 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Логика отсчёта пропуска операций для предотвращения DOS по CPU.
-    /// Усыпляет потоки при превышении допустимого числа операций.
+    /// CPUThrottleBehavior allows to limit the number of operations per second by suspending the execution thread
     /// </summary>
     public class CPUThrottleBehavior : ThrottleBehavior
     {
         /// <summary>
-        /// Создать неограниченное поведение
+        /// Creates unlimited CPUThrottleBehavior (allow all operations)
         /// </summary>
-        /// <returns>Throttling поведение</returns>
+        /// <returns>Created CPUThrottleBehavior</returns>
         public new static CPUThrottleBehavior CreateNotLimited()
         {
             Contract.Ensures(Contract.Result<CPUThrottleBehavior>() != null);
@@ -25,18 +24,18 @@ namespace Qoollo.Turbo
         }
 
         /// <summary>
-        /// Конструктор CPUThrottleBehaviour
+        /// CPUThrottleBehaviour constructor
         /// </summary>
-        /// <param name="maxRequestPerSecond">Максимально допустимое число запросов в секунду</param>
-        /// <param name="measurePeriodMs">Период оценки в миллисекундах</param>
+        /// <param name="maxRequestPerSecond">Maximum number of operations per second</param>
+        /// <param name="measurePeriodMs">Measure period to estimate current number of operations</param>
         public CPUThrottleBehavior(double maxRequestPerSecond, int measurePeriodMs)
             : base(maxRequestPerSecond, measurePeriodMs)
         {
         }
         /// <summary>
-        /// Конструктор CPUThrottleBehaviour
+        /// CPUThrottleBehaviour constructor
         /// </summary>
-        /// <param name="maxRequestPerSecond">Максимально допустимое число запросов в секунду</param>
+        /// <param name="maxRequestPerSecond">Maximum number of operations per second</param>
         public CPUThrottleBehavior(double maxRequestPerSecond)
             : base(maxRequestPerSecond)
         {
@@ -44,9 +43,9 @@ namespace Qoollo.Turbo
 
 
         /// <summary>
-        /// Вызывается при необходимости пропуска операций
+        /// Suspend the current thread till the end of the current measure period
         /// </summary>
-        /// <param name="restTimeMs">Время, которое осталось до конца периода</param>
+        /// <param name="restTimeMs">Time in milliseconds till the end of the current measure period</param>
         protected override void OnThrottle(int restTimeMs)
         {
             if (restTimeMs <= 0)

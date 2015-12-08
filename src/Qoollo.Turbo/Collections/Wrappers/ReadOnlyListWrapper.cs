@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Обёртка списков в режим только для чтения
+    /// Read-only wrapper around IList interface
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">The type of the element in the list</typeparam>
     [Serializable]
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [System.Diagnostics.DebuggerTypeProxy(typeof(Qoollo.Turbo.Collections.ServiceStuff.CollectionDebugView<>))]
@@ -19,7 +19,7 @@ namespace Qoollo.Turbo.Collections
     {
         private static readonly ReadOnlyListWrapper<T> _empty = new ReadOnlyListWrapper<T>(new T[0]);
         /// <summary>
-        /// Пустой список
+        /// Empty ReadOnlyListWrapper
         /// </summary>
         public static ReadOnlyListWrapper<T> Empty
         {
@@ -32,9 +32,9 @@ namespace Qoollo.Turbo.Collections
         // ===========
 
         /// <summary>
-        /// Конструктор ReadOnlyListWrapper
+        /// ReadOnlyListWrapper constructor
         /// </summary>
-        /// <param name="list">Обёртываемый список</param>
+        /// <param name="list">List to be wrapped</param>
         public ReadOnlyListWrapper(IList<T> list)
             : base(list)
         {
@@ -43,10 +43,10 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Позиция последнего элемента в списке
+        /// Searches for the specified 'item' and returns the index of the last occurrence of the item inside list
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Позиция, если найден, иначе -1</returns>
+        /// <param name="item">The item to locate inside the list</param>
+        /// <returns>The index of element inside the list, if found. -1 otherwise</returns>
         [Pure]
         public int LastIndexOf(T item)
         {
@@ -62,12 +62,12 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Выполнение действия для каждого элемента списка
+        /// Performs the specified action on each element of the list
         /// </summary>
-        /// <param name="action">Действие</param>
+        /// <param name="action">Action</param>
         public void ForEach(Action<T> action)
         {
-            Contract.Requires(action != null);
+            Contract.Requires<ArgumentNullException>(action != null);
 
             for (int i = 0; i < Items.Count; i++)
                 action(Items[i]);
@@ -75,11 +75,49 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Получить список с преобразованием элементов на лету
+        /// Determines whether the list contains elements that match the conditions defined by the specified predicate
         /// </summary>
-        /// <typeparam name="TOut">Выходной тип элементов</typeparam>
-        /// <param name="selector">Преобразователь</param>
-        /// <returns>Список</returns>
+        /// <param name="match">Predicate</param>
+        /// <returns>True if the list contains elements that match the condition</returns>
+        [Pure]
+        public bool Exists(Predicate<T> match)
+        {
+            Contract.Requires<ArgumentNullException>(match != null);
+
+            for (int i = 0; i < Items.Count; i++)
+                if (match(Items[i]))
+                    return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Search for the fist element that match the conditions defined by the specified predicate
+        /// </summary>
+        /// <param name="match">Predicate</param>
+        /// <returns>The first element that matches the condition, if found; otherwise, the default value for type T</returns>
+        [Pure]
+        public T Find(Predicate<T> match)
+        {
+            Contract.Requires<ArgumentNullException>(match != null);
+
+            for (int i = 0; i < Items.Count; i++)
+            {
+                var curItem = Items[i];
+                if (match(curItem))
+                    return curItem;
+            }
+
+            return default(T);
+        }
+
+
+        /// <summary>
+        /// Creates TransformedReadOnlyListWrapper from the current list
+        /// </summary>
+        /// <typeparam name="TOut">Type of the elements of the newly created TransformedReadOnlyListWrapper</typeparam>
+        /// <param name="selector">Element conversion delegate</param>
+        /// <returns>Created TransformedReadOnlyListWrapper</returns>
         public TransformedReadOnlyListWrapper<T, TOut> AsTransformedReadOnlyList<TOut>(Func<T, TOut> selector)
         {
             Contract.Requires(selector != null);

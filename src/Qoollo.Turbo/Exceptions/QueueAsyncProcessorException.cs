@@ -6,25 +6,31 @@ using System.Text;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Исключение при обработке элемента в QueueAsyncProcessor
+    /// The exception that is thrown on any unhandled error during element processing by QueueAsyncProcessor
     /// </summary>
     [Serializable]
-    public class QueueAsyncProcessorException : Exception
+    public class QueueAsyncProcessorException : TurboException
     {
         /// <summary>
-        /// Конструктор QueueAsyncProcessorException без параметров
+        /// QueueAsyncProcessorException constructor
         /// </summary>
         public QueueAsyncProcessorException() : base("Exception was thrown during processing in QueueAsyncProcessor") { }
         /// <summary>
-        /// Конструктор QueueAsyncProcessorException с сообщением об ошибке
+        /// QueueAsyncProcessorException constructor with error message
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
+        /// <param name="message">Error message</param>
         public QueueAsyncProcessorException(string message) : base(message) { }
         /// <summary>
-        /// Конструктор QueueAsyncProcessorException с сообщением об ошибке и внутренним исключением
+        /// QueueAsyncProcessorException constructor with error message and innerException
         /// </summary>
-        /// <param name="message">Сообщение об ошибке</param>
-        /// <param name="innerException">Внутреннее исключение</param>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
         public QueueAsyncProcessorException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// QueueAsyncProcessorException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected QueueAsyncProcessorException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }

@@ -241,10 +241,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\IndexedContainers\IndexedContainer.cs" />
+    <Compile Include="Collections\IndexedContainers\IndexedContainerRef.cs" />
+    <Compile Include="Collections\IndexedContainers\IndexedContainerVal.cs" />
+    <Compile Include="Collections\CircularList.cs" />
     <Compile Include="Collections\Concurrent\BlockingQueue.cs" />
     <Compile Include="Common\EventTimingTracker.cs" />
+    <Compile Include="Common\StringDistance.cs" />
+    <Compile Include="Common\TypeUIDResolver.cs" />
+    <Compile Include="Exceptions\TurboAssertionException.cs" />
+    <Compile Include="Exceptions\InvalidTypeException.cs" />
+    <Compile Include="Exceptions\TurboException.cs" />
+    <Compile Include="Common\Extensions\TurboConcurrentDictionaryExtensions.cs" />
     <Compile Include="Exceptions\OperationInterruptedException.cs" />
     <Compile Include="Exceptions\ThreadSetManagerException.cs" />
+    <Compile Include="IoC\TurboContainer.cs" />
     <Compile Include="ObjectPools\Common\DefaultPoolElementComparer.cs" />
     <Compile Include="ObjectPools\Common\PoolElementComparer.cs" />
     <Compile Include="ObjectPools\Common\DefaultPoolElementOperationSource.cs" />
@@ -295,13 +306,13 @@
     <Compile Include="Collections\Wrappers\ReadOnlyListWrapper.cs" />
     <Compile Include="Collections\Wrappers\ReadOnlySetWrapper.cs" />
     <Compile Include="Collections\Wrappers\TransformedReadOnlyListWrapper.cs" />
-    <Compile Include="Common\Extensions\CollectionExtensions.cs" />
-    <Compile Include="Common\Extensions\ExceptionExtensions.cs" />
+    <Compile Include="Common\Extensions\TurboCollectionExtensions.cs" />
+    <Compile Include="Common\Extensions\TurboExceptionExtensions.cs" />
     <Compile Include="Common\Interfaces\IConsumer.cs" />
     <Compile Include="Common\Interfaces\IFreezable.cs" />
     <Compile Include="Common\Interfaces\IProducer.cs" />
     <Compile Include="Common\Interfaces\IProducerConsumer.cs" />
-    <Compile Include="Common\Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Common\Extensions\TurboEnumerableExtensions.cs" />
     <Compile Include="Common\Console\ConsoleHelper.cs" />
     <Compile Include="Exceptions\CantInitThreadException.cs" />
     <Compile Include="Exceptions\CantRetrieveElementException.cs" />
@@ -326,11 +337,11 @@
     <Compile Include="IoC\Associations\TypeStrict\TypeStrictAssociationExtension.cs" />
     <Compile Include="IoC\Associations\TypeStrict\TypeStrictFreezeRequiredAssociationContainer.cs" />
     <Compile Include="IoC\CommonCaseIoC\CommonObjectLocator.cs" />
-    <Compile Include="IoC\CommonCaseIoC\DirectTypeAssociationContainer.cs" />
+    <Compile Include="IoC\Associations\TypeStrict\DirectTypeAssociationContainer.cs" />
     <Compile Include="IoC\CommonCaseIoC\SimpleObjectLocator.cs" />
     <Compile Include="IoC\CommonEnums.cs" />
     <Compile Include="IoC\DefaultConstructorAttribute.cs" />
-    <Compile Include="IoC\Helpers\OnjectInstantiationHelper.cs" />
+    <Compile Include="IoC\Helpers\ObjectInstantiationHelper.cs" />
     <Compile Include="IoC\Injections\ConcurrentGenericInjectionContainer.cs" />
     <Compile Include="IoC\Injections\GenericInjectionContainerBase.cs" />
     <Compile Include="IoC\Injections\Interfaces\IInjectionSource.cs" />
@@ -404,10 +415,10 @@
     <Compile Include="Threading\OldThreadPools\StaticThreadPool.cs" />
     <Compile Include="Threading\OldThreadPools\SystemThreadPool.cs" />
     <Compile Include="Threading\OldThreadPools\ThreadPoolBase.cs" />
-    <Compile Include="Common\Extensions\TypeExtensions.cs" />
+    <Compile Include="Common\Extensions\TurboTypeExtensions.cs" />
     <Compile Include="Common\Throttling\CPUThrottleBehavior.cs" />
     <Compile Include="Common\Throttling\ThrottleBehavior.cs" />
-    <Compile Include="Common\WeakEvent\IWeakEventReferenceStorage.cs" />
+    <Compile Include="Common\WeakEvent\WeakEventReferenceStorageBase.cs" />
     <Compile Include="Common\WeakEvent\StrongReferenceStorage.cs" />
     <Compile Include="Common\WeakEvent\MulticastWeakDelegate.cs" />
     <Compile Include="Common\WeakEvent\WeakDelegate.cs" />

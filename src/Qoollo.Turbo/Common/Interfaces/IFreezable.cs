@@ -7,16 +7,16 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Поддержка заморозки. Замороженный объект должен стать неизменяемым.
+    /// Indicates freezing capabilities. Frozen instance can't be modified.
     /// </summary>
     public interface IFreezable
     {
         /// <summary>
-        /// Заморозить
+        /// Freezes current instance
         /// </summary>
         void Freeze();
         /// <summary>
-        /// Заморожен ли объект
+        /// Gets the value indicating whether current instance is frozen
         /// </summary>
         bool IsFrozen { get; }
     }

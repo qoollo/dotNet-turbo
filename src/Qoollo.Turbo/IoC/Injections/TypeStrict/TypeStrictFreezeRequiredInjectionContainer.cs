@@ -10,94 +10,34 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Injections
 {
     /// <summary>
-    /// Контейнер инъекций для хранения соответствия Типа и объекта этого типа.
-    /// Подходит для однопоточных сценариев, а также для многопоточных в случае заморозки.
+    /// Stores association between the 'type-of-the-object' and already instantiated 'object' of that type. 
+    /// In multithreaded scenarious should be frozen explicitly (simultanious add and get is not supported)
     /// </summary>
-    public sealed class TypeStrictFreezeRequiredInjectionContainer : FreezeRequiredGenericInjectionContainer<Type>
+    public class TypeStrictFreezeRequiredInjectionContainer : FreezeRequiredGenericInjectionContainer<Type>, IInjectionResolver
     {
-        private readonly TypeStrictDirectInjectionResolver _fastDirectResolver;
-
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            Contract.Invariant(_fastDirectResolver != null);
-        }
-
         /// <summary>
-        /// Простой резолвер инъекций, опирающийся лишь на тип запрашиваемого объекта
-        /// </summary>
-        private class TypeStrictDirectInjectionResolver : IInjectionResolver
-        {
-            private readonly TypeStrictFreezeRequiredInjectionContainer _container;
-
-            [ContractInvariantMethod]
-            private void Invariant()
-            {
-                Contract.Invariant(_container != null);
-            }
-
-            /// <summary>
-            /// Конструктор TypeStrictDirectInjectionResolver
-            /// </summary>
-            /// <param name="container">Контейнер, которому он принадлежит</param>
-            internal TypeStrictDirectInjectionResolver(TypeStrictFreezeRequiredInjectionContainer container)
-            {
-                Contract.Requires(container != null);
-
-                _container = container;
-            }
-
-            /// <summary>
-            /// Разрешить зависимость на основе подробной информации
-            /// </summary>
-            /// <param name="reqObjectType">Тип объекта, который требуется вернуть</param>
-            /// <param name="paramName">Имя параметра, для которого разрешается зависимость (если применимо)</param>
-            /// <param name="forType">Тип, для которого разрешается зависимость (если применимо)</param>
-            /// <param name="extData">Расширенные данные для разрешения зависимости (если есть)</param>
-            /// <returns>Найденный объект запрашиваемого типа</returns>
-            public object Resolve(Type reqObjectType, string paramName, Type forType, object extData)
-            {
-                return _container.GetInjection(reqObjectType);
-            }
-
-            /// <summary>
-            /// Упрощённое разрешение зависимости
-            /// </summary>
-            /// <typeparam name="T">Тип объекта, который требуется вернуть</typeparam>
-            /// <param name="forType">Тип, для которого разрешается зависимость</param>
-            /// <returns>Найденный объект запрашиваемого типа</returns>
-            public T Resolve<T>(Type forType)
-            {
-                return (T)_container.GetInjection(typeof(T));
-            }
-        }
-
-
-        /// <summary>
-        /// Конструктор TypeStrictFreezeRequiredInjectionContainer
+        /// TypeStrictFreezeRequiredInjectionContainer constructor
         /// </summary>
         public TypeStrictFreezeRequiredInjectionContainer()
         {
-            _fastDirectResolver = new TypeStrictDirectInjectionResolver(this);
         }
 
         /// <summary>
-        /// Конструктор TypeStrictFreezeRequiredInjectionContainer
+        /// TypeStrictFreezeRequiredInjectionContainer constructor
         /// </summary>
-        /// <param name="disposeInjectionsWithBuilder">Вызывать ли Dispose у хранимых объектов при уничтожении контейнера</param>
+        /// <param name="disposeInjectionsWithBuilder">Indicates whether the all injected objects should be disposed with the container</param>
         public TypeStrictFreezeRequiredInjectionContainer(bool disposeInjectionsWithBuilder)
             : base(disposeInjectionsWithBuilder)
         {
-            _fastDirectResolver = new TypeStrictDirectInjectionResolver(this);
         }
 
 
         /// <summary>
-        /// Подходит ли данная инъекция для ключа
+        /// Checks whether the injection is appropriate for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="injection">Инъекция</param>
-        /// <returns>Подходит ли</returns>
+        /// <param name="key">Key</param>
+        /// <param name="injection">Object to store as injection</param>
+        /// <returns>True if the object with 'objType' can be used by container with specified 'key'</returns>
         protected override bool IsGoodInjectionForKey(Type key, object injection)
         {
             if (key == null)
@@ -113,22 +53,21 @@ namespace Qoollo.Turbo.IoC.Injections
         }
 
         /// <summary>
-        /// Получение инъекции по её типу
+        /// Gets the injection object of the specified type
         /// </summary>
-        /// <typeparam name="T">Тип запрашиваемой инъекции</typeparam>
-        /// <returns>Инъекция</returns>
+        /// <typeparam name="T">The type of requested injection object</typeparam>
+        /// <returns>Resolved object</returns>
         public T GetInjection<T>()
         {
             return (T)this.GetInjection(typeof(T));
         }
 
-
         /// <summary>
-        /// Попытка получить инъекцию
+        /// Attempts to get the injection object of the specified type
         /// </summary>
-        /// <typeparam name="T">Тип запрашиваемой инъекции</typeparam>
-        /// <param name="val">Значение инъекции в случае успеха</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="T">The type of requested injection object</typeparam>
+        /// <param name="val">Resolved object if foundпеха</param>
+        /// <returns>True if the injection object is registered for the specified key; overwise false</returns>
         public bool TryGetInjection<T>(out T val)
         {
             object tmp = null;
@@ -142,58 +81,83 @@ namespace Qoollo.Turbo.IoC.Injections
             return false;
         }
 
-
         /// <summary>
-        /// Содержит ли контейнер инъекцию с типом T
+        /// Determines whether the InjectionSource contains the object of the specified type
         /// </summary>
-        /// <typeparam name="T">Тип инъекции</typeparam>
-        /// <returns>Содержит ли</returns>
+        /// <typeparam name="T">The type of injection object</typeparam>
+        /// <returns>True if the InjectionSource contains the object of the specified type</returns>
         public bool Contains<T>()
         {
             return this.Contains(typeof(T));
         }
 
         /// <summary>
-        /// Добавить инъекцию в контейнер
+        /// Adds a new injection to the container
         /// </summary>
-        /// <typeparam name="T">Тип инъекции</typeparam>
-        /// <param name="val">Значение инъекции</param>
+        /// <typeparam name="T">The type of injection object</typeparam>
+        /// <param name="val">Object to add</param>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="ObjectFrozenException"></exception>
         public void AddInjection<T>(T val)
         {
             this.AddInjection(typeof(T), val);
         }
 
         /// <summary>
-        /// Попытаться добавить инъекцию в контейнер
+        /// Attempts to add a new injection to the container
         /// </summary>
-        /// <typeparam name="T">Тип инъекции</typeparam>
-        /// <param name="val">Значение</param>
-        /// <returns>Успешность</returns>
+        /// <typeparam name="T">The type of the injection object</typeparam>
+        /// <param name="val">Object to add</param>
+        /// <returns>True if the injection was added, that is InjectionContainer not contains lifetime container with the same key; overwise false</returns>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="ObjectFrozenException"></exception>
         public bool TryAddInjection<T>(T val)
         {
             return this.TryAddInjection(typeof(T), val);
         }
-
         /// <summary>
-        /// Удалить инъекцию из контейнера
+        /// Removes the injection of the specified type from the container
         /// </summary>
-        /// <typeparam name="T">Тип удаляемой инъекции</typeparam>
-        /// <returns>Была ли она там</returns>
+        /// <typeparam name="T">The type of injection object</typeparam>
+        /// <returns>True if the injection was presented in container</returns>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="ObjectFrozenException"></exception>
         public bool RemoveInjection<T>()
         {
             return this.RemoveInjection(typeof(T));
         }
 
         /// <summary>
-        /// Возвращает простой резолвер инъекций
+        /// Returns the injection resolver implementation for the current container
         /// </summary>
-        /// <returns>Резолвер</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <returns>Injection resolver to resolve injections from the current container</returns>
         public IInjectionResolver GetDirectInjectionResolver()
         {
-            Contract.Ensures(Contract.Result<IInjectionResolver>() != null);
+            return this;
+        }
 
-            return _fastDirectResolver;
+
+        /// <summary>
+        /// Resolves the object of the specified type ('reqObjectType') to be injected to the constructor of another type ('forType')
+        /// </summary>
+        /// <param name="reqObjectType">The type of the object to be resolved</param>
+        /// <param name="paramName">The name of the parameter to that the injection will be performed (can be null)</param>
+        /// <param name="forType">The type of the object to be created (can be null)</param>
+        /// <param name="extData">Extended information supplied by the user (can be null)</param>
+        /// <returns>Resolved instance to be injected</returns>
+        object IInjectionResolver.Resolve(Type reqObjectType, string paramName, Type forType, object extData)
+        {
+            return this.GetInjection(reqObjectType);
+        }
+        /// <summary>
+        /// Resolves the object of the type 'T' to be injected to the constructor of another type ('forType') (short form)
+        /// </summary>
+        /// <typeparam name="T">The type of the object to be resolved</typeparam>
+        /// <param name="forType">The type of the object to be created (can be null)</param>
+        /// <returns>Resolved instance to be injected</returns>
+        T IInjectionResolver.Resolve<T>(Type forType)
+        {
+            return (T)this.GetInjection(typeof(T));
         }
     }
 }

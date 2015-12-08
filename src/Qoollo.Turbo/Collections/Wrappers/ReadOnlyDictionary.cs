@@ -9,16 +9,16 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections
 {
     /// <summary>
-    /// Словарь в режиме только для чтения
+    /// Read-only wrapper around Dictionary class
     /// </summary>
-    /// <typeparam name="TKey">Тип ключа</typeparam>
-    /// <typeparam name="TValue">Тип значений</typeparam>
+    /// <typeparam name="TKey">The type of the keys in the dictionary</typeparam>
+    /// <typeparam name="TValue">The type of the values in the dictionary</typeparam>
     [Serializable]
     public class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, ICollection<KeyValuePair<TKey, TValue>>, IDictionary, ICollection, IReadOnlyDictionary<TKey, TValue>, IReadOnlyCollection<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>>, IEnumerable
     {
         private static readonly ReadOnlyDictionary<TKey, TValue> _empty = new ReadOnlyDictionary<TKey, TValue>(new Dictionary<TKey, TValue>());
         /// <summary>
-        /// Пустой словарь
+        /// Empty ReadOnlyDictionary
         /// </summary>
         public static ReadOnlyDictionary<TKey, TValue> Empty
         {
@@ -34,7 +34,7 @@ namespace Qoollo.Turbo.Collections
         private Dictionary<TKey, TValue> _dictionary;
 
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -43,7 +43,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyDictionary
+        /// ReadOnlyDictionary constructor
         /// </summary>
         protected ReadOnlyDictionary()
         {
@@ -51,9 +51,9 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyDictionary
+        /// ReadOnlyDictionary constructor
         /// </summary>
-        /// <param name="dict">Обёртываемый словарь</param>
+        /// <param name="dict">The dictionary to wrap</param>
         public ReadOnlyDictionary(Dictionary<TKey, TValue> dict)
         {
             Contract.Requires<ArgumentNullException>(dict != null);
@@ -62,9 +62,9 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyDictionary
+        /// ReadOnlyDictionary constructor
         /// </summary>
-        /// <param name="srcDict">Источник элементов словаря</param>
+        /// <param name="srcDict">The source of elements to the newly created read-only dictionary (elements will be copied)</param>
         public ReadOnlyDictionary(IDictionary<TKey, TValue> srcDict)
         {
             Contract.Requires<ArgumentNullException>(srcDict != null);
@@ -73,10 +73,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Конструктор ReadOnlyDictionary
+        /// ReadOnlyDictionary constructor
         /// </summary>
-        /// <param name="srcDict">Источник элементов словаря</param>
-        /// <param name="keyComparer">Компаратор ключей</param>
+        /// <param name="srcDict">The source of elements to the newly created read-only dictionary (elements will be copied)</param>
+        /// <param name="keyComparer">Key comparer</param>
         public ReadOnlyDictionary(IDictionary<TKey, TValue> srcDict, IEqualityComparer<TKey> keyComparer)
         {
             Contract.Requires<ArgumentNullException>(srcDict != null);
@@ -86,29 +86,29 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Обёрнутый словарь
+        /// Wrapped dictionary
         /// </summary>
         protected Dictionary<TKey, TValue> Dictionary { get { return _dictionary; } }
 
         /// <summary>
-        /// Количество элементов в словаре
+        /// Gets the number of records contained in the Dictionary
         /// </summary>
         public int Count { get { return _dictionary.Count; } }
 
         /// <summary>
-        /// Коллекция ключей
+        /// Collection of the keys from Dictionary
         /// </summary>
         public Dictionary<TKey, TValue>.KeyCollection Keys { get { return _dictionary.Keys; } }
         /// <summary>
-        /// Коллекция значений
+        /// Collection of the values from Dictionary
         /// </summary>
         public Dictionary<TKey, TValue>.ValueCollection Values { get { return _dictionary.Values; } }
 
         /// <summary>
-        /// Доступ к элементам по ключу
+        /// Gets the item from Dictionary for specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Элемент</returns>
+        /// <param name="key">The key of the value to get</param>
+        /// <returns>Item</returns>
         public TValue this[TKey key] 
         {
             get
@@ -117,21 +117,21 @@ namespace Qoollo.Turbo.Collections
             }
         }
         /// <summary>
-        /// Получить значение по ключу
+        /// Gets the item associated with the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="value">Полученное значение</param>
-        /// <returns>Удалось ли получить значение</returns>
+        /// <param name="key">The key of the value to get</param>
+        /// <param name="value">The value associated with key</param>
+        /// <returns>True if the Dictionary contains element with the specified key</returns>
         public bool TryGetValue(TKey key, out TValue value)
         {
             return _dictionary.TryGetValue(key, out value);
         }
 
         /// <summary>
-        /// Содержится ли ключ в словаре
+        /// Determines whether the Dictionary contains the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Содержится ли</returns>
+        /// <param name="key">The key to locate in the Dictionary</param>
+        /// <returns>True if the Dictionary contains the key</returns>
         [Pure]
         public bool ContainsKey(TKey key)
         {
@@ -139,10 +139,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Содержится ли значение в словаре
+        /// Determines whether the Dictionary contains a specific value
         /// </summary>
-        /// <param name="value">Значение</param>
-        /// <returns>Содержится ли</returns>
+        /// <param name="value">The value to locate in the Dictionary</param>
+        /// <returns>True if the Dictionary contains the value</returns>
         [Pure]
         public bool ContainsValue(TValue value)
         {
@@ -150,7 +150,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получение Enumerator'а
+        /// Returns Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         public Dictionary<TKey, TValue>.Enumerator GetEnumerator()
@@ -163,27 +163,27 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Добавить в словарь (не поддерживается)
+        /// Adds an element with the provided key and value to the Dictionary (not supported)
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="value">Значение</param>
+        /// <param name="key">Key</param>
+        /// <param name="value">Value</param>
         void IDictionary<TKey, TValue>.Add(TKey key, TValue value)
         {
             throw new NotSupportedException("Add is not supported for ReadOnlyDictionary");
         }
 
         /// <summary>
-        /// Содержится ли ключ в словаре
+        /// Determines whether the Dictionary contains the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Содержится ли</returns>
+        /// <param name="key">The key to locate in the Dictionary</param>
+        /// <returns>True if the Dictionary contains the key</returns>
         bool IDictionary<TKey, TValue>.ContainsKey(TKey key)
         {
             return _dictionary.ContainsKey(key);
         }
 
         /// <summary>
-        /// Коллекция ключей
+        /// Collection of the keys from Dictionary
         /// </summary>
         ICollection<TKey> IDictionary<TKey, TValue>.Keys
         {
@@ -191,28 +191,28 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Удалить из словаря (не поддерживается)
+        /// Removes the element with the specified key from the Dictionary (not supported)
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Удалился ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if was removed</returns>
         bool IDictionary<TKey, TValue>.Remove(TKey key)
         {
             throw new NotSupportedException("Remove is not supported for ReadOnlyDictionary");
         }
 
         /// <summary>
-        /// Получить значение по ключу
+        /// Gets the item associated with the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="value">Извлечённое значение</param>
-        /// <returns>Было ли значение в словаре</returns>
+        /// <param name="key">The key of the value to get</param>
+        /// <param name="value">The value associated with key</param>
+        /// <returns>True if the Dictionary contains element with the specified key</returns>
         bool IDictionary<TKey, TValue>.TryGetValue(TKey key, out TValue value)
         {
             return _dictionary.TryGetValue(key, out value);
         }
 
         /// <summary>
-        /// Коллекция значений
+        /// Collection of the values from Dictionary
         /// </summary>
         ICollection<TValue> IDictionary<TKey, TValue>.Values
         {
@@ -220,10 +220,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Доступ к элементам словаря по ключу
+        /// Gets the item from Dictionary for specified key. Set is not supported
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Значение</returns>
+        /// <param name="key">The key of the value to get</param>
+        /// <returns>Item</returns>
         TValue IDictionary<TKey, TValue>.this[TKey key]
         {
             get
@@ -237,16 +237,16 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Добавить элемент в коллекцию (не поддерживается)
+        /// Adds an item to the Dictionary (not supported)
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">New item</param>
         void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item)
         {
             throw new NotSupportedException("Add is not supported for ReadOnlyDictionary");
         }
 
         /// <summary>
-        /// Оичтить словарь (не поддерживается)
+        /// Removes all items from the Dictionary (not supported)
         /// </summary>
         void ICollection<KeyValuePair<TKey, TValue>>.Clear()
         {
@@ -254,27 +254,27 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Содержится ли элемент в словаре
+        /// Determines whether the Dictionary contains a specific key-value pair.
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Содержится ли</returns>
+        /// <param name="item">The object to locate in the collection</param>
+        /// <returns>True if item is found</returns>
         bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item)
         {
             return (_dictionary as ICollection<KeyValuePair<TKey, TValue>>).Contains(item);
         }
 
         /// <summary>
-        /// Скопировать данные словаря в массив
+        /// Copies the elements of the Collection to an Array, starting at a particular index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="arrayIndex">Индекс, с которого начинается вставка</param>
+        /// <param name="array">The array that is the destination of the elements</param>
+        /// <param name="arrayIndex">Index in array at which copying begins</param>
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
             (_dictionary as ICollection<KeyValuePair<TKey, TValue>>).CopyTo(array, arrayIndex);
         }
 
         /// <summary>
-        /// Количество элементов в словаре
+        /// Gets the number of elements contained in the Dictionary
         /// </summary>
         int ICollection<KeyValuePair<TKey, TValue>>.Count
         {
@@ -282,7 +282,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Только для чтения
+        /// Gets a value indicating whether the Collection is read-only
         /// </summary>
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
         {
@@ -290,17 +290,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Удалить элемент (не поддерживается)
+        /// Removes the first occurrence of a specific item from the Collection (not supported)
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Удалился ли</returns>
+        /// <param name="item">Item</param>
+        /// <returns>True if item was removed</returns>
         bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
         {
             throw new NotSupportedException("Remove is not supported for ReadOnlyDictionary");
         }
 
         /// <summary>
-        /// Получение Enumerator'а
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
@@ -308,7 +308,7 @@ namespace Qoollo.Turbo.Collections
             return _dictionary.GetEnumerator();
         }
         /// <summary>
-        /// Получение Enumerator'а
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
@@ -317,17 +317,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Добавить в словарь (не поддерживается)
+        /// Adds an element with the provided key and value to the Dictionary (not supported)
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="value">Значение</param>
+        /// <param name="key">Key</param>
+        /// <param name="value">Value</param>
         void IDictionary.Add(object key, object value)
         {
             (_dictionary as IDictionary).Add(key, value);
         }
 
         /// <summary>
-        /// Очистить словарь (не поддерживается)
+        /// Removes all items from the Dictionary (not supported)
         /// </summary>
         void IDictionary.Clear()
         {
@@ -335,17 +335,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Содержит ли словарь ключ
+        /// Determines whether the Dictionary contains the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Содержит ли</returns>
+        /// <param name="key">The key to locate in the Dictionary</param>
+        /// <returns>True if the Dictionary contains the key</returns>
         bool IDictionary.Contains(object key)
         {
             return (_dictionary as IDictionary).Contains(key);
         }
 
         /// <summary>
-        /// Получение Enumerator'а
+        /// Returns an Enumerator
         /// </summary>
         /// <returns>Enumerator</returns>
         IDictionaryEnumerator IDictionary.GetEnumerator()
@@ -354,7 +354,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Фиксирован ли размер
+        /// Is fixed size
         /// </summary>
         bool IDictionary.IsFixedSize
         {
@@ -362,7 +362,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Только для чтения
+        /// Is read only
         /// </summary>
         bool IDictionary.IsReadOnly
         {
@@ -370,7 +370,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Коллекция ключей
+        /// Key collection
         /// </summary>
         ICollection IDictionary.Keys
         {
@@ -378,16 +378,16 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Удалить элемент из словаря по ключу (не поддерживается)
+        /// Removes the element with the specified key from the Dictionary (not supported)
         /// </summary>
-        /// <param name="key">Ключ</param>
+        /// <param name="key">Key</param>
         void IDictionary.Remove(object key)
         {
             throw new NotSupportedException("Remove is not supported for ReadOnlyDictionary");
         }
 
         /// <summary>
-        /// Коллекция значений
+        /// Value collection
         /// </summary>
         ICollection IDictionary.Values
         {
@@ -395,10 +395,10 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Доступ к элементам словаря по ключу
+        /// Gets the item from Dictionary for specified key. Set is not supported
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Значение</returns>
+        /// <param name="key">The key of the value to get</param>
+        /// <returns>Item</returns>
         object IDictionary.this[object key]
         {
             get
@@ -412,17 +412,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Скопировать содержимое в массив
+        /// Copies the key-value pairs of the Dictionary to an Array, starting at a particular index
         /// </summary>
-        /// <param name="array">Массив</param>
-        /// <param name="index">Стартовый индекс</param>
+        /// <param name="array">The array that is the destination of the elements</param>
+        /// <param name="index">Index in array at which copying begins</param>
         void ICollection.CopyTo(Array array, int index)
         {
             (_dictionary as ICollection).CopyTo(array, index);
         }
 
         /// <summary>
-        /// Количество элементов в словаре
+        /// Gets the number of records contained in the Dictionary
         /// </summary>
         int ICollection.Count
         {
@@ -431,7 +431,7 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Синхронизирован ли доступ
+        /// Is synchronized
         /// </summary>
         bool ICollection.IsSynchronized
         {
@@ -439,7 +439,7 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Объект синхронизации
+        /// Sync root for synchronization
         /// </summary>
         object ICollection.SyncRoot
         {
@@ -447,17 +447,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Содержит ли словарь ключ
+        /// Determines whether the Dictionary contains the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Содержит ли</returns>
+        /// <param name="key">The key to locate in the Dictionary</param>
+        /// <returns>True if the Dictionary contains the key</returns>
         bool IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key)
         {
             return _dictionary.ContainsKey(key);
         }
 
         /// <summary>
-        /// Перечень ключей
+        /// Keys collection
         /// </summary>
         IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys
         {
@@ -465,18 +465,18 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Получить значение по ключу
+        /// Gets the item associated with the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="value">Извлечённое значение</param>
-        /// <returns>Было ли значение в словаре</returns>
+        /// <param name="key">The key of the value to get</param>
+        /// <param name="value">The value associated with key</param>
+        /// <returns>True if the Dictionary contains element with the specified key</returns>
         bool IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, out TValue value)
         {
             return _dictionary.TryGetValue(key, out value);
         }
 
         /// <summary>
-        /// Перечень элементов словаря
+        /// Values collection
         /// </summary>
         IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values
         {
@@ -484,17 +484,17 @@ namespace Qoollo.Turbo.Collections
         }
 
         /// <summary>
-        /// Доступ к элементам словаря по ключу
+        /// Gets the item from Dictionary for specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Значение</returns>
+        /// <param name="key">The key of the value to get</param>
+        /// <returns>Item</returns>
         TValue IReadOnlyDictionary<TKey, TValue>.this[TKey key]
         {
             get { return _dictionary[key]; }
         }
 
         /// <summary>
-        /// Количество элементов в словаре
+        /// Gets the number of records contained in the Dictionary
         /// </summary>
         int IReadOnlyCollection<KeyValuePair<TKey, TValue>>.Count
         {

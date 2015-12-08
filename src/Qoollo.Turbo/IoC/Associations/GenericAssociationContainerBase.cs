@@ -11,9 +11,9 @@ using Qoollo.Turbo.IoC.Lifetime;
 namespace Qoollo.Turbo.IoC.Associations
 {
     /// <summary>
-    /// Базовый контейнер ассоциаций для IoC с произвольным типом ключа
+    /// Base class for standard association containers. Stores association between 'key' and 'object-container'
     /// </summary>
-    /// <typeparam name="TKey">Тип ключа</typeparam>
+    /// <typeparam name="TKey">The type of the key in association container</typeparam>
     [ContractClass(typeof(GenericAssociationContainerBaseCodeContractCheck<>))]
     public abstract class GenericAssociationContainerBase<TKey>: IAssociationSource<TKey>, IFreezable, IDisposable
     {
@@ -21,95 +21,94 @@ namespace Qoollo.Turbo.IoC.Associations
         private volatile bool _isDisposed = false;
 
         /// <summary>
-        /// Подходит ли переданный тип для заданного ключа
+        /// Checks whether the object type is appropriate for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта</param>
-        /// <returns>Подходит ли</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">Object type</param>
+        /// <returns>True if the object with 'objType' can be used by container with specified 'key'</returns>
         [Pure]
         protected abstract bool IsGoodTypeForKey(TKey key, Type objType);
 
         /// <summary>
-        /// Сформировать Lifetime контейнер по типу и фабрике 
+        /// Creates a lifetime container by object type and lifetime factory
         /// </summary>
-        /// <param name="key">Ключ, по которому будет сохранён контейнер</param>
-        /// <param name="objType">Тип объекта, который будет обрабатывать Lifetime контейнер</param>
-        /// <param name="val">Фабрика для создания Lifetime контейнера</param>
-        /// <returns>Lifetime контейнер</returns>
+        /// <param name="key">The key that will be used to store lifetime container inside the current AssociationContainer</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>Created lifetime container</returns>
         protected abstract LifetimeBase ProduceResolveInfo(TKey key, Type objType, Lifetime.Factories.LifetimeFactory val);
 
 
         /// <summary>
-        /// Внутренний метод добавления ассоциации
+        /// Adds a new association to the container. Should be implemented in derived type.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта</param>
+        /// <param name="key">Key</param>
+        /// <param name="val">Lifetime object container to add</param>
         protected abstract void AddAssociationInner(TKey key, LifetimeBase val);
         /// <summary>
-        /// Внутренний метод попытки добавить ассоциацию в контейнер
+        /// Attempts to add a new association to the container. Should be implemented in derived type.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Lifetime object container to add</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected abstract bool TryAddAssociationInner(TKey key, LifetimeBase val);
         /// <summary>
-        /// Внутренний метод добавления ассоциации в контейнер с использованием фабрики формирования Lifetime контейнера
+        /// Adds a new association to the container. Should be implemented in derived type.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, разрешаемый по ключу</param>
-        /// <param name="val">Фабрика созадания Lifetime контейнера</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
         protected abstract void AddAssociationInner(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val);
         /// <summary>
-        /// Внутренний метод попытки добавления ассоциации в контейнер с использованием фабрики формирования Lifetime контейнера
+        /// Attempts to add a new association to the container. Should be implemented in derived type.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, разрешаемый по ключу</param>
-        /// <param name="val">Фабрика созадания Lifetime контейнера</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected abstract bool TryAddAssociationInner(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val);
         /// <summary>
-        /// Внетренний метод попытки получить ассоциацию
+        /// Attempts to get an association from the container by the specified key. Should be implemented in derived type.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Lifetime container for the specified key (in case of success)</param>
+        /// <returns>True if the AssociationContainer contains the lifetime container for the specified key</returns>
         protected abstract bool TryGetAssociationInner(TKey key, out LifetimeBase val);
         /// <summary>
-        /// Внутренний метод удаления ассоциации из контейнера
+        /// Removes the association from the container for the specified key. Should be implemented in derived type.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Удалили ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the association was presented in container</returns>
         protected abstract bool RemoveAssociationInner(TKey key);
         /// <summary>
-        /// Внутренний метод проверки наличия ассоциации в контейнере
+        /// Checks whether the AssociationContainer contains the lifetime container for the specified key. Should be implemented in derived type.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Есть ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the association is presented in container</returns>
         [Pure]
         protected abstract bool ContainsInner(TKey key);
 
 
         /// <summary>
-        /// Проверяет состояние контейнера при выполнении какого-либо действия.
-        /// Если состояние не соостветствует действию, то выбрасывается исключение
+        /// Checks the state of the container and throws exception if the action cannot be performed
         /// </summary>
-        /// <param name="onEdit">Действие делает изменения в контейнере</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <param name="onEdit">The action will change the container state</param>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="ObjectFrozenException"></exception>
         protected void CheckContainerState(bool onEdit)
         {
             if (_isDisposed)
-                throw new ObjectDisposedException("GenericAssociationContainerBase");
+                throw new ObjectDisposedException(this.GetType().Name);
 
             if (onEdit && _isFrozen)
-                throw new ObjectFrozenException("GenericAssociationContainerBase is frozen");
+                throw new ObjectFrozenException(this.GetType().Name + " is frozen");
         }
 
         /// <summary>
-        /// Проверяет состояние контейнера при выполнении какого-либо действия.
-        /// Сообщает, возможно ли выполнить данное действие.
+        /// Checks the state of the container and returns the true if the action can be performed
         /// </summary>
-        /// <param name="onEdit">Действие делает изменения в контейнере</param>
-        /// <returns>Можно ли выполнить действие</returns>
+        /// <param name="onEdit">The action will change the container state</param>
+        /// <returns>True if the action can be performed</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool CheckContainerStateBool(bool onEdit)
         {
@@ -117,12 +116,11 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Преобразовывает режим инстанцирования на основе данных переопределения
+        /// Transform ObjectInstantiationMode by the specified OverrideObjectInstantiationMode
         /// </summary>
-        /// <param name="src">Исходный режим инстанцирования</param>
-        /// <param name="overrideMod">В какой режим переопределить</param>
-        /// <returns>Переопределённый режим инстанцирования</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <param name="src">Original ObjectInstantiationMode value</param>
+        /// <param name="overrideMod">Override mode</param>
+        /// <returns>Transformed instantiation mode</returns>
         protected static ObjectInstantiationMode TransformInstMode(ObjectInstantiationMode src, OverrideObjectInstantiationMode overrideMod)
         {
             switch (overrideMod)
@@ -140,116 +138,146 @@ namespace Qoollo.Turbo.IoC.Associations
                 case OverrideObjectInstantiationMode.None:
                     return src;
             }
-            Contract.Assert(false, "unknown OverrideObjectInstantiationMode");
-            throw new AssociationIoCException("unknown OverrideObjectInstantiationMode");
+            Contract.Assert(false, "Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
+            throw new AssociationIoCException("Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
         }
 
         /// <summary>
-        /// Добавить ассоциацию в контейнер (с перезаписью существующего)
+        /// Adds a new association to the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта</param>
+        /// <param name="key">Key</param>
+        /// <param name="val">Lifetime object container to add</param>
         protected void AddAssociation(TKey key, LifetimeBase val)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
             Contract.Requires(val != null);
             Contract.Ensures(this.ContainsInner(key));
 
-            CheckContainerState(true);
+            if (key == null)
+                throw new ArgumentNullException("key");
+            if (val == null)
+                throw new ArgumentNullException("val");
 
             if (!IsGoodTypeForKey(key, val.OutputType))
-                throw new AssociationBadKeyForTypeException(string.Format("GenericAssociationContainerBase: Bad key ({0}) for type ({1})", key, val.OutputType));
+                throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for type ({1})", key, val.OutputType));
+
+            CheckContainerState(true);
 
             AddAssociationInner(key, val);
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию в контейнер
+        /// Attempts to add a new association to the container
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Lifetime object container to add</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected bool TryAddAssociation(TKey key, LifetimeBase val)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
             Contract.Requires(val != null);
             Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
 
-            if (!CheckContainerStateBool(true))
-                return false;
+            if (key == null)
+                throw new ArgumentNullException("key");
+            if (val == null)
+                throw new ArgumentNullException("val");
 
             if (!IsGoodTypeForKey(key, val.OutputType))
-                return false;
+                throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, val.OutputType));
+
+            CheckContainerState(true);
 
             return TryAddAssociationInner(key, val);
         }
 
         /// <summary>
-        /// Добавить ассоциацию в контейнер с использованием фабрики формирования Lifetime контейнера
+        /// Adds a new association to the container. Lifetime factory used to create a specific lifetime container.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, разрешаемый по ключу</param>
-        /// <param name="val">Фабрика созадания Lifetime контейнера</param>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
         protected void AddAssociation(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
             Contract.Requires(objType != null);
             Contract.Requires(val != null);
             Contract.Ensures(this.ContainsInner(key));
 
-            CheckContainerState(true);
+            if (key == null)
+                throw new ArgumentNullException("key");
+            if (objType == null)
+                throw new ArgumentNullException("objType");
+            if (val == null)
+                throw new ArgumentNullException("val");
 
             if (!IsGoodTypeForKey(key, objType))
-                throw new AssociationBadKeyForTypeException(string.Format("GenericAssociationContainerBase: Bad key ({0}) for type ({1})", key, objType));
+                throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, objType));
+
+            CheckContainerState(true);
 
             AddAssociationInner(key, objType, val);
         }
 
         /// <summary>
-        /// Попытаться добавить ассоциацию в контейнер с использованием фабрики формирования Lifetime контейнера
+        /// Attempts to add a new association to the container. Lifetime factory used to create a specific lifetime container.
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="objType">Тип объекта, разрешаемый по ключу</param>
-        /// <param name="val">Фабрика созадания Lifetime контейнера</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="key">Key</param>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
+        /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected bool TryAddAssociation(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
             Contract.Requires(objType != null);
             Contract.Requires(val != null);
             Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
 
-            if (!CheckContainerStateBool(true))
-                return false;
+            if (key == null)
+                throw new ArgumentNullException("key");
+            if (objType == null)
+                throw new ArgumentNullException("objType");
+            if (val == null)
+                throw new ArgumentNullException("val");
 
             if (!IsGoodTypeForKey(key, objType))
-                return false;
+                throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, objType));
+
+            CheckContainerState(true);
 
             return TryAddAssociationInner(key, objType, val);
         }
 
         /// <summary>
-        /// Удалить ассоциацию из контейнера
+        /// Removes the association from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Удалилась ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the association was presented in container</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public bool RemoveAssociation(TKey key)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
             Contract.Ensures(!this.ContainsInner(key));
+
+            if (key == null)
+                throw new ArgumentNullException("key");
 
             CheckContainerState(true);
 
             return RemoveAssociationInner(key);
         }
         /// <summary>
-        /// Содержит ли контейнер ассоциацию
+        /// Determines whether the AssociationContainer contains the lifetime container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Содержит ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the association is presented in container</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public bool Contains(TKey key)
         {
-            Contract.Requires((object)key != null);
+            Contract.Requires(key != null);
+
+            if (key == null)
+                throw new ArgumentNullException("key");
 
             if (_isDisposed)
                 return false;
@@ -259,76 +287,57 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Выполняет поиск подходящих типов для добавления в контейнер
+        /// Scans a range of types with attributes and execute 'procAction' for every that passed the filter
         /// </summary>
-        /// <typeparam name="TAttr">Тип аттрибута, который ищется на типе</typeparam>
-        /// <param name="typeSource">Перечень типов, которые будут проверяться</param>
-        /// <param name="attrCmpPredicate">Предикат для отсеивания типов с не подходящими атрибутами</param>
-        /// <param name="procAction">Действие, которое выполняется для каждого найденного типа</param>
-        /// <param name="multiAttr">Разрешить обработку множества атрибутов на типе (false - после обработки 1-ого сразу уходим на следующий тип)</param>
-        protected void AddTypeRangeWithStrictAttr<TAttr>(IEnumerable<Type> typeSource, Func<TAttr, bool> attrCmpPredicate, 
-            Action<Type, TAttr> procAction, bool multiAttr = true) 
-            where TAttr: LocatorTargetObjectAttribute
+        /// <typeparam name="TAttr">The type of the attribute that is used to mark a type (should be derived from LocatorTargetObjectAttribute)</typeparam>
+        /// <param name="typeSource">The sequence of all types to scan</param>
+        /// <param name="attrCmpPredicate">Predicate that allows to filter out non relevant types (can be null)</param>
+        /// <param name="procAction">Action executed for every type</param>
+        /// <param name="multiAttr">Allows processing of multiple attributes on the same type</param>
+        protected void ScanTypeRangeWithStrictAttr<TAttr>(IEnumerable<Type> typeSource, Func<TAttr, bool> attrCmpPredicate,
+            Action<Type, TAttr> procAction, bool multiAttr = true)
+            where TAttr : LocatorTargetObjectAttribute
         {
             Contract.Requires<ArgumentNullException>(typeSource != null);
             Contract.Requires<ArgumentNullException>(procAction != null);
 
             CheckContainerState(true);
 
-            try
+            object[] attr = null;
+            foreach (var curTp in typeSource)
             {
-                object[] attr = null;
-                foreach (var curTp in typeSource)
+                Contract.Assume(curTp != null);
+
+                attr = curTp.GetCustomAttributes(false);
+                if (attr == null || attr.Length == 0)
+                    continue;
+
+                foreach (var curAttr in attr.OfType<TAttr>())
                 {
-                    Contract.Assume(curTp != null);
+                    Contract.Assume(curAttr != null);
 
-                    attr = curTp.GetCustomAttributes(false);
-                    if (attr == null || attr.Length == 0)
-                        continue;
-
-                    foreach (var curAttr in attr.Where(o => o is TAttr).Cast<TAttr>())
+                    if (attrCmpPredicate == null || attrCmpPredicate(curAttr))
                     {
-                        Contract.Assume(curAttr != null);
+                        procAction(curTp, curAttr);
 
-                        if (attrCmpPredicate == null || attrCmpPredicate(curAttr))
-                        {
-                            procAction(curTp, curAttr);
-
-                            if (!multiAttr)
-                                break;
-                        }
+                        if (!multiAttr)
+                            break;
                     }
                 }
-            }
-            catch (ObjectDisposedException)
-            {
-                throw;
-            }
-            catch (ObjectFrozenException)
-            {
-                throw;
-            }
-            catch (CommonIoCException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new AssociationIoCException("Some exception during AddTypeRangeWithStrictAttr", ex);
             }
         }
 
 
         /// <summary>
-        /// Добавить в контейнер типы на основе сканирования перечня типов
+        /// Adds a range of types with attributes to the container
         /// </summary>
-        /// <typeparam name="TAttr">Тип проверяемого атрибута, который должен быть определён на типе</typeparam>
-        /// <param name="typeSource">Перечень проверяемых типов</param>
-        /// <param name="attrCmpPredicate">Предикат для отсеивания типов с не подходящими атрибутами</param>
-        /// <param name="keyGenerator">Функция извлечения ключа для добавления в контейнер</param>
-        /// <param name="modeOver">Переопределение режима инстанцирования</param>
-        /// <param name="multiAttr">Разрешить обработку множества атрибутов на типе</param>
-        /// <param name="combineIfPossible">Использовать единый Lifetime контейнер для объектов одного типа, если возможно</param>
+        /// <typeparam name="TAttr">The type of the attribute that is used to mark a type (should be derived from LocatorTargetObjectAttribute)</typeparam>
+        /// <param name="typeSource">The sequence of all types to scan and add to the container</param>
+        /// <param name="attrCmpPredicate">Predicate that allows to filter out non relevant types (can be null)</param>
+        /// <param name="keyGenerator">Function to create a key by the type and attribute</param>
+        /// <param name="modeOver">Overrides the instantiation mode from attribute</param>
+        /// <param name="multiAttr">Allows processing of multiple attributes on the same type</param>
+        /// <param name="combineIfPossible">Allows to combine instances of the same type with different keys</param>
         protected void AddTypeRangeWithStrictAttrPlain<TAttr>(IEnumerable<Type> typeSource, Func<TAttr, bool> attrCmpPredicate, Func<Type, TAttr, TKey> keyGenerator, 
             OverrideObjectInstantiationMode modeOver = OverrideObjectInstantiationMode.None, bool multiAttr = true, bool combineIfPossible = true)
             where TAttr : LocatorTargetObjectAttribute
@@ -342,7 +351,7 @@ namespace Qoollo.Turbo.IoC.Associations
             LifetimeBase deferedSingletonLf = null;
             LifetimeBase perThreadLf = null;
 
-            AddTypeRangeWithStrictAttr<TAttr>(typeSource, attrCmpPredicate, (tp, attr) =>
+            ScanTypeRangeWithStrictAttr<TAttr>(typeSource, attrCmpPredicate, (tp, attr) =>
                 {
                     if (tp != curAnalizeType)
                     {
@@ -390,32 +399,35 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Получить ассоциацию в виде контейнера управления жизнью объекта
+        /// Gets the lifetime object container by its key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Контейнер управления жизнью объекта</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Lifetime container for the specified key</returns>
         LifetimeBase IAssociationSource<TKey>.GetAssociation(TKey key)
         {
-            Contract.Ensures(Contract.Result<LifetimeBase>() != null);
-
+            if (key == null)
+                throw new ArgumentNullException("key");
             if (_isDisposed)
-                throw new ObjectDisposedException("GenericAssociationContainerBase");
-
+                throw new ObjectDisposedException(this.GetType().Name);
+            
             LifetimeBase res = null;
             if (!TryGetAssociationInner(key, out res))
-                throw new KeyNotFoundException(string.Format("Key {0} not found in GenericAssociationContainerBase", key));
+                throw new KeyNotFoundException(string.Format("Key {0} not found in Association Container", key));
 
             return res;
         }
 
         /// <summary>
-        /// Попытаться получить ассоциацию в виде контейнера управления жизнью объекта
+        /// Attempts to get the lifetime object container by its key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Контейнер управления жизнью объекта, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Associated lifetime container (null when key not exists)</param>
+        /// <returns>True if the lifetime container for the speicifed key exists in AssociatnioContainer</returns>
         bool IAssociationSource<TKey>.TryGetAssociation(TKey key, out LifetimeBase val)
         {
+            if (key == null)
+                throw new ArgumentNullException("key");
+
             if (_isDisposed)
             {
                 val = null;
@@ -426,12 +438,14 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Содержит ли контейнер ассоциацию
+        /// Determines whether the AssociationContainer contains the key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Содержит ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the AssociationSource contains the key</returns>
         bool IAssociationSource<TKey>.Contains(TKey key)
         {
+            if (key == null)
+                throw new ArgumentNullException("key");
             if (_isDisposed)
                 return false;
 
@@ -440,7 +454,7 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
         /// <summary>
-        /// Заморозить контейнер инъекций
+        /// Freezes the current Association Container
         /// </summary>
         public void Freeze()
         {
@@ -448,7 +462,7 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Заморожен ли контейнер инъекций
+        /// Gets the value indicating whether the current container is frozen
         /// </summary>
         public bool IsFrozen
         {
@@ -456,7 +470,7 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Освобождены ли ресурсы контейнера инъекций
+        /// Gets the value indicating whether the current container is disposed
         /// </summary>
         protected bool IsDisposed
         {
@@ -464,15 +478,15 @@ namespace Qoollo.Turbo.IoC.Associations
         }
 
         /// <summary>
-        /// Внутреннее освобождение ресурсов
+        /// Cleans-up all resources
         /// </summary>
-        /// <param name="isUserCall">True - вызвано пользователем, False - вызвано деструктором</param>
+        /// <param name="isUserCall">True when called explicitly by user from Dispose method</param>
         protected virtual void Dispose(bool isUserCall)
         {
         }
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Cleans-up all resources
         /// </summary>
         public void Dispose()
         {
@@ -490,12 +504,12 @@ namespace Qoollo.Turbo.IoC.Associations
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(GenericAssociationContainerBase<>))]
     abstract class GenericAssociationContainerBaseCodeContractCheck<T> : GenericAssociationContainerBase<T>
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private GenericAssociationContainerBaseCodeContractCheck() { }
 
 

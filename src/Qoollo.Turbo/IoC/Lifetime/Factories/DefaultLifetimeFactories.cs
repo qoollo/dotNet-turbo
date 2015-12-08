@@ -10,112 +10,112 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Lifetime.Factories
 {
     /// <summary>
-    /// Базовый класс для фабрики создания объектов управления временем жизни
+    /// Base class for LifetimeFactory that creates a Lifetime container for object
     /// </summary>
     [ContractClass(typeof(LifetimeFactoryCodeContractCheck))]
     public abstract class LifetimeFactory
     {
         /// <summary>
-        /// Создание объекта управления временем жизни
+        /// Creates a lifetime container that resolves an instance of the specified object type
         /// </summary>
-        /// <param name="objType">Тип хранимого объекта</param>
-        /// <param name="injection">Резолвер инъекций</param>
-        /// <param name="extInfo">Расширенная информация (если есть)</param>
-        /// <returns>Объект управления жизнью объекта</returns>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="injection">Injection resolver that will be used to create an instance if required</param>
+        /// <param name="extInfo">Extended information supplied by the user (can be null)</param>
+        /// <returns>Created lifetime container for the specified object type</returns>
         public abstract LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo);
     }
 
     /// <summary>
-    /// Фабрика для синглтона (SingletonLifetime)
+    /// LifetimeFactory that creates a SingletonLifetime container
     /// </summary>
     public sealed class SingletonLifetimeFactory: LifetimeFactory
     {
         /// <summary>
-        /// Создание объекта управления временем жизни
+        /// Creates a SingletonLifetime container that resolves an instance of the specified object type
         /// </summary>
-        /// <param name="objType">Тип хранимого объекта</param>
-        /// <param name="injection">Резолвер инъекций</param>
-        /// <param name="extInfo">Расширенная информация (если есть)</param>
-        /// <returns>Объект управления жизнью объекта</returns>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="injection">Injection resolver that will be used to create an instance if required</param>
+        /// <param name="extInfo">Extended information supplied by the user (can be null)</param>
+        /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var obj = OnjectInstantiationHelper.CreateObject(objType, injection, extInfo);
+            var obj = ObjectInstantiationHelper.CreateObject(objType, injection, extInfo);
             return new SingletonLifetime(obj);
         }
     }
 
     /// <summary>
-    /// Фабрика для синглтона с отложенной инициализацией (DeferedSingletonLifetime)
+    /// LifetimeFactory that creates a DeferedSingletonLifetime container
     /// </summary>
     public sealed class DeferedSingletonLifetimeFactory : LifetimeFactory
     {
         /// <summary>
-        /// Создание объекта управления временем жизни
+        /// Creates a DeferedSingletonLifetime container that resolves an instance of the specified object type
         /// </summary>
-        /// <param name="objType">Тип хранимого объекта</param>
-        /// <param name="injection">Резолвер инъекций</param>
-        /// <param name="extInfo">Расширенная информация (если есть)</param>
-        /// <returns>Объект управления жизнью объекта</returns>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="injection">Injection resolver that will be used to create an instance if required</param>
+        /// <param name="extInfo">Extended information supplied by the user (can be null)</param>
+        /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var creationFunc = OnjectInstantiationHelper.GetReflectionBasedCreationFunction(objType, extInfo);
+            var creationFunc = ObjectInstantiationHelper.GetReflectionBasedCreationFunction(objType, extInfo);
             return new DeferedSingletonLifetime(creationFunc, objType);
         }
     }
 
     /// <summary>
-    /// Фабрика для PerThreadLifetime
+    /// LifetimeFactory that creates a PerThreadLifetime container
     /// </summary>
     public sealed class PerThreadLifetimeFactory : LifetimeFactory
     {
         /// <summary>
-        /// Создание объекта управления временем жизни
+        /// Creates a PerThreadLifetime container that resolves an instance of the specified object type
         /// </summary>
-        /// <param name="objType">Тип хранимого объекта</param>
-        /// <param name="injection">Резолвер инъекций</param>
-        /// <param name="extInfo">Расширенная информация (если есть)</param>
-        /// <returns>Объект управления жизнью объекта</returns>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="injection">Injection resolver that will be used to create an instance if required</param>
+        /// <param name="extInfo">Extended information supplied by the user (can be null)</param>
+        /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var creationFunc = OnjectInstantiationHelper.GetCompiledCreationFunction(objType, extInfo);
+            var creationFunc = ObjectInstantiationHelper.GetCompiledCreationFunction(objType, extInfo);
             return new PerThreadLifetime(creationFunc, objType);
         }
     }
 
     /// <summary>
-    /// Фабрика для PerCallInterfaceLifetime
+    /// LifetimeFactory that creates a PerCallInterfaceLifetime container
     /// </summary>
     public sealed class PerCallLifetimeFactory : LifetimeFactory
     {
         /// <summary>
-        /// Создание объекта управления временем жизни
+        /// Creates a PerCallInterfaceLifetime container that resolves an instance of the specified object type
         /// </summary>
-        /// <param name="objType">Тип хранимого объекта</param>
-        /// <param name="injection">Резолвер инъекций</param>
-        /// <param name="extInfo">Расширенная информация (если есть)</param>
-        /// <returns>Объект управления жизнью объекта</returns>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="injection">Injection resolver that will be used to create an instance if required</param>
+        /// <param name="extInfo">Extended information supplied by the user (can be null)</param>
+        /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var creationObj = OnjectInstantiationHelper.BuildInstanceCreatorInDynAssembly(objType, extInfo);
+            var creationObj = ObjectInstantiationHelper.BuildInstanceCreatorInDynAssembly(objType, extInfo);
             return new PerCallInterfaceLifetime(objType, creationObj);
         }
     }
 
     /// <summary>
-    /// Фабрика для PerCallInlinedParamsInterfaceLifetime
+    /// LifetimeFactory that creates a PerCallInlinedParamsInterfaceLifetime container
     /// </summary>
     public sealed class PerCallInlinedParamsLifetimeFactory : LifetimeFactory
     {
         /// <summary>
-        /// Создание объекта управления временем жизни
+        /// Creates a PerCallInlinedParamsInterfaceLifetime container that resolves an instance of the specified object type
         /// </summary>
-        /// <param name="objType">Тип хранимого объекта</param>
-        /// <param name="injection">Резолвер инъекций</param>
-        /// <param name="extInfo">Расширенная информация (если есть)</param>
-        /// <returns>Объект управления жизнью объекта</returns>
+        /// <param name="objType">The type of the object that will be held by the lifetime container</param>
+        /// <param name="injection">Injection resolver that will be used to create an instance if required</param>
+        /// <param name="extInfo">Extended information supplied by the user (can be null)</param>
+        /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            var creationObj = OnjectInstantiationHelper.BuildInstanceCreatorNoParamInDynAssembly(objType, injection, extInfo);
+            var creationObj = ObjectInstantiationHelper.BuildInstanceCreatorNoParamInDynAssembly(objType, injection, extInfo);
             return new PerCallInlinedParamsInterfaceLifetime(objType, creationObj);
         }
     }
@@ -129,16 +129,15 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(LifetimeFactory))]
     abstract class LifetimeFactoryCodeContractCheck : LifetimeFactory
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private LifetimeFactoryCodeContractCheck() { }
 
 
-        /// <summary>Контракты</summary>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
             Contract.Requires<ArgumentNullException>(objType != null, "objType != null");

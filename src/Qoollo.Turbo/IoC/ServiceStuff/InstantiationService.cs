@@ -9,48 +9,47 @@ using Qoollo.Turbo.IoC.Helpers;
 namespace Qoollo.Turbo.IoC.ServiceStuff
 {
     /// <summary>
-    /// Вспомогательные методы для поддержки создания объектов
+    /// Provides a range of methods to create an object of the specified type
     /// </summary>
     public static class InstantiationService
     {
         /// <summary>
-        /// Создать объект типа objType.
-        /// Должен существовать конструктор без параметров
+        /// Creates an instance of an object of 'objType' type using the parameterless constructor 
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <returns>Созданный объект</returns>
+        /// <param name="objType">The type of the object to be created</param>
+        /// <returns>Created object</returns>
         public static object CreateObject(Type objType)
         {
             Contract.Requires(objType != null);
 
-            return OnjectInstantiationHelper.CreateObject(objType);
+            return ObjectInstantiationHelper.CreateObject(objType);
         }
 
         /// <summary>
-        /// Создать объект типа T
+        /// Creates an instance of an object of type 'T' using the default constructor
         /// </summary>
-        /// <typeparam name="T">Тип объекта</typeparam>
-        /// <param name="resolver">Источник инъекций</param>
-        /// <returns>Созданный объект</returns>
+        /// <typeparam name="T">The type of the object to be created</typeparam>
+        /// <param name="resolver">Injection source</param>
+        /// <returns>Created object</returns>
         public static T CreateObject<T>(IInjectionResolver resolver)
         {
             Contract.Requires(resolver != null);
 
-            return (T)OnjectInstantiationHelper.CreateObject(typeof(T), resolver, null);
+            return (T)ObjectInstantiationHelper.CreateObject(typeof(T), resolver, null);
         }
 
         /// <summary>
-        /// Создать объект типа objType
+        /// Creates an instance of an object of type 'objType' using the default constructor
         /// </summary>
-        /// <param name="objType">Тип объекта</param>
-        /// <param name="resolver">Источник инъекций</param>
-        /// <returns>Созданный объект</returns>
+        /// <param name="objType">The type of the object to be created</param>
+        /// <param name="resolver">Injection source</param>
+        /// <returns>Created object</returns>
         public static object CreateObject(Type objType, IInjectionResolver resolver)
         {
             Contract.Requires(objType != null);
             Contract.Requires(resolver != null);
 
-            return OnjectInstantiationHelper.CreateObject(objType, resolver, null);
+            return ObjectInstantiationHelper.CreateObject(objType, resolver, null);
         }
     }
 }

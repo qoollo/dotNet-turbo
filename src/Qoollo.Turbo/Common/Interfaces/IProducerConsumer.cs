@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo
 {
     /// <summary>
-    /// Поставщик/потребитель элементов
+    /// Consolidated interface for data producer and data consumer
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">Type of the produced/consumed elements</typeparam>
     public interface IProducerConsumer<T>: IProducer<T>, IConsumer<T>
     {
     }

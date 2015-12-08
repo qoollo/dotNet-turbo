@@ -8,24 +8,24 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections.ServiceStuff
 {
     /// <summary>
-    /// Представление коллекции для отображения в отладчике
+    /// DebugView for the collection (show collection content in debugger)
     /// </summary>
-    /// <typeparam name="T">Тип элементов коллекции</typeparam>
+    /// <typeparam name="T">The type of elements in collection</typeparam>
     internal sealed class CollectionDebugView<T>
     {
         private readonly IEnumerable<T> collection;
 
         /// <summary>
-        /// Конструктор CollectionDebugView
+        /// CollectionDebugView constructor
         /// </summary>
-        /// <param name="collection">Коллекция</param>
+        /// <param name="collection">Source collection</param>
         public CollectionDebugView(IEnumerable<T> collection)
         {
             this.collection = collection;
         }
         
         /// <summary>
-        /// Элементы коллекции
+        /// Items of the collection copied to array
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
 		public T[] Items

@@ -8,48 +8,47 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.IoC.ServiceStuff
 {
     /// <summary>
-    /// Интерфейс для разрешения зависимостей
+    /// Represents an injection resolver. 
+    /// Resolves the instance of the specified type to be injected to the constructor of another object.
     /// </summary>
     [ContractClass(typeof(IInjectionResolverCodeContractCheck))]
     public interface IInjectionResolver
     {
         /// <summary>
-        /// Разрешить зависимость на основе подробной информации
+        /// Resolves the object of the specified type ('reqObjectType') to be injected to the constructor of another type ('forType')
         /// </summary>
-        /// <param name="reqObjectType">Тип объекта, который требуется вернуть</param>
-        /// <param name="paramName">Имя параметра, для которого разрешается зависимость (если применимо)</param>
-        /// <param name="forType">Тип, для которого разрешается зависимость (если применимо)</param>
-        /// <param name="extData">Расширенные данные для разрешения зависимости (если есть)</param>
-        /// <returns>Найденный объект запрашиваемого типа</returns>
+        /// <param name="reqObjectType">The type of the object to be resolved</param>
+        /// <param name="paramName">The name of the parameter to that the injection will be performed (can be null)</param>
+        /// <param name="forType">The type of the object to be created (can be null)</param>
+        /// <param name="extData">Extended information supplied by the user (can be null)</param>
+        /// <returns>Resolved instance to be injected</returns>
         object Resolve(Type reqObjectType, string paramName, Type forType, object extData);
         /// <summary>
-        /// Упрощённое разрешение зависимости
+        /// Resolves the object of the type 'T' to be injected to the constructor of another type ('forType') (short form)
         /// </summary>
-        /// <typeparam name="T">Тип объекта, который требуется вернуть</typeparam>
-        /// <param name="forType">Тип, для которого разрешается зависимость</param>
-        /// <returns>Найденный объект запрашиваемого типа</returns>
+        /// <typeparam name="T">The type of the object to be resolved</typeparam>
+        /// <param name="forType">The type of the object to be created (can be null)</param>
+        /// <returns>Resolved instance to be injected</returns>
         T Resolve<T>(Type forType);
     }
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(IInjectionResolver))]
     abstract class IInjectionResolverCodeContractCheck : IInjectionResolver
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private IInjectionResolverCodeContractCheck() { }
 
 
-        /// <summary>Контракты</summary>
         public object Resolve(Type reqObjectType, string paramName, Type forType, object extData)
         {
             Contract.Requires(reqObjectType != null);
 
             throw new NotImplementedException();
         }
-        /// <summary>Контракты</summary>
         public T Resolve<T>(Type forType)
         {
             throw new NotImplementedException();

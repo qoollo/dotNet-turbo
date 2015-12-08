@@ -6,7 +6,7 @@ using System.Text;
 namespace Qoollo.Turbo.IoC
 {
     /// <summary>
-    /// Атрибут, помечающий конструктор, который будет использован для автоматического создания объекта
+    /// Indicates that the constructor should be used as default by IoC container
     /// </summary>
     [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
     public class DefaultConstructorAttribute : Attribute

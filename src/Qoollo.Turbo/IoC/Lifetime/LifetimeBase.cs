@@ -9,15 +9,15 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC.Lifetime
 {
     /// <summary>
-    /// Контейнер объекта, управляющий временем его жизни
+    /// Base class for the lifetime containers
     /// </summary>
     [ContractClass(typeof(LifetimeBaseCodeContractCheck))]
     public abstract class LifetimeBase : IDisposable
     {
-        private Type _outputType;
+        private readonly Type _outputType;
 
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -26,9 +26,9 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Конструктор LifetimeBase
+        /// LifetimeBase constructor
         /// </summary>
-        /// <param name="outType">Тип объекта, возвращаемый данным контейнером</param>
+        /// <param name="outType">The type of the object to be stored in the current Lifetime container</param>
         public LifetimeBase(Type outType)
         {
             Contract.Requires<ArgumentNullException>(outType != null, "outType");
@@ -37,19 +37,20 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Возвращает объект, которым управляет данный контейнер
+        /// Resolves the object held by the container
         /// </summary>
-        /// <param name="resolver">Резолвер инъекций</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
+        /// <returns>Resolved instance of the object</returns>
+        /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public abstract object GetInstance(IInjectionResolver resolver);
 
         /// <summary>
-        /// Пытается вернуть объект, которым управляет данный контейнер.
-        /// Ошибки могут происходить в случае, если нет требуемых инъекций для создания
+        /// Attempts to resolve the object held by the container.
+        /// Resolution can fail when required injection objects not found
         /// </summary>
-        /// <param name="resolver">Резолвер инъекций</param>
-        /// <param name="val">Полученный объект (в случае успеха)</param>
-        /// <returns>Удалось ли получить объект</returns>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
+        /// <param name="val">Resolved instance of the object</param>
+        /// <returns>True if the object was successfully resolved</returns>
         public bool TryGetInstance(IInjectionResolver resolver, out object val)
         {
             Contract.Requires(resolver != null);
@@ -77,7 +78,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
 
 
         /// <summary>
-        /// Тип возвращаемого объекта
+        /// Gets the type of the object held by the Lifetime container
         /// </summary>
         public Type OutputType
         {
@@ -85,15 +86,15 @@ namespace Qoollo.Turbo.IoC.Lifetime
         }
 
         /// <summary>
-        /// Внутренний метод освобождения ресурсов
+        /// Cleans-up all resources
         /// </summary>
-        /// <param name="isUserCall">Был ли вызван пользователем (false - вызван деструктором)</param>
+        /// <param name="isUserCall">True when called explicitly by user from Dispose method</param>
         protected virtual void Dispose(bool isUserCall)
         {
         }
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Cleans-up all resources
         /// </summary>
         public void Dispose()
         {
@@ -106,15 +107,14 @@ namespace Qoollo.Turbo.IoC.Lifetime
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(LifetimeBase))]
     abstract class LifetimeBaseCodeContractCheck : LifetimeBase
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private LifetimeBaseCodeContractCheck() : base(typeof(int)) { }
 
-        /// <summary>Контракты</summary>
         public override object GetInstance(IInjectionResolver resolver)
         {
             Contract.Requires(resolver != null);

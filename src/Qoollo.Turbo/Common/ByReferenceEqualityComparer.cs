@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 namespace System.Collections.Generic
 {
     /// <summary>
-    /// Сравнение объектов по ссылке
+    /// Implements IEqualityComparer&lt;T&gt; to compare objects by its references
     /// </summary>
-    /// <typeparam name="T">Тип объекта</typeparam>
+    /// <typeparam name="T">The type of objects to compare</typeparam>
     public class ByReferenceEqualityComparer<T> : IEqualityComparer<T> where T : class
     {
         private static ByReferenceEqualityComparer<T> _default;
         /// <summary>
-        /// Стандартный сравниватель
+        /// Returns a default by reference equality comparer for the type
         /// </summary>
         public static ByReferenceEqualityComparer<T> Default
         {
@@ -27,21 +27,21 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Сравнение
+        /// Determines whether two objects of type T are the same
         /// </summary>
-        /// <param name="x">X</param>
-        /// <param name="y">Y</param>
-        /// <returns>Равны ли ссылки</returns>
+        /// <param name="x">The first object to compare</param>
+        /// <param name="y">The second object to compare</param>
+        /// <returns>true if the specified objects are equal; otherwise, false</returns>
         public bool Equals(T x, T y)
         {
             return object.ReferenceEquals(x, y);
         }
 
         /// <summary>
-        /// Получение hash
+        /// Calculates the hash for the specified object
         /// </summary>
-        /// <param name="obj">Объект</param>
-        /// <returns>Hash</returns>
+        /// <param name="obj">The object for which to get a hash code</param>
+        /// <returns>A hash code for the specified object</returns>
         public int GetHashCode(T obj)
         {
             if (object.ReferenceEquals(obj, null))

@@ -8,29 +8,29 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.IoC.ServiceStuff
 {
     /// <summary>
-    /// Интерфейс для объекта, который выполняет создание конкретного объекта
+    /// Represents the object creator
     /// </summary>
     [ContractClass(typeof(IInstanceCreatorCodeContractCheck))]
     public interface IInstanceCreator
     {
         /// <summary>
-        /// Создаёт объект
+        /// Create an instance of an object. All required parameters can be acquired from injection resolver.
         /// </summary>
-        /// <param name="resolver">Резолвер зависимостей</param>
-        /// <returns>Созданный объект</returns>
+        /// <param name="resolver">Injection resolver to acquire parameters</param>
+        /// <returns>Created object</returns>
         object CreateInstance(IInjectionResolver resolver);
     }
 
     /// <summary>
-    /// Интерфейс для объекта, который выполняет создание конкретного объекта
+    /// Represents the object creator
     /// </summary>
     [ContractClass(typeof(IInstanceCreatorNoParamCodeContractCheck))]
     public interface IInstanceCreatorNoParam
     {
         /// <summary>
-        /// Создаёт объект
+        /// Create an instance of an object
         /// </summary>
-        /// <returns>Созданный объект</returns>
+        /// <returns>Created object</returns>
         object CreateInstance();
     }
 
@@ -38,16 +38,15 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(IInstanceCreator))]
     abstract class IInstanceCreatorCodeContractCheck : IInstanceCreator
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private IInstanceCreatorCodeContractCheck() { }
 
 
-        /// <summary>Контракты</summary>
         public object CreateInstance(IInjectionResolver resolver)
         {
             Contract.Requires(resolver != null);
@@ -58,16 +57,15 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
     }
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(IInstanceCreatorNoParam))]
     abstract class IInstanceCreatorNoParamCodeContractCheck : IInstanceCreatorNoParam
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private IInstanceCreatorNoParamCodeContractCheck() { }
 
 
-        /// <summary>Контракты</summary>
         public object CreateInstance()
         {
             Contract.Ensures(Contract.Result<object>() != null);

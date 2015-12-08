@@ -7,21 +7,21 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.IoC
 {
     /// <summary>
-    /// Базовый аттрибут, который используется при автоматическом поиске соответствий
+    /// Marks the class to make it available for automatic discovery by IoC container
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
     public class LocatorTargetObjectAttribute: Attribute
     {
         /// <summary>
-        /// Конструктор LocatorTargetObjectAttribute
+        /// LocatorTargetObjectAttribute constructor
         /// </summary>
-        /// <param name="mode">Режим инстанцирования объекта</param>
+        /// <param name="mode">Instantiation mode for the objects of marked class</param>
         public LocatorTargetObjectAttribute(ObjectInstantiationMode mode)
         {
             Mode = mode;
         }
         /// <summary>
-        /// Режим инстанцирования объекта
+        /// Instantiation mode for the objects of marked class
         /// </summary>
         public ObjectInstantiationMode Mode
         {

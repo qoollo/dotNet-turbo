@@ -12,12 +12,13 @@ using Qoollo.Turbo.IoC.ServiceStuff;
 namespace Qoollo.Turbo.IoC
 {
     /// <summary>
-    /// Шаблонный класс локатора объектов для упрощения жизни
+    /// Base class for object locators that implements the main methods
     /// </summary>
-    /// <typeparam name="TInjection">Тип контейнера инъекций</typeparam>
-    /// <typeparam name="TInjKey">Тип ключа инъекций</typeparam>
-    /// <typeparam name="TAssociation">Тип контейнера ассоциаций</typeparam>
-    /// <typeparam name="TAssocKey">Тип ключа ассоциаций</typeparam>
+    /// <typeparam name="TInjection">The type of the injection container</typeparam>
+    /// <typeparam name="TInjKey">The type of the key of injection container</typeparam>
+    /// <typeparam name="TAssociation">The type of the association container</typeparam>
+    /// <typeparam name="TAssocKey">The type of the key of association container</typeparam>
+    [Obsolete("Do not use this class as a base for your custom IoC containers. Please, implement them from the core by hand.")]
     public abstract class ObjectLocator<TInjection, TInjKey, TAssociation, TAssocKey>: IObjectLocator<TAssocKey>, IDisposable
         where TInjection: IInjectionSource<TInjKey>
         where TAssociation: IAssociationSource<TAssocKey>
@@ -27,11 +28,11 @@ namespace Qoollo.Turbo.IoC
         private IInjectionResolver _resolver;
 
         /// <summary>
-        /// Конструктор ObjectLocator принимающий все необходимые объекты
+        /// ObjectLocator constructor
         /// </summary>
-        /// <param name="injection">Контейнер инъекций</param>
-        /// <param name="association">Контейнер ассоциаций</param>
-        /// <param name="resolver">Резолвер инъекций</param>
+        /// <param name="injection">Injection container</param>
+        /// <param name="association">Association container</param>
+        /// <param name="resolver">Injection resolver</param>
         protected ObjectLocator(TInjection injection, TAssociation association, IInjectionResolver resolver)
         {
             Contract.Requires(injection != null);
@@ -44,19 +45,19 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Конструктор ObjectLocator без параметров.
-        /// С ним обязателен вызов SetInnerObjects
+        /// ObjectLocator parameterless constructor.
+        /// You should also call SetInnerObjects before use the container
         /// </summary>
         protected ObjectLocator()
         {
         }
 
         /// <summary>
-        /// Установка значений всех необходимых объектов
+        /// Sets required objects when the current instance was created by the parameterless constructor
         /// </summary>
-        /// <param name="injection">Контейнер инъекций</param>
-        /// <param name="association">Контейнер ассоциаций</param>
-        /// <param name="resolver">Резолвер инъекций</param>
+        /// <param name="injection">Injection container</param>
+        /// <param name="association">Association container</param>
+        /// <param name="resolver">Injection resolver</param>
         protected void SetInnerObjects(TInjection injection, TAssociation association, IInjectionResolver resolver)
         {
             Contract.Requires(injection != null);
@@ -69,7 +70,7 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Контейнер инъекций
+        /// Gets the injection container
         /// </summary>
         public TInjection Injection
         {
@@ -77,7 +78,7 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Контейнер ассоциаций
+        /// Gets the association container
         /// </summary>
         public TAssociation Association
         {
@@ -85,10 +86,10 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Получить объект по ключу
+        /// Resolves object from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Resolved object</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object Resolve(TAssocKey key)
         {
@@ -99,11 +100,11 @@ namespace Qoollo.Turbo.IoC
             return life.GetInstance(_resolver);
         }
         /// <summary>
-        /// Попытаться получить объект по ключу
+        /// Attempts to resolve object from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution succeeded; overwise false</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryResolve(TAssocKey key, out object val)
         {
@@ -123,10 +124,10 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Можно ли получить объект по ключу
+        /// Determines whether the object can be resolved by the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Можно ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the object can be resolved</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanResolve(TAssocKey key)
         {
@@ -136,40 +137,40 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Получить объект по ключу
+        /// Resolves object from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Полученный объект</returns>
+        /// <param name="key">Key</param>
+        /// <returns>Resolved object</returns>
         object IObjectLocator<TAssocKey>.Resolve(TAssocKey key)
         {
             return this.Resolve(key);
         }
 
         /// <summary>
-        /// Попытаться получить объект по ключу
+        /// Attempts to resolve object from the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <param name="val">Объект, если удалось получить</param>
-        /// <returns>Успешность</returns>
+        /// <param name="key">Key</param>
+        /// <param name="val">Resolved object</param>
+        /// <returns>True if the resolution succeeded; overwise false</returns>
         bool IObjectLocator<TAssocKey>.TryResolve(TAssocKey key, out object val)
         {
             return this.TryResolve(key, out val);
         }
 
         /// <summary>
-        /// Можно ли получить объект по ключу
+        /// Determines whether the object can be resolved by the container for the specified key
         /// </summary>
-        /// <param name="key">Ключ</param>
-        /// <returns>Можно ли</returns>
+        /// <param name="key">Key</param>
+        /// <returns>True if the object can be resolved</returns>
         bool IObjectLocator<TAssocKey>.CanResolve(TAssocKey key)
         {
             return this.CanResolve(key);
         }
 
         /// <summary>
-        /// Внутреннее освобождение ресурсов
+        /// Cleans-up all resources
         /// </summary>
-        /// <param name="isUserCall">True - вызвано пользователем, False - вызвано деструктором</param>
+        /// <param name="isUserCall">True if called by user; false - from finalizer</param>
         protected virtual void Dispose(bool isUserCall)
         {
             if (_association != null && _association is IDisposable)
@@ -180,7 +181,7 @@ namespace Qoollo.Turbo.IoC
         }
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Cleans-up all resources
         /// </summary>
         public void Dispose()
         {
