@@ -10,7 +10,7 @@ namespace Qoollo.Turbo.Threading.ExecutionQuantizers
     /// <summary>
     /// Реализация ExecutionQuantizer, которая продвигается лишь при явном разрешении
     /// </summary>
-    public class OnRequestExecutionQuantizer: ExecutionQuantizer, IDisposable
+    internal class OnRequestExecutionQuantizer: ExecutionQuantizer, IDisposable
     {
         private readonly object _processNotifier;
         private volatile bool _processNotifierFlag;

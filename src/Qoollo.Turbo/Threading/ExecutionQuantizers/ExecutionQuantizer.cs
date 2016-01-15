@@ -10,7 +10,7 @@ namespace Qoollo.Turbo.Threading.ExecutionQuantizers
     /// <summary>
     /// Примитив передачи управления по сообщению
     /// </summary>
-    public class ExecutionQuantizer
+    internal class ExecutionQuantizer
     {
         private static readonly ExecutionQuantizer _instance = new ExecutionQuantizer();
         /// <summary>
