@@ -10,6 +10,14 @@ namespace System
     /// <summary>
     /// Extension methods for the Type objects
     /// </summary>
+    [Obsolete("Class was renamed to TurboTypeExtensions", true)]
+    public static class TypeExtensions
+    {
+    }
+
+    /// <summary>
+    /// Extension methods for the Type objects
+    /// </summary>
     public static class TurboTypeExtensions
     {
         /// <summary>

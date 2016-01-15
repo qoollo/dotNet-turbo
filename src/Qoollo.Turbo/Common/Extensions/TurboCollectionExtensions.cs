@@ -12,6 +12,14 @@ namespace System.Collections.Generic
     /// <summary>
     /// Extension methods for BCL collections
     /// </summary>
+    [Obsolete("Class was renamed to TurboCollectionExtensions", true)]
+    public static class CollectionExtensions
+    {
+    }
+
+    /// <summary>
+    /// Extension methods for BCL collections
+    /// </summary>
     public static class TurboCollectionExtensions
     {
         /// <summary>

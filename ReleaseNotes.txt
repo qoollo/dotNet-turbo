@@ -1,0 +1,21 @@
+v2.2.0 (15.01.2016)
+- Public surface comments partially translated to English
+- CircularList added
+- TypeUIDResolver added
+- MinBy, MaxBy extension methods added
+- String distance algorithms added (Levenshtein, Hamming)
+- New exception types added
+- Generic Throw<> method added to TurboException
+- WaitForElementsReleased added to ObjectPools
+- RunAsTask added to ThreadPools
+- TurboContainer added as the main IoC container (old containers are marked as Obsolete)
+- Enqueue, Dequeue methods of BlockingQueue renamed to Add, Take (same as in BlockingCollection)
+- Code refactoring
+- Bug fixes
+
+
+v2.1.1 (29.12.2014)
+- Bug fix
+
+v2.1 (29.12.2014)
+Initial version
