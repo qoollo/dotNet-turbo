@@ -9,6 +9,14 @@ namespace System
     /// <summary>
     /// Extension methods for Exception objects
     /// </summary>
+    [Obsolete("Class was renamed to TurboExceptionExtensions", true)]
+    public static class ExceptionExtensions
+    {
+    }
+
+    /// <summary>
+    /// Extension methods for Exception objects
+    /// </summary>
     public static class TurboExceptionExtensions
     {
         /// <summary>
