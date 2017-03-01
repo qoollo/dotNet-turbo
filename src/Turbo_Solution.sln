@@ -1,20 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qoollo.Turbo", "Qoollo.Turbo\Qoollo.Turbo.csproj", "{3B9E6AAC-3A04-4A2A-9C84-2C4AFF71A875}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qoollo.Turbo.UnitTests", "Qoollo.Turbo.UnitTests\Qoollo.Turbo.UnitTests.csproj", "{E23A113F-53EC-459D-8E69-03B7E62353B7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qoollo.Turbo.PerformanceTests", "Qoollo.Turbo.PerformanceTests\Qoollo.Turbo.PerformanceTests.csproj", "{96EFDD64-41A4-4C8F-91B5-1EF5EB70E9C9}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{20261743-8B3E-4BAC-98B3-55BE522034DF}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
