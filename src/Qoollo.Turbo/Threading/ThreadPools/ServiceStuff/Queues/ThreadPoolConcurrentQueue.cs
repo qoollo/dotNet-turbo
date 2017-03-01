@@ -218,7 +218,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             SpinWait sw = new SpinWait();
             Segment tail = _tail;
 
-            while (!_tail.TryAdd(item))
+            while (!tail.TryAdd(item))
             {
                 sw.SpinOnce();
                 tail = _tail;
