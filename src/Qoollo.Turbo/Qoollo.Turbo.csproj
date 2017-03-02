@@ -277,6 +277,11 @@
     <Compile Include="ObjectPools\BalancingStaticPoolManager.cs" />
     <Compile Include="ObjectPools\StaticPoolManager.cs" />
     <Compile Include="Profiling\ProfilingProviderWrapper.cs" />
+    <Compile Include="Queues\Common\CommonQueueImpl.cs" />
+    <Compile Include="Queues\IQueue.cs" />
+    <Compile Include="Queues\MemoryQueue.cs" />
+    <Compile Include="Queues\TransformationQueue.cs" />
+    <Compile Include="Queues\TransformationQueueBase.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchAwaitable.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchSupplier.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\CustomSynchronizationContext.cs" />
