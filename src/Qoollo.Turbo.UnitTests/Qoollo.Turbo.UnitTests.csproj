@@ -77,6 +77,8 @@
     <Compile Include="ObjectPools\UsedElementTrackerTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueueProcessing\QueueAsyncProcessorTest.cs" />
+    <Compile Include="Queues\MemoryQueueTests.cs" />
+    <Compile Include="Queues\TransformationQueueTests.cs" />
     <Compile Include="TestLoggingHelper.cs" />
     <Compile Include="Threading\EntryCountingEventTest.cs" />
     <Compile Include="ExecutionQuantizers\ExecutionQuantizerTest.cs" />
