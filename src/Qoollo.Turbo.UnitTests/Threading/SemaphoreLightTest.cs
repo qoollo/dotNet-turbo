@@ -177,6 +177,30 @@ namespace Qoollo.Turbo.UnitTests.Threading
             Task.WaitAll(task1, task2);
         }
 
+        [TestMethod]
+        public void OverflowTest()
+        {
+            SemaphoreLight inst = new SemaphoreLight(0);
+
+            inst.Release(int.MaxValue - 100);
+            Assert.AreEqual(int.MaxValue - 100, inst.CurrentCount);
+
+            inst.Release(100);
+            Assert.AreEqual(int.MaxValue, inst.CurrentCount);
+
+            try
+            {
+                inst.Release();
+                Assert.Fail("SemaphoreFullException expected");
+            }
+            catch (SemaphoreFullException)
+            {
+            }
+
+            bool waitResult = inst.Wait(0);
+            Assert.IsTrue(waitResult);
+        }
+
 
 
         private void RunComplexTest(SemaphoreLight sem, int elemCount, int thCount)
