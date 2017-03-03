@@ -15,6 +15,15 @@ namespace Qoollo.Turbo.Queues.Common
     public abstract class CommonQueueImpl<T> : IQueue<T>
     {
         /// <summary>
+        /// The bounded size of the queue (-1 means not bounded)
+        /// </summary>
+        public abstract long BoundedCapacity { get; }
+        /// <summary>
+        /// Number of items inside the queue
+        /// </summary>
+        public abstract long Count { get; }
+
+        /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached
         /// </summary>
         /// <param name="item">New item</param>

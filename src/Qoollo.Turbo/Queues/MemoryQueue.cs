@@ -30,6 +30,15 @@ namespace Qoollo.Turbo.Queues
 
 
         /// <summary>
+        /// The bounded size of the queue (-1 means not bounded)
+        /// </summary>
+        long IQueue<T>.BoundedCapacity { get { return this.BoundedCapacity; } }
+        /// <summary>
+        /// Number of items inside the queue
+        /// </summary>
+        long IQueue<T>.Count { get { return this.Count; } }
+
+        /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached
         /// </summary>
         /// <param name="item">New item</param>

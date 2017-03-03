@@ -14,6 +14,15 @@ namespace Qoollo.Turbo.Queues
     public interface IQueue<T>: IDisposable
     {
         /// <summary>
+        /// The bounded size of the queue (-1 means not bounded)
+        /// </summary>
+        long BoundedCapacity { get; }
+        /// <summary>
+        /// Number of items inside the queue
+        /// </summary>
+        long Count { get; }
+
+        /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached
         /// </summary>
         /// <param name="item">New item</param>

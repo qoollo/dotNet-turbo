@@ -38,6 +38,16 @@ namespace Qoollo.Turbo.Queues
         protected IQueue<TInner> InnerQueue { get { return _queue; } }
 
         /// <summary>
+        /// The bounded size of the queue (-1 means not bounded)
+        /// </summary>
+        public sealed override long BoundedCapacity { get { return _queue.BoundedCapacity; } }
+        /// <summary>
+        /// Number of items inside the queue
+        /// </summary>
+        public sealed override long Count { get { return _queue.Count; } }
+
+
+        /// <summary>
         /// Checks if queue is disposed
         /// </summary>
         private void CheckDisposed()
