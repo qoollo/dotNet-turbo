@@ -279,6 +279,7 @@
     <Compile Include="Profiling\ProfilingProviderWrapper.cs" />
     <Compile Include="Queues\Common\CommonQueueImpl.cs" />
     <Compile Include="Queues\IQueue.cs" />
+    <Compile Include="Queues\LevelingQueue.cs" />
     <Compile Include="Queues\MemoryQueue.cs" />
     <Compile Include="Queues\TransformationQueue.cs" />
     <Compile Include="Queues\TransformationQueueBase.cs" />

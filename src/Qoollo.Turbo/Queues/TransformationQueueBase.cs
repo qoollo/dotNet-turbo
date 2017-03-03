@@ -45,7 +45,10 @@ namespace Qoollo.Turbo.Queues
         /// Number of items inside the queue
         /// </summary>
         public sealed override long Count { get { return _queue.Count; } }
-
+        /// <summary>
+        /// Indicates whether the queue is empty
+        /// </summary>
+        public sealed override bool IsEmpty { get { return _queue.IsEmpty; } }
 
         /// <summary>
         /// Checks if queue is disposed

@@ -37,6 +37,10 @@ namespace Qoollo.Turbo.Queues
         /// Number of items inside the queue
         /// </summary>
         long IQueue<T>.Count { get { return this.Count; } }
+        /// <summary>
+        /// Indicates whether the queue is empty
+        /// </summary>
+        bool IQueue<T>.IsEmpty { get { return this.Count == 0; } }
 
         /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached

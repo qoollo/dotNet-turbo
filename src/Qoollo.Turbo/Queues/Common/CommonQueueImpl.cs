@@ -22,6 +22,10 @@ namespace Qoollo.Turbo.Queues.Common
         /// Number of items inside the queue
         /// </summary>
         public abstract long Count { get; }
+        /// <summary>
+        /// Indicates whether the queue is empty
+        /// </summary>
+        public abstract bool IsEmpty { get; }
 
         /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached
