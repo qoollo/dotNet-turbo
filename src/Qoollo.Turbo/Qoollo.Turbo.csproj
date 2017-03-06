@@ -287,6 +287,7 @@
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchSupplier.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\CustomSynchronizationContext.cs" />
     <Compile Include="Threading\BackgroundWorkers\BackgroundWorker.cs" />
+    <Compile Include="Threading\ConditionalVariable.cs" />
     <Compile Include="Threading\ExecutionQuantizers\OnRequestExecutionQuantizer.cs" />
     <Compile Include="Threading\ExecutionQuantizers\ExecutionQuantizer.cs" />
     <Compile Include="Threading\LinearSpinWait.cs" />
