@@ -405,7 +405,8 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         {
             ThreadPoolLocalQueue q = new ThreadPoolLocalQueue();
 
-            RunLocalThreadQueuePrimaryScenario(q, int.MaxValue / 40 + 13, Environment.ProcessorCount, 32);
+            RunLocalThreadQueuePrimaryScenario(q, int.MaxValue / 400 + 13, Environment.ProcessorCount, 32);
+            RunLocalThreadQueuePrimaryScenario(q, int.MaxValue / 400 + 13, Environment.ProcessorCount, 32);
         }
 
         [TestMethod]
