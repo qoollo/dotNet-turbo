@@ -198,9 +198,6 @@ namespace Qoollo.Turbo.Threading
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
 
-            if (timeout < -1)
-                timeout = Timeout.Infinite;
-
             if (token.IsCancellationRequested)
             {
                 if (throwOnCancellation)
@@ -209,13 +206,16 @@ namespace Qoollo.Turbo.Threading
                 return false;
             }
 
-            uint startTime = 0;
-            if (timeout != Timeout.Infinite && timeout > 0)
-                startTime = GetTimestamp();
-
             // Делаем захват
             if (TryTakeLockFree())
                 return true;
+
+
+            uint startTime = 0;
+            if (timeout > 0)
+                startTime = GetTimestamp();
+            else if (timeout < 0)
+                timeout = Timeout.Infinite;
 
 
             // Ждём появления (лучше активно подождать, чем входить в lock)
