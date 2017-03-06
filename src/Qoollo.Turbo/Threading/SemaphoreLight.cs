@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -29,7 +28,7 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             SemaphoreLight semaphore = obj as SemaphoreLight;
-            Contract.Assert(semaphore != null);
+            Debug.Assert(semaphore != null);
             lock (semaphore._lockObj)
             {
                 Monitor.PulseAll(semaphore._lockObj);
@@ -67,7 +66,6 @@ namespace Qoollo.Turbo.Threading
         // =============
 
 
-
         private volatile int _currentCountLocFree;
         private volatile int _currentCountForWait;
         private readonly int _maxCount;
@@ -89,9 +87,9 @@ namespace Qoollo.Turbo.Threading
         public SemaphoreLight(int initialCount, int maxCount)
         {
             if (initialCount < 0 || initialCount > maxCount)
-                throw new ArgumentOutOfRangeException("initialCount", "initialCount should be in range [0, maxCount]");
+                throw new ArgumentOutOfRangeException(nameof(initialCount), "initialCount should be in range [0, maxCount]");
             if (maxCount <= 0)
-                throw new ArgumentOutOfRangeException("maxCount", "maxCount should be positive");
+                throw new ArgumentOutOfRangeException(nameof(maxCount), "maxCount should be positive");
 
             _maxCount = maxCount;
             _lockObj = new object();
@@ -266,7 +264,7 @@ namespace Qoollo.Turbo.Threading
                 finally
                 {
                     Monitor.Enter(_lockObj, ref lockTaken);
-                    Contract.Assert(lockTaken);
+                    Debug.Assert(lockTaken);
                     Interlocked.Increment(ref _waitCount); // Release должен увидеть наше появление
                 }
 
@@ -304,7 +302,7 @@ namespace Qoollo.Turbo.Threading
                 if (lockTaken)
                 {
                     _waitCount--;
-                    Contract.Assert(_waitCount >= 0);
+                    Debug.Assert(_waitCount >= 0);
                     Monitor.Exit(_lockObj);
                 }
 
@@ -336,7 +334,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait()
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, new CancellationToken(), true);
-            Contract.Assert(semaphoreSlotTaken);
+            Debug.Assert(semaphoreSlotTaken);
         }
         /// <summary>
         /// Выполнить ожидание появления 1-ого слота в семаформе. 
@@ -347,7 +345,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait(CancellationToken token)
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, token, true);
-            Contract.Assert(semaphoreSlotTaken);
+            Debug.Assert(semaphoreSlotTaken);
         }
         /// <summary>
         /// Выполнить ожидание появления 1-ого слота в семаформе. 
@@ -420,7 +418,7 @@ namespace Qoollo.Turbo.Threading
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
             if (releaseCount < 1)
-                throw new ArgumentOutOfRangeException("releaseCount", "releaseCount should be positive");
+                throw new ArgumentOutOfRangeException(nameof(releaseCount), "releaseCount should be positive");
             if (_maxCount - CurrentCount < releaseCount)
                 throw new SemaphoreFullException();
 
@@ -435,15 +433,15 @@ namespace Qoollo.Turbo.Threading
                 releaseCountLocFree = releaseCount - releaseCountForWait;
             }
 
-            Contract.Assert(releaseCountForWait >= 0);
-            Contract.Assert(releaseCountLocFree >= 0);
-            Contract.Assert(releaseCountForWait + releaseCountLocFree == releaseCount);
+            Debug.Assert(releaseCountForWait >= 0);
+            Debug.Assert(releaseCountLocFree >= 0);
+            Debug.Assert(releaseCountForWait + releaseCountLocFree == releaseCount);
 
             // Сначала возврат в lockFree
             if (releaseCountLocFree > 0)
             {
                 int currentCountLocFree = Interlocked.Add(ref _currentCountLocFree, releaseCountLocFree);
-                Contract.Assert(currentCountLocFree > 0);
+                Debug.Assert(currentCountLocFree > 0);
             }
 
             // Теперь возврат для waiter'ов. Если число waiter'ов увеличилось, то тоже нужно зайти в lock
@@ -461,7 +459,7 @@ namespace Qoollo.Turbo.Threading
                         // Если слотов оказывается больше, то избыток возвращаем в _currentCountLocFree
                         int countForReturnToLockFree = Math.Min(releaseCountForWait, nextCurrentCountForWait - waitCount);
                         int currentCountLocFree = Interlocked.Add(ref _currentCountLocFree, countForReturnToLockFree);
-                        Contract.Assert(currentCountLocFree > 0);
+                        Debug.Assert(currentCountLocFree > 0);
                         releaseCountForWait -= countForReturnToLockFree;
                         releaseCountLocFree += countForReturnToLockFree;
                     }
@@ -479,7 +477,7 @@ namespace Qoollo.Turbo.Threading
                             int countToRequestFromLockFree = Math.Min(currentCountLocFree, maxToRequestFromLockFree);
                             while (countToRequestFromLockFree > 0)
                             {
-                                Contract.Assert(currentCountLocFree - countToRequestFromLockFree >= 0);
+                                Debug.Assert(currentCountLocFree - countToRequestFromLockFree >= 0);
                                 if (Interlocked.CompareExchange(ref _currentCountLocFree, currentCountLocFree - countToRequestFromLockFree, currentCountLocFree) == currentCountLocFree)
                                 {
                                     releaseCountForWait += countToRequestFromLockFree;
@@ -494,16 +492,16 @@ namespace Qoollo.Turbo.Threading
                         }
                     }
 
-                    Contract.Assert(releaseCountForWait >= 0);
-                    Contract.Assert(releaseCountLocFree >= 0);
-                    Contract.Assert(releaseCountForWait + releaseCountLocFree == releaseCount);
+                    Debug.Assert(releaseCountForWait >= 0);
+                    Debug.Assert(releaseCountLocFree >= 0);
+                    Debug.Assert(releaseCountForWait + releaseCountLocFree == releaseCount);
 
                     if (releaseCountForWait > 0)
                     {
-                        Contract.Assert(_currentCountForWait == currentCountForWait);
+                        Debug.Assert(_currentCountForWait == currentCountForWait);
 
                         currentCountForWait += releaseCountForWait;
-                        Contract.Assert(currentCountForWait > 0);
+                        Debug.Assert(currentCountForWait > 0);
 
                         int waitersToNotify = Math.Min(currentCountForWait, waitCount);
                         for (int i = 0; i < waitersToNotify; i++)
