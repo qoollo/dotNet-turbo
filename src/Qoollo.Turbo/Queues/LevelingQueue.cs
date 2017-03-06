@@ -125,7 +125,30 @@ namespace Qoollo.Turbo.Queues
         {
             CheckDisposed();
 
-            throw new NotImplementedException();
+            if (_addingMode == LevelingQueueAddingMode.PreferLiveData)
+            {
+                if (_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                    return;
+
+                _lowLevelQueue.AddForced(item);
+            }
+            else
+            {
+                if (_lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                    return;
+
+                _lowLevelQueue.AddForced(item);
+            }
+        }
+
+        /// <summary>
+        /// Adds new item to the high level queue, even when the bounded capacity reached
+        /// </summary>
+        /// <param name="item">New item</param>
+        public void AddForcedToHighLevelQueue(T item)
+        {
+            CheckDisposed();
+            _highLevelQueue.AddForced(item);
         }
 
         /// <summary>
@@ -151,10 +174,11 @@ namespace Qoollo.Turbo.Queues
             }
             else
             {
-                // TODO
-            }
+                if (_lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                    return true;
 
-            throw new NotImplementedException();
+                return _lowLevelQueue.TryAdd(item, timeout, token);
+            }
         }
 
 
