@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Threading
 {
-    internal delegate bool ConditionalVariablePredicate();
-    internal delegate bool ConditionalVariablePredicate<TState>(TState state);
-    internal delegate bool ConditionalVariablePredicateRef<TState>(ref TState state);
+    internal delegate bool ConditionVariablePredicate();
+    internal delegate bool ConditionVariablePredicate<TState>(TState state);
+    internal delegate bool ConditionVariablePredicateRef<TState>(ref TState state);
 
 
-    internal class ConditionalVariable: IDisposable
+    internal class ConditionVariable: IDisposable
     {
         private static readonly Action<object> _cancellationTokenCanceledEventHandler = new Action<object>(CancellationTokenCanceledEventHandler);
         /// <summary>
@@ -23,7 +23,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="obj">Объект SemaphoreSlimE</param>
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
-            ConditionalVariable conditionVar = obj as ConditionalVariable;
+            ConditionVariable conditionVar = obj as ConditionVariable;
             Debug.Assert(conditionVar != null);
             lock (conditionVar._lockObj)
             {
@@ -65,7 +65,7 @@ namespace Qoollo.Turbo.Threading
         private volatile bool _isDisposed;
         private object _lockObj;
 
-        public ConditionalVariable()
+        public ConditionVariable()
         {
             _waitCount = 0;
             _lockObj = new object();
@@ -75,7 +75,7 @@ namespace Qoollo.Turbo.Threading
         public int WaiterCount { get { return _waitCount; } }
 
 
-        private bool WaitUntilPredicateOrTimeout(ConditionalVariablePredicate predicate, int timeout, uint startTime, CancellationToken token)
+        private bool WaitUntilPredicateOrTimeout(ConditionVariablePredicate predicate, int timeout, uint startTime, CancellationToken token)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
 
@@ -99,7 +99,7 @@ namespace Qoollo.Turbo.Threading
             }
         }
 
-        public bool Wait(ConditionalVariablePredicate predicate, int timeout, CancellationToken token)
+        public bool Wait(ConditionVariablePredicate predicate, int timeout, CancellationToken token)
         {
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
@@ -169,7 +169,7 @@ namespace Qoollo.Turbo.Threading
         }
 
 
-        private bool WaitUntilPredicateOrTimeout<TState>(ConditionalVariablePredicate<TState> predicate, TState state, int timeout, uint startTime, CancellationToken token)
+        private bool WaitUntilPredicateOrTimeout<TState>(ConditionVariablePredicate<TState> predicate, TState state, int timeout, uint startTime, CancellationToken token)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
 
@@ -193,7 +193,7 @@ namespace Qoollo.Turbo.Threading
             }
         }
 
-        public bool Wait<TState>(ConditionalVariablePredicate<TState> predicate, TState state, int timeout, CancellationToken token)
+        public bool Wait<TState>(ConditionVariablePredicate<TState> predicate, TState state, int timeout, CancellationToken token)
         {
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
@@ -263,7 +263,7 @@ namespace Qoollo.Turbo.Threading
         }
 
 
-        private bool WaitUntilPredicateOrTimeout<TState>(ConditionalVariablePredicateRef<TState> predicate, ref TState state, int timeout, uint startTime, CancellationToken token)
+        private bool WaitUntilPredicateOrTimeout<TState>(ConditionVariablePredicateRef<TState> predicate, ref TState state, int timeout, uint startTime, CancellationToken token)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
 
@@ -287,7 +287,7 @@ namespace Qoollo.Turbo.Threading
             }
         }
 
-        public bool Wait<TState>(ConditionalVariablePredicateRef<TState> predicate, ref TState state, int timeout, CancellationToken token)
+        public bool Wait<TState>(ConditionVariablePredicateRef<TState> predicate, ref TState state, int timeout, CancellationToken token)
         {
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
