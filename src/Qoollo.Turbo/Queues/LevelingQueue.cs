@@ -37,10 +37,11 @@ namespace Qoollo.Turbo.Queues
         private readonly IQueue<T> _lowLevelQueue;
 
         private readonly LevelingQueueAddingMode _addingMode;
+        private readonly int _backgroundTransferThreadCount;
 
         private volatile bool _isDisposed;
 
-        public LevelingQueue(IQueue<T> highLevelQueue, IQueue<T> lowLevelQueue, LevelingQueueAddingMode addingMode)
+        public LevelingQueue(IQueue<T> highLevelQueue, IQueue<T> lowLevelQueue, LevelingQueueAddingMode addingMode, int backgrounTransferThreadCount)
         {
             if (highLevelQueue == null)
                 throw new ArgumentNullException(nameof(highLevelQueue));
@@ -51,6 +52,7 @@ namespace Qoollo.Turbo.Queues
             _lowLevelQueue = lowLevelQueue;
 
             _addingMode = addingMode;
+            _backgroundTransferThreadCount = backgrounTransferThreadCount > 0 ? backgrounTransferThreadCount : -1;
 
             _isDisposed = false;
         }
@@ -67,6 +69,10 @@ namespace Qoollo.Turbo.Queues
         /// Adding mode of the queue
         /// </summary>
         public LevelingQueueAddingMode AddingMode { get { return _addingMode; } }
+        /// <summary>
+        /// Is transfering items from LowLevelQueue to HighLevelQueue in background enabled
+        /// </summary>
+        public bool IsBackgroundTransferingEnabled { get { return _backgroundTransferThreadCount > 0; } }
 
         /// <summary>
         /// The bounded size of the queue (-1 means not bounded)
@@ -192,6 +198,20 @@ namespace Qoollo.Turbo.Queues
         protected override bool TryTakeCore(out T item, int timeout, CancellationToken token)
         {
             CheckDisposed();
+
+            // TODO
+
+            if (IsBackgroundTransferingEnabled)
+            {
+                return _highLevelQueue.TryTake(out item, timeout, token);
+            }
+            else
+            {
+                if (_highLevelQueue.TryTake(out item, 0, new CancellationToken()))
+                    return true;
+
+                return _lowLevelQueue.TryTake(out item, timeout, token);
+            }
 
             throw new NotImplementedException();
         }
