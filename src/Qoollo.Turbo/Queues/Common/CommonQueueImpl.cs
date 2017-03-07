@@ -14,6 +14,18 @@ namespace Qoollo.Turbo.Queues.Common
     /// <typeparam name="T">Type of items stored inside queue</typeparam>
     public abstract class CommonQueueImpl<T> : IQueue<T>
     {
+        private static ManualResetEvent _alwaysSettedWaitHandle = null;
+        /// <summary>
+        /// Wait handle that is always in Set state
+        /// </summary>
+        protected static WaitHandle AlwaysSettedWaitHandle
+        {
+            get
+            {
+                return LazyInitializer.EnsureInitialized(ref _alwaysSettedWaitHandle, () => new ManualResetEvent(true));
+            }
+        }
+
         /// <summary>
         /// The bounded size of the queue (-1 means not bounded)
         /// </summary>
@@ -26,6 +38,24 @@ namespace Qoollo.Turbo.Queues.Common
         /// Indicates whether the queue is empty
         /// </summary>
         public abstract bool IsEmpty { get; }
+
+        /// <summary>
+        /// Wait handle that notifies about items presence
+        /// </summary>
+        protected abstract WaitHandle HasItemsWaitHandle { get; }
+        /// <summary>
+        /// Wait handle that notifies about space availability for new items
+        /// </summary>
+        protected abstract WaitHandle HasSpaceWaitHandle { get; }
+
+        /// <summary>
+        /// Wait handle that notifies about items presence
+        /// </summary>
+        WaitHandle IQueue<T>.HasItemsWaitHandle { get { return this.HasItemsWaitHandle; } }
+        /// <summary>
+        /// Wait handle that notifies about space availability for new items
+        /// </summary>
+        WaitHandle IQueue<T>.HasSpaceWaitHandle { get { return this.HasSpaceWaitHandle; } }
 
         /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached
@@ -135,6 +165,24 @@ namespace Qoollo.Turbo.Queues.Common
                 timeout = Timeout.Infinite;
             return TryAddCore(item, timeout, token);
         }
+        /// <summary>
+        /// Attempts to add new item to the tail of the queue
+        /// </summary>
+        /// <param name="item">New item</param>
+        /// <param name="timeout">Adding timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        public bool TryAdd(T item, TimeSpan timeout, CancellationToken token)
+        {
+            long timeoutMs = (long)timeout.TotalMilliseconds;
+            if (timeoutMs > int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            if (timeoutMs < 0)
+                timeoutMs = Timeout.Infinite;
+
+            return TryAddCore(item, (int)timeoutMs, token);
+        }
 
         #endregion
 
@@ -216,6 +264,23 @@ namespace Qoollo.Turbo.Queues.Common
             if (timeout < 0)
                 timeout = Timeout.Infinite;
             return TryTakeCore(out item, timeout, token);
+        }
+        /// <summary>
+        /// Attempts to remove item from the head of the queue
+        /// </summary>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Removing timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the item was removed</returns>
+        public bool TryTake(out T item, TimeSpan timeout, CancellationToken token)
+        {
+            long timeoutMs = (long)timeout.TotalMilliseconds;
+            if (timeoutMs > int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            if (timeoutMs < 0)
+                timeoutMs = Timeout.Infinite;
+
+            return TryTakeCore(out item, (int)timeoutMs, token);
         }
 
         #endregion
@@ -302,6 +367,24 @@ namespace Qoollo.Turbo.Queues.Common
                 timeout = Timeout.Infinite;
 
             return TryPeekCore(out item, timeout, token);
+        }
+        /// <summary>
+        /// Attempts to read the item at the head of the queue without removing it
+        /// </summary>
+        /// <param name="item">The item at the head of the queue</param>
+        /// <param name="timeout">Peeking timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the item was read</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        public bool TryPeek(out T item, TimeSpan timeout, CancellationToken token)
+        {
+            long timeoutMs = (long)timeout.TotalMilliseconds;
+            if (timeoutMs > int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            if (timeoutMs < 0)
+                timeoutMs = Timeout.Infinite;
+
+            return TryPeekCore(out item, (int)timeoutMs, token);
         }
 
         #endregion

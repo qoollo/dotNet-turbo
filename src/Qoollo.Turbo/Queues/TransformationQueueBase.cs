@@ -49,6 +49,15 @@ namespace Qoollo.Turbo.Queues
         /// Indicates whether the queue is empty
         /// </summary>
         public sealed override bool IsEmpty { get { return _queue.IsEmpty; } }
+        /// <summary>
+        /// Wait handle that notifies about items presence
+        /// </summary>
+        protected sealed override WaitHandle HasItemsWaitHandle { get { return _queue.HasItemsWaitHandle; } }
+        /// <summary>
+        /// Wait handle that notifies about space availability for new items
+        /// </summary>
+        protected sealed override WaitHandle HasSpaceWaitHandle { get { return _queue.HasSpaceWaitHandle; } }
+
 
         /// <summary>
         /// Checks if queue is disposed

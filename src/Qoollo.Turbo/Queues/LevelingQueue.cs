@@ -115,6 +115,16 @@ namespace Qoollo.Turbo.Queues
 
 
         /// <summary>
+        /// Wait handle that notifies about items presence
+        /// </summary>
+        protected sealed override WaitHandle HasItemsWaitHandle { get { throw new NotImplementedException(); } }
+        /// <summary>
+        /// Wait handle that notifies about space availability for new items
+        /// </summary>
+        protected sealed override WaitHandle HasSpaceWaitHandle { get { throw new NotImplementedException(); } }
+
+
+        /// <summary>
         /// Checks if queue is disposed
         /// </summary>
         private void CheckDisposed()
@@ -207,10 +217,14 @@ namespace Qoollo.Turbo.Queues
             }
             else
             {
-                if (_highLevelQueue.TryTake(out item, 0, new CancellationToken()))
+                if (_highLevelQueue.TryTake(out item, 0, default(CancellationToken)))
+                    return true;
+                if (_lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
+                    return true;
+                if (_highLevelQueue.TryTake(out item, timeout, token))
                     return true;
 
-                return _lowLevelQueue.TryTake(out item, timeout, token);
+                return _lowLevelQueue.TryTake(out item, 0, default(CancellationToken));
             }
 
             throw new NotImplementedException();

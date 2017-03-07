@@ -27,6 +27,15 @@ namespace Qoollo.Turbo.Queues
         bool IsEmpty { get; }
 
         /// <summary>
+        /// Wait handle that notifies about items presence
+        /// </summary>
+        WaitHandle HasItemsWaitHandle { get; }
+        /// <summary>
+        /// Wait handle that notifies about space availability for new items
+        /// </summary>
+        WaitHandle HasSpaceWaitHandle { get; }
+
+        /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached
         /// </summary>
         /// <param name="item">New item</param>

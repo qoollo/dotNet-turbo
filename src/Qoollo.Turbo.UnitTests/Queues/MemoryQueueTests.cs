@@ -13,8 +13,6 @@ namespace Qoollo.Turbo.UnitTests.Queues
     [TestClass]
     public class MemoryQueueTests
     {
-        // Main tests are in BlockingQueueTests
-
         [TestMethod]
         public void AddTakeMultithreadTest()
         {
