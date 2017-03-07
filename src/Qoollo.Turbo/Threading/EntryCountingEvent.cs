@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -103,7 +104,7 @@ namespace Qoollo.Turbo.Threading
                 return false;
 
             int newCount = Interlocked.Increment(ref _currentCountInner);
-            Contract.Assert(newCount > 0);
+            Debug.Assert(newCount > 0);
 
             if (_isDisposed || _isTerminateRequested)
             {
@@ -229,7 +230,7 @@ namespace Qoollo.Turbo.Threading
         {
             int newCount = Interlocked.Decrement(ref this._currentCountInner);
 
-            Contract.Assert((newCount >= 0 && _isTerminateRequested) || (newCount > 0 && !_isTerminateRequested));
+            Debug.Assert((newCount >= 0 && _isTerminateRequested) || (newCount > 0 && !_isTerminateRequested));
             if (newCount <= 0)
                 ExitClientAdditionalActions(newCount);
         }

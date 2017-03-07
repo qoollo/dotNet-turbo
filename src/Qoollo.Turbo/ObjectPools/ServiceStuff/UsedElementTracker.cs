@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -112,7 +113,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff
                 return;
 
             int minFreeElementsCount = Interlocked.Exchange(ref _minFreeElementsCount, int.MaxValue);
-            Contract.Assert(minFreeElementsCount >= 0);
+            Debug.Assert(minFreeElementsCount >= 0);
 
             if (minFreeElementsCount == int.MaxValue)
                 Interlocked.Exchange(ref _elementToDestroy, 0);

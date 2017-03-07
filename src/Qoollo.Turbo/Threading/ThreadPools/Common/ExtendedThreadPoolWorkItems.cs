@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -616,7 +617,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private static void RunRaw(object closure)
         {
             var extractedClosure = (TaskEntryExecutionWithClosureThreadPoolWorkItem<TState>)closure;
-            Contract.Assert(extractedClosure != null);
+            Debug.Assert(extractedClosure != null);
             extractedClosure._action(extractedClosure._state);
         }
 
@@ -730,7 +731,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private static TRes RunRaw(object closure)
         {
             var extractedClosure = (TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes>)closure;
-            Contract.Assert(extractedClosure != null);
+            Debug.Assert(extractedClosure != null);
             return extractedClosure._action(extractedClosure._state);
         }
 

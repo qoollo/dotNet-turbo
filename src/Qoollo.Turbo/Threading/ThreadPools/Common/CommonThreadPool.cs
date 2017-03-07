@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Debug = System.Diagnostics.Debug;
 
 namespace Qoollo.Turbo.Threading.ThreadPools.Common
 {
@@ -94,7 +95,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             protected override void QueueTask(Task task)
             {
                 ThreadPoolWorkItem poolItem = task.AsyncState as ThreadPoolWorkItem;
-                Contract.Assert(poolItem == null || 
+                Debug.Assert(poolItem == null || 
                                     (poolItem.GetType().IsGenericType && 
                                     (poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<>) || 
                                      poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>))));
@@ -393,9 +394,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// </summary>
         private void OnGoToStoppedState()
         {
-            Contract.Assert(State == ThreadPoolState.Stopped);
+            Debug.Assert(State == ThreadPoolState.Stopped);
 
-            Contract.Assert(_stopWaiter.IsSet == false);
+            Debug.Assert(_stopWaiter.IsSet == false);
             _stopWaiter.Set();
             _threadPoolGlobals.Dispose();
             Profiling.Profiler.ThreadPoolDisposed(Name, false);
@@ -638,7 +639,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (State == ThreadPoolState.Stopped)
                 return;
             _stopWaiter.Wait();
-            Contract.Assert(State == ThreadPoolState.Stopped);
+            Debug.Assert(State == ThreadPoolState.Stopped);
         }
 
         /// <summary>
@@ -858,7 +859,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                         success = true;
                     }
 
-                    Contract.Assert(_activeThread.Count == _activeThreadCount);
+                    Debug.Assert(_activeThread.Count == _activeThreadCount);
                 }
             }
             catch (Exception ex)
@@ -916,16 +917,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                         {
                             ThreadPoolState prevState;
                             bool stateChanged = ChangeStateSafe(ThreadPoolState.Stopped, out prevState);
-                            Contract.Assert(stateChanged || prevState == ThreadPoolState.Stopped, "State was not changed to stopped");
+                            Debug.Assert(stateChanged || prevState == ThreadPoolState.Stopped, "State was not changed to stopped");
                             if (stateChanged)
                                 OnGoToStoppedState();
                         }
                     }
-                    Contract.Assert(_activeThread.Count == _activeThreadCount);
+                    Debug.Assert(_activeThread.Count == _activeThreadCount);
                 }
             }
 
-            Contract.Assert(removeResult, "Remove Thread in Pool failed");
+            Debug.Assert(removeResult, "Remove Thread in Pool failed");
             if (removeResult)
                 OnThreadRemove(elem);
         }
@@ -945,7 +946,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// </summary>
         private void CleanUpMainQueueAfterStop()
         {
-            Contract.Assert(State == ThreadPoolState.Stopped);
+            Debug.Assert(State == ThreadPoolState.Stopped);
 
             ThreadPoolWorkItem item = null;
             while (_threadPoolGlobals.TryTakeItemSafeFromGlobalQueue(out item))
@@ -1000,12 +1001,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
                     ThreadPoolState prevState;
                     bool stateChangedToStopRequested = ChangeStateSafe(ThreadPoolState.StopRequested, out prevState);
-                    Contract.Assert(stateChangedToStopRequested || prevState == ThreadPoolState.Stopped);
+                    Debug.Assert(stateChangedToStopRequested || prevState == ThreadPoolState.Stopped);
                     if (_activeThread.Count == 0 && prevState != ThreadPoolState.Stopped)
                     {
                         // Если потоков нет, то переходим в состояние "остановлено"
                         bool stateChanged = ChangeStateSafe(ThreadPoolState.Stopped, out prevState);
-                        Contract.Assert(stateChanged || prevState == ThreadPoolState.Stopped, "State was not changed to stopped");
+                        Debug.Assert(stateChanged || prevState == ThreadPoolState.Stopped, "State was not changed to stopped");
                         if (stateChanged)
                             OnGoToStoppedState();
                     }
@@ -1067,7 +1068,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         protected void RunWorkItem(ThreadPoolWorkItem item)
         {
             Contract.Requires(item != null);
-            Contract.Assert(!_useOwnSyncContext || (SynchronizationContext.Current == _synchroContext));
+            Debug.Assert(!_useOwnSyncContext || (SynchronizationContext.Current == _synchroContext));
 
             Profiling.ProfilingTimer timer = new Profiling.ProfilingTimer();
             timer.StartTime();
@@ -1097,7 +1098,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         protected void ExtendGlobalQueueCapacity(int extensionVal)
         {
             Contract.Requires(extensionVal >= 0);
-            Contract.Assert(State != ThreadPoolState.Stopped);
+            Debug.Assert(State != ThreadPoolState.Stopped);
 
             _threadPoolGlobals.ExtendGlobalQueueCapacity(extensionVal);
         }
@@ -1110,8 +1111,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         protected void AddWorkItemToQueue(ThreadPoolWorkItem item)
         {
             Contract.Requires(item != null);
-            Contract.Assert(!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null);
-            Contract.Assert(State != ThreadPoolState.Stopped);
+            Debug.Assert(!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null);
+            Debug.Assert(State != ThreadPoolState.Stopped);
 
             item.StartStoreTimer();
             _threadPoolGlobals.AddItem(item, item.PreferFairness);
@@ -1126,8 +1127,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         protected bool TryAddWorkItemToQueue(ThreadPoolWorkItem item)
         {
             Contract.Requires(item != null);
-            Contract.Assert(!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null);
-            Contract.Assert(State != ThreadPoolState.Stopped);
+            Debug.Assert(!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null);
+            Debug.Assert(State != ThreadPoolState.Stopped);
 
             item.StartStoreTimer();
             var result = _threadPoolGlobals.TryAddItem(item, item.PreferFairness);
@@ -1148,7 +1149,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         {
             Contract.Requires(privateData != null);
             Contract.Ensures(Contract.Result<ThreadPoolWorkItem>() != null);
-            Contract.Assert(State != ThreadPoolState.Stopped);
+            Debug.Assert(State != ThreadPoolState.Stopped);
 
             var result = _threadPoolGlobals.TakeItem(privateData.LocalData, token);
             Profiling.Profiler.ThreadPoolWaitingInQueueTime(this.Name, result.StopStoreTimer());
@@ -1166,7 +1167,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         {
             Contract.Requires(privateData != null);
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Contract.Assert(State != ThreadPoolState.Stopped);
+            Debug.Assert(State != ThreadPoolState.Stopped);
 
             var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, out item);
             if (result)
@@ -1190,7 +1191,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         {
             Contract.Requires(privateData != null);
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Contract.Assert(State != ThreadPoolState.Stopped);
+            Debug.Assert(State != ThreadPoolState.Stopped);
 
             var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, true, true, out item, timeout, token, throwOnCancellation);
             if (result)
@@ -1214,7 +1215,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         {
             Contract.Requires(privateData != null);
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Contract.Assert(State != ThreadPoolState.Stopped);
+            Debug.Assert(State != ThreadPoolState.Stopped);
 
             var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, true, false, out item, timeout, token, throwOnCancellation);
             if (result)
@@ -1238,7 +1239,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         {
             Contract.Requires(privateData != null);
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Contract.Assert(State != ThreadPoolState.Stopped);
+            Debug.Assert(State != ThreadPoolState.Stopped);
 
             var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, false, true, out item, timeout, token, throwOnCancellation);
             if (result)
@@ -1319,7 +1320,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
             if (State != ThreadPoolState.StopRequested && State != ThreadPoolState.Stopped)
             {
-                Contract.Assume(isUserCall, "ThreadPool finalizer called. You should dispose ThreadPool by hand. ThreadPoolName: " + this.Name);
+                Debug.Assert(isUserCall, "ThreadPool finalizer called. You should dispose ThreadPool by hand. ThreadPoolName: " + this.Name);
 
                 if (isUserCall)
                     StopThreadPool(true, false, true);

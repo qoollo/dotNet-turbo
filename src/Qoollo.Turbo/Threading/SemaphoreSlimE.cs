@@ -26,7 +26,7 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             SemaphoreSlimE semaphore = obj as SemaphoreSlimE;
-            Contract.Assert(semaphore != null);
+            Debug.Assert(semaphore != null);
             lock (semaphore._lockObj)
             {
                 Monitor.PulseAll(semaphore._lockObj);
@@ -254,7 +254,7 @@ namespace Qoollo.Turbo.Threading
                 finally
                 {
                     Monitor.Enter(_lockObj, ref lockTaken);
-                    Contract.Assert(lockTaken);
+                    Debug.Assert(lockTaken);
                     _waitCount++;
                 }
 
@@ -275,7 +275,7 @@ namespace Qoollo.Turbo.Threading
                 }
 
 
-                Contract.Assert(_currentCount > 0);
+                Debug.Assert(_currentCount > 0);
                 _currentCount--;
 
 
@@ -315,7 +315,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait()
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, new CancellationToken());
-            Contract.Assert(semaphoreSlotTaken);
+            Debug.Assert(semaphoreSlotTaken);
         }
         /// <summary>
         /// Выполнить ожидание появления 1-ого слота в семаформе. 
@@ -325,7 +325,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait(CancellationToken token)
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, token);
-            Contract.Assert(semaphoreSlotTaken);
+            Debug.Assert(semaphoreSlotTaken);
         }
         /// <summary>
         /// Выполнить ожидание появления 1-ого слота в семаформе. 

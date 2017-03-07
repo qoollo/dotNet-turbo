@@ -4,6 +4,7 @@ using Qoollo.Turbo.Threading;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -56,14 +57,14 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         public PoolElementWrapper<T> Add(T rawElement, IPoolElementOperationSource<T> operations, bool makeAvailable)
         {
             Contract.Requires(operations != null);
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             PoolElementWrapper<T> container = new PoolElementWrapper<T>(rawElement, operations, this);
             container.MakeBusy();
             container.ThisIndex = _allElements.Add(container);
 
-            Contract.Assert(container.ThisIndex >= 0 && container.ThisIndex < _allElements.Capacity);
-            Contract.Assert(object.ReferenceEquals(container, _allElements.RawData[container.ThisIndex]));
+            Debug.Assert(container.ThisIndex >= 0 && container.ThisIndex < _allElements.Capacity);
+            Debug.Assert(object.ReferenceEquals(container, _allElements.RawData[container.ThisIndex]));
 
             if (container.ThisIndex >= (1 << 16) - 2)
             {
@@ -94,12 +95,12 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
             if (element.IsRemoved)
                 return;
 
-            Contract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
-            Contract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
+            Debug.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
+            Debug.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
 
             bool removeResult = _allElements.RemoveAt(element.ThisIndex);
-            Contract.Assert(removeResult == true);
-            Contract.Assert(_allElements.IndexOf(element) < 0);
+            Debug.Assert(removeResult == true);
+            Debug.Assert(_allElements.IndexOf(element) < 0);
             element.MarkRemoved();
             _allElements.Compact(false);
         }
@@ -138,15 +139,15 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
                 return;
             }
 
-            Contract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
-            Contract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
+            Debug.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
+            Debug.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
 
 #pragma warning disable 0420
             _allElements.CompactElementAt(ref element.ThisIndex);
 #pragma warning restore 0420
 
-            Contract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
-            Contract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
+            Debug.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity);
+            Debug.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]));
 
             ReleaseCore(element);
         }
@@ -193,7 +194,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
             {
                 //token.ThrowIfCancellationRequested(); // TODO: Refactor the code
                 removeSucceeded = this.TryTakeCore(out element);
-                Contract.Assert(removeSucceeded, "Take from underlying collection return false");
+                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally
@@ -245,7 +246,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         {
             PoolElementWrapper<T> result = null;
             bool takeSuccess = TryTakeWithRemoveInner(out result, Timeout.Infinite, new CancellationToken());
-            Contract.Assert(takeSuccess, "Element was not taken from SimpleElementStorage");
+            Debug.Assert(takeSuccess, "Element was not taken from SimpleElementStorage");
             return result;
         }
 

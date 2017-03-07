@@ -1,6 +1,7 @@
 ﻿using Qoollo.Turbo.Threading.ThreadPools.Common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -73,9 +74,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             private void Grow()
             {
                 var tmp = new Segment(_parent);
-                Contract.Assert(_next == null);
+                Debug.Assert(_next == null);
                 _next = tmp;
-                Contract.Assert(_parent._tail == this);
+                Debug.Assert(_parent._tail == this);
                 _parent._tail = tmp;
             }
 

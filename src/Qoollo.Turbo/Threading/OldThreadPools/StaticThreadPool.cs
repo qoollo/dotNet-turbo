@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Qoollo.Turbo.Threading.OldThreadPools.ServiceStuff;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo.Threading.OldThreadPools
 {
@@ -512,7 +513,7 @@ namespace Qoollo.Turbo.Threading.OldThreadPools
         {
             if (!_isDisposed)
             {
-                Contract.Assume(isUserCall, "StaticThreadPool destructor: Better to dispose by user. Закомментируй, если не нравится.");
+                Debug.Assert(isUserCall, "StaticThreadPool destructor: Better to dispose by user. Закомментируй, если не нравится.");
 
                 if (isUserCall)
                 {

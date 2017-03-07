@@ -1,6 +1,7 @@
 ﻿using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -53,7 +54,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private static void RunInnerHelper(object workItemState)
         {
             ThreadPoolWorkItem workItem = (ThreadPoolWorkItem)workItemState;
-            Contract.Assert(workItem != null);
+            Debug.Assert(workItem != null);
             workItem.RunInner();
         }
 

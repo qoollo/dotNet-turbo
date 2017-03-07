@@ -3,6 +3,7 @@ using Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections;
 using Qoollo.Turbo.Threading;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -59,7 +60,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         public PoolElementWrapper<T> Add(T rawElement, IPoolElementOperationSource<T> operations, bool makeAvailable)
         {
             Contract.Requires(operations != null);
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             PoolElementWrapper<T> container = new PoolElementWrapper<T>(rawElement, operations, this);
             container.MakeBusyAtomic();
@@ -86,8 +87,8 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
                 return;
 
             bool removeResult = _allElements.Remove(element);
-            Contract.Assert(removeResult == true);
-            Contract.Assert(_allElements.IndexOf(element) < 0);
+            Debug.Assert(removeResult == true);
+            Debug.Assert(_allElements.IndexOf(element) < 0);
             element.MarkRemoved();
         }
 
@@ -224,7 +225,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
 
             if (earlyStopResult != null)
             {
-                Contract.Assert(earlyStopResult.IsBusy);
+                Debug.Assert(earlyStopResult.IsBusy);
                 element = earlyStopResult;
                 return true;
             }
@@ -268,7 +269,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
                     if (TryTakeBest(out element))
                         return true;
 
-                    Contract.Assert(tryCount++ < 1000);
+                    Debug.Assert(tryCount++ < 1000);
                 }
             }
         }
@@ -303,7 +304,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
             {
                 //token.ThrowIfCancellationRequested(); // TODO: Refactor the code
                 removeSucceeded = this.TryTakeCore(out element);
-                Contract.Assert(removeSucceeded, "Take from underlying collection return false");
+                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally
@@ -355,7 +356,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         {
             PoolElementWrapper<T> result = null;
             bool takeSuccess = TryTakeWithRemoveInner(out result, Timeout.Infinite, new CancellationToken());
-            Contract.Assert(takeSuccess, "Element was not taken from SimpleElementStorage");
+            Debug.Assert(takeSuccess, "Element was not taken from SimpleElementStorage");
             return result;
         }
 
@@ -427,7 +428,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
                     if (TryTakeWorst(out element))
                         return true;
 
-                    Contract.Assert(tryCount++ < 1000);
+                    Debug.Assert(tryCount++ < 1000);
                 }
             }
         }
@@ -461,7 +462,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
             {
                 //token.ThrowIfCancellationRequested();  // TODO: Refactor the code
                 removeSucceeded = this.TryTakeWorstCore(out element);
-                Contract.Assert(removeSucceeded, "Take from underlying collection return false");
+                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally

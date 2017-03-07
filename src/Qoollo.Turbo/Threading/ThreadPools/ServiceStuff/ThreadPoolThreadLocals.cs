@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -44,7 +45,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             {
                 _isDisposed = true;
 
-                Contract.Assert(isUserCall, "ThreadPoolThreadLocals should be disposed explicitly by calling Dispose on ThreadPool. ThreadPoolName: " + (Globals != null ? Globals.OwnerPoolName : "unknown"));
+                Debug.Assert(isUserCall, "ThreadPoolThreadLocals should be disposed explicitly by calling Dispose on ThreadPool. ThreadPoolName: " + (Globals != null ? Globals.OwnerPoolName : "unknown"));
                 if (!isUserCall)
                     throw new InvalidOperationException("ThreadPoolThreadLocals should be disposed explicitly");
             }

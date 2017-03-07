@@ -78,7 +78,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// </summary>
         public void MarkElementDestroyed()
         {
-            Contract.Assert(!this.IsElementDestroyed, "Can't destroy element 2 times");
+            Debug.Assert(!this.IsElementDestroyed, "Can't destroy element 2 times");
             _isElementdDestroyed = true;
         }
         /// <summary>
@@ -86,8 +86,8 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// </summary>
         public void MarkRemoved()
         {
-            Contract.Assert(this.IsElementDestroyed, "Trying to remove Pool Element that was not destroyed");
-            Contract.Assert(!this.IsRemoved, "Can't remove element 2 times");
+            Debug.Assert(this.IsElementDestroyed, "Trying to remove Pool Element that was not destroyed");
+            Debug.Assert(!this.IsRemoved, "Can't remove element 2 times");
             _isRemoved = true;
         }
 
@@ -102,7 +102,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
             MakeBusyAtomic();
 #else
 
-            Contract.Assert(Volatile.Read(ref _isBusy) == 0, "Pool Element is already busy");
+            Debug.Assert(Volatile.Read(ref _isBusy) == 0, "Pool Element is already busy");
             Volatile.Write(ref _isBusy, 1);
 #endif
         }
@@ -114,7 +114,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
 #if DEBUG
             MakeAvailableAtomic();
 #else
-            Contract.Assert(Volatile.Read(ref _isBusy) == 1, "Pool Element is already available");
+            Debug.Assert(Volatile.Read(ref _isBusy) == 1, "Pool Element is already available");
             Volatile.Write(ref _isBusy, 0);
 #endif
         }
@@ -133,7 +133,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         protected internal void MakeBusyAtomic()
         {
             int prevIsBusy = Interlocked.Exchange(ref _isBusy, 1);
-            Contract.Assert(prevIsBusy == 0, "Pool Element is already busy");
+            Debug.Assert(prevIsBusy == 0, "Pool Element is already busy");
         }
         /// <summary>
         /// Сделать элемент доступным (атомарно)
@@ -141,7 +141,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         protected internal void MakeAvailableAtomic()
         {
             int prevIsBusy = Interlocked.Exchange(ref _isBusy, 0);
-            Contract.Assert(prevIsBusy == 1, "Pool Element is already available");
+            Debug.Assert(prevIsBusy == 1, "Pool Element is already available");
         }
 
 #if DEBUG
@@ -170,7 +170,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
             }
             else
             {
-                Contract.Assert(this.IsElementDestroyed, "Element should be destroyed before removing the PoolElementWrapper. Probably you forget to call Dispose on the owner pool. Info: " + this.CollectDiagnosticInfo());
+                Debug.Assert(this.IsElementDestroyed, "Element should be destroyed before removing the PoolElementWrapper. Probably you forget to call Dispose on the owner pool. Info: " + this.CollectDiagnosticInfo());
             }
         }
 #endif

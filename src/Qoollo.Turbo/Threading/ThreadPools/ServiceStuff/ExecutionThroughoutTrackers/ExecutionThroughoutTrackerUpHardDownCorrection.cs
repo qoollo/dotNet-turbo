@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -515,7 +516,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 _findBestDirectionBlinkCount = 0;
                 _optimalStateAverageThroughout = -1;
 
-                Contract.Assert(_isPerfMeasureThreadWork == false);
+                Debug.Assert(_isPerfMeasureThreadWork == false);
             }
         }
         /// <summary>
@@ -667,7 +668,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 return ReturnSuggestion("Upper bound reached", 0);
             }
 
-            Contract.Assert(curMeasure.ThreadCount > prevMeasure.ThreadCount);
+            Debug.Assert(curMeasure.ThreadCount > prevMeasure.ThreadCount);
 
             double throughoutDiffCoef = EstimateThroughoutDiffCoef(prevMeasure.ThreadCount, prevMeasure.Throughout, curMeasure.ThreadCount, curMeasure.Throughout);
             double avgThroughoutDiffCoef = EstimateThroughoutDiffCoef(prevMeasure.ThreadCount, prevMeasure.AverageThroughout, curMeasure.ThreadCount, curMeasure.AverageThroughout);

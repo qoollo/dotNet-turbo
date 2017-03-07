@@ -1,6 +1,7 @@
 ﻿using Qoollo.Turbo.Threading.AsyncAwaitSupport;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime;
@@ -90,7 +91,7 @@ namespace Qoollo.Turbo.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void OnCompleted(Action continuation)
             {
-                Contract.Assert(continuation != null);
+                Debug.Assert(continuation != null);
 
                 if (_supplier != null)
                     _supplier.Run(continuation, true);
@@ -106,7 +107,7 @@ namespace Qoollo.Turbo.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void UnsafeOnCompleted(Action continuation)
             {
-                Contract.Assert(continuation != null);
+                Debug.Assert(continuation != null);
 
                 if (_supplier != null)
                     _supplier.Run(continuation, false);

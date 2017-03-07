@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -151,9 +152,9 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
                     data = IncreaseLength();
                 }
 
-                Contract.Assert(index >= 0);
-                Contract.Assert(index < data.Length);
-                Contract.Assert(data[index] == null);
+                Debug.Assert(index >= 0);
+                Debug.Assert(index < data.Length);
+                Debug.Assert(data[index] == null);
 
                 try { }
                 finally
@@ -246,7 +247,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
                 return;
 
             int newSize = count + (BlockSize - (count % BlockSize));
-            Contract.Assert(newSize < data.Length);
+            Debug.Assert(newSize < data.Length);
 
             T[] newData = new T[newSize];
             int targetIndex = 0;
@@ -290,7 +291,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
             int copyCount = data.Length - emptyBackCount;
             int newSize = copyCount + (BlockSize - (copyCount % BlockSize));
 
-            Contract.Assert(newSize < data.Length);
+            Debug.Assert(newSize < data.Length);
 
             T[] newData = new T[newSize];
             for (int i = 0; i < newData.Length; i++)

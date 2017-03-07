@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -28,7 +29,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         public void Add(T element)
         {
             bool result = Add(element, Timeout.Infinite, new CancellationToken());
-            Contract.Assert(result);
+            Debug.Assert(result);
         }
         /// <summary>
         /// Добавить элемент на обработку
@@ -38,7 +39,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         public void Add(T element, CancellationToken token)
         {
             bool result = Add(element, Timeout.Infinite, token);
-            Contract.Assert(result);
+            Debug.Assert(result);
         }
         /// <summary>
         /// Добавить элемент на обработку

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Qoollo.Turbo.IoC.Lifetime;
 using Qoollo.Turbo.IoC.Lifetime.Factories;
 using Qoollo.Turbo.IoC.ServiceStuff;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo.IoC
 {
@@ -100,7 +101,7 @@ namespace Qoollo.Turbo.IoC
                 case ObjectInstantiationMode.PerCallInlinedParams:
                     return LifetimeFactories.PerCallInlinedParams;
             }
-            Contract.Assert(false, "Unknown ObjectInstantiationMode");
+            Debug.Assert(false, "Unknown ObjectInstantiationMode");
             throw new CommonIoCException("Unknown ObjectInstantiationMode");
         }
     }

@@ -1,6 +1,7 @@
 ﻿using Qoollo.Turbo.Threading.ThreadPools.Common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -371,7 +372,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                     }
                     else
                     {
-                        Contract.Assert(token.IsCancellationRequested);
+                        Debug.Assert(token.IsCancellationRequested);
                     }
                 }
             }

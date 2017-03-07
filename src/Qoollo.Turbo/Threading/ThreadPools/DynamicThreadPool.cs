@@ -2,6 +2,7 @@
 using Qoollo.Turbo.Threading.ThreadPools.ServiceStuff;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -683,7 +684,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                 {
                     int trackingThreadCount = 0;
                     bool incrementThreadCountSuccess = IncrementThreadCount(out trackingThreadCount);
-                    Contract.Assert(incrementThreadCountSuccess, "Error. Thread count was not incremented");
+                    Debug.Assert(incrementThreadCountSuccess, "Error. Thread count was not incremented");
 
                     result = AddNewThread(UniversalThreadProc) != null;
                 }
@@ -697,7 +698,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                     else
                     {
                         bool decrementThreadCountSuccess = DecremenetThreadCount();
-                        Contract.Assert(decrementThreadCountSuccess, "Error. Thread count was not decremented");
+                        Debug.Assert(decrementThreadCountSuccess, "Error. Thread count was not decremented");
                     }
                 }
 
@@ -735,7 +736,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                 {
                     bool wasActiveThreadCountDecremented = false;
                     bool decrementThreadCountSuccess = DecrementThreadCountCascade(out wasActiveThreadCountDecremented);
-                    Contract.Assert(decrementThreadCountSuccess, "Error. Thread count was not decremented.");
+                    Debug.Assert(decrementThreadCountSuccess, "Error. Thread count was not decremented.");
                     // Если не было уменьшения активных, то заблокируем лишний => уменьшае число потоков для блокирования
                     if (!wasActiveThreadCountDecremented)
                     {

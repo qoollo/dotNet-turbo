@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo.Threading.QueueProcessing
 {
@@ -339,7 +340,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                     _procThreads[i].Start();
 
                 bool changeStateToRunningSuccess = ChangeStateSafe(QueueAsyncProcessorState.Running, out prevState);
-                Contract.Assert(changeStateToRunningSuccess && prevState == QueueAsyncProcessorState.StartRequested);
+                Debug.Assert(changeStateToRunningSuccess && prevState == QueueAsyncProcessorState.StartRequested);
             }
             catch
             {
@@ -417,7 +418,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                             }
                             else
                             {
-                                Contract.Assert(stopRequestedToken.IsCancellationRequested);
+                                Debug.Assert(stopRequestedToken.IsCancellationRequested);
                             }
                         }
                     }
@@ -490,7 +491,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         QueueAsyncProcessorState prevState;
                         if (ChangeStateSafe(QueueAsyncProcessorState.Stopped, out prevState))
                         {
-                            Contract.Assert(prevState == QueueAsyncProcessorState.StopRequested);
+                            Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
                             _stoppedEvent.Set();
                             Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                         }
@@ -631,8 +632,8 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             _completeAdding = completeAdding;
             _letFinishProcess = letFinishProcess;
 
-            Contract.Assert(_stopRequestedCancelation != null || prevState == QueueAsyncProcessorState.Created);
-            Contract.Assert(_stoppedCancelation != null || prevState == QueueAsyncProcessorState.Created);
+            Debug.Assert(_stopRequestedCancelation != null || prevState == QueueAsyncProcessorState.Created);
+            Debug.Assert(_stoppedCancelation != null || prevState == QueueAsyncProcessorState.Created);
 
             if (_stopRequestedCancelation != null)
                 _stopRequestedCancelation.Cancel();
@@ -655,14 +656,14 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             {
                 if (ChangeStateSafe(QueueAsyncProcessorState.Stopped, out prevState))
                 {
-                    Contract.Assert(prevState == QueueAsyncProcessorState.StopRequested);
+                    Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
                     _stoppedEvent.Set();
                     Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                 }
             }
 
-            Contract.Assert(State == QueueAsyncProcessorState.StopRequested || State == QueueAsyncProcessorState.Stopped);
-            Contract.Assume(!waitForStop || State == QueueAsyncProcessorState.Stopped);
+            Debug.Assert(State == QueueAsyncProcessorState.StopRequested || State == QueueAsyncProcessorState.Stopped);
+            Debug.Assert(!waitForStop || State == QueueAsyncProcessorState.Stopped);
             return true;
         }
 
@@ -695,7 +696,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         {
             if (!this.IsStopRequestedOrStopped)
             {
-                Contract.Assume(isUserCall, "QueueAsyncProcessor destructor: Better to dispose by user. Закомментируй, если не нравится.");
+                Debug.Assert(isUserCall, "QueueAsyncProcessor destructor: Better to dispose by user. Закомментируй, если не нравится.");
 
                 if (isUserCall)
                     StopProcessor(true, false, true);

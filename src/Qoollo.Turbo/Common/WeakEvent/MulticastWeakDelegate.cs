@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo
 {
@@ -44,7 +45,7 @@ namespace Qoollo.Turbo
         public void Add(T reference)
         {
             Contract.Requires(reference != null);
-            Contract.Assume(reference is Delegate);
+            Debug.Assert(reference is Delegate);
 
             if (reference is MulticastDelegate)
             {
@@ -112,7 +113,7 @@ namespace Qoollo.Turbo
             {
                 for (int i = 0; i < _handlers.Count; i++)
                 {
-                    Contract.Assume(_handlers[i] != null);
+                    Debug.Assert(_handlers[i] != null);
 
                     var newDeleg = _handlers[i].GetDelegate();
                     if (newDeleg != null)
