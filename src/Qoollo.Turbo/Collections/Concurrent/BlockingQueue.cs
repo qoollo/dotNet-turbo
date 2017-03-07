@@ -306,7 +306,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                         }
                         else
                         {
-                            waitForSemaphoreWasSuccessful = _freeNodes.Wait(timeout, _consumersCancellationTokenSource.Token);
+                            waitForSemaphoreWasSuccessful = _freeNodes.Wait(timeout, _producersCancellationTokenSource.Token);
                         }
                     }
                 }
