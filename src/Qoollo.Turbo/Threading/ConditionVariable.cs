@@ -18,9 +18,9 @@ namespace Qoollo.Turbo.Threading
     {
         private static readonly Action<object> _cancellationTokenCanceledEventHandler = new Action<object>(CancellationTokenCanceledEventHandler);
         /// <summary>
-        /// Обработчик отмены токена
+        /// Cancellation handler for CancellationToken
         /// </summary>
-        /// <param name="obj">Объект SemaphoreSlimE</param>
+        /// <param name="obj">ConditionVariable object</param>
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             ConditionVariable conditionVar = obj as ConditionVariable;
@@ -29,34 +29,6 @@ namespace Qoollo.Turbo.Threading
             {
                 Monitor.PulseAll(conditionVar._lockObj);
             }
-        }
-
-
-        /// <summary>
-        /// Получить временной маркер в миллисекундах
-        /// </summary>
-        /// <returns>Временной маркер</returns>
-        private static uint GetTimestamp()
-        {
-            return (uint)Environment.TickCount;
-        }
-        /// <summary>
-        /// Обновить таймаут
-        /// </summary>
-        /// <param name="startTime">Время начала</param>
-        /// <param name="originalTimeout">Величина таймаута</param>
-        /// <returns>Сколько осталось времени</returns>
-        private static int UpdateTimeout(uint startTime, int originalTimeout)
-        {
-            uint elapsed = GetTimestamp() - startTime;
-            if (elapsed > (uint)int.MaxValue)
-                return 0;
-
-            int rest = originalTimeout - (int)elapsed;
-            if (rest <= 0)
-                return 0;
-
-            return rest;
         }
 
         // =============
@@ -86,7 +58,7 @@ namespace Qoollo.Turbo.Threading
 
                 if (timeout != Timeout.Infinite)
                 {
-                    remainingWaitMilliseconds = UpdateTimeout(startTime, timeout);
+                    remainingWaitMilliseconds = TimeoutHelper.UpdateTimeout(startTime, timeout);
                     if (remainingWaitMilliseconds <= 0)
                         return false;
                 }
@@ -114,7 +86,7 @@ namespace Qoollo.Turbo.Threading
 
             uint startTime = 0;
             if (timeout != Timeout.Infinite && timeout > 0)
-                startTime = GetTimestamp();
+                startTime = TimeoutHelper.GetTimestamp();
 
             if (predicate())
                 return true;
@@ -180,7 +152,7 @@ namespace Qoollo.Turbo.Threading
 
                 if (timeout != Timeout.Infinite)
                 {
-                    remainingWaitMilliseconds = UpdateTimeout(startTime, timeout);
+                    remainingWaitMilliseconds = TimeoutHelper.UpdateTimeout(startTime, timeout);
                     if (remainingWaitMilliseconds <= 0)
                         return false;
                 }
@@ -208,7 +180,7 @@ namespace Qoollo.Turbo.Threading
 
             uint startTime = 0;
             if (timeout != Timeout.Infinite && timeout > 0)
-                startTime = GetTimestamp();
+                startTime = TimeoutHelper.GetTimestamp();
 
             if (predicate(state))
                 return true;
@@ -274,7 +246,7 @@ namespace Qoollo.Turbo.Threading
 
                 if (timeout != Timeout.Infinite)
                 {
-                    remainingWaitMilliseconds = UpdateTimeout(startTime, timeout);
+                    remainingWaitMilliseconds = TimeoutHelper.UpdateTimeout(startTime, timeout);
                     if (remainingWaitMilliseconds <= 0)
                         return false;
                 }
@@ -302,7 +274,7 @@ namespace Qoollo.Turbo.Threading
 
             uint startTime = 0;
             if (timeout != Timeout.Infinite && timeout > 0)
-                startTime = GetTimestamp();
+                startTime = TimeoutHelper.GetTimestamp();
 
             if (predicate(ref state))
                 return true;
@@ -380,7 +352,7 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Clean-up resources
+        /// Cleans-up resources
         /// </summary>
         public void Dispose()
         {

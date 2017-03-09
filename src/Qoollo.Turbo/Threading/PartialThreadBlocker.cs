@@ -36,32 +36,6 @@ namespace Qoollo.Turbo.Threading
             }
         }
 
-        /// <summary>
-        /// Получить временной маркер в миллисекундах
-        /// </summary>
-        /// <returns>Временной маркер</returns>
-        private static uint GetTimestamp()
-        {
-            return (uint)Environment.TickCount;
-        }
-        /// <summary>
-        /// Обновить таймаут
-        /// </summary>
-        /// <param name="startTime">Время начала</param>
-        /// <param name="originalTimeout">Величина таймаута</param>
-        /// <returns>Сколько осталось времени</returns>
-        private static int UpdateTimeout(uint startTime, int originalTimeout)
-        {
-            uint elapsed = GetTimestamp() - startTime;
-            if (elapsed > (uint)int.MaxValue)
-                return 0;
-
-            int rest = originalTimeout - (int)elapsed;
-            if (rest <= 0)
-                return 0;
-
-            return rest;
-        }
 
         // ======================
 
@@ -188,7 +162,7 @@ namespace Qoollo.Turbo.Threading
             uint startTime = 0;
             int currentTime = Timeout.Infinite;
             if (timeout != Timeout.Infinite)
-                startTime = GetTimestamp();
+                startTime = TimeoutHelper.GetTimestamp();
 
             for (int i = 0; i < 10; i++)
             {
@@ -218,7 +192,7 @@ namespace Qoollo.Turbo.Threading
 
                                 if (timeout != Timeout.Infinite)
                                 {
-                                    currentTime = UpdateTimeout(startTime, timeout);
+                                    currentTime = TimeoutHelper.UpdateTimeout(startTime, timeout);
                                     if (currentTime <= 0)
                                         return false;
                                 }
