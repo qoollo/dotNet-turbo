@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Qoollo.Turbo.Threading
+namespace Qoollo.Turbo.Threading.ServiceStuff
 {
     /// <summary>
     /// Helper methods to work with timeouts

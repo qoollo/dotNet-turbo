@@ -429,8 +429,9 @@
     <Compile Include="Common\WeakEvent\MulticastWeakDelegate.cs" />
     <Compile Include="Common\WeakEvent\WeakDelegate.cs" />
     <Compile Include="Common\WeakEvent\WeakReferenceStorage.cs" />
-    <Compile Include="Threading\ThreadStartControllingToken.cs" />
-    <Compile Include="Threading\TimeoutHelper.cs" />
+    <Compile Include="Threading\ServiceStuff\ThreadStartControllingToken.cs" />
+    <Compile Include="Threading\ServiceStuff\TimeoutHelper.cs" />
+    <Compile Include="Threading\WaitPredicates.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Caching\" />
