@@ -431,6 +431,7 @@
     <Compile Include="Common\WeakEvent\WeakDelegate.cs" />
     <Compile Include="Common\WeakEvent\WeakReferenceStorage.cs" />
     <Compile Include="Threading\ThreadStartControllingToken.cs" />
+    <Compile Include="Threading\TimeoutHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Caching\" />

@@ -10,10 +10,8 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Threading
 {
-#pragma warning disable 0420
-
     /// <summary>
-    /// Легковесный семафор
+    /// Lightweigh semaphore based on Interlocked operations
     /// </summary>
     [DebuggerDisplay("CurrentCount = {CurrentCount}")]
     public class SemaphoreLight: IDisposable
@@ -22,9 +20,9 @@ namespace Qoollo.Turbo.Threading
 
         private static readonly Action<object> _cancellationTokenCanceledEventHandler = new Action<object>(CancellationTokenCanceledEventHandler);
         /// <summary>
-        /// Обработчик отмены токена
+        /// Cancellation handler for CancellationToken
         /// </summary>
-        /// <param name="obj">Объект SemaphoreSlimE</param>
+        /// <param name="obj">SemaphoreLight object</param>
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             SemaphoreLight semaphore = obj as SemaphoreLight;
@@ -36,37 +34,10 @@ namespace Qoollo.Turbo.Threading
         }
 
 
-        /// <summary>
-        /// Получить временной маркер в миллисекундах
-        /// </summary>
-        /// <returns>Временной маркер</returns>
-        private static uint GetTimestamp()
-        {
-            return (uint)Environment.TickCount;
-        }
-        /// <summary>
-        /// Обновить таймаут
-        /// </summary>
-        /// <param name="startTime">Время начала</param>
-        /// <param name="originalTimeout">Величина таймаута</param>
-        /// <returns>Сколько осталось времени</returns>
-        private static int UpdateTimeout(uint startTime, int originalTimeout)
-        {
-            uint elapsed = GetTimestamp() - startTime;
-            if (elapsed > (uint)int.MaxValue)
-                return 0;
-
-            int rest = originalTimeout - (int)elapsed;
-            if (rest <= 0)
-                return 0;
-
-            return rest;
-        }
-
         // =============
 
 
-        private volatile int _currentCountLocFree;
+        private volatile int _currentCountLockFree;
         private volatile int _currentCountForWait;
         private readonly int _maxCount;
 
@@ -80,10 +51,10 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Конструктор SemaphoreLight
+        /// SemaphoreLight constructor
         /// </summary>
-        /// <param name="initialCount">Начальное значение в семаформе</param>
-        /// <param name="maxCount">Максимальное значение в семаформе</param>
+        /// <param name="initialCount">Initial number of request that can be granted concurrently</param>
+        /// <param name="maxCount">Maximal count of requests that can be granted concurrently</param>
         public SemaphoreLight(int initialCount, int maxCount)
         {
             if (initialCount < 0 || initialCount > maxCount)
@@ -93,28 +64,28 @@ namespace Qoollo.Turbo.Threading
 
             _maxCount = maxCount;
             _lockObj = new object();
-            _currentCountLocFree = initialCount;
+            _currentCountLockFree = initialCount;
             _currentCountForWait = 0;
             _isDisposed = false;
         }
         /// <summary>
-        /// Конструктор SemaphoreLight
+        /// SemaphoreLight constructor
         /// </summary>
-        /// <param name="initialCount">Начальное значение в семаформе</param>
+        /// <param name="initialCount">Initial number of request that can be granted concurrently</param>
         public SemaphoreLight(int initialCount)
             : this(initialCount, int.MaxValue)
         {
         }
 
         /// <summary>
-        /// Число доступных слотов
+        /// The number of threads that will be allowed to enter the Semaphore
         /// </summary>
         public int CurrentCount
         {
-            get { return _currentCountLocFree + _currentCountForWait; }
+            get { return _currentCountLockFree + _currentCountForWait; }
         }
         /// <summary>
-        /// Число ожидающих потоков
+        /// The number of waiting threads on the Semaphore
         /// </summary>
         public int WaiterCount
         {
@@ -123,21 +94,21 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Атомарно забрать слот из _currentCountLocFree, если там есть
+        /// Atomically take the value from _currentCountLocFree if it's possible
         /// </summary>
-        /// <returns>Успешность</returns>
+        /// <returns>Is the slot was taken</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryTakeLockFree()
         {
             SpinWait spin = new SpinWait();
-            int currentCountLocFree = _currentCountLocFree;
+            int currentCountLocFree = _currentCountLockFree;
             while (currentCountLocFree > 0)
             {
-                if (Interlocked.CompareExchange(ref _currentCountLocFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
+                if (Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                     return true;
 
                 spin.SpinOnce();
-                currentCountLocFree = _currentCountLocFree;
+                currentCountLocFree = _currentCountLockFree;
             }
 
             return false;
@@ -145,12 +116,13 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Выполнение ожидания и забор элемента (должен вызываться внутри lock на _lockObj)
+        /// Waits until count will be available or timeout happend and take the slot from '_currentCountForWait' 
+        /// (should be called inside 'lock' statement on '_lockObj')
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="startTime">Начальное время (для отслеживания таймаута)</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Удалось ли дождаться (false - таймаут или отмена или Dispose)</returns>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="startTime">Starting time of the procedure to track the timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the waiting was successfull (false - timeout or cancellation or Dispose happened)</returns>
         private bool WaitUntilCountOrTimeoutAndTake(int timeout, uint startTime, CancellationToken token)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
@@ -162,7 +134,7 @@ namespace Qoollo.Turbo.Threading
 
                 if (timeout != Timeout.Infinite)
                 {
-                    remainingWaitMilliseconds = UpdateTimeout(startTime, timeout);
+                    remainingWaitMilliseconds = TimeoutHelper.UpdateTimeout(startTime, timeout);
                     if (remainingWaitMilliseconds <= 0)
                         return false;
                 }
@@ -186,13 +158,12 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Выполнить ожидание появления 1-ого слота в семаформе. 
-        /// При успешном захвате число доступных слотов уменьшается на 1
+        /// Blocks the current thread until it can enter the semaphore
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать исключение при отмене по токену</param>
-        /// <returns>Удалось ли захватить слот</returns>
+        /// <param name="timeout">Tiemout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Whether the OperationCanceledException should be thrown if cancellation happened</param>
+        /// <returns>True if the current thread successfully entered the semaphore</returns>
         internal bool Wait(int timeout, CancellationToken token, bool throwOnCancellation)
         {
             if (_isDisposed)
@@ -213,7 +184,7 @@ namespace Qoollo.Turbo.Threading
 
             uint startTime = 0;
             if (timeout > 0)
-                startTime = GetTimestamp();
+                startTime = TimeoutHelper.GetTimestamp();
             else if (timeout < 0)
                 timeout = Timeout.Infinite;
 
@@ -221,21 +192,21 @@ namespace Qoollo.Turbo.Threading
             // Ждём появления (лучше активно подождать, чем входить в lock)
             if (_processorCount > 1)
             {
-                int currentCountLocFree = _currentCountLocFree;
+                int currentCountLocFree = _currentCountLockFree;
                 if (_waitCount >= _currentCountForWait && _waitCount <= _currentCountForWait + 2)
                 {
                     for (int i = 0; i < 9; i++)
                     {
-                        if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLocFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
+                        if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                             return true;
 
                         Thread.SpinWait(150 + 16 * i);
-                        currentCountLocFree = _currentCountLocFree;
+                        currentCountLocFree = _currentCountLockFree;
                     }
                 }
 
                 // Пробуем захватить ещё раз
-                if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLocFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
+                if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                     return true;
             }
 
@@ -247,8 +218,8 @@ namespace Qoollo.Turbo.Threading
             {
                 Thread.Yield();
 
-                int currentCountLocFree = _currentCountLocFree;
-                if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLocFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
+                int currentCountLocFree = _currentCountLockFree;
+                if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                     return true;
             }
 
@@ -314,12 +285,14 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Выполнить ожидание появления 1-ого слота в семаформе. 
-        /// При успешном захвате число доступных слотов уменьшается на 1
+        /// Blocks the current thread until it can enter the semaphore
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Удалось ли захватить слот</returns>
+        /// <param name="timeout">Tiemout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the current thread successfully entered the semaphore</returns>
+        /// <exception cref="ObjectDisposedException">Semaphore was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Wait(int timeout, CancellationToken token)
         {
@@ -327,9 +300,10 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Выполнить ожидание появления 1-ого слота в семаформе. 
-        /// При успешном захвате число доступных слотов уменьшается на 1
+        /// Blocks the current thread until it can enter the semaphore
         /// </summary>
+        /// <exception cref="ObjectDisposedException">Semaphore was disposed</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Wait()
         {
@@ -337,10 +311,12 @@ namespace Qoollo.Turbo.Threading
             Debug.Assert(semaphoreSlotTaken);
         }
         /// <summary>
-        /// Выполнить ожидание появления 1-ого слота в семаформе. 
-        /// При успешном захвате число доступных слотов уменьшается на 1
+        /// Blocks the current thread until it can enter the semaphore
         /// </summary>
-        /// <param name="token">Токен отмены</param>
+        /// <param name="token">Cancellation token</param>
+        /// <exception cref="ObjectDisposedException">Semaphore was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Wait(CancellationToken token)
         {
@@ -348,40 +324,44 @@ namespace Qoollo.Turbo.Threading
             Debug.Assert(semaphoreSlotTaken);
         }
         /// <summary>
-        /// Выполнить ожидание появления 1-ого слота в семаформе. 
-        /// При успешном захвате число доступных слотов уменьшается на 1
+        /// Blocks the current thread until it can enter the semaphore
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>Удалось ли захватить слот</returns>
+        /// <param name="timeout">Tiemout value</param>
+        /// <returns>True if the current thread successfully entered the semaphore</returns>
+        /// <exception cref="ObjectDisposedException">Semaphore was disposed</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         public bool Wait(TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
 
             return Wait((int)timeoutMs, new CancellationToken(), true);
         }
         /// <summary>
-        /// Выполнить ожидание появления 1-ого слота в семаформе. 
-        /// При успешном захвате число доступных слотов уменьшается на 1
+        /// Blocks the current thread until it can enter the semaphore
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Удалось ли захватить слот</returns>
+        /// <param name="timeout">Tiemout value</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the current thread successfully entered the semaphore</returns>
+        /// <exception cref="ObjectDisposedException">Semaphore was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         public bool Wait(TimeSpan timeout, CancellationToken token)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
 
             return Wait((int)timeoutMs, token, true);
         }
         /// <summary>
-        /// Выполнить ожидание появления 1-ого слота в семаформе. 
-        /// При успешном захвате число доступных слотов уменьшается на 1
+        /// Blocks the current thread until it can enter the semaphore
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>Удалось ли захватить слот</returns>
+        /// <param name="timeout">Tiemout in milliseconds</param>
+        /// <returns>True if the current thread successfully entered the semaphore</returns>
+        /// <exception cref="ObjectDisposedException">Semaphore was disposed</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Wait(int timeout)
         {
@@ -391,9 +371,9 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Атомарно считать diff между числом Waiter'ов и числом доступных слотов для них
+        /// Atomically calculates the difference between number of waiting threads and number of available slots
         /// </summary>
-        /// <returns>Разница</returns>
+        /// <returns>Difference</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetWaiterAndWaitCountDiffAtomic()
         {
@@ -410,9 +390,9 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Освободить N слотов
+        /// Exists the semaphore the specified number of times
         /// </summary>
-        /// <param name="releaseCount">Число слотов для освобождения</param>
+        /// <param name="releaseCount">The number of times to exit the semaphore</param>
         public void Release(int releaseCount)
         {
             if (_isDisposed)
@@ -440,7 +420,7 @@ namespace Qoollo.Turbo.Threading
             // Сначала возврат в lockFree
             if (releaseCountLocFree > 0)
             {
-                int currentCountLocFree = Interlocked.Add(ref _currentCountLocFree, releaseCountLocFree);
+                int currentCountLocFree = Interlocked.Add(ref _currentCountLockFree, releaseCountLocFree);
                 Debug.Assert(currentCountLocFree > 0);
             }
 
@@ -458,7 +438,7 @@ namespace Qoollo.Turbo.Threading
                     {
                         // Если слотов оказывается больше, то избыток возвращаем в _currentCountLocFree
                         int countForReturnToLockFree = Math.Min(releaseCountForWait, nextCurrentCountForWait - waitCount);
-                        int currentCountLocFree = Interlocked.Add(ref _currentCountLocFree, countForReturnToLockFree);
+                        int currentCountLocFree = Interlocked.Add(ref _currentCountLockFree, countForReturnToLockFree);
                         Debug.Assert(currentCountLocFree > 0);
                         releaseCountForWait -= countForReturnToLockFree;
                         releaseCountLocFree += countForReturnToLockFree;
@@ -473,12 +453,12 @@ namespace Qoollo.Turbo.Threading
                         if (maxToRequestFromLockFree > 0)
                         {
                             SpinWait spin = new SpinWait();
-                            int currentCountLocFree = _currentCountLocFree;
+                            int currentCountLocFree = _currentCountLockFree;
                             int countToRequestFromLockFree = Math.Min(currentCountLocFree, maxToRequestFromLockFree);
                             while (countToRequestFromLockFree > 0)
                             {
                                 Debug.Assert(currentCountLocFree - countToRequestFromLockFree >= 0);
-                                if (Interlocked.CompareExchange(ref _currentCountLocFree, currentCountLocFree - countToRequestFromLockFree, currentCountLocFree) == currentCountLocFree)
+                                if (Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - countToRequestFromLockFree, currentCountLocFree) == currentCountLocFree)
                                 {
                                     releaseCountForWait += countToRequestFromLockFree;
                                     releaseCountLocFree -= countToRequestFromLockFree;
@@ -486,7 +466,7 @@ namespace Qoollo.Turbo.Threading
                                 }
 
                                 spin.SpinOnce();
-                                currentCountLocFree = _currentCountLocFree;
+                                currentCountLocFree = _currentCountLockFree;
                                 countToRequestFromLockFree = Math.Min(currentCountLocFree, maxToRequestFromLockFree);
                             }
                         }
@@ -513,7 +493,7 @@ namespace Qoollo.Turbo.Threading
             }
         }
         /// <summary>
-        /// Освободить 1 слот
+        /// Exists the semaphore once
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Release()
@@ -523,7 +503,7 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Cleans-up all resources
         /// </summary>
         public void Dispose()
         {
@@ -541,6 +521,4 @@ namespace Qoollo.Turbo.Threading
             }
         }
     }
-
-#pragma warning restore 0420
 }
