@@ -293,7 +293,6 @@
     <Compile Include="Threading\LinearSpinWait.cs" />
     <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorExtensions.cs" />
     <Compile Include="Threading\SemaphoreLight.cs" />
-    <Compile Include="Threading\SemaphoreSlimE.cs" />
     <Compile Include="Threading\ServiceStuff\CancellationTokenHelper.cs" />
     <Compile Include="Threading\ServiceStuff\ManagementThreadController.cs" />
     <Compile Include="Threading\ServiceStuff\TaskHelper.cs" />
