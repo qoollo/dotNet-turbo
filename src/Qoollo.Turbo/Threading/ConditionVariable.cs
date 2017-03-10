@@ -45,6 +45,11 @@ namespace Qoollo.Turbo.Threading
             }
 
             /// <summary>
+            /// Indicates that no predicate was passed
+            /// </summary>
+            public bool IsEmpty { get { return SimplePredicate == null && PredicateWithState == null && PredicateWithRefState == null; } }
+
+            /// <summary>
             /// Invokes the correct predicate
             /// </summary>
             /// <param name="state">State object</param>
@@ -92,6 +97,18 @@ namespace Qoollo.Turbo.Threading
         {
             _waitCount = 0;
             _lockObj = new object();
+        }
+
+        /// <summary>
+        /// ConditionVariable constructor
+        /// </summary>
+        /// <param name="externalSyncObject">User synchronization object</param>
+        internal ConditionVariable(object externalSyncObject)
+        {
+            if (externalSyncObject == null)
+                throw new ArgumentNullException(nameof(externalSyncObject));
+            _waitCount = 0;
+            _lockObj = externalSyncObject;
         }
 
         /// <summary>
@@ -154,7 +171,7 @@ namespace Qoollo.Turbo.Threading
                     _waitCount++;
                 }
 
-                if (predicate.Invoke(ref state))
+                if (!predicate.IsEmpty && predicate.Invoke(ref state))
                     return true;
 
                 if (timeout == 0)
@@ -169,7 +186,7 @@ namespace Qoollo.Turbo.Threading
                     throw new OperationCanceledException(token);
 
                 if (_isDisposed)
-                    throw new OperationInterruptedException("ConditionalVariable wait was interrupted by Dispose", new ObjectDisposedException(this.GetType().Name));
+                    throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(this.GetType().Name));
             }
             finally
             {
@@ -211,6 +228,47 @@ namespace Qoollo.Turbo.Threading
 
             object tmpState = null;
             return WaitSlowPath(new WaitPredicateCombination<object>(), ref tmpState, startTime, timeout, token);
+        }
+        /// <summary>
+        /// Blocks the current thread until the next notification
+        /// </summary>
+        /// <param name="timeout">Tiemout in milliseconds</param>
+        /// <returns>True if the current thread successfully received a notification</returns>
+        /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait(int timeout)
+        {
+            return Wait(timeout, default(CancellationToken));
+        }
+        /// <summary>
+        /// Blocks the current thread until the next notification
+        /// </summary>
+        /// <param name="timeout">Tiemout value</param>
+        /// <returns>True if the current thread successfully received a notification</returns>
+        /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait(TimeSpan timeout)
+        {
+            long timeoutMs = (long)timeout.TotalMilliseconds;
+            if (timeoutMs > int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+
+            return Wait((int)timeoutMs, default(CancellationToken));
+        }
+        /// <summary>
+        /// Blocks the current thread until the next notification
+        /// </summary>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the current thread successfully received a notification</returns>
+        /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait(CancellationToken token)
+        {
+            return Wait(Timeout.Infinite, token);
         }
 
         /// <summary>
