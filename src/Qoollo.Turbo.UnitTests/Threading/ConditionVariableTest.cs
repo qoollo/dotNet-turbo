@@ -15,7 +15,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestAlwaysPositivePredicate()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int called = 0;
                 bool result = testInst.Wait(() => { called++; return true; }, 100000);
@@ -38,7 +38,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestStatePassedCorrectly()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 object state = new object();
                 bool result = testInst.Wait((s) => { Assert.AreEqual(state, s);  return true; }, state, 100000);
@@ -54,7 +54,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [ExpectedException(typeof(ApplicationException))]
         public void TestExceptionPassedFromPredicate()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 try
                 {
@@ -74,7 +74,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestNotificationReceived()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int result = 0;
                 var task = Task.Run(() =>
@@ -97,7 +97,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestNotificationWithPredicateOverload1()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int result = 0;
                 int state = 0;
@@ -125,7 +125,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestNotificationWithPredicateOverload2()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int result = 0;
                 int state = 0;
@@ -154,7 +154,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestNotificationWithPredicateOverload3()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int result = 0;
                 int state = 0;
@@ -184,7 +184,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestTimeoutWorks()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int result = 0;
                 var task = Task.Run(() =>
@@ -204,7 +204,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestCancellationWorks()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int result = 0;
                 CancellationTokenSource tokenSrc = new CancellationTokenSource();
@@ -237,7 +237,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestLongPredicateEstimatesOnceWithSmallTimeout()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int result = 0;
                 int estimCount = 0;
@@ -259,7 +259,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestSingleThreadWakeUpOnSignal()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int exitCount = 0;
                 int state = 0;
@@ -292,7 +292,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestAllThreadWakeUpOnSignalAll()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int exitCount = 0;
                 int state = 0;
@@ -320,7 +320,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestInterruptOnDispose()
         {
-            using (var testInst = new ConditionVariable())
+            using (var testInst = new ConditionVariableBad())
             {
                 int exitCount = 0;
                 var task = Task.Run(() =>
@@ -350,63 +350,34 @@ namespace Qoollo.Turbo.UnitTests.Threading
         private class ThreadSafeQueue<T>
         {
             public object SharedSyncObj = new object();
-            public ConditionVariable VarFull = null;
-            public ConditionVariable VarEmpty = null;
+            public ConditionVariable VarFull = new ConditionVariable();
+            public ConditionVariable VarEmpty = new ConditionVariable();
             public Queue<T> Queue = new Queue<T>();
             public int MaxCount = 1000;
-
-            public ThreadSafeQueue()
-            {
-                VarFull = new ConditionVariable(SharedSyncObj);
-                VarEmpty = new ConditionVariable(SharedSyncObj);
-            }
 
             public bool TryAdd(T value, int timeout, CancellationToken token)
             {
                 lock (SharedSyncObj)
                 {
-                    return VarFull.Wait(s =>
+                    if (VarFull.Wait(SharedSyncObj, s => s.Queue.Count < s.MaxCount, this, timeout, token))
                     {
-                        if (s.Queue.Count < s.MaxCount)
-                        {
-                            s.Queue.Enqueue(value);
-                            s.VarEmpty.Signal();
-                            return true;
-                        }
-                        return false;
-                    }, this, timeout, token);
+                        Queue.Enqueue(value);
+                        VarEmpty.Signal();
+                        return true;
+                    }
+
+                    return false;
                 }
             }
 
-
-            private struct TakeStruct
-            {
-                public ThreadSafeQueue<T> This;
-                public T Value;
-            }
-            
-
             public bool TryTake(out T value, int timeout, CancellationToken token)
             {
-                TakeStruct takeStruct = new TakeStruct();
-                takeStruct.This = this;
-
                 lock (SharedSyncObj)
                 {
-                    bool result = VarFull.Wait((ref TakeStruct s) =>
+                    if (VarFull.Wait(SharedSyncObj, s => s.Queue.Count > 0, this, timeout, token))
                     {
-                        if (s.This.Queue.Count > 0)
-                        {
-                            s.Value = s.This.Queue.Dequeue();
-                            s.This.VarFull.Signal();
-                            return true;
-                        }
-                        return false;
-                    }, ref takeStruct, timeout, token);
-
-                    if (result)
-                    {
-                        value = takeStruct.Value;
+                        value = Queue.Dequeue();
+                        VarFull.Signal();
                         return true;
                     }
 
@@ -511,14 +482,14 @@ namespace Qoollo.Turbo.UnitTests.Threading
         }
 
 
-        //[TestMethod]
+        [TestMethod]
         public void ComplexTest()
         {
             ThreadSafeQueue<int> q = new ThreadSafeQueue<int>();
-            q.MaxCount = 1000;
+            q.MaxCount = 2003;
 
             for (int i = 0; i < 10; i++)
-                RunComplexTest(q, 500000, Math.Max(1, Environment.ProcessorCount / 2));
+                RunComplexTest(q, 500000, Math.Max(1, Environment.ProcessorCount / 2) + (i % 4));
         }
     }
 }
