@@ -11,11 +11,11 @@ namespace Qoollo.Turbo.PerformanceTests
     {
         static void Main(string[] args)
         {
-            SemaphorePerfTest.RunTest();
+            //SemaphorePerfTest.RunTest();
             //ObjectPoolTest.RunTest();
             //ThreadPoolTests.RunOptimization();
             //ThreadPoolTests.FuncForOptimization();
-            //HighConcurrencyLoadTest.RunTest();
+            HighConcurrencyLoadTest.RunTest();
             //HighConcurrencyLoadTest.RunOptimization();
             //InliningTest.RunTest();
             //ThreadPoolTaskSpawnPerformanceTest.RunTest();

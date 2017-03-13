@@ -25,6 +25,14 @@ namespace Qoollo.Turbo.Threading
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryEnterLock(object syncObj, ref bool lockTaken)
+        {
+            if (!lockTaken)
+                Monitor.TryEnter(syncObj, 0, ref lockTaken);
+
+            return lockTaken;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ExitLock(object syncObj, ref bool lockTaken)
         {
             if (lockTaken)

@@ -367,11 +367,13 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 {
                     if (VarFull.Wait(s => s.Queue.Count < s.MaxCount, this, timeout, token))
                     {
+                        Assert.IsTrue(Monitor.IsEntered(SharedSyncObj));
                         Queue.Enqueue(value);
                         VarEmpty.Pulse();
                         return true;
                     }
 
+                    Assert.IsTrue(Monitor.IsEntered(SharedSyncObj));
                     return false;
                 }
             }
@@ -382,11 +384,13 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 {
                     if (VarEmpty.Wait(s => s.Queue.Count > 0, this, timeout, token))
                     {
+                        Assert.IsTrue(Monitor.IsEntered(SharedSyncObj));
                         value = Queue.Dequeue();
                         VarFull.Pulse();
                         return true;
                     }
 
+                    Assert.IsTrue(Monitor.IsEntered(SharedSyncObj));
                     value = default(T);
                     return false;
                 }
