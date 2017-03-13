@@ -154,7 +154,7 @@ namespace Qoollo.Turbo.Threading
                 ExitLock(_externalLock, ref externalLockTaken);
 
                 if (Monitor.IsEntered(_externalLock)) // Sanity check
-                    throw new ArgumentException("Recursive lock is not supported", nameof(_externalLock));
+                    throw new InvalidOperationException("Recursive lock is not supported");
 
                 // Waiting for signal
                 if (!Monitor.Wait(_internalLock, remainingWaitMilliseconds))
@@ -470,8 +470,12 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Notifies single waiting thread about possible state change
         /// </summary>
+        /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
         public void Pulse()
         {
+            if (!Monitor.IsEntered(_externalLock))
+                throw new InvalidOperationException("External lock should be acquired");
+
             lock (_internalLock)
             {
                 Monitor.Pulse(_internalLock);
@@ -482,10 +486,13 @@ namespace Qoollo.Turbo.Threading
         /// Notifies specified number of threads about possible state change
         /// </summary>
         /// <param name="count">Number of threads to be notified</param>
+        /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
         internal void Pulse(int count)
         {
             if (count < 0 || count > short.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(count));
+            if (!Monitor.IsEntered(_externalLock))
+                throw new InvalidOperationException("External lock should be acquired");
 
             lock (_internalLock)
             {
@@ -497,8 +504,12 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Notifies all waiting threads about possible state change
         /// </summary>
+        /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
         public void PulseAll()
         {
+            if (!Monitor.IsEntered(_externalLock))
+                throw new InvalidOperationException("External lock should be acquired");
+
             lock (_internalLock)
             {
                 Monitor.PulseAll(_internalLock);
