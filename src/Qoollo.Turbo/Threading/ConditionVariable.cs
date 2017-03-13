@@ -51,9 +51,9 @@ namespace Qoollo.Turbo.Threading
         {
             ConditionVariable conditionVar = obj as ConditionVariable;
             Debug.Assert(conditionVar != null);
-            lock (conditionVar._lockObj)
+            lock (conditionVar._internalLock)
             {
-                Monitor.PulseAll(conditionVar._lockObj);
+                Monitor.PulseAll(conditionVar._internalLock);
             }
         }
 
@@ -61,15 +61,21 @@ namespace Qoollo.Turbo.Threading
 
         private volatile int _waitCount;
         private volatile bool _isDisposed;
-        private object _lockObj;
+        private object _internalLock;
+        private object _externalLock;
 
         /// <summary>
         /// ConditionVariable constructor
         /// </summary>
-        public ConditionVariable()
+        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
+        public ConditionVariable(object externalLock)
         {
+            if (externalLock == null)
+                throw new ArgumentNullException(nameof(externalLock));
+
             _waitCount = 0;
-            _lockObj = new object();
+            _internalLock = new object();
+            _externalLock = externalLock;
         }
 
         /// <summary>
@@ -82,21 +88,17 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Blocks the current thread until the next notification
         /// </summary>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="ArgumentNullException">externalLock is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
-        public bool Wait(object externalLock, int timeout, CancellationToken token)
+        public bool Wait(int timeout, CancellationToken token)
         {
-            if (externalLock == null)
-                throw new ArgumentNullException(nameof(externalLock));
-            if (!Monitor.IsEntered(externalLock))
-                throw new ArgumentException("External lock should be acquired", nameof(externalLock));
+            if (!Monitor.IsEntered(_externalLock))
+                throw new InvalidOperationException("External lock should be acquired");
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
@@ -120,7 +122,7 @@ namespace Qoollo.Turbo.Threading
                 try { }
                 finally
                 {
-                    Monitor.Enter(_lockObj, ref internalLockTaken);
+                    Monitor.Enter(_internalLock, ref internalLockTaken);
                     Debug.Assert(internalLockTaken);
                     _waitCount++;
                 }
@@ -141,18 +143,13 @@ namespace Qoollo.Turbo.Threading
                 }
 
                 // Exit external lock right before Wait
-                try { }
-                finally
-                {
-                    Monitor.Exit(externalLock);
-                    externalLockTaken = false;
-                }
+                ExitLock(_externalLock, ref externalLockTaken);
 
-                if (Monitor.IsEntered(externalLock)) // Sanity check
-                    throw new ArgumentException("Recursive lock is not supported", nameof(externalLock));
+                if (Monitor.IsEntered(_externalLock)) // Sanity check
+                    throw new ArgumentException("Recursive lock is not supported", nameof(_externalLock));
 
                 // Waiting for signal
-                if (!Monitor.Wait(_lockObj, remainingWaitMilliseconds))
+                if (!Monitor.Wait(_internalLock, remainingWaitMilliseconds))
                     return false;
 
                 // Check if cancellation or dispose was the reasons of the signal
@@ -167,13 +164,10 @@ namespace Qoollo.Turbo.Threading
                 {
                     _waitCount--;
                     Debug.Assert(_waitCount >= 0);
-                    Monitor.Exit(_lockObj);
+                    Monitor.Exit(_internalLock);
                 }
-                if (!externalLockTaken)
-                {
-                    Monitor.Enter(externalLock, ref externalLockTaken);
-                    Debug.Assert(externalLockTaken);
-                }
+
+                EnterLock(_externalLock, ref externalLockTaken);
 
                 cancellationTokenRegistration.Dispose();
             }
@@ -183,58 +177,52 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Blocks the current thread until the next notification
         /// </summary>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="ArgumentNullException">externalLock is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait(object externalLock, int timeout)
+        public bool Wait(int timeout)
         {
-            return Wait(externalLock, timeout, default(CancellationToken));
+            return Wait(timeout, default(CancellationToken));
         }
         /// <summary>
         /// Blocks the current thread until the next notification
         /// </summary>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="timeout">Tiemout value</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="ArgumentNullException">externalLock is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait(object externalLock, TimeSpan timeout)
+        public bool Wait(TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout));
 
-            return Wait(externalLock, (int)timeoutMs, default(CancellationToken));
+            return Wait((int)timeoutMs, default(CancellationToken));
         }
         /// <summary>
         /// Blocks the current thread until the next notification
         /// </summary>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="ArgumentNullException">externalLock is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait(object externalLock, CancellationToken token)
+        public bool Wait(CancellationToken token)
         {
-            return Wait(externalLock, Timeout.Infinite, token);
+            return Wait(Timeout.Infinite, token);
         }
 
 
 
 
-        private bool WaitUntilPredicate<TState>(object externalLock, ref bool internalLockTaken, ref bool externalLockTaken, WaitPredicate<TState> predicate, TState state, uint startTime, int timeout, CancellationToken token)
+        private bool WaitUntilPredicate<TState>(ref bool internalLockTaken, ref bool externalLockTaken, WaitPredicate<TState> predicate, TState state, uint startTime, int timeout, CancellationToken token)
         {
             Debug.Assert(internalLockTaken);
             Debug.Assert(externalLockTaken);
@@ -254,26 +242,26 @@ namespace Qoollo.Turbo.Threading
                         return false;
                 }
 
-                ExitLock(externalLock, ref externalLockTaken);
+                ExitLock(_externalLock, ref externalLockTaken);
 
-                if (!recursiveLockChecked && Monitor.IsEntered(externalLock)) // Sanity check
-                    throw new ArgumentException("Recursive lock is not supported", nameof(externalLock));
+                if (!recursiveLockChecked && Monitor.IsEntered(_externalLock)) // Sanity check
+                    throw new InvalidOperationException("Recursive lock is not supported");
                 recursiveLockChecked = true;
 
-                if (!Monitor.Wait(_lockObj, remainingWaitMilliseconds))
+                if (!Monitor.Wait(_internalLock, remainingWaitMilliseconds))
                     return false;
 
                 try
                 {
-                    ExitLock(_lockObj, ref internalLockTaken);
-                    EnterLock(externalLock, ref externalLockTaken);
+                    ExitLock(_internalLock, ref internalLockTaken);
+                    EnterLock(_externalLock, ref externalLockTaken);
 
                     if (predicate.Invoke(state))
                         return true;
                 }
                 finally
                 {
-                    EnterLock(_lockObj, ref internalLockTaken);
+                    EnterLock(_internalLock, ref internalLockTaken);
                 }
             }
         }
@@ -281,7 +269,7 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Slow path
         /// </summary>
-        private bool WaitSlowPath<TState>(object externalLock, WaitPredicate<TState> predicate, TState state, uint startTime, int timeout, CancellationToken token)
+        private bool WaitSlowPath<TState>(WaitPredicate<TState> predicate, TState state, uint startTime, int timeout, CancellationToken token)
         {
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
@@ -303,12 +291,12 @@ namespace Qoollo.Turbo.Threading
                 try { }
                 finally
                 {
-                    Monitor.Enter(_lockObj, ref internalLockTaken);
+                    Monitor.Enter(_internalLock, ref internalLockTaken);
                     Debug.Assert(internalLockTaken);
                     _waitCount++;
                 }
 
-                if (WaitUntilPredicate(externalLock, ref internalLockTaken, ref externalLockTaken, predicate, state, startTime, timeout, token))
+                if (WaitUntilPredicate(ref internalLockTaken, ref externalLockTaken, predicate, state, startTime, timeout, token))
                     return true;
 
                 if (token.IsCancellationRequested)
@@ -323,13 +311,10 @@ namespace Qoollo.Turbo.Threading
                 {
                     _waitCount--;
                     Debug.Assert(_waitCount >= 0);
-                    Monitor.Exit(_lockObj);
+                    Monitor.Exit(_internalLock);
                 }
-                if (!externalLockTaken)
-                {
-                    Monitor.Enter(externalLock, ref externalLockTaken);
-                    Debug.Assert(externalLockTaken);
-                }
+
+                EnterLock(_externalLock, ref externalLockTaken);
 
                 cancellationTokenRegistration.Dispose();
             }
@@ -343,25 +328,22 @@ namespace Qoollo.Turbo.Threading
         /// Blocks the current thread until predicate estimates as True
         /// </summary>
         /// <typeparam name="TState">Type of the state object</typeparam>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="predicate">Predicate that should return True to complete waiting</param>
         /// <param name="state">State object for the predicate</param>
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
-        /// <exception cref="ArgumentNullException">externalLock or predicate is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
-        public bool Wait<TState>(object externalLock, WaitPredicate<TState> predicate, TState state, int timeout, CancellationToken token)
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, int timeout, CancellationToken token)
         {
-            if (externalLock == null)
-                throw new ArgumentNullException(nameof(externalLock));
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
-            if (!Monitor.IsEntered(externalLock))
-                throw new ArgumentException("External lock should be acquired", nameof(externalLock));
+            if (!Monitor.IsEntered(_externalLock))
+                throw new InvalidOperationException("External lock should be acquired");
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
@@ -377,107 +359,102 @@ namespace Qoollo.Turbo.Threading
             if (timeout == 0)
                 return false;
 
-            return WaitSlowPath(externalLock, predicate, state, startTime, timeout, token);
+            return WaitSlowPath(predicate, state, startTime, timeout, token);
         }
         /// <summary>
         /// Blocks the current thread until predicate estimates as True
         /// </summary>
         /// <typeparam name="TState">Type of the state object</typeparam>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="predicate">Predicate that should return True to complete waiting</param>
         /// <param name="state">State object for the predicate</param>
         /// <returns>True if predicate evaluates to True</returns>
-        /// <exception cref="ArgumentNullException">externalLock or predicate is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait<TState>(object externalLock, WaitPredicate<TState> predicate, TState state)
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state)
         {
-            return Wait(externalLock, predicate, state, Timeout.Infinite, default(CancellationToken));
+            return Wait(predicate, state, Timeout.Infinite, default(CancellationToken));
         }
         /// <summary>
         /// Blocks the current thread until predicate estimates as True
         /// </summary>
         /// <typeparam name="TState">Type of the state object</typeparam>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="predicate">Predicate that should return True to complete waiting</param>
         /// <param name="state">State object for the predicate</param>
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <returns>True if predicate evaluates to True</returns>
-        /// <exception cref="ArgumentNullException">externalLock or predicate is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait<TState>(object externalLock, WaitPredicate<TState> predicate, TState state, int timeout)
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, int timeout)
         {
-            return Wait(externalLock, predicate, state, timeout, default(CancellationToken));
+            return Wait(predicate, state, timeout, default(CancellationToken));
         }
         /// <summary>
         /// Blocks the current thread until predicate estimates as True
         /// </summary>
         /// <typeparam name="TState">Type of the state object</typeparam>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="predicate">Predicate that should return True to complete waiting</param>
         /// <param name="state">State object for the predicate</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
-        /// <exception cref="ArgumentNullException">externalLock or predicate is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait<TState>(object externalLock, WaitPredicate<TState> predicate, TState state, CancellationToken token)
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, CancellationToken token)
         {
-            return Wait(externalLock, predicate, state, Timeout.Infinite, token);
+            return Wait(predicate, state, Timeout.Infinite, token);
         }
         /// <summary>
         /// Blocks the current thread until predicate estimates as True
         /// </summary>
         /// <typeparam name="TState">Type of the state object</typeparam>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="predicate">Predicate that should return True to complete waiting</param>
         /// <param name="state">State object for the predicate</param>
         /// <param name="timeout">Tiemout value</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
-        /// <exception cref="ArgumentNullException">externalLock or predicate is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait<TState>(object externalLock, WaitPredicate<TState> predicate, TState state, TimeSpan timeout, CancellationToken token)
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, TimeSpan timeout, CancellationToken token)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout));
 
-            return Wait(externalLock, predicate, state, (int)timeoutMs, token);
+            return Wait(predicate, state, (int)timeoutMs, token);
         }
         /// <summary>
         /// Blocks the current thread until predicate estimates as True
         /// </summary>
         /// <typeparam name="TState">Type of the state object</typeparam>
-        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
         /// <param name="predicate">Predicate that should return True to complete waiting</param>
         /// <param name="state">State object for the predicate</param>
         /// <param name="timeout">Tiemout value</param>
         /// <returns>True if predicate evaluates to True</returns>
-        /// <exception cref="ArgumentNullException">externalLock or predicate is null</exception>
-        /// <exception cref="ArgumentException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait<TState>(object externalLock, WaitPredicate<TState> predicate, TState state, TimeSpan timeout)
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout));
 
-            return Wait(externalLock, predicate, state, (int)timeoutMs, default(CancellationToken));
+            return Wait(predicate, state, (int)timeoutMs, default(CancellationToken));
         }
 
 
@@ -485,22 +462,38 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Notifies single waiting thread about possible state change
         /// </summary>
-        public void Signal()
+        public void Pulse()
         {
-            lock (_lockObj)
+            lock (_internalLock)
             {
-                Monitor.Pulse(_lockObj);
+                Monitor.Pulse(_internalLock);
+            }
+        }
+
+        /// <summary>
+        /// Notifies specified number of threads about possible state change
+        /// </summary>
+        /// <param name="count">Number of threads to be notified</param>
+        internal void Pulse(int count)
+        {
+            if (count < 0 || count > short.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(count));
+
+            lock (_internalLock)
+            {
+                for (int i = 0; i < count; i++)
+                    Monitor.Pulse(_internalLock);
             }
         }
 
         /// <summary>
         /// Notifies all waiting threads about possible state change
         /// </summary>
-        public void SignalAll()
+        public void PulseAll()
         {
-            lock (_lockObj)
+            lock (_internalLock)
             {
-                Monitor.PulseAll(_lockObj);
+                Monitor.PulseAll(_internalLock);
             }
         }
 
@@ -512,14 +505,14 @@ namespace Qoollo.Turbo.Threading
             if (_isDisposed)
                 return;
 
-            lock (_lockObj)
+            lock (_internalLock)
             {
                 if (_isDisposed)
                     return;
 
                 _isDisposed = true;
 
-                Monitor.PulseAll(this._lockObj);
+                Monitor.PulseAll(this._internalLock);
             }
         }
     }

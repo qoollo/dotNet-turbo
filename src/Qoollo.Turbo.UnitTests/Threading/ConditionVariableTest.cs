@@ -350,19 +350,25 @@ namespace Qoollo.Turbo.UnitTests.Threading
         private class ThreadSafeQueue<T>
         {
             public object SharedSyncObj = new object();
-            public ConditionVariable VarFull = new ConditionVariable();
-            public ConditionVariable VarEmpty = new ConditionVariable();
+            public ConditionVariable VarFull = null;
+            public ConditionVariable VarEmpty = null;
             public Queue<T> Queue = new Queue<T>();
             public int MaxCount = 1000;
+
+            public ThreadSafeQueue()
+            {
+                VarFull = new ConditionVariable(SharedSyncObj);
+                VarEmpty = new ConditionVariable(SharedSyncObj);
+            }
 
             public bool TryAdd(T value, int timeout, CancellationToken token)
             {
                 lock (SharedSyncObj)
                 {
-                    if (VarFull.Wait(SharedSyncObj, s => s.Queue.Count < s.MaxCount, this, timeout, token))
+                    if (VarFull.Wait(s => s.Queue.Count < s.MaxCount, this, timeout, token))
                     {
                         Queue.Enqueue(value);
-                        VarEmpty.Signal();
+                        VarEmpty.Pulse();
                         return true;
                     }
 
@@ -374,10 +380,10 @@ namespace Qoollo.Turbo.UnitTests.Threading
             {
                 lock (SharedSyncObj)
                 {
-                    if (VarFull.Wait(SharedSyncObj, s => s.Queue.Count > 0, this, timeout, token))
+                    if (VarEmpty.Wait(s => s.Queue.Count > 0, this, timeout, token))
                     {
                         value = Queue.Dequeue();
-                        VarFull.Signal();
+                        VarFull.Pulse();
                         return true;
                     }
 
@@ -490,6 +496,21 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
             for (int i = 0; i < 10; i++)
                 RunComplexTest(q, 500000, Math.Max(1, Environment.ProcessorCount / 2) + (i % 4));
+        }
+
+
+        //[TestMethod]
+        public void ComplexTestSlow()
+        {
+            ThreadSafeQueue<int> q = new ThreadSafeQueue<int>();
+            Random rnd = new Random();
+            q.MaxCount = 2003;
+
+            for (int i = 0; i < 10; i++)
+            {
+                q.MaxCount = rnd.Next(1000, 10000);
+                RunComplexTest(q, int.MaxValue / 200, Math.Max(1, Environment.ProcessorCount / 2) + (i % 4) + rnd.Next(1));
+            }
         }
     }
 }
