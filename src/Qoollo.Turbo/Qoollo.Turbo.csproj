@@ -297,6 +297,9 @@
     <Compile Include="Threading\ServiceStuff\CancellationTokenHelper.cs" />
     <Compile Include="Threading\ServiceStuff\ManagementThreadController.cs" />
     <Compile Include="Threading\ServiceStuff\TaskHelper.cs" />
+    <Compile Include="Threading\SignalEvent.cs" />
+    <Compile Include="Threading\SignalWaiter.cs" />
+    <Compile Include="Threading\SignalWaiterFactory.cs" />
     <Compile Include="Threading\Tasks\LimitedConcurrencyLevelTaskScheduler.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\StandardContextSwitchSuppliers.cs" />
     <Compile Include="Common\ByReferenceEqualityComparer.cs" />
