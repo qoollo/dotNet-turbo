@@ -69,8 +69,8 @@ namespace Qoollo.Turbo.Threading
 
         private volatile int _waitCount;
         private volatile bool _isDisposed;
-        private object _internalLock;
-        private object _externalLock;
+        private readonly object _internalLock;
+        private readonly object _externalLock;
 
         /// <summary>
         /// ConditionVariable constructor
@@ -234,6 +234,7 @@ namespace Qoollo.Turbo.Threading
         {
             Debug.Assert(internalLockTaken);
             Debug.Assert(externalLockTaken);
+            Debug.Assert(predicate != null);
 
             int remainingWaitMilliseconds = Timeout.Infinite;
             bool recursiveLockChecked = false;

@@ -663,6 +663,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
 
         [TestMethod]
+        [Timeout(2 * 60 * 1000)]
         public void ComplexTest()
         {
             ThreadSafeQueue<int> q = new ThreadSafeQueue<int>();
