@@ -93,7 +93,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                 lock (syncObj)
                 {
-                    testInst.Pulse();
+                    testInst.Signal();
                 }
                 TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref result));
             }
@@ -125,7 +125,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                 lock (syncObj)
                 {
-                    testInst.Pulse();
+                    testInst.Signal();
                 }
                 Thread.Sleep(100);
                 Assert.AreEqual(0, Volatile.Read(ref result));
@@ -133,7 +133,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 Interlocked.Increment(ref state);
                 lock (syncObj)
                 {
-                    testInst.Pulse();
+                    testInst.Signal();
                 }
                 TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref result));
             }
@@ -161,7 +161,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                 lock (syncObj)
                 {
-                    testInst.Pulse();
+                    testInst.Signal();
                 }
                 TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref result));
             }
@@ -196,7 +196,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                 lock (syncObj)
                 {
-                    testInst.Pulse();
+                    testInst.Signal();
                 }
 
                 Thread.Sleep(100);
@@ -229,7 +229,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                 lock (syncObj)
                 {
-                    testInst.Pulse();
+                    testInst.Signal();
                 }
                 TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref result));
                 Assert.AreEqual(1, Volatile.Read(ref estimCount));
@@ -267,7 +267,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 {
                     lock (syncObj)
                     {
-                        testInst.Pulse();
+                        testInst.Signal();
                     }
                     TimingAssert.AreEqual(10000, 5 - i, () => testInst.WaiterCount);
                     Thread.Sleep(50);
@@ -305,7 +305,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                 lock (syncObj)
                 {
-                    testInst.PulseAll();
+                    testInst.SignalAll();
                 }
                 TimingAssert.AreEqual(10000, 0, () => testInst.WaiterCount);
                 TimingAssert.AreEqual(10000, 6, () => Volatile.Read(ref exitCount));
@@ -374,14 +374,14 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 {
                     lock (syncObj)
                     {
-                        testInst.Pulse();
+                        testInst.Signal();
                     }
                     Thread.Sleep(10);
                 }
                 Interlocked.Increment(ref stopEstim);
                 lock (syncObj)
                 {
-                    testInst.Pulse();
+                    testInst.Signal();
                 }
 
                 TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref result));
@@ -417,7 +417,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             object syncObj = new object();
             using (var testInst = new ConditionVariable(syncObj))
             {
-                testInst.Pulse();
+                testInst.Signal();
             }
         }
 
@@ -480,7 +480,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 Interlocked.Increment(ref state);
                 lock (syncObj)
                 {
-                    testInst.Pulse();
+                    testInst.Signal();
                 }
                 TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref result));
                 TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref called));
@@ -539,7 +539,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                     {
                         Assert.IsTrue(Monitor.IsEntered(SharedSyncObj));
                         Queue.Enqueue(value);
-                        VarEmpty.Pulse();
+                        VarEmpty.Signal();
                         return true;
                     }
 
@@ -556,7 +556,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                     {
                         Assert.IsTrue(Monitor.IsEntered(SharedSyncObj));
                         value = Queue.Dequeue();
-                        VarFull.Pulse();
+                        VarFull.Signal();
                         return true;
                     }
 

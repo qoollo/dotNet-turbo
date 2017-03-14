@@ -36,7 +36,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     {
                         Queue.Enqueue(value);
                         Interlocked.Increment(ref ItemCount);
-                        VarEmpty.Pulse();
+                        VarEmpty.Signal();
                         return true;
                     }
 
@@ -56,7 +56,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     {
                         value = Queue.Dequeue();
                         Interlocked.Decrement(ref ItemCount);
-                        VarFull.Pulse();
+                        VarFull.Signal();
                         return true;
                     }
 

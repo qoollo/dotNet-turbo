@@ -472,7 +472,7 @@ namespace Qoollo.Turbo.Threading
         /// Notifies single waiting thread about possible state change
         /// </summary>
         /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
-        public void Pulse()
+        public void Signal()
         {
             if (!Monitor.IsEntered(_externalLock))
                 throw new InvalidOperationException("External lock should be acquired");
@@ -488,7 +488,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="count">Number of threads to be notified</param>
         /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
-        internal void Pulse(int count)
+        internal void Signal(int count)
         {
             if (count < 0 || count > short.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -506,7 +506,7 @@ namespace Qoollo.Turbo.Threading
         /// Notifies all waiting threads about possible state change
         /// </summary>
         /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
-        public void PulseAll()
+        public void SignalAll()
         {
             if (!Monitor.IsEntered(_externalLock))
                 throw new InvalidOperationException("External lock should be acquired");
