@@ -87,6 +87,7 @@
     <Compile Include="Threading\ManagementThreadControllerTest.cs" />
     <Compile Include="Threading\PartialThreadBlockerTest.cs" />
     <Compile Include="Threading\SemaphoreLightTest.cs" />
+    <Compile Include="Threading\SignalEventSignalWaiterTest.cs" />
     <Compile Include="ThreadManagement\ThreadSetManagerTest.cs" />
     <Compile Include="ThreadPools\DynamicThreadPoolNewTest.cs" />
     <Compile Include="ThreadPools\DynamicThreadPoolOldTest.cs" />

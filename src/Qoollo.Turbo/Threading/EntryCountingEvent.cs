@@ -271,6 +271,7 @@ namespace Qoollo.Turbo.Threading
                         Interlocked.Decrement(ref _currentCountInner);
                         return false;
                     }
+                    _isTerminateRequested = false;
                     this._event.Reset();
                 }
             }

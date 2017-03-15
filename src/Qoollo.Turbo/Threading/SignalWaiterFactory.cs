@@ -17,7 +17,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="sourceEvent">Source event for the created factory</param>
         /// <returns>Created factory</returns>
-        public SignalWaiterFactory Create(SignalEvent sourceEvent)
+        public static SignalWaiterFactory Create(SignalEvent sourceEvent)
         {
             if (sourceEvent == null)
                 throw new ArgumentNullException(nameof(sourceEvent));
@@ -30,7 +30,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="sourceEvent1">First source event for the created factory</param>
         /// <param name="sourceEvent2">Second source event for the created factory</param>
         /// <returns>Created factory</returns>
-        public SignalWaiterFactory Create(SignalEvent sourceEvent1, SignalEvent sourceEvent2)
+        public static SignalWaiterFactory Create(SignalEvent sourceEvent1, SignalEvent sourceEvent2)
         {
             if (sourceEvent1 == null)
                 throw new ArgumentNullException(nameof(sourceEvent1));
@@ -44,7 +44,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="sourceEvents">Array of source events for the created factory</param>
         /// <returns>Created factory</returns>
-        public SignalWaiterFactory Create(SignalEvent[] sourceEvents)
+        public static SignalWaiterFactory Create(SignalEvent[] sourceEvents)
         {
             if (sourceEvents == null)
                 throw new ArgumentNullException(nameof(sourceEvents));
@@ -70,7 +70,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="factory1">First SignalWaiterFactory as the source of SignalEvent</param>
         /// <param name="factory2">Second SignalWaiterFactory as the source of SignalEvent</param>
         /// <returns>Created factory</returns>
-        public SignalWaiterFactory Create(SignalWaiterFactory factory1, SignalWaiterFactory factory2)
+        public static SignalWaiterFactory Create(SignalWaiterFactory factory1, SignalWaiterFactory factory2)
         {
             if (factory1._sourceEvent != null && factory2._sourceEvent != null)
                 return new SignalWaiterFactory(new SignalEvent[] { factory1._sourceEvent, factory2._sourceEvent });
@@ -97,7 +97,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="factories">Array of SignalWaiterFactory as the source of SignalEvent</param>
         /// <returns>Created factory</returns>
-        public SignalWaiterFactory Create(SignalWaiterFactory[] factories)
+        public static SignalWaiterFactory Create(SignalWaiterFactory[] factories)
         {
             if (factories == null)
                 throw new ArgumentNullException(nameof(factories));

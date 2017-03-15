@@ -72,6 +72,25 @@ namespace Qoollo.Turbo.UnitTests.Threading
             TimingAssert.IsTrue(5000, () => finished);
         }
 
+        [TestMethod]
+        public void TestResest()
+        {
+            using (EntryCountingEvent inst = new EntryCountingEvent())
+            {
+                inst.TerminateAndWait(100);
+                Assert.IsTrue(inst.IsTerminated);
+
+                inst.Reset();
+                Assert.IsFalse(inst.IsTerminateRequested);
+                Assert.IsFalse(inst.IsTerminated);
+
+                Assert.IsTrue(inst.TryEnterClient());
+                Assert.AreEqual(1, inst.CurrentCount);
+                inst.ExitClient();
+                Assert.AreEqual(0, inst.CurrentCount);
+            }
+        }
+
 
         [TestMethod]
         public void ComplexTest()
