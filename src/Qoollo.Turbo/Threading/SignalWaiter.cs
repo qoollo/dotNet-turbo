@@ -48,7 +48,6 @@ namespace Qoollo.Turbo.Threading
         private readonly WeakReference<SignalEvent> _originalEvent;
         private readonly WeakReference<SignalEvent>[] _originalEventList;
         private readonly SignalMode _signalMode;
-        private volatile int _waitCount;
         private volatile bool _isDisposed;
 
         /// <summary>
@@ -65,7 +64,6 @@ namespace Qoollo.Turbo.Threading
 
             _originalEventList = null;
             _signalMode = signalMode;
-            _waitCount = 0;
             _isDisposed = false;
 
             _originalEvent = new WeakReference<SignalEvent>(originalEvent);
@@ -93,7 +91,6 @@ namespace Qoollo.Turbo.Threading
 
             _originalEvent = null;
             _signalMode = signalMode;
-            _waitCount = 0;
             _isDisposed = false;
 
             List<WeakReference<SignalEvent>> originalEventsTmp = new List<WeakReference<SignalEvent>>();
@@ -121,10 +118,6 @@ namespace Qoollo.Turbo.Threading
         /// Gets the signaling mode of the current waiter
         /// </summary>
         public SignalMode SignalMode { get { return _signalMode; } }
-        /// <summary>
-        /// The number of waiting threads on the SignalWaiter
-        /// </summary>
-        public int WaiterCount { get { return _waitCount; } }
 
 
         /// <summary>
@@ -164,8 +157,6 @@ namespace Qoollo.Turbo.Threading
             CancellationTokenRegistration cancellationTokenRegistration = default(CancellationTokenRegistration);
             try
             {
-                _waitCount++;
-
                 if (token.CanBeCanceled)
                     cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
 
@@ -181,7 +172,6 @@ namespace Qoollo.Turbo.Threading
             }
             finally
             {
-                _waitCount--;
                 cancellationTokenRegistration.Dispose();
             }
 
@@ -202,24 +192,15 @@ namespace Qoollo.Turbo.Threading
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
 
-            if (timeout < 0)
+            if (timeout < -1)
                 timeout = Timeout.Infinite;
 
-            try
-            {
-                _waitCount++;
+            // Waiting for signal
+            if (!Monitor.Wait(this, timeout))
+                return false;
 
-                // Waiting for signal
-                if (!Monitor.Wait(this, timeout))
-                    return false;
-
-                if (_isDisposed)
-                    throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(this.GetType().Name));
-            }
-            finally
-            {
-                _waitCount--;
-            }
+            if (_isDisposed)
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(this.GetType().Name));
 
             return true;
         }
@@ -254,6 +235,198 @@ namespace Qoollo.Turbo.Threading
         {
             return Wait(Timeout.Infinite, token);
         }
+
+
+        /// <summary>
+        /// Waits until predicate estimates to true or cancellation received or dispose happened
+        /// </summary>
+        private bool WaitUntilPredicate<TState>(WaitPredicate<TState> predicate, TState state, uint startTime, int timeout, CancellationToken token)
+        {
+            Debug.Assert(predicate != null);
+
+            int remainingWaitMilliseconds = Timeout.Infinite;
+
+            while (true)
+            {
+                if (token.IsCancellationRequested || _isDisposed)
+                    return false;
+
+                if (timeout != Timeout.Infinite)
+                {
+                    remainingWaitMilliseconds = TimeoutHelper.UpdateTimeout(startTime, timeout);
+                    if (remainingWaitMilliseconds <= 0)
+                        return false;
+                }
+
+                if (!Monitor.Wait(this, remainingWaitMilliseconds))
+                    return false;
+
+                if (predicate.Invoke(state))
+                    return true;
+            }
+        }
+
+
+        /// <summary>
+        /// Blocks the current thread until predicate estimates as True
+        /// </summary>
+        /// <typeparam name="TState">Type of the state object</typeparam>
+        /// <param name="predicate">Predicate that should return True to complete waiting</param>
+        /// <param name="state">State object for the predicate</param>
+        /// <param name="timeout">Tiemout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if predicate evaluates to True</returns>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, int timeout, CancellationToken token)
+        {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            if (!Monitor.IsEntered(this))
+                throw new InvalidOperationException("External lock should be acquired");
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+            if (token.IsCancellationRequested)
+                throw new OperationCanceledException(token);
+
+            uint startTime = 0;
+            if (timeout > 0)
+                startTime = TimeoutHelper.GetTimestamp();
+            else if (timeout < -1)
+                timeout = Timeout.Infinite;
+
+            if (predicate(state))
+                return true;
+
+            if (timeout == 0)
+                return false;
+
+            if (timeout > 0 && TimeoutHelper.UpdateTimeout(startTime, timeout) <= 0) // Predicate estimation took too much time
+                return false;
+
+            CancellationTokenRegistration cancellationTokenRegistration = default(CancellationTokenRegistration);
+            try
+            {
+                if (token.CanBeCanceled)
+                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+
+                if (WaitUntilPredicate(predicate, state, startTime, timeout, token))
+                    return true;
+
+                if (token.IsCancellationRequested)
+                    throw new OperationCanceledException(token);
+
+                if (_isDisposed)
+                    throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(this.GetType().Name));
+            }
+            finally
+            {
+                cancellationTokenRegistration.Dispose();
+            }
+
+            // Final check for predicate
+            return predicate(state);
+        }
+        /// <summary>
+        /// Blocks the current thread until predicate estimates as True
+        /// </summary>
+        /// <typeparam name="TState">Type of the state object</typeparam>
+        /// <param name="predicate">Predicate that should return True to complete waiting</param>
+        /// <param name="state">State object for the predicate</param>
+        /// <returns>True if predicate evaluates to True</returns>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state)
+        {
+            return Wait(predicate, state, Timeout.Infinite, default(CancellationToken));
+        }
+        /// <summary>
+        /// Blocks the current thread until predicate estimates as True
+        /// </summary>
+        /// <typeparam name="TState">Type of the state object</typeparam>
+        /// <param name="predicate">Predicate that should return True to complete waiting</param>
+        /// <param name="state">State object for the predicate</param>
+        /// <param name="timeout">Tiemout in milliseconds</param>
+        /// <returns>True if predicate evaluates to True</returns>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, int timeout)
+        {
+            return Wait(predicate, state, timeout, default(CancellationToken));
+        }
+        /// <summary>
+        /// Blocks the current thread until predicate estimates as True
+        /// </summary>
+        /// <typeparam name="TState">Type of the state object</typeparam>
+        /// <param name="predicate">Predicate that should return True to complete waiting</param>
+        /// <param name="state">State object for the predicate</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if predicate evaluates to True</returns>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, CancellationToken token)
+        {
+            return Wait(predicate, state, Timeout.Infinite, token);
+        }
+        /// <summary>
+        /// Blocks the current thread until predicate estimates as True
+        /// </summary>
+        /// <typeparam name="TState">Type of the state object</typeparam>
+        /// <param name="predicate">Predicate that should return True to complete waiting</param>
+        /// <param name="state">State object for the predicate</param>
+        /// <param name="timeout">Tiemout value</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if predicate evaluates to True</returns>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, TimeSpan timeout, CancellationToken token)
+        {
+            long timeoutMs = (long)timeout.TotalMilliseconds;
+            if (timeoutMs > int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+
+            return Wait(predicate, state, (int)timeoutMs, token);
+        }
+        /// <summary>
+        /// Blocks the current thread until predicate estimates as True
+        /// </summary>
+        /// <typeparam name="TState">Type of the state object</typeparam>
+        /// <param name="predicate">Predicate that should return True to complete waiting</param>
+        /// <param name="state">State object for the predicate</param>
+        /// <param name="timeout">Tiemout value</param>
+        /// <returns>True if predicate evaluates to True</returns>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Wait<TState>(WaitPredicate<TState> predicate, TState state, TimeSpan timeout)
+        {
+            long timeoutMs = (long)timeout.TotalMilliseconds;
+            if (timeoutMs > int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+
+            return Wait(predicate, state, (int)timeoutMs, default(CancellationToken));
+        }
+
+
 
 
 

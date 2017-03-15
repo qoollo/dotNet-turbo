@@ -185,7 +185,7 @@ namespace Qoollo.Turbo.Threading
             uint startTime = 0;
             if (timeout > 0)
                 startTime = TimeoutHelper.GetTimestamp();
-            else if (timeout < 0)
+            else if (timeout < -1)
                 timeout = Timeout.Infinite;
 
 

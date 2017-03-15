@@ -49,6 +49,9 @@ namespace Qoollo.Turbo.Threading
             if (sourceEvents == null)
                 throw new ArgumentNullException(nameof(sourceEvents));
 
+            if (sourceEvents.Length == 1 && sourceEvents[0] != null)
+                return new SignalWaiterFactory(sourceEvents[0]);
+
             SignalEvent[] copy = new SignalEvent[sourceEvents.Length];
             for (int i = 0; i < sourceEvents.Length; i++)
             {
@@ -84,6 +87,9 @@ namespace Qoollo.Turbo.Threading
             else if (factory2._sourceEventList != null)
                 eventList.AddRange(factory2._sourceEventList);
 
+            if (eventList.Count == 1)
+                return new SignalWaiterFactory(eventList[0]);
+
             return new SignalWaiterFactory(eventList.ToArray());
         }
         /// <summary>
@@ -105,6 +111,9 @@ namespace Qoollo.Turbo.Threading
                 else if (factories[i]._sourceEventList != null)
                     eventList.AddRange(factories[i]._sourceEventList);
             }
+
+            if (eventList.Count == 1)
+                return new SignalWaiterFactory(eventList[0]);
 
             return new SignalWaiterFactory(eventList.ToArray());
         }
