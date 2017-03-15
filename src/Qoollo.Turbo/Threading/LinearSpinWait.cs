@@ -9,22 +9,22 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading
 {
     /// <summary>
-    /// SpinWait с линейной стратегией Back-off
+    /// SpinWait with linear back-off strategy
     /// </summary>
     public struct LinearSpinWait
     {
         private static readonly int ProcessorCount = Environment.ProcessorCount;
 
         /// <summary>
-        /// Оптимально общее число циклов активного ожидания
+        /// Best total spinning iteration count
         /// </summary>
         public const int BestTotalSpinCount = 8196;
         /// <summary>
-        /// Стандартное значения порога ухода в ядро
+        /// Default threshold when it is better to yield the processor (perform context switch)
         /// </summary>
         public const int DefaultYieldThreshold = 12;
         /// <summary>
-        /// Стандартное значение увеличения числа циклов активного ожидания на каждой итерации
+        /// Default number of iteration by which the spin interval increased every time
         /// </summary>
         public const int DefaultSingleSpinCount = 100;
 
@@ -38,7 +38,9 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Yield Threshold</returns>
         public static int CalculateYieldThreshold(int singleSpinCount)
         {
-            Contract.Requires<ArgumentOutOfRangeException>(singleSpinCount > 0);
+            if (singleSpinCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(singleSpinCount));
+
             return Math.Max(1, (((int)Math.Sqrt(1 + 8 * BestTotalSpinCount / singleSpinCount) - 1) / 2));
         }
 
@@ -48,13 +50,13 @@ namespace Qoollo.Turbo.Threading
         private int _count;
 
         /// <summary>
-        /// Конструктор LinearSpinWait
+        /// LinearSpinWait constructor
         /// </summary>
-        /// <param name="singleSpinCount">Значение увеличения числа циклов активного ожидания на каждой итерации</param>
+        /// <param name="singleSpinCount">The number of iteration by which the spin interval increased every time</param>
         public LinearSpinWait(int singleSpinCount)
         {
             if (singleSpinCount <= 0)
-                throw new ArgumentException("singleSpinCount");
+                throw new ArgumentException(nameof(singleSpinCount));
 
             _count = 0;
             _singleSpinCount = singleSpinCount;
@@ -63,16 +65,16 @@ namespace Qoollo.Turbo.Threading
                 _yieldThreshold = 1;
         }
         /// <summary>
-        /// Конструктор LinearSpinWait
+        /// LinearSpinWait constructor
         /// </summary>
-        /// <param name="singleSpinCount">Значение увеличения числа циклов активного ожидания на каждой итерации</param>
-        /// <param name="yieldThreshold">Порог, после которого начинаем уходить в ядро</param>
+        /// <param name="singleSpinCount">The number of iteration by which the spin interval increased every time</param>
+        /// <param name="yieldThreshold">Threshold when it is better to yield the processor (perform context switch)</param>
         public LinearSpinWait(int singleSpinCount, int yieldThreshold)
         {
             if (singleSpinCount <= 0)
-                throw new ArgumentException("singleSpinCount");
+                throw new ArgumentException(nameof(singleSpinCount));
             if (yieldThreshold <= 0)
-                throw new ArgumentException("yieldThreshold");
+                throw new ArgumentException(nameof(yieldThreshold));
 
             _count = 0;
             _singleSpinCount = singleSpinCount;
@@ -80,12 +82,12 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Текущее число итераций
+        /// Gets the number of performed spin iterations
         /// </summary>
         public int Count { get { return _count; } }
 
         /// <summary>
-        /// Уйдём ли в ядро на следующем спине
+        /// Whether the next call to <see cref="SpinOnce"/> will yield the processor, triggering a forced context switch
         /// </summary>
         public bool NextSpinWillYield
         {
@@ -93,7 +95,7 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Сбросить
+        /// Resets the spin counter
         /// </summary>
         public void Reset()
         {
@@ -101,7 +103,7 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Провернуть
+        /// Perform a spin
         /// </summary>
         public void SpinOnce()
         {

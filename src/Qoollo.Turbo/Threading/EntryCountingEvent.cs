@@ -11,14 +11,14 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading
 {
     /// <summary>
-    /// Примитив для использования using с EntryCountingEvent
+    /// Guard primitive for EntryCountingEvent that allows to use it with 'using' statement
     /// </summary>
     public struct EntryCountingEventGuard: IDisposable
     {
         private EntryCountingEvent _srcCounter;
 
         /// <summary>
-        /// Конструктор EntryCountingEventGuard
+        /// EntryCountingEventGuard constructor
         /// </summary>
         /// <param name="srcCounter">EntryCountingEvent</param>
         internal EntryCountingEventGuard(EntryCountingEvent srcCounter)
@@ -27,7 +27,7 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Удалось ли войти в экранируемый блок
+        /// Is entering the protected section was successful
         /// </summary>
         public bool IsAcquired
         {
@@ -35,7 +35,7 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Выход из экранируемого блока
+        /// Exits the protected code section
         /// </summary>
         public void Dispose()
         {
@@ -49,7 +49,7 @@ namespace Qoollo.Turbo.Threading
 
 
     /// <summary>
-    /// Примитив для ожидания завершения исполнения всех экранируемых блоков
+    /// Primitive that protects the code section from state changing when there are threads executing that section
     /// </summary>
     public class EntryCountingEvent: IDisposable
     {
@@ -59,7 +59,7 @@ namespace Qoollo.Turbo.Threading
 		private bool _isDisposed;
 
         /// <summary>
-        /// Констрктор EntryCountingEvent
+        /// EntryCountingEvent constructor
         /// </summary>
         public EntryCountingEvent()
 		{
@@ -68,20 +68,20 @@ namespace Qoollo.Turbo.Threading
 		}
 
         /// <summary>
-        /// Текущее количество входов
+        /// The current number of entered clients
         /// </summary>
         public int CurrentCount { get { return Math.Max(0, Volatile.Read(ref _currentCountInner) - 1); } }
         /// <summary>
-        /// Запрошена ли остановка
+        /// Is terminate requested (prevent new clients to enter the protected section)
         /// </summary>
         public bool IsTerminateRequested { get { return _isTerminateRequested; } }
         /// <summary>
-        /// Выполнена ли остановка полностью
+        /// Is terminated successfully (all clients has exited the protected section)
         /// </summary>
         public bool IsTerminated { get { return _isTerminateRequested && Volatile.Read(ref _currentCountInner) <= 0; } }
 
         /// <summary>
-        /// Объект ожидания
+        /// Gets the underlying WaitHandle to wait for termination
         /// </summary>
         public WaitHandle WaitHandle
         {
@@ -95,9 +95,9 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Попробовать зайти в экранируемый блок
+        /// Attempts to enter to the protected code section
         /// </summary>
-        /// <returns>Удалось ли зайти в блок</returns>
+        /// <returns>Is entered successfully</returns>
         public bool TryEnterClient()
         {
             if (_isDisposed || _isTerminateRequested)
@@ -115,10 +115,10 @@ namespace Qoollo.Turbo.Threading
             return true;
         }
         /// <summary>
-        /// Выполнить заход в экранируемый блок (исключение, если не удалось войти)
+        /// Enters to the protected code section. Throws <see cref="InvalidOperationException"/> if termination was requested
         /// </summary>
-        /// <exception cref="ObjectDisposedException">Освобождён</exception>
-        /// <exception cref="InvalidOperationException">Завершён</exception>
+        /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> was disposed</exception>
+        /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
         public void EnterClient()
         {
             if (!this.TryEnterClient())
@@ -132,9 +132,9 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Попытаться войти в жкранируемый блок с guard объектом
+        /// Attemts to enter to the protected code section
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
         public EntryCountingEventGuard TryEnterClientGuarded()
         {
             if (!TryEnterClient())
@@ -142,11 +142,11 @@ namespace Qoollo.Turbo.Threading
             return new EntryCountingEventGuard(this);
         }
         /// <summary>
-        /// Войти в блок с guard объектом (исключение, если не удалось войти)
+        /// Enters to the protected code section. Throws <see cref="InvalidOperationException"/> if termination was requested
         /// </summary>
-        /// <returns>Guard</returns>
-        /// <exception cref="ObjectDisposedException">Освобождён</exception>
-        /// <exception cref="InvalidOperationException">Завершён</exception>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
+        /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> was disposed</exception>
+        /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
         public EntryCountingEventGuard EnterClientGuarded()
         {
             EnterClient();
@@ -155,11 +155,11 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Войти в блок с guard объектом и, если не удалось, то выбросить пользовательское исключение
+        /// Enters to the protected code section. Throws user exception if termination was requested
         /// </summary>
-        /// <typeparam name="TException">Тип исключения</typeparam>
-        /// <param name="message">Сообщение, которое будет записано в исключении</param>
-        /// <returns>Guard</returns>
+        /// <typeparam name="TException">The type of exception to throw when attempt was unsuccessful</typeparam>
+        /// <param name="message">Message, that will be passed to Exception constructor</param>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
         public EntryCountingEventGuard EnterClientGuarded<TException>(string message) where TException: Exception
         {
             if (!TryEnterClient())
@@ -167,10 +167,10 @@ namespace Qoollo.Turbo.Threading
             return new EntryCountingEventGuard(this);
         }
         /// <summary>
-        /// Войти в блок с guard объектом и, если не удалось, то выбросить пользовательское исключение
+        /// Enters to the protected code section. Throws user exception if termination was requested
         /// </summary>
-        /// <typeparam name="TException">Тип исключения</typeparam>
-        /// <returns>Guard</returns>
+        /// <typeparam name="TException">The type of exception to throw when attempt was unsuccessful</typeparam>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
         public EntryCountingEventGuard EnterClientGuarded<TException>() where TException : Exception
         {
             if (!TryEnterClient())
@@ -179,13 +179,14 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Попробовать зайти в экранируемый блок с дополнительным условием
+        /// Attempts to enter the protected section with additional user-specified condition
         /// </summary>
-        /// <param name="condition">Условие</param>
-        /// <returns>Удалось ли войти</returns>
+        /// <param name="condition">User-sepcified condition</param>
+        /// <returns>Is entered successfully</returns>
         public bool TryEnterClientConditional(Func<bool> condition)
         {
-            Contract.Requires<ArgumentNullException>(condition != null);
+            if (condition == null)
+                throw new ArgumentNullException(nameof(condition));
 
             if (condition())
             {
@@ -203,9 +204,9 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Дополнительные действия при выходе клиента для возведения флага окончания
+        /// Additional action on client exit when he was the last client
         /// </summary>
-        /// <param name="newCount">Новое значение после декремента числа клиентов</param>
+        /// <param name="newCount">Number of clients</param>
         private void ExitClientAdditionalActions(int newCount)
         {
             if (newCount < 0)
@@ -224,7 +225,7 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Выйти из экранируемого блока
+        /// Exits the protected code section (better to use <see cref="EntryCountingEventGuard"/> for safety)
         /// </summary>
         public void ExitClient()
         {
@@ -237,7 +238,7 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Выполнить остановку (новые клиенты не смогут войти)
+        /// Stops new clients from entering the protected code section
         /// </summary>
         public void Terminate()
         {
@@ -248,9 +249,49 @@ namespace Qoollo.Turbo.Threading
             }
         }
 
+        /// <summary>
+        /// Attemts to reset the <see cref="EntryCountingEvent"/> to the initial state.
+        /// Can be done only in <see cref="IsTerminated"/> state.
+        /// </summary>
+        /// <returns>Is reseted succesfully</returns>
+        public bool TryReset()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+            if (!IsTerminated)
+                return false;
+
+            lock (this._event)
+            {
+                if (!_isDisposed)
+                {
+                    int numberOfClients = Interlocked.Increment(ref _currentCountInner);
+                    if (numberOfClients != 1)
+                    {
+                        Interlocked.Decrement(ref _currentCountInner);
+                        return false;
+                    }
+                    this._event.Reset();
+                }
+            }
+
+            return true;
+        }
+        /// <summary>
+        /// Attemts to reset the <see cref="EntryCountingEvent"/> to the initial state.
+        /// Can be done only in <see cref="IsTerminated"/> state.
+        /// </summary>
+        /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> is not in Terminated state</exception>
+        /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> is disposed</exception>
+        public void Reset()
+        {
+            if (!TryReset())
+                throw new InvalidOperationException("Reset can be performed only when full termination performed");
+        }
+
 
         /// <summary>
-        /// Дождаться завершения исполнения всех блоков
+        /// Waits until all clients leave the protected code sections
         /// </summary>
 		public void Wait()
 		{
@@ -258,19 +299,19 @@ namespace Qoollo.Turbo.Threading
 		}
 
         /// <summary>
-        /// Дождаться завершения исполнения всех блоков
+        /// Waits until all clients leave the protected code sections
         /// </summary>
-        /// <param name="cancellationToken">Токен отмены</param>
+        /// <param name="cancellationToken">Cancellation token</param>
 		public void Wait(CancellationToken cancellationToken)
 		{
 			this.Wait(-1, cancellationToken);
 		}
 
         /// <summary>
-        /// Дождаться завершения исполнения всех блоков
+        /// Waits until all clients leave the protected code sections
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>false - вышли по таймауту</returns>
+        /// <param name="timeout">Timeout</param>
+        /// <returns>True if all clients leaved the protected section in specified timeout</returns>
 		public bool Wait(TimeSpan timeout)
 		{
 			long num = (long)timeout.TotalMilliseconds;
@@ -281,11 +322,11 @@ namespace Qoollo.Turbo.Threading
 		}
 
         /// <summary>
-        /// Дождаться завершения исполнения всех блоков
+        /// Waits until all clients leave the protected code sections
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="cancellationToken">Токен отмены</param>
-        /// <returns>false - вышли по таймауту</returns>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>True if all clients leaved the protected section in specified timeout</returns>
 		public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
 		{
 			long num = (long)timeout.TotalMilliseconds;
@@ -296,27 +337,29 @@ namespace Qoollo.Turbo.Threading
 		}
 
         /// <summary>
-        /// Дождаться завершения исполнения всех блоков
+        /// Waits until all clients leave the protected code sections
         /// </summary>
-        /// <param name="millisecondsTimeout">Таймаут</param>
-        /// <returns>false - вышли по таймауту</returns>
+        /// <param name="millisecondsTimeout">Cancellation token</param>
+        /// <returns>True if all clients leaved the protected section in specified timeout</returns>
 		public bool Wait(int millisecondsTimeout)
 		{
             return this.Wait(millisecondsTimeout, CancellationToken.None);
 		}
 
         /// <summary>
-        /// Дождаться завершения исполнения всех блоков
+        /// Waits until all clients leave the protected code sections
         /// </summary>
-        /// <param name="millisecondsTimeout">Таймаут</param>
-        /// <param name="cancellationToken">Токен отмены</param>
-        /// <returns>false - вышли по таймауту</returns>
+        /// <param name="millisecondsTimeout">Timeout</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>True if all clients leaved the protected section in specified timeout</returns>
 		public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
 		{
-            Contract.Requires<ArgumentOutOfRangeException>(millisecondsTimeout >= -1);
+            if (millisecondsTimeout < -1)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
             if (this._isDisposed)
-                throw new ObjectDisposedException(this.GetType().Name);	
-			cancellationToken.ThrowIfCancellationRequested();
+                throw new ObjectDisposedException(this.GetType().Name);
+            if (cancellationToken.IsCancellationRequested)
+                throw new OperationCanceledException(cancellationToken);
 
             if (!IsTerminateRequested)
                 return false;
@@ -326,7 +369,7 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Остановить и дождаться завершения исполнения всех блоков
+        /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
         /// </summary>
         public void TerminateAndWait()
         {
@@ -334,51 +377,51 @@ namespace Qoollo.Turbo.Threading
             Wait();
         }
         /// <summary>
-        /// Остановить и дождаться завершения исполнения всех блоков
+        /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
         /// </summary>
-        /// <param name="cancellationToken">Токен отмены</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         public void TerminateAndWait(CancellationToken cancellationToken)
         {
             Terminate();
             Wait(cancellationToken);
         }
         /// <summary>
-        /// Остановить и дождаться завершения исполнения всех блоков
+        /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>false - вышли по таймауту</returns>
+        /// <param name="timeout">Timeout</param>
+        /// <returns>True if all clients leaved the protected section in specified timeout</returns>
         public void TerminateAndWait(TimeSpan timeout)
         {
             Terminate();
             Wait(timeout);
         }
         /// <summary>
-        /// Остановить и дождаться завершения исполнения всех блоков
+        /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="cancellationToken">Токен отмены</param>
-        /// <returns>false - вышли по таймауту</returns>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>True if all clients leaved the protected section in specified timeout</returns>
         public void TerminateAndWait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             Terminate();
             Wait(timeout, cancellationToken);
         }
         /// <summary>
-        /// Остановить и дождаться завершения исполнения всех блоков
+        /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
         /// </summary>
-        /// <param name="millisecondsTimeout">Таймаут</param>
-        /// <returns>false - вышли по таймауту</returns>
+        /// <param name="millisecondsTimeout">Timeout</param>
+        /// <returns>True if all clients leaved the protected section in specified timeout</returns>
         public void TerminateAndWait(int millisecondsTimeout)
         {
             Terminate();
             Wait(millisecondsTimeout);
         }
         /// <summary>
-        /// Остановить и дождаться завершения исполнения всех блоков
+        /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
         /// </summary>
-        /// <param name="millisecondsTimeout">Таймаут</param>
-        /// <param name="cancellationToken">Токен отмены</param>
-        /// <returns>false - вышли по таймауту</returns>
+        /// <param name="millisecondsTimeout">Timeout</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>True if all clients leaved the protected section in specified timeout</returns>
         public void TerminateAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Terminate();
@@ -387,9 +430,9 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Освободить ресурсы
+        /// Cleans-up all resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли явно</param>
+        /// <param name="isUserCall">Is called explicitly by user from Dispose</param>
         protected virtual void Dispose(bool isUserCall)
         {
             if (isUserCall)
@@ -405,7 +448,7 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Освободить ресурсы
+        /// Cleans-up all resources
         /// </summary>
         public void Dispose()
         {
