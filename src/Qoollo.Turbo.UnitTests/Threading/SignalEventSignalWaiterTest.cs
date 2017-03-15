@@ -171,5 +171,19 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 task.Wait();
             }
         }
+
+        [TestMethod]
+        public void TestNotInitializedWaiterFactory()
+        {
+            var factory = new SignalWaiterFactory();
+            using (var waiter = factory.CreateWaiter())
+            {
+                lock (waiter)
+                {
+                    if (waiter.Wait(100))
+                        Assert.Fail("Empty waiter is never signalled");
+                }
+            }
+        }
     }
 }

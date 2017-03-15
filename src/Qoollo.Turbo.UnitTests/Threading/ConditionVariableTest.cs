@@ -391,7 +391,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         }
 
         [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [ExpectedException(typeof(SynchronizationLockException))]
         public void TestWaitThrowsIfExternalLockNotAcquired()
         {
             object syncObj = new object();
@@ -401,7 +401,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             }
         }
         [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [ExpectedException(typeof(SynchronizationLockException))]
         public void TestWaitWithPredicateThrowsIfExternalLockNotAcquired()
         {
             object syncObj = new object();
@@ -411,7 +411,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             }
         }
         [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [ExpectedException(typeof(SynchronizationLockException))]
         public void TestPulseThrowsIfExternalLockNotAcquired()
         {
             object syncObj = new object();
@@ -422,7 +422,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         }
 
         [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [ExpectedException(typeof(SynchronizationLockException))]
         public void TestWaitThrowsIfExternalLockTakenRecursively()
         {
             object syncObj = new object();
@@ -438,7 +438,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             }
         }
         [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [ExpectedException(typeof(SynchronizationLockException))]
         public void TestWaitWithPredicateThrowsIfExternalLockTakenRecursively()
         {
             object syncObj = new object();

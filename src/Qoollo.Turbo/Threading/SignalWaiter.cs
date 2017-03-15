@@ -137,14 +137,14 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         public bool Wait(int timeout, CancellationToken token)
         {
             if (!Monitor.IsEntered(this))
-                throw new InvalidOperationException("Lock on the current SignalWaiter should be acquired");
+                throw new SynchronizationLockException("Lock on the current SignalWaiter should be acquired");
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
@@ -182,13 +182,13 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         public bool Wait(int timeout)
         {
             if (!Monitor.IsEntered(this))
-                throw new InvalidOperationException("Lock on the current SignalWaiter should be acquired");
+                throw new SynchronizationLockException("Lock on the current SignalWaiter should be acquired");
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
 
@@ -209,7 +209,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Tiemout value</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -226,7 +226,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
@@ -277,7 +277,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
@@ -286,7 +286,7 @@ namespace Qoollo.Turbo.Threading
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
             if (!Monitor.IsEntered(this))
-                throw new InvalidOperationException("External lock should be acquired");
+                throw new SynchronizationLockException("External lock should be acquired");
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
@@ -338,7 +338,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="state">State object for the predicate</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -355,7 +355,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -372,7 +372,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
@@ -391,7 +391,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
@@ -413,7 +413,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Tiemout value</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">Lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">Lock is not acquired</exception>
         /// <exception cref="ObjectDisposedException">Waiter was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

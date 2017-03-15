@@ -99,14 +99,14 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         public bool Wait(int timeout, CancellationToken token)
         {
             if (!Monitor.IsEntered(_externalLock))
-                throw new InvalidOperationException("External lock should be acquired");
+                throw new SynchronizationLockException("External lock should be acquired");
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
@@ -154,7 +154,7 @@ namespace Qoollo.Turbo.Threading
                 ExitLock(_externalLock, ref externalLockTaken);
 
                 if (Monitor.IsEntered(_externalLock)) // Sanity check
-                    throw new InvalidOperationException("Recursive lock is not supported");
+                    throw new SynchronizationLockException("Recursive lock is not supported");
 
                 // Waiting for signal
                 if (!Monitor.Wait(_internalLock, remainingWaitMilliseconds))
@@ -187,7 +187,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -200,7 +200,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Tiemout value</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -217,7 +217,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the current thread successfully received a notification</returns>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
@@ -254,7 +254,7 @@ namespace Qoollo.Turbo.Threading
                 ExitLock(_externalLock, ref externalLockTaken);
 
                 if (!recursiveLockChecked && Monitor.IsEntered(_externalLock)) // Sanity check
-                    throw new InvalidOperationException("Recursive lock is not supported");
+                    throw new SynchronizationLockException("Recursive lock is not supported");
                 recursiveLockChecked = true;
 
                 if (!Monitor.Wait(_internalLock, remainingWaitMilliseconds))
@@ -343,7 +343,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
@@ -352,7 +352,7 @@ namespace Qoollo.Turbo.Threading
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
             if (!Monitor.IsEntered(_externalLock))
-                throw new InvalidOperationException("External lock should be acquired");
+                throw new SynchronizationLockException("External lock should be acquired");
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
@@ -378,7 +378,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="state">State object for the predicate</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -395,7 +395,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Tiemout in milliseconds</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -412,7 +412,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
@@ -431,7 +431,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="token">Cancellation token</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation happened</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
@@ -453,7 +453,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Tiemout value</param>
         /// <returns>True if predicate evaluates to True</returns>
         /// <exception cref="ArgumentNullException">predicate is null</exception>
-        /// <exception cref="InvalidOperationException">externalLock is not acquired or acquired recursively</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -471,11 +471,11 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Notifies single waiting thread about possible state change
         /// </summary>
-        /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">External lock is not acquired</exception>
         public void Signal()
         {
             if (!Monitor.IsEntered(_externalLock))
-                throw new InvalidOperationException("External lock should be acquired");
+                throw new SynchronizationLockException("External lock should be acquired");
 
             lock (_internalLock)
             {
@@ -487,13 +487,13 @@ namespace Qoollo.Turbo.Threading
         /// Notifies specified number of threads about possible state change
         /// </summary>
         /// <param name="count">Number of threads to be notified</param>
-        /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">External lock is not acquired</exception>
         internal void Signal(int count)
         {
             if (count < 0 || count > short.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(count));
             if (!Monitor.IsEntered(_externalLock))
-                throw new InvalidOperationException("External lock should be acquired");
+                throw new SynchronizationLockException("External lock should be acquired");
 
             lock (_internalLock)
             {
@@ -505,11 +505,11 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Notifies all waiting threads about possible state change
         /// </summary>
-        /// <exception cref="InvalidOperationException">External lock is not acquired</exception>
+        /// <exception cref="SynchronizationLockException">External lock is not acquired</exception>
         public void SignalAll()
         {
             if (!Monitor.IsEntered(_externalLock))
-                throw new InvalidOperationException("External lock should be acquired");
+                throw new SynchronizationLockException("External lock should be acquired");
 
             lock (_internalLock)
             {
