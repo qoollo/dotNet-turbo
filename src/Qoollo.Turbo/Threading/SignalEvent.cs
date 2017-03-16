@@ -11,7 +11,7 @@ namespace Qoollo.Turbo.Threading
     /// <summary>
     /// Primitive that emits signals about some event for other threads waiting for that event
     /// </summary>
-    public class SignalEvent : IDisposable
+    internal class SignalEvent : IDisposable
     {
         private volatile bool _isDisposed;
 

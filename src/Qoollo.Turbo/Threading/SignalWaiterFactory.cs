@@ -10,7 +10,7 @@ namespace Qoollo.Turbo.Threading
     /// <summary>
     /// Factory to create <see cref="SignalWaiter"/>
     /// </summary>
-    public struct SignalWaiterFactory
+    internal struct SignalWaiterFactory
     {
         /// <summary>
         /// Creates SignalWaiterFactory from single source event

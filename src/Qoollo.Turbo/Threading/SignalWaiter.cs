@@ -13,7 +13,7 @@ namespace Qoollo.Turbo.Threading
     /// <summary>
     /// Specifies the number of threads to notify on signal
     /// </summary>
-    public enum SignalMode
+    internal enum SignalMode
     {
         /// <summary>
         /// Notifies all threads
@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.Threading
     /// <summary>
     /// Primitive to wait for signals from <see cref="SignalEvent"/>
     /// </summary>
-    public class SignalWaiter : IDisposable
+    internal class SignalWaiter : IDisposable
     {
         private static readonly Action<object> _cancellationTokenCanceledEventHandler = new Action<object>(CancellationTokenCanceledEventHandler);
         /// <summary>
