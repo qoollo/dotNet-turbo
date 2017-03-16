@@ -324,7 +324,7 @@ namespace Qoollo.Turbo.Threading
         public MonitorWaiter Enter(int timeout, CancellationToken token)
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(this.GetType().Name);
+                throw new ObjectDisposedException(nameof(MonitorObject));
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
@@ -335,34 +335,27 @@ namespace Qoollo.Turbo.Threading
                 timeout = Timeout.Infinite;
 
 
-            if (!token.CanBeCanceled)
+            CancellationTokenRegistration cancellationTokenRegistration = default(CancellationTokenRegistration);
+            if (token.CanBeCanceled)
             {
-                Monitor.Enter(this);
-                Interlocked.Increment(ref _waiterCount);
-
-                return new MonitorWaiter(this, timeout, startTime, token, default(CancellationTokenRegistration));
-            }
-            else
-            {
-                CancellationTokenRegistration cancellationTokenRegistration = default(CancellationTokenRegistration);
-                bool lockTaken = false;
                 try
                 {
                     cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
-
-                    Monitor.Enter(this, ref lockTaken); // Can be interrupted
-                    Interlocked.Increment(ref _waiterCount);
-
-                    return new MonitorWaiter(this, timeout, startTime, token, cancellationTokenRegistration);
+                    Monitor.Enter(this); // Can be interrupted
                 }
                 catch
                 {
-                    if (lockTaken)
-                        Monitor.Exit(this);
                     cancellationTokenRegistration.Dispose();
                     throw;
                 }
             }
+            else
+            {
+                Monitor.Enter(this);
+            }
+
+            Interlocked.Increment(ref _waiterCount);
+            return new MonitorWaiter(this, timeout, startTime, token, cancellationTokenRegistration);
         }
         /// <summary>
         /// Enter the lock on the current <see cref="MonitorObject"/> object
