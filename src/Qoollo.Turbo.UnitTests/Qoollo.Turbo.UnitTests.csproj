@@ -85,6 +85,7 @@
     <Compile Include="ExecutionQuantizers\ExecutionQuantizerTest.cs" />
     <Compile Include="Threading\LinearSpinWaitTest.cs" />
     <Compile Include="Threading\ManagementThreadControllerTest.cs" />
+    <Compile Include="Threading\MonitorWaiterTest.cs" />
     <Compile Include="Threading\PartialThreadBlockerTest.cs" />
     <Compile Include="Threading\SemaphoreLightTest.cs" />
     <Compile Include="Threading\SignalEventSignalWaiterTest.cs" />

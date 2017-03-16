@@ -88,7 +88,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                     }
                 });
 
-                Thread.Sleep(100);
+                TimingAssert.AreEqual(10000, 1, () => testInst.WaiterCount);
                 Assert.AreEqual(0, Volatile.Read(ref result));
 
                 lock (syncObj)

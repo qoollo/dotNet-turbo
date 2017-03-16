@@ -77,7 +77,7 @@ namespace Qoollo.Turbo.Threading
             }
 
             // Waiting for signal
-            if (!Monitor.Wait(this, remainingWaitMilliseconds))
+            if (!Monitor.Wait(_sourceWaiter, remainingWaitMilliseconds))
                 return false;
 
             // Check if cancellation or dispose was the reasons of the signal
@@ -115,7 +115,7 @@ namespace Qoollo.Turbo.Threading
             }
 
             // Waiting for signal
-            if (!Monitor.Wait(this, remainingWaitMilliseconds))
+            if (!Monitor.Wait(_sourceWaiter, remainingWaitMilliseconds))
                 return false;
 
             // Check if cancellation or dispose was the reasons of the signal
@@ -247,8 +247,8 @@ namespace Qoollo.Turbo.Threading
         {
             if (_sourceWaiter != null)
             {
+                _sourceWaiter.Exit(ref this); // Exit lock before disposing CancellationTokenRegistration
                 _cancellationTokenReg.Dispose();
-                _sourceWaiter.Exit(ref this);
                 _sourceWaiter = null;
             }
         }
@@ -259,6 +259,7 @@ namespace Qoollo.Turbo.Threading
     /// <summary>
     /// Waiter for external signals (wrapper for <see cref="Monitor.Wait(object)"/> and <see cref="Monitor.Pulse(object)"/>)
     /// </summary>
+    [DebuggerDisplay("Name = {Name}, WaiterCount = {WaiterCount}")]
     public class MonitorWaiter : IDisposable
     {
         private static readonly Action<object> _cancellationTokenCanceledEventHandler = new Action<object>(CancellationTokenCanceledEventHandler);
@@ -275,16 +276,26 @@ namespace Qoollo.Turbo.Threading
 
         // =============
 
+        private readonly string _name;
         private volatile int _waiterCount;
         private volatile bool _isDisposed;
 
         /// <summary>
         /// MonitorWaiter constructor
         /// </summary>
-        public MonitorWaiter()
+        /// <param name="name">Name for the current <see cref="MonitorWaiter"/></param>
+        public MonitorWaiter(string name)
         {
+            _name = name ?? nameof(MonitorWaiter);
             _waiterCount = 0;
             _isDisposed = false;
+        }
+        /// <summary>
+        /// MonitorWaiter constructor
+        /// </summary>
+        public MonitorWaiter()
+            : this(null)
+        {
         }
 
         /// <summary>
@@ -295,6 +306,10 @@ namespace Qoollo.Turbo.Threading
         /// Is MonitorWaiter in disposed state
         /// </summary>
         internal bool IsDisposed { get { return _isDisposed; } }
+        /// <summary>
+        /// Name to identify MonitorWaiter instance
+        /// </summary>
+        public string Name { get { return _name; } }
 
 
         /// <summary>
@@ -316,15 +331,25 @@ namespace Qoollo.Turbo.Threading
             if (timeout > 0)
                 startTime = TimeoutHelper.GetTimestamp();
             else if (timeout < -1)
-                timeout = Timeout.Infinite;        
-
-            Monitor.Enter(this);
-            Interlocked.Increment(ref _waiterCount);
-
+                timeout = Timeout.Infinite;
 
             CancellationTokenRegistration cancellationTokenRegistration = default(CancellationTokenRegistration);
-            if (token.CanBeCanceled)
-                cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+            bool lockTaken = false;
+            try
+            {
+                if (token.CanBeCanceled)
+                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+
+                Monitor.Enter(this, ref lockTaken); // Can be interrupted
+                Interlocked.Increment(ref _waiterCount);
+            }
+            catch
+            {
+                if (lockTaken)
+                    Monitor.Exit(this);
+                cancellationTokenRegistration.Dispose();
+                throw;
+            }
 
             return new MonitorWaiterLock(this, timeout, startTime, token, cancellationTokenRegistration);
         }
@@ -370,6 +395,7 @@ namespace Qoollo.Turbo.Threading
         internal void Exit(ref MonitorWaiterLock mwLock)
         {
             Interlocked.Decrement(ref _waiterCount);
+            Monitor.Exit(this);
         }
 
 
