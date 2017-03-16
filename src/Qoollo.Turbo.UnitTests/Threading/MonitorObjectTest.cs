@@ -11,12 +11,12 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class MonitorWaiterTest
+    public class MonitorObjectTest
     {
         [TestMethod]
         public void TestLockEnterExit()
         {
-            using (var inst = new MonitorWaiter())
+            using (var inst = new MonitorObject())
             {
                 Assert.AreEqual(0, inst.WaiterCount);
                 using (var wait = inst.Enter())
@@ -32,7 +32,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestNotificationReceived()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int result = 0;
                 var task = Task.Run(() =>
@@ -60,7 +60,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestNotificationWithPredicate()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int result = 0;
                 int state = 0;
@@ -94,7 +94,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestNotificationWithPredicateRef()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int result = 0;
                 int state = 0;
@@ -129,7 +129,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestExceptionFromPredicatePassed()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int result = 0;
                 int state = 0;
@@ -172,7 +172,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestTimeoutWorks()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int result = 0;
                 var task = Task.Run(() =>
@@ -197,7 +197,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestCustomTimeoutWorks()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int result = 0;
                 var task = Task.Run(() =>
@@ -222,7 +222,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestCancellationWorks()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int result = 0;
                 CancellationTokenSource tokenSrc = new CancellationTokenSource();
@@ -258,7 +258,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestCancellationWorksInWaitNoParam()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int result = 0;
                 CancellationTokenSource tokenSrc = new CancellationTokenSource();
@@ -292,7 +292,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestInterruptOnDispose()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int exitCount = 0;
                 var task = Task.Run(() =>
@@ -323,7 +323,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestSingleThreadWakeUpOnSignal()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int exitCount = 0;
                 int state = 0;
@@ -361,7 +361,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestAllThreadWakeUpOnSignalAll()
         {
-            using (var testInst = new MonitorWaiter())
+            using (var testInst = new MonitorObject())
             {
                 int exitCount = 0;
                 int state = 0;
@@ -396,8 +396,8 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
         private class ThreadSafeQueue<T>
         {
-            public MonitorWaiter WaiterFull = new MonitorWaiter("WaiterFull");
-            public MonitorWaiter WaiterEmpty = new MonitorWaiter("WaiterEmpty");
+            public MonitorObject WaiterFull = new MonitorObject("WaiterFull");
+            public MonitorObject WaiterEmpty = new MonitorObject("WaiterEmpty");
             public ConcurrentQueue<T> Queue = new ConcurrentQueue<T>();
             public int ItemCount = 0;
             public int MaxCount = 1000;

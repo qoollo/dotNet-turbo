@@ -11,11 +11,11 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading
 {
     /// <summary>
-    /// Guard helper for <see cref="MonitorWaiter"/> to use it with 'using' statement
+    /// Guard helper for <see cref="MonitorObject"/> to use it with 'using' statement
     /// </summary>
-    public struct MonitorWaiterLock : IDisposable
+    public struct MonitorWaiter : IDisposable
     {
-        private MonitorWaiter _sourceWaiter;
+        private MonitorObject _sourceWaiter;
         private readonly int _timeout;
         private readonly uint _startTime;
         private readonly CancellationToken _token;
@@ -23,14 +23,14 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// MonitorWaiterLock constructor
+        /// MonitorWaiter constructor
         /// </summary>
         /// <param name="sourceWaiter">Source MonitorWaiter</param>
         /// <param name="timeout">Initial operation timeout</param>
         /// <param name="startTime">Time when entered the lock</param>
         /// <param name="token">Cancellation token</param>
         /// <param name="cancellationTokenReg">Cancellation token registration</param>
-        internal MonitorWaiterLock(MonitorWaiter sourceWaiter, int timeout, uint startTime, CancellationToken token, CancellationTokenRegistration cancellationTokenReg)
+        internal MonitorWaiter(MonitorObject sourceWaiter, int timeout, uint startTime, CancellationToken token, CancellationTokenRegistration cancellationTokenReg)
         {
             _sourceWaiter = sourceWaiter;
             _timeout = timeout;
@@ -52,9 +52,9 @@ namespace Qoollo.Turbo.Threading
         public bool Wait(int customTimeout)
         {
             if (_sourceWaiter == null)
-                throw new ObjectDisposedException(nameof(MonitorWaiterLock), "Lock section has exited");
+                throw new ObjectDisposedException(nameof(MonitorWaiter), "Lock section has exited");
             if (_sourceWaiter.IsDisposed)
-                throw new ObjectDisposedException(nameof(MonitorWaiter));
+                throw new ObjectDisposedException(nameof(MonitorObject));
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
@@ -84,7 +84,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorWaiter)));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
 
             return true;
         }
@@ -100,9 +100,9 @@ namespace Qoollo.Turbo.Threading
         public bool Wait()
         {
             if (_sourceWaiter == null)
-                throw new ObjectDisposedException(nameof(MonitorWaiterLock), "Lock section has exited");
+                throw new ObjectDisposedException(nameof(MonitorWaiter), "Lock section has exited");
             if (_sourceWaiter.IsDisposed)
-                throw new ObjectDisposedException(nameof(MonitorWaiter));
+                throw new ObjectDisposedException(nameof(MonitorObject));
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
@@ -122,7 +122,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorWaiter)));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
 
             return true;
         }
@@ -143,9 +143,9 @@ namespace Qoollo.Turbo.Threading
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
             if (_sourceWaiter == null)
-                throw new ObjectDisposedException(nameof(MonitorWaiterLock), "Lock section has exited");
+                throw new ObjectDisposedException(nameof(MonitorWaiter), "Lock section has exited");
             if (_sourceWaiter.IsDisposed)
-                throw new ObjectDisposedException(nameof(MonitorWaiter));
+                throw new ObjectDisposedException(nameof(MonitorObject));
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
@@ -177,7 +177,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorWaiter)));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
 
             // Final check for predicate
             return predicate(state);
@@ -199,9 +199,9 @@ namespace Qoollo.Turbo.Threading
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
             if (_sourceWaiter == null)
-                throw new ObjectDisposedException(nameof(MonitorWaiterLock), "Lock section has exited");
+                throw new ObjectDisposedException(nameof(MonitorWaiter), "Lock section has exited");
             if (_sourceWaiter.IsDisposed)
-                throw new ObjectDisposedException(nameof(MonitorWaiter));
+                throw new ObjectDisposedException(nameof(MonitorObject));
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
@@ -233,7 +233,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorWaiter)));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
 
             // Final check for predicate
             return predicate(ref state);
@@ -260,7 +260,7 @@ namespace Qoollo.Turbo.Threading
     /// Waiter for external signals (wrapper for <see cref="Monitor.Wait(object)"/> and <see cref="Monitor.Pulse(object)"/>)
     /// </summary>
     [DebuggerDisplay("Name = {Name}, WaiterCount = {WaiterCount}")]
-    public class MonitorWaiter : IDisposable
+    public class MonitorObject : IDisposable
     {
         private static readonly Action<object> _cancellationTokenCanceledEventHandler = new Action<object>(CancellationTokenCanceledEventHandler);
         /// <summary>
@@ -269,9 +269,9 @@ namespace Qoollo.Turbo.Threading
         /// <param name="obj">ConditionVariable object</param>
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
-            MonitorWaiter monitorWaiter = obj as MonitorWaiter;
-            Debug.Assert(monitorWaiter != null);
-            monitorWaiter.PulseAll();
+            MonitorObject monitorObject = obj as MonitorObject;
+            Debug.Assert(monitorObject != null);
+            monitorObject.PulseAll();
         }
 
         // =============
@@ -281,46 +281,47 @@ namespace Qoollo.Turbo.Threading
         private volatile bool _isDisposed;
 
         /// <summary>
-        /// MonitorWaiter constructor
+        /// MonitorObject constructor
         /// </summary>
-        /// <param name="name">Name for the current <see cref="MonitorWaiter"/></param>
-        public MonitorWaiter(string name)
+        /// <param name="name">Name for the current <see cref="MonitorObject"/></param>
+        public MonitorObject(string name)
         {
-            _name = name ?? nameof(MonitorWaiter);
+            _name = name ?? nameof(MonitorObject);
             _waiterCount = 0;
             _isDisposed = false;
         }
         /// <summary>
-        /// MonitorWaiter constructor
+        /// MonitorObject constructor
         /// </summary>
-        public MonitorWaiter()
+        public MonitorObject()
             : this(null)
         {
         }
 
         /// <summary>
-        /// The number of waiting threads on the MonitorWaiter
+        /// The number of waiting threads on the MonitorObject
         /// </summary>
         public int WaiterCount { get { return _waiterCount; } }
         /// <summary>
-        /// Is MonitorWaiter in disposed state
+        /// Is MonitorObject in disposed state
         /// </summary>
         internal bool IsDisposed { get { return _isDisposed; } }
         /// <summary>
-        /// Name to identify MonitorWaiter instance
+        /// Name to identify MonitorObject instance
         /// </summary>
         public string Name { get { return _name; } }
 
 
+
         /// <summary>
-        /// Enter the lock on the current <see cref="MonitorWaiter"/> object
+        /// Enter the lock on the current <see cref="MonitorObject"/> object
         /// </summary>
         /// <param name="timeout">Total operation timeout</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorWaiter disposed</exception>
+        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation requested</exception>
-        public MonitorWaiterLock Enter(int timeout, CancellationToken token)
+        public MonitorWaiter Enter(int timeout, CancellationToken token)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
@@ -333,66 +334,76 @@ namespace Qoollo.Turbo.Threading
             else if (timeout < -1)
                 timeout = Timeout.Infinite;
 
-            CancellationTokenRegistration cancellationTokenRegistration = default(CancellationTokenRegistration);
-            bool lockTaken = false;
-            try
+
+            if (!token.CanBeCanceled)
             {
-                if (token.CanBeCanceled)
+                Monitor.Enter(this);
+                Interlocked.Increment(ref _waiterCount);
+
+                return new MonitorWaiter(this, timeout, startTime, token, default(CancellationTokenRegistration));
+            }
+            else
+            {
+                CancellationTokenRegistration cancellationTokenRegistration = default(CancellationTokenRegistration);
+                bool lockTaken = false;
+                try
+                {
                     cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
 
-                Monitor.Enter(this, ref lockTaken); // Can be interrupted
-                Interlocked.Increment(ref _waiterCount);
-            }
-            catch
-            {
-                if (lockTaken)
-                    Monitor.Exit(this);
-                cancellationTokenRegistration.Dispose();
-                throw;
-            }
+                    Monitor.Enter(this, ref lockTaken); // Can be interrupted
+                    Interlocked.Increment(ref _waiterCount);
 
-            return new MonitorWaiterLock(this, timeout, startTime, token, cancellationTokenRegistration);
+                    return new MonitorWaiter(this, timeout, startTime, token, cancellationTokenRegistration);
+                }
+                catch
+                {
+                    if (lockTaken)
+                        Monitor.Exit(this);
+                    cancellationTokenRegistration.Dispose();
+                    throw;
+                }
+            }
         }
         /// <summary>
-        /// Enter the lock on the current <see cref="MonitorWaiter"/> object
+        /// Enter the lock on the current <see cref="MonitorObject"/> object
         /// </summary>
         /// <param name="timeout">Total operation timeout</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorWaiter disposed</exception>
+        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MonitorWaiterLock Enter(int timeout)
+        public MonitorWaiter Enter(int timeout)
         {
             return Enter(timeout, default(CancellationToken));
         }
         /// <summary>
-        /// Enter the lock on the current <see cref="MonitorWaiter"/> object
+        /// Enter the lock on the current <see cref="MonitorObject"/> object
         /// </summary>
         /// <param name="token">Cancellation token</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorWaiter disposed</exception>
+        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation requested</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MonitorWaiterLock Enter(CancellationToken token)
+        public MonitorWaiter Enter(CancellationToken token)
         {
             return Enter(Timeout.Infinite, default(CancellationToken));
         }
         /// <summary>
-        /// Enter the lock on the current <see cref="MonitorWaiter"/> object
+        /// Enter the lock on the current <see cref="MonitorObject"/> object
         /// </summary>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorWaiter disposed</exception>
+        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MonitorWaiterLock Enter()
+        public MonitorWaiter Enter()
         {
             return Enter(Timeout.Infinite, default(CancellationToken));
         }
 
         /// <summary>
-        /// Leaves the lock section for current <see cref="MonitorWaiter"/> object.
-        /// Should be called from <see cref="MonitorWaiterLock.Dispose"/>
+        /// Leaves the lock section for current <see cref="MonitorObject"/> object.
+        /// Should be called from <see cref="MonitorWaiter.Dispose"/>
         /// </summary>
-        /// <param name="mwLock">MonitorWaiterLock with required info</param>
-        internal void Exit(ref MonitorWaiterLock mwLock)
+        /// <param name="mwLock">MonitorWaiter with required info</param>
+        internal void Exit(ref MonitorWaiter mwLock)
         {
             Interlocked.Decrement(ref _waiterCount);
             Monitor.Exit(this);
@@ -408,10 +419,10 @@ namespace Qoollo.Turbo.Threading
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Wait(int timeout)
+        internal bool Wait(int timeout)
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(nameof(MonitorWaiter));
+                throw new ObjectDisposedException(nameof(MonitorObject));
 
             Debug.Assert(Monitor.IsEntered(this), "External lock should be acquired");
 
@@ -427,7 +438,7 @@ namespace Qoollo.Turbo.Threading
                     return false;
 
                 if (_isDisposed)
-                    throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorWaiter)));
+                    throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
             }
             finally
             {

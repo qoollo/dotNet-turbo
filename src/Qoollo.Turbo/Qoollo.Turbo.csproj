@@ -291,7 +291,7 @@
     <Compile Include="Threading\ExecutionQuantizers\OnRequestExecutionQuantizer.cs" />
     <Compile Include="Threading\ExecutionQuantizers\ExecutionQuantizer.cs" />
     <Compile Include="Threading\LinearSpinWait.cs" />
-    <Compile Include="Threading\MonitorWaiter.cs" />
+    <Compile Include="Threading\MonitorObject.cs" />
     <Compile Include="Threading\QueueProcessing\QueueAsyncProcessorExtensions.cs" />
     <Compile Include="Threading\SemaphoreLight.cs" />
     <Compile Include="Threading\ServiceStuff\CancellationTokenHelper.cs" />
