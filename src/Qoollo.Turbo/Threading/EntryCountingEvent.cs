@@ -233,7 +233,8 @@ namespace Qoollo.Turbo.Threading
         {
             int newCount = Interlocked.Decrement(ref this._currentCountInner);
 
-            Debug.Assert((newCount >= 0 && _isTerminateRequested) || (newCount > 0 && !_isTerminateRequested));
+            Debug.Assert(newCount >= 0);
+            Debug.Assert(newCount > 0 || _isTerminateRequested);
             if (newCount <= 0)
                 ExitClientAdditionalActions(newCount);
         }

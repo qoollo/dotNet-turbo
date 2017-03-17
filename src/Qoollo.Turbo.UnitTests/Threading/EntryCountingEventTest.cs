@@ -118,7 +118,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void EnterTerminateConcurrentlyTest()
         {
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 5000; i++)
                 EnterTerminateConcurrently();
         }
 
