@@ -220,6 +220,35 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
 
         [TestMethod]
+        public void TestIsTimeoutedWorks()
+        {
+            using (var testInst = new MonitorObject())
+            {
+                int result = 0;
+                int cycleCount = 0;
+                var task = Task.Run(() =>
+                {
+                    using (var waiter = testInst.Enter(200))
+                    {
+                        while (!waiter.IsTimeouted)
+                        {
+                            waiter.Wait(10);
+                            Interlocked.Increment(ref cycleCount);
+                        }
+                        Interlocked.Exchange(ref result, 1);
+                    }
+                });
+
+                TimingAssert.AreEqual(10000, 1, () => testInst.WaiterCount);
+                TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref result));
+                Assert.IsTrue(Volatile.Read(ref cycleCount) > 0);
+
+                task.Wait();
+            }
+        }
+
+
+        [TestMethod]
         public void TestCancellationWorks()
         {
             using (var testInst = new MonitorObject())

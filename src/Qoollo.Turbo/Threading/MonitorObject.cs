@@ -40,6 +40,20 @@ namespace Qoollo.Turbo.Threading
         }
 
 
+        /// <summary>
+        /// Is specified for the operation time is up
+        /// </summary>
+        public bool IsTimeouted
+        {
+            get
+            {
+                if (_timeout == Timeout.Infinite)
+                    return false;
+
+                return TimeoutHelper.UpdateTimeout(_startTime, _timeout) <= 0;
+            }
+        }
+
 
         /// <summary>
         /// Blocks the current thread until the next notification
