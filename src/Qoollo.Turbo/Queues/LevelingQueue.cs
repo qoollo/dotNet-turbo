@@ -1,6 +1,10 @@
-﻿using System;
+﻿using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ThreadManagement;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,15 +37,25 @@ namespace Qoollo.Turbo.Queues
     /// <typeparam name="T">The type of elements in queue</typeparam>
     public class LevelingQueue<T> : Common.CommonQueueImpl<T>, IDisposable
     {
+        /// <summary>
+        /// As long as the inner queue possibly can be changed outside we use Polling on MonitorObject with reasonable WaitPollingTimeout
+        /// </summary>
+        private const int WaitPollingTimeout = 2000;
+
         private readonly IQueue<T> _highLevelQueue;
         private readonly IQueue<T> _lowLevelQueue;
 
         private readonly LevelingQueueAddingMode _addingMode;
-        private readonly int _backgroundTransferThreadCount;
+        private readonly bool _isBackgroundTransferingEnabled;
+
+        private readonly MonitorObject _addMonitor;
+        private readonly MonitorObject _takeMonitor;
+
+        private readonly DelegateThreadSetManager _backgroundTransferer;
 
         private volatile bool _isDisposed;
 
-        public LevelingQueue(IQueue<T> highLevelQueue, IQueue<T> lowLevelQueue, LevelingQueueAddingMode addingMode, int backgrounTransferThreadCount)
+        public LevelingQueue(IQueue<T> highLevelQueue, IQueue<T> lowLevelQueue, LevelingQueueAddingMode addingMode, bool isBackgroundTransferingEnabled)
         {
             if (highLevelQueue == null)
                 throw new ArgumentNullException(nameof(highLevelQueue));
@@ -52,7 +66,17 @@ namespace Qoollo.Turbo.Queues
             _lowLevelQueue = lowLevelQueue;
 
             _addingMode = addingMode;
-            _backgroundTransferThreadCount = backgrounTransferThreadCount > 0 ? backgrounTransferThreadCount : -1;
+            _isBackgroundTransferingEnabled = isBackgroundTransferingEnabled;
+
+            _addMonitor = new MonitorObject("AddMonitor");
+            _takeMonitor = new MonitorObject("TakeMonitor");
+
+            if (isBackgroundTransferingEnabled)
+            {
+                _backgroundTransferer = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString(), BackgroundTransferProc);
+                _backgroundTransferer.IsBackground = true;
+                _backgroundTransferer.Start();
+            }
 
             _isDisposed = false;
         }
@@ -72,7 +96,7 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// Is transfering items from LowLevelQueue to HighLevelQueue in background enabled
         /// </summary>
-        public bool IsBackgroundTransferingEnabled { get { return _backgroundTransferThreadCount > 0; } }
+        public bool IsBackgroundTransferingEnabled { get { return _isBackgroundTransferingEnabled; } }
 
         /// <summary>
         /// The bounded size of the queue (-1 means not bounded)
@@ -130,7 +154,7 @@ namespace Qoollo.Turbo.Queues
         private void CheckDisposed()
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(nameof(LevelingQueue<T>));
+                throw new ObjectDisposedException(this.GetType().Name);
         }
 
         /// <summary>
@@ -143,18 +167,16 @@ namespace Qoollo.Turbo.Queues
 
             if (_addingMode == LevelingQueueAddingMode.PreferLiveData)
             {
-                if (_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
-                    return;
-
-                _lowLevelQueue.AddForced(item);
+                if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                    _lowLevelQueue.AddForced(item);
             }
             else
             {
-                if (_lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
-                    return;
-
-                _lowLevelQueue.AddForced(item);
+                if (!_lowLevelQueue.IsEmpty || !_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                    _lowLevelQueue.AddForced(item);
             }
+
+            _takeMonitor.Pulse();
         }
 
         /// <summary>
@@ -165,6 +187,53 @@ namespace Qoollo.Turbo.Queues
         {
             CheckDisposed();
             _highLevelQueue.AddForced(item);
+            _takeMonitor.Pulse();
+        }
+
+
+        // ====================== Add ==================
+
+        /// <summary>
+        /// Fast path to add the item (with zero timeout)
+        /// </summary>
+        /// <param name="item">New item</param>
+        /// <returns>Was added sucessufully</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryAddFast(T item)
+        {
+            Debug.Assert(_addingMode == LevelingQueueAddingMode.PreferLiveData, "Only PreferLiveData supported");
+
+            if (_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                return true;
+            if (_lowLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Slow path to add the item (waits on <see cref="_addMonitor"/>)
+        /// </summary>
+        /// <param name="item">New item</param>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="token">Token</param>
+        /// <returns>Was added sucessufully</returns>
+        private bool TryAddSlow(T item, int timeout, CancellationToken token)
+        {
+            using (var waiter = _addMonitor.Enter(timeout, token))
+            {
+                if (TryAddFast(item))
+                    return true;
+
+                while (!waiter.IsTimeouted)
+                {
+                    waiter.Wait(WaitPollingTimeout);
+                    if (TryAddFast(item))
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -181,22 +250,71 @@ namespace Qoollo.Turbo.Queues
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
+            bool result = false;
+
             if (_addingMode == LevelingQueueAddingMode.PreferLiveData)
             {
-                if (_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
-                    return true;
-
-                return _lowLevelQueue.TryAdd(item, timeout, token);
+                result = _addMonitor.WaiterCount == 0 && TryAddFast(item);
+                if (!result && timeout != 0)
+                    result = TryAddSlow(item, timeout, token); // Use slow path to add to any queue
             }
             else
             {
-                if (_lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
-                    return true;
-
-                return _lowLevelQueue.TryAdd(item, timeout, token);
+                result = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
+                if (!result)
+                    result = _lowLevelQueue.TryAdd(item, timeout, token); // To preserve order we try to add only to the lower queue
             }
+
+            if (result)
+                _takeMonitor.Pulse();
+
+            return result;
         }
 
+
+        // ========================== Take ==================
+
+        /// <summary>
+        /// Fast path to take the item from any queue (with zero timeout)
+        /// </summary>
+        /// <param name="item">The item removed from queue</param>
+        /// <returns>True if the item was removed</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryTakeFast(out T item)
+        {
+            Debug.Assert(!_isBackgroundTransferingEnabled || _addingMode == LevelingQueueAddingMode.PreferLiveData, "Cannot be used when strict ordering required");
+
+            if (_highLevelQueue.TryTake(out item, 0, default(CancellationToken)))
+                return true;
+            if (_lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
+                return true;
+
+            return false;
+        }
+        /// <summary>
+        /// Slow path to take the item from queue (uses <see cref="_takeMonitor"/>)
+        /// </summary>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="token">Token</param>
+        /// <returns>True if the item was removed</returns>
+        private bool TryTakeSlow(out T item, int timeout, CancellationToken token)
+        {
+            using (var waiter = _takeMonitor.Enter(timeout, token))
+            {
+                if (TryTakeFast(out item))
+                    return true;
+
+                while (!waiter.IsTimeouted)
+                {
+                    waiter.Wait(WaitPollingTimeout);
+                    if (TryTakeFast(out item))
+                        return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Removes item from the head of the queue (core method)
@@ -211,24 +329,29 @@ namespace Qoollo.Turbo.Queues
 
             // TODO
 
-            if (IsBackgroundTransferingEnabled)
+            bool result = false;
+            item = default(T);
+
+            if (_isBackgroundTransferingEnabled && _addingMode == LevelingQueueAddingMode.PreserveOrder)
             {
-                return _highLevelQueue.TryTake(out item, timeout, token);
+                // Should be mutually exclusive with background transferer
+                result = _highLevelQueue.TryTake(out item, timeout, token);
             }
             else
             {
-                if (_highLevelQueue.TryTake(out item, 0, default(CancellationToken)))
-                    return true;
-                if (_lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
-                    return true;
-                if (_highLevelQueue.TryTake(out item, timeout, token))
-                    return true;
-
-                return _lowLevelQueue.TryTake(out item, 0, default(CancellationToken));
+                result = _takeMonitor.WaiterCount == 0 && TryTakeFast(out item);
+                if (!result)
+                    result = TryTakeSlow(out item, timeout, token);
             }
 
-            throw new NotImplementedException();
+            if (result)
+                _addMonitor.Pulse();
+
+            return result;
         }
+
+
+        // ===================== Peek ===============
 
 
         /// <summary>
@@ -245,6 +368,28 @@ namespace Qoollo.Turbo.Queues
             throw new NotImplementedException();
         }
 
+        // ====================== Background ===============
+
+        private void BackgroundTransferProc(object state, CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                T item = default(T);
+                if (_lowLevelQueue.TryTake(out item, Timeout.Infinite, token))
+                {
+                    try
+                    {
+                        _highLevelQueue.TryAdd(item, Timeout.Infinite, token);
+                        _addMonitor.Pulse();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _highLevelQueue.AddForced(item); // Prevent item lost
+                        throw;
+                    }
+                }
+            }
+        }
 
 
         /// <summary>
@@ -256,6 +401,13 @@ namespace Qoollo.Turbo.Queues
             if (!_isDisposed)
             {
                 _isDisposed = true;
+
+                if (_backgroundTransferer != null)
+                    _backgroundTransferer.Stop(waitForStop: true);
+
+                _addMonitor.Dispose();
+                _takeMonitor.Dispose();
+
                 _lowLevelQueue.Dispose();
                 _highLevelQueue.Dispose();
             }

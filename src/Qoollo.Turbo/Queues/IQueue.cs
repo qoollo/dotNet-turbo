@@ -16,10 +16,12 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// The bounded size of the queue (-1 means not bounded)
         /// </summary>
+        /// <remarks>Informational property</remarks>
         long BoundedCapacity { get; }
         /// <summary>
         /// Number of items inside the queue
         /// </summary>
+        /// <remarks>Informational property</remarks>
         long Count { get; }
         /// <summary>
         /// Indicates whether the queue is empty

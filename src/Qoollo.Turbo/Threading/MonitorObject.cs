@@ -425,7 +425,6 @@ namespace Qoollo.Turbo.Threading
         /// <exception cref="SynchronizationLockException">externalLock is not acquired or acquired recursively</exception>
         /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
         /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool Wait(int timeout)
         {
             if (_isDisposed)
