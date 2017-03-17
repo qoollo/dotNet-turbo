@@ -92,6 +92,38 @@ namespace Qoollo.Turbo.UnitTests.Threading
         }
 
 
+        private void EnterTerminateConcurrently()
+        {
+            EntryCountingEvent inst = new EntryCountingEvent();
+            Barrier enterBar = new Barrier(2);
+
+            List<Task> tasks = new List<Task>();
+
+            tasks.Add(Task.Run(() =>
+            {
+                enterBar.SignalAndWait();
+                if (inst.TryEnterClient())
+                    inst.ExitClient();
+            }));
+            tasks.Add(Task.Run(() =>
+            {
+                enterBar.SignalAndWait();
+                inst.Terminate();
+            }));
+
+
+            Task.WaitAll(tasks.ToArray());
+            Assert.IsTrue(inst.Wait(0));
+        }
+        [TestMethod]
+        public void EnterTerminateConcurrentlyTest()
+        {
+            for (int i = 0; i < 1000; i++)
+                EnterTerminateConcurrently();
+        }
+
+
+
         [TestMethod]
         public void ComplexTest()
         {

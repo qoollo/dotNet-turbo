@@ -108,7 +108,9 @@ namespace Qoollo.Turbo.Threading
 
             if (_isDisposed || _isTerminateRequested)
             {
-                Interlocked.Decrement(ref _currentCountInner);
+                newCount = Interlocked.Decrement(ref _currentCountInner);
+                if (newCount == 0)
+                    ExitClientAdditionalActions(newCount);
                 return false;
             }
 
