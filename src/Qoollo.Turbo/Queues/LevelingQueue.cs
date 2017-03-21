@@ -1,4 +1,5 @@
-﻿using Qoollo.Turbo.Threading;
+﻿using Qoollo.Turbo.Queues.ServiceStuff;
+using Qoollo.Turbo.Threading;
 using Qoollo.Turbo.Threading.ThreadManagement;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,7 @@ namespace Qoollo.Turbo.Queues
         private readonly MonitorObject _takeMonitor;
 
         private readonly DelegateThreadSetManager _backgroundTransferer;
+        private readonly MutuallyExclusiveProcessPrimitive _bacgoundTransfererExclusive;
 
         private volatile bool _isDisposed;
 
@@ -73,6 +75,7 @@ namespace Qoollo.Turbo.Queues
 
             if (isBackgroundTransferingEnabled)
             {
+                _bacgoundTransfererExclusive = new MutuallyExclusiveProcessPrimitive();
                 _backgroundTransferer = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString(), BackgroundTransferProc);
                 _backgroundTransferer.IsBackground = true;
                 _backgroundTransferer.Start();
@@ -282,8 +285,6 @@ namespace Qoollo.Turbo.Queues
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryTakeFast(out T item)
         {
-            Debug.Assert(!_isBackgroundTransferingEnabled || _addingMode == LevelingQueueAddingMode.PreferLiveData, "Cannot be used when strict ordering required");
-
             if (_highLevelQueue.TryTake(out item, 0, default(CancellationToken)))
                 return true;
             if (_lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
@@ -316,6 +317,18 @@ namespace Qoollo.Turbo.Queues
             return false;
         }
 
+        private bool TryTakeExclusively(out T item, int timeout, CancellationToken token)
+        {
+            Debug.Assert(_isBackgroundTransferingEnabled && _addingMode == LevelingQueueAddingMode.PreserveOrder);
+
+            _bacgoundTransfererExclusive.RequestGate1Open(); // Open current gate
+            using (var gateGuard = _bacgoundTransfererExclusive.EnterGate1(Timeout.Infinite, token)) // This should happen fast
+            {
+                Debug.Assert(gateGuard.IsAcquired);
+                return TryTakeSlow(out item, timeout, token);
+            }
+        }
+
         /// <summary>
         /// Removes item from the head of the queue (core method)
         /// </summary>
@@ -327,15 +340,16 @@ namespace Qoollo.Turbo.Queues
         {
             CheckDisposed();
 
-            // TODO
-
             bool result = false;
             item = default(T);
 
             if (_isBackgroundTransferingEnabled && _addingMode == LevelingQueueAddingMode.PreserveOrder)
             {
-                // Should be mutually exclusive with background transferer
-                result = _highLevelQueue.TryTake(out item, timeout, token);
+                result = _highLevelQueue.TryTake(out item, 0, default(CancellationToken));
+                if (!result)
+                    result = TryTakeExclusively(out item, timeout, token); // Should be mutually exclusive with background transferer
+                else
+                    _bacgoundTransfererExclusive.RequestGate2Open(); // allow Background transfering
             }
             else
             {
@@ -370,22 +384,47 @@ namespace Qoollo.Turbo.Queues
 
         // ====================== Background ===============
 
+
+        /// <summary>
+        /// Transfers data from LowLevelQueue to HighLevelQueue in background
+        /// </summary>
         private void BackgroundTransferProc(object state, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                T item = default(T);
-                if (_lowLevelQueue.TryTake(out item, Timeout.Infinite, token))
+                using (var gateGuard = _bacgoundTransfererExclusive.EnterGate2(Timeout.Infinite, token)) // Background is on Gate2
+                using (var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(token, gateGuard.Token))
                 {
+                    Debug.Assert(gateGuard.IsAcquired);
+
+                    T item = default(T);
+                    bool itemTaken = false;
                     try
                     {
-                        _highLevelQueue.TryAdd(item, Timeout.Infinite, token);
-                        _addMonitor.Pulse();
+                        while (!linkedCancellation.IsCancellationRequested)
+                        {
+                            item = default(T);
+                            if (itemTaken = _lowLevelQueue.TryTake(out item, Timeout.Infinite, linkedCancellation.Token))
+                            {
+                                bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
+                                Debug.Assert(itemAdded);
+
+                                itemTaken = false;
+                                _addMonitor.Pulse();
+                            }
+                        }
                     }
                     catch (OperationCanceledException)
                     {
-                        _highLevelQueue.AddForced(item); // Prevent item lost
-                        throw;
+                        if (itemTaken)
+                        {
+                            _highLevelQueue.AddForced(item); // Prevent item lost
+                            _addMonitor.Pulse();
+                            itemTaken = false;
+                        }
+
+                        if (!linkedCancellation.IsCancellationRequested)
+                            throw;
                     }
                 }
             }
@@ -410,6 +449,9 @@ namespace Qoollo.Turbo.Queues
 
                 _lowLevelQueue.Dispose();
                 _highLevelQueue.Dispose();
+
+                if (_bacgoundTransfererExclusive != null)
+                    _bacgoundTransfererExclusive.Dispose();
             }
         }
     }

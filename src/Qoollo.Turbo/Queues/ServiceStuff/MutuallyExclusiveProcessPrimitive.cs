@@ -278,9 +278,6 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             _gate2 = new MutuallyExclusiveProcessGate(false, Gate2Closed);
         }
 
-        public CancellationToken Gate1Token { get { return _gate1.Token; } }
-        public CancellationToken Gate2Token { get { return _gate2.Token; } }
-
         [Conditional("DEBUG")]
         private void ValidateState()
         {
