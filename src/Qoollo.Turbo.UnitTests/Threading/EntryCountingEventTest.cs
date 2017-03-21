@@ -45,7 +45,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
 
         [TestMethod]
-        [ExpectedException(typeof(Exception), AllowDerivedTypes = true)]
+        [ExpectedException(typeof(InvalidOperationException), AllowDerivedTypes = true)]
         public void TestExitMoreTimesError()
         {
             EntryCountingEvent inst = new EntryCountingEvent();

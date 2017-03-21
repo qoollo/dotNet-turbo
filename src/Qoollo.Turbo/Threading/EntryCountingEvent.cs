@@ -108,9 +108,9 @@ namespace Qoollo.Turbo.Threading
 
             if (_isDisposed || _isTerminateRequested)
             {
-                newCount = Interlocked.Decrement(ref _currentCountInner);
-                if (newCount == 0)
-                    ExitClientAdditionalActions(newCount);
+                int newCountDec = Interlocked.Decrement(ref _currentCountInner);
+                if (newCount > 1 && newCountDec == 0)
+                    ExitClientAdditionalActions(newCountDec);
                 return false;
             }
 
@@ -212,9 +212,9 @@ namespace Qoollo.Turbo.Threading
         private void ExitClientAdditionalActions(int newCount)
         {
             if (newCount < 0)
-                throw new InvalidOperationException("ExitClient called more times then EnterClien.");
+                throw new InvalidOperationException("ExitClient called more times then EnterClient. EntryCountingEvent is in desynced state.");
             if (newCount == 0 && !_isTerminateRequested)
-                throw new InvalidOperationException("ExitClient called more times then EnterClien.");
+                throw new InvalidOperationException("ExitClient called more times then EnterClient. EntryCountingEvent is in desynced state.");
 
             if (newCount == 0)
             {
@@ -233,9 +233,7 @@ namespace Qoollo.Turbo.Threading
         {
             int newCount = Interlocked.Decrement(ref this._currentCountInner);
 
-            Debug.Assert(newCount >= 0);
-            Debug.Assert(newCount > 0 || _isTerminateRequested);
-            if (newCount <= 0)
+            if (newCount <= 0) // Throws exception when negative
                 ExitClientAdditionalActions(newCount);
         }
 
