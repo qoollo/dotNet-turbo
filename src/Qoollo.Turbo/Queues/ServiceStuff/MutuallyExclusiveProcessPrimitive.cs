@@ -13,7 +13,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
     /// <summary>
     /// Guard primitive for MutuallyExclusiveProcessPrimitive that allows to use it with 'using' statement
     /// </summary>
-    public struct MutuallyExclusiveProcessGuard : IDisposable
+    internal struct MutuallyExclusiveProcessGuard : IDisposable
     {
         private MutuallyExclusiveProcessGate _srcGate;
 
@@ -28,6 +28,17 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         public bool IsAcquired
         {
             get { return _srcGate != null; }
+        }
+
+        /// <summary>
+        /// Gets the token to cancel the waiting procedure
+        /// </summary>
+        public CancellationToken Token
+        {
+            get
+            {
+                return _srcGate != null ? _srcGate.Token : new CancellationToken(true);
+            }
         }
 
         /// <summary>
@@ -99,9 +110,9 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             if (_event.IsSet)
                 return true;
 
-            newCount = Interlocked.Decrement(ref _currentCountInner);
-            if (newCount == 0)
-                ExitClientAdditionalActions(newCount);
+            int newCountDec = Interlocked.Decrement(ref _currentCountInner);
+            if (newCount > 1 && newCountDec == 0)
+                ExitClientAdditionalActions(newCountDec);
 
             return false;
         }
@@ -153,7 +164,13 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             Debug.Assert(newCount == 0);
 
             if (!_isDisposed && !_event.IsSet && _clientsExitedNotification != null)
-                _clientsExitedNotification();
+            {
+                lock (_event)
+                {
+                    if (!_isDisposed && !_event.IsSet && _clientsExitedNotification != null)
+                        _clientsExitedNotification();
+                }
+            }
         }
 
         internal void ExitClient()
@@ -175,15 +192,21 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
             if (_event.IsSet)
             {
+                CancellationTokenSource srcToCancel = null;
                 lock (_event)
                 {
+                    if (_isDisposed)
+                        throw new ObjectDisposedException(this.GetType().Name);
+
                     if (_event.IsSet)
                     {
                         _event.Reset();
                         ExitClient();
-                        _cancellationRequest.Cancel();
+                        srcToCancel = _cancellationRequest;
                     }
                 }
+                if (srcToCancel != null)
+                    srcToCancel.Cancel(); // Should cancel outside the lock
             }
         }
         /// <summary>
@@ -198,9 +221,13 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
             lock (_event)
             {
-                if (!_isDisposed && !IsOpened)
+                if (_isDisposed)
+                    throw new ObjectDisposedException(this.GetType().Name);
+
+                if (!_event.IsSet)
                 {
                     int numberOfClients = Interlocked.Increment(ref _currentCountInner);
+                    Debug.Assert(numberOfClients > 0);
                     if (numberOfClients != 1)
                     {
                         Interlocked.Decrement(ref _currentCountInner);
@@ -208,10 +235,12 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                     }
                     _cancellationRequest = new CancellationTokenSource();
                     _event.Set();
+
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -266,20 +295,22 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
         private void Gate1Closed()
         {
-            Debug.Assert(_gate1.IsFullyClosed);
+            Debug.Assert(!_gate1.IsOpened, "gate1 is not closed");
+            Debug.Assert(!_gate2.IsOpened, "gate2 is not closed");
             if (!_isDisposed)
             {
                 bool opened = _gate2.Open();
-                Debug.Assert(opened);
+                Debug.Assert(opened, "gate2 open failed");
             }
         }
         private void Gate2Closed()
         {
-            Debug.Assert(_gate2.IsFullyClosed);
+            Debug.Assert(!_gate1.IsOpened, "gate1 is not closed");
+            Debug.Assert(!_gate2.IsOpened, "gate2 is not closed");
             if (!_isDisposed)
             {
                 bool opened = _gate1.Open();
-                Debug.Assert(opened);
+                Debug.Assert(opened, "gate1 open failed");
             }
         }
 

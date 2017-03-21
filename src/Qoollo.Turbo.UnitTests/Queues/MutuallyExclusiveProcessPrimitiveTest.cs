@@ -237,31 +237,122 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
         // ===================
 
-        private void RunComplexTest(MutuallyExclusiveProcessPrimitive inst, int workCount, int workSpin)
+        private void RunComplexTest(MutuallyExclusiveProcessPrimitive inst, int workCount, int workSpin, int sleepProbability)
         {
-            int workPerformCount = 0;
-            Random rnd = new Random();
+            Barrier barrier = new Barrier(4);
+            CancellationTokenSource globalCancellation = new CancellationTokenSource();
+            ManualResetEventSlim alwaysNotSet = new ManualResetEventSlim(false);
+            int workPerformGate1 = 0;
+            int workPerformGate2 = 0;
+            int workCompletedCount = 0;
 
-            Action doWork = () =>
+            int gate1Executed = 0;
+            int gate2Executed = 0;
+
+            Action<Random, CancellationToken, int> doWork = (Random rnd, CancellationToken token, int gate) =>
             {
                 try
                 {
-                    int curWorkPerformCount = Interlocked.Increment(ref workPerformCount);
-                    if (curWorkPerformCount != 1)
-                        throw new Exception("Mutual exclusive is broken");
+                    if (gate == 1)
+                    {
+                        Interlocked.Increment(ref workPerformGate1);
+                        if (Volatile.Read(ref workPerformGate2) != 0)
+                            throw new Exception("Mutual exclusive logic is broken");
 
-                    int spin = workSpin;
-                    lock (rnd)
-                        spin = rnd.Next(0, workSpin);
+                        Interlocked.Increment(ref gate1Executed);
+                    }
+                    else
+                    {
+                        Interlocked.Increment(ref workPerformGate2);
+                        if (Volatile.Read(ref workPerformGate1) != 0)
+                            throw new Exception("Mutual exclusive logic is broken");
 
-                    Thread.SpinWait(spin);
+                        Interlocked.Increment(ref gate2Executed);
+                    }
+
+                    if (rnd.Next(sleepProbability) == 0)
+                    {
+                        alwaysNotSet.Wait(1, token);
+                    }
+                    else
+                    {
+                        int spin = rnd.Next(0, workSpin);
+                        Thread.SpinWait(spin);
+                    }
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref workPerformCount);
+                    if (gate == 1)
+                        Interlocked.Decrement(ref workPerformGate1);
+                    else
+                        Interlocked.Decrement(ref workPerformGate2);
                 }
             };
 
+
+            Action<int> worker = (int gate) =>
+            {
+                var token = globalCancellation.Token;
+                Random rnd = new Random(Environment.TickCount + Thread.CurrentThread.ManagedThreadId);
+
+                barrier.SignalAndWait();
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        using (var guard = gate == 1 ? inst.EnterGate1(Timeout.Infinite, token) : inst.EnterGate2(Timeout.Infinite, token))
+                        {
+                            using (var linked = CancellationTokenSource.CreateLinkedTokenSource(token, guard.Token))
+                            {
+                                doWork(rnd, token, gate);
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException) { }
+
+                    int localWorkCompl = Interlocked.Increment(ref workCompletedCount);
+                    if (localWorkCompl > workCount)
+                        globalCancellation.Cancel();
+                }
+            };
+
+            Action switcher = () =>
+            {
+                var token = globalCancellation.Token;
+                Random rnd = new Random(Environment.TickCount + Thread.CurrentThread.ManagedThreadId);
+
+                barrier.SignalAndWait();
+                while (!token.IsCancellationRequested)
+                {
+                    int sleep = rnd.Next(80);
+
+                    Thread.Sleep(sleep);
+                    inst.RequestGate1Open();
+
+                    sleep = rnd.Next(80);
+                    Thread.Sleep(sleep);
+                    inst.RequestGate2Open();
+                }
+            };
+
+
+            Task workerThread1 = Task.Run(() => worker(1));
+            Task workerThread2 = Task.Run(() => worker(2));
+            Task workerThread3 = Task.Run(() => worker(2));
+            Task switcherThread = Task.Run(() => switcher());
+
+            Task.WaitAll(workerThread1, workerThread2, workerThread3, switcherThread);
+        }
+
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTest()
+        {
+            MutuallyExclusiveProcessPrimitive inst = new MutuallyExclusiveProcessPrimitive();
+            RunComplexTest(inst, 100000, 200, 50);
+            RunComplexTest(inst, 200000, 100, 100);
+            RunComplexTest(inst, 50000, 500, 50);
         }
     }
 }
