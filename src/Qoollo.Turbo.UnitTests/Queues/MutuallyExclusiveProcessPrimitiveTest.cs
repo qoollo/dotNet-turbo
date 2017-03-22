@@ -335,11 +335,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 }
             };
 
-
-            Task workerThread1 = Task.Run(() => worker(1));
-            Task workerThread2 = Task.Run(() => worker(2));
-            Task workerThread3 = Task.Run(() => worker(2));
-            Task switcherThread = Task.Run(() => switcher());
+            Task workerThread1 = Task.Factory.StartNew(() => worker(1), TaskCreationOptions.LongRunning);
+            Task workerThread2 = Task.Factory.StartNew(() => worker(2), TaskCreationOptions.LongRunning);
+            Task workerThread3 = Task.Factory.StartNew(() => worker(2), TaskCreationOptions.LongRunning);
+            Task switcherThread = Task.Factory.StartNew(() => switcher(), TaskCreationOptions.LongRunning);
 
             Task.WaitAll(workerThread1, workerThread2, workerThread3, switcherThread);
         }

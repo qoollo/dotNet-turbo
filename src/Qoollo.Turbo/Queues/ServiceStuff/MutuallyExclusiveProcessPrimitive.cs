@@ -272,10 +272,13 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         private volatile bool _isDisposed;
 
 
-        public MutuallyExclusiveProcessPrimitive()
+        public MutuallyExclusiveProcessPrimitive(bool gate1Opened)
         {
-            _gate1 = new MutuallyExclusiveProcessGate(true, Gate1Closed);
-            _gate2 = new MutuallyExclusiveProcessGate(false, Gate2Closed);
+            _gate1 = new MutuallyExclusiveProcessGate(gate1Opened, Gate1Closed);
+            _gate2 = new MutuallyExclusiveProcessGate(!gate1Opened, Gate2Closed);
+        }
+        public MutuallyExclusiveProcessPrimitive() : this(true)
+        {     
         }
 
         [Conditional("DEBUG")]

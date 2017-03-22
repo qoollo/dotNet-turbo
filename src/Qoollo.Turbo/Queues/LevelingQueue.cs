@@ -59,6 +59,13 @@ namespace Qoollo.Turbo.Queues
 
         private volatile bool _isDisposed;
 
+        /// <summary>
+        /// LevelingQueue constructor
+        /// </summary>
+        /// <param name="highLevelQueue">High level queue (queue with higher priority)</param>
+        /// <param name="lowLevelQueue">Low level queue (queue with lower priority)</param>
+        /// <param name="addingMode">Adding mode of the queue</param>
+        /// <param name="isBackgroundTransferingEnabled">Is background transfering items from LowLevelQueue to HighLevelQueue enabled</param>
         public LevelingQueue(IQueue<T> highLevelQueue, IQueue<T> lowLevelQueue, LevelingQueueAddingMode addingMode, bool isBackgroundTransferingEnabled)
         {
             if (highLevelQueue == null)
@@ -78,12 +85,24 @@ namespace Qoollo.Turbo.Queues
             if (isBackgroundTransferingEnabled)
             {
                 _bacgoundTransfererExclusive = new MutuallyExclusiveProcessPrimitive();
+                if (addingMode == LevelingQueueAddingMode.PreferLiveData)
+                    _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering from the start
+
                 _backgroundTransferer = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString(), BackgroundTransferProc);
                 _backgroundTransferer.IsBackground = true;
                 _backgroundTransferer.Start();
             }
 
             _isDisposed = false;
+        }
+        /// <summary>
+        /// LevelingQueue constructor
+        /// </summary>
+        /// <param name="highLevelQueue">High level queue (queue with higher priority)</param>
+        /// <param name="lowLevelQueue">Low level queue (queue with lower priority)</param>
+        public LevelingQueue(IQueue<T> highLevelQueue, IQueue<T> lowLevelQueue)
+            : this(highLevelQueue, lowLevelQueue, LevelingQueueAddingMode.PreserveOrder, false)
+        {
         }
 
         /// <summary>
