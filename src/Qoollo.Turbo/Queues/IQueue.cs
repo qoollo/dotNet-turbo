@@ -21,7 +21,6 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// Number of items inside the queue
         /// </summary>
-        /// <remarks>Informational property</remarks>
         long Count { get; }
         /// <summary>
         /// Indicates whether the queue is empty

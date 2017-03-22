@@ -43,6 +43,8 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         private const int WaitPollingTimeout = 2000;
 
+        private static readonly int ProcessorCount = Environment.ProcessorCount;
+
         private readonly IQueue<T> _highLevelQueue;
         private readonly IQueue<T> _lowLevelQueue;
 
@@ -197,6 +199,15 @@ namespace Qoollo.Turbo.Queues
         // ====================== Add ==================
 
         /// <summary>
+        /// Check wheter the value inside specified interval (inclusively)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsInsideInterval(long value, long min, long max)
+        {
+            return value >= min && value <= max;
+        }
+
+        /// <summary>
         /// Fast path to add the item (with zero timeout)
         /// </summary>
         /// <param name="item">New item</param>
@@ -263,6 +274,16 @@ namespace Qoollo.Turbo.Queues
             }
             else
             {
+                if (_isBackgroundTransferingEnabled && !_lowLevelQueue.IsEmpty && IsInsideInterval(_lowLevelQueue.Count, 0, ProcessorCount))
+                {
+                    // Attempt to wait for lowLevelQueue to become empty
+                    SpinWait sw = new SpinWait();
+                    while (!sw.NextSpinWillYield && !_lowLevelQueue.IsEmpty)
+                        sw.SpinOnce();
+                    if (sw.NextSpinWillYield && timeout != 0 && !_lowLevelQueue.IsEmpty)
+                        sw.SpinOnce();
+                }
+
                 result = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
                 if (!result)
                     result = _lowLevelQueue.TryAdd(item, timeout, token); // To preserve order we try to add only to the lower queue
@@ -325,6 +346,10 @@ namespace Qoollo.Turbo.Queues
             using (var gateGuard = _bacgoundTransfererExclusive.EnterGate1(Timeout.Infinite, token)) // This should happen fast
             {
                 Debug.Assert(gateGuard.IsAcquired);
+
+                if (TryTakeFast(out item))
+                    return true;
+
                 return TryTakeSlow(out item, timeout, token);
             }
         }
@@ -348,7 +373,7 @@ namespace Qoollo.Turbo.Queues
                 result = _highLevelQueue.TryTake(out item, 0, default(CancellationToken));
                 if (!result)
                     result = TryTakeExclusively(out item, timeout, token); // Should be mutually exclusive with background transferer
-                else
+                else if (!_lowLevelQueue.IsEmpty)
                     _bacgoundTransfererExclusive.RequestGate2Open(); // allow Background transfering
             }
             else
@@ -406,11 +431,14 @@ namespace Qoollo.Turbo.Queues
                             item = default(T);
                             if (itemTaken = _lowLevelQueue.TryTake(out item, Timeout.Infinite, linkedCancellation.Token))
                             {
-                                bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
-                                Debug.Assert(itemAdded);
+                                if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken))) // Fast path to ignore cancellation
+                                {
+                                    bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
+                                    Debug.Assert(itemAdded);
+                                }
 
                                 itemTaken = false;
-                                _addMonitor.Pulse();
+                                _takeMonitor.Pulse();
                             }
                         }
                     }
@@ -419,8 +447,8 @@ namespace Qoollo.Turbo.Queues
                         if (itemTaken)
                         {
                             _highLevelQueue.AddForced(item); // Prevent item lost
-                            _addMonitor.Pulse();
                             itemTaken = false;
+                            _takeMonitor.Pulse();
                         }
 
                         if (!linkedCancellation.IsCancellationRequested)
