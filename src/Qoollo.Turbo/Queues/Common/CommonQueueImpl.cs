@@ -39,23 +39,6 @@ namespace Qoollo.Turbo.Queues.Common
         /// </summary>
         public abstract bool IsEmpty { get; }
 
-        /// <summary>
-        /// Wait handle that notifies about items presence
-        /// </summary>
-        protected abstract WaitHandle HasItemsWaitHandle { get; }
-        /// <summary>
-        /// Wait handle that notifies about space availability for new items
-        /// </summary>
-        protected abstract WaitHandle HasSpaceWaitHandle { get; }
-
-        /// <summary>
-        /// Wait handle that notifies about items presence
-        /// </summary>
-        WaitHandle IQueue<T>.HasItemsWaitHandle { get { return this.HasItemsWaitHandle; } }
-        /// <summary>
-        /// Wait handle that notifies about space availability for new items
-        /// </summary>
-        WaitHandle IQueue<T>.HasSpaceWaitHandle { get { return this.HasSpaceWaitHandle; } }
 
         /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached

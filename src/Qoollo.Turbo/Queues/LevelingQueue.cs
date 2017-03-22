@@ -144,16 +144,6 @@ namespace Qoollo.Turbo.Queues
 
 
         /// <summary>
-        /// Wait handle that notifies about items presence
-        /// </summary>
-        protected sealed override WaitHandle HasItemsWaitHandle { get { throw new NotImplementedException(); } }
-        /// <summary>
-        /// Wait handle that notifies about space availability for new items
-        /// </summary>
-        protected sealed override WaitHandle HasSpaceWaitHandle { get { throw new NotImplementedException(); } }
-
-
-        /// <summary>
         /// Checks if queue is disposed
         /// </summary>
         private void CheckDisposed()
