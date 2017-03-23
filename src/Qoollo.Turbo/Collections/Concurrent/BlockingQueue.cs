@@ -248,23 +248,18 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (IsAddingCompleted)
                 throw new InvalidOperationException("Adding was completed for BlockingQueue");
 
-
-            if (_freeNodes != null && (_freeNodes.CurrentCount == 0 || !_freeNodes.Wait(0)))
-                return false;
-
-            try
+            bool result = false;
+            try { }
+            finally
             {
-                _innerQueue.Enqueue(item);
+                if (_freeNodes == null || _freeNodes.Wait(0))
+                {
+                    _innerQueue.Enqueue(item);
+                    _occupiedNodes.Release();
+                    result = true;
+                }
             }
-            catch
-            {
-                if (_freeNodes != null)
-                    _freeNodes.Release();
-                throw;
-            }
-            _occupiedNodes.Release();
-
-            return true;
+            return result;
         }
 
 
@@ -576,9 +571,6 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             CheckDisposed();
             item = default(T);
-
-            if (_occupiedNodes.CurrentCount == 0)
-                return false;
 
             if (!_occupiedNodes.Wait(0))
                 return false;
