@@ -218,7 +218,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             finally
             {
                 _innerQueue.Enqueue(item);
-                if (_freeNodes != null)
+                if (_freeNodes != null && !_freeNodes.Wait(0)) // Attempt to fill _freeNodes
                     UpdateDelayedBoundedCapacityDecreaseField(1);
                 _occupiedNodes.Release();
             }

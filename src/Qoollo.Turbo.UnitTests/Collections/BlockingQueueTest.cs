@@ -315,6 +315,15 @@ namespace Qoollo.Turbo.UnitTests.Collections
             task.Wait();
         }
 
+        [TestMethod]
+        public void TestNotAddAfterEnd()
+        {
+            BlockingQueue<int> queue = new BlockingQueue<int>(2);
+            queue.AddForced(1);
+            Assert.IsTrue(queue.TryAdd(2));
+            Assert.IsFalse(queue.TryAdd(3));
+        }
+
 
         private void RunComplexTest(BlockingQueue<int> q, int elemCount, int thCount)
         {
