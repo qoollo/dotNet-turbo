@@ -283,6 +283,37 @@ namespace Qoollo.Turbo.UnitTests.Collections
             }
         }
 
+        [TestMethod]
+        public void TestTimeoutWorks()
+        {
+            BlockingQueue<int> queue = new BlockingQueue<int>(100);
+            Barrier bar = new Barrier(2);
+            int takeResult = 0;
+            int addResult = 0;
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                if (queue.TryTake(out item, 100))
+                    Interlocked.Exchange(ref takeResult, 1);
+                else
+                    Interlocked.Exchange(ref takeResult, 2);
+
+                while (queue.TryAdd(-1)) ;
+
+                if (queue.TryAdd(100, 100))
+                    Interlocked.Exchange(ref addResult, 1);
+                else
+                    Interlocked.Exchange(ref addResult, 2);
+            });
+
+            bar.SignalAndWait();
+
+            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref takeResult), "take");
+            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref addResult), "Add");
+
+            task.Wait();
+        }
 
 
         private void RunComplexTest(BlockingQueue<int> q, int elemCount, int thCount)
