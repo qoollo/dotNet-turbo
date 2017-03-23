@@ -84,6 +84,9 @@ namespace Qoollo.Turbo.Queues
             _addMonitor = new MonitorObject("AddMonitor");
             _takeMonitor = new MonitorObject("TakeMonitor");
 
+            _itemCount = highLevelQueue.Count + lowLevelQueue.Count;
+            _isDisposed = false;
+
             if (isBackgroundTransferingEnabled)
             {
                 _bacgoundTransfererExclusive = new MutuallyExclusiveProcessPrimitive();
@@ -94,9 +97,6 @@ namespace Qoollo.Turbo.Queues
                 _backgroundTransferer.IsBackground = true;
                 _backgroundTransferer.Start();
             }
-
-            _itemCount = highLevelQueue.Count + lowLevelQueue.Count;
-            _isDisposed = false;
         }
         /// <summary>
         /// LevelingQueue constructor
@@ -294,9 +294,17 @@ namespace Qoollo.Turbo.Queues
 
             if (_addingMode == LevelingQueueAddingMode.PreferLiveData)
             {
-                result = _addMonitor.WaiterCount == 0 && TryAddFast(item);
-                if (!result && timeout != 0)
-                    result = TryAddSlow(item, timeout, token); // Use slow path to add to any queue
+                if (_addMonitor.WaiterCount == 0)
+                {
+                    result = TryAddFast(item);
+                    if (!result && timeout != 0)
+                        result = TryAddSlow(item, timeout, token); // Use slow path to add to any queue
+                }
+                else
+                {
+                    // Enter slow path if any waiter presented
+                    result = TryAddSlow(item, timeout, token);
+                }
             }
             else
             {
@@ -407,9 +415,16 @@ namespace Qoollo.Turbo.Queues
             }
             else
             {
-                result = _takeMonitor.WaiterCount == 0 && TryTakeFast(out item);
-                if (!result)
+                if (_takeMonitor.WaiterCount == 0)
+                {
+                    result = TryTakeFast(out item);
+                    if (!result && timeout != 0)
+                        result = TryTakeSlow(out item, timeout, token);
+                }
+                else
+                {
                     result = TryTakeSlow(out item, timeout, token);
+                }
             }
 
             if (result)
