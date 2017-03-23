@@ -181,6 +181,9 @@ namespace Qoollo.Turbo.Threading
             if (TryTakeLockFree())
                 return true;
 
+            // Early exit: nothing to wait
+            if (timeout == 0 && _waitCount >= _currentCountForWait)
+                return false;
 
             uint startTime = 0;
             if (timeout > 0)
@@ -195,7 +198,7 @@ namespace Qoollo.Turbo.Threading
                 int currentCountLocFree = _currentCountLockFree;
                 if (_waitCount >= _currentCountForWait && _waitCount <= _currentCountForWait + 2)
                 {
-                    for (int i = 0; i < 9; i++)
+                    for (int i = 0; i < 8; i++)
                     {
                         if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                             return true;
