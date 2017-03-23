@@ -13,7 +13,7 @@ namespace Qoollo.Turbo.Queues
     /// Queue that stores items in memory
     /// </summary>
     /// <typeparam name="T">The type of elements in queue</typeparam>
-    [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
+    [DebuggerDisplay("Count = {Count}")]
     public class MemoryQueue<T>: Collections.Concurrent.BlockingQueue<T>, IQueue<T>
     {
         /// <summary>
@@ -38,5 +38,34 @@ namespace Qoollo.Turbo.Queues
         /// Indicates whether the queue is empty
         /// </summary>
         public bool IsEmpty { get { return base.Count == 0; } }
+
+        /// <summary>
+        /// Attempts to add new item to the tail of the queue
+        /// </summary>
+        /// <param name="item">New item</param>
+        /// <param name="timeout">Adding timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if item was added, otherwise false</returns>
+        bool IQueue<T>.TryAdd(T item, int timeout, CancellationToken token)
+        {
+            if (timeout == 0 && !token.CanBeCanceled)
+                return this.TryAddFast(item); // Speed-up hack
+
+            return this.TryAdd(item, timeout, token);
+        }
+        /// <summary>
+        /// Attempts to remove item from the head of the queue
+        /// </summary>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Removing timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the item was removed</returns>
+        bool IQueue<T>.TryTake(out T item, int timeout, CancellationToken token)
+        {
+            if (timeout == 0 && !token.CanBeCanceled)
+                return TryTakeFast(out item);   // Speed-up hack
+
+            return TryTake(out item, timeout, token);
+        }
     }
 }
