@@ -57,6 +57,8 @@ namespace Qoollo.Turbo.Queues
         private readonly DelegateThreadSetManager _backgroundTransferer;
         private readonly MutuallyExclusiveProcessPrimitive _bacgoundTransfererExclusive;
 
+        private long _itemCount; // Required when background transfering enabled
+
         private volatile bool _isDisposed;
 
         /// <summary>
@@ -93,6 +95,7 @@ namespace Qoollo.Turbo.Queues
                 _backgroundTransferer.Start();
             }
 
+            _itemCount = highLevelQueue.Count + lowLevelQueue.Count;
             _isDisposed = false;
         }
         /// <summary>
@@ -146,6 +149,9 @@ namespace Qoollo.Turbo.Queues
         {
             get
             {
+                if (_isBackgroundTransferingEnabled)
+                    return Volatile.Read(ref _itemCount);
+
                 long highLevelCount = _highLevelQueue.Count;
                 if (highLevelCount < 0)
                     return -1;
@@ -159,7 +165,16 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// Indicates whether the queue is empty
         /// </summary>
-        public sealed override bool IsEmpty { get { return _highLevelQueue.IsEmpty && _lowLevelQueue.IsEmpty; } }
+        public sealed override bool IsEmpty
+        {
+            get
+            {
+                if (_isBackgroundTransferingEnabled)
+                    return Volatile.Read(ref _itemCount) == 0;
+
+                return _highLevelQueue.IsEmpty && _lowLevelQueue.IsEmpty;
+            }
+        }
 
 
         /// <summary>
@@ -190,6 +205,7 @@ namespace Qoollo.Turbo.Queues
                     _lowLevelQueue.AddForced(item);
             }
 
+            Interlocked.Increment(ref _itemCount);
             _takeMonitor.Pulse();
         }
 
@@ -201,6 +217,7 @@ namespace Qoollo.Turbo.Queues
         {
             CheckDisposed();
             _highLevelQueue.AddForced(item);
+            Interlocked.Increment(ref _itemCount);
             _takeMonitor.Pulse();
         }
 
@@ -283,7 +300,7 @@ namespace Qoollo.Turbo.Queues
             }
             else
             {
-                if (_isBackgroundTransferingEnabled && !_lowLevelQueue.IsEmpty && IsInsideInterval(_lowLevelQueue.Count, 0, ProcessorCount))
+                if (_isBackgroundTransferingEnabled && !_lowLevelQueue.IsEmpty && IsInsideInterval(Volatile.Read(ref _itemCount), 0, ProcessorCount))
                 {
                     // Attempt to wait for lowLevelQueue to become empty
                     SpinWait sw = new SpinWait();
@@ -299,7 +316,10 @@ namespace Qoollo.Turbo.Queues
             }
 
             if (result)
+            {
+                Interlocked.Increment(ref _itemCount);
                 _takeMonitor.Pulse();
+            }
 
             return result;
         }
@@ -393,7 +413,10 @@ namespace Qoollo.Turbo.Queues
             }
 
             if (result)
+            {
+                Interlocked.Decrement(ref _itemCount);
                 _addMonitor.Pulse();
+            }
 
             return result;
         }
