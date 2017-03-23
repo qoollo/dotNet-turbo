@@ -461,9 +461,13 @@ namespace Qoollo.Turbo.Threading
         /// <exception cref="SynchronizationLockException">External lock is not acquired</exception>
         public void Pulse()
         {
-            lock (this)
+            if (_waiterCount > 0)
             {
-                Monitor.Pulse(this);
+                lock (this)
+                {
+                    if (_waiterCount > 0)
+                        Monitor.Pulse(this);
+                }
             }
         }
 
@@ -480,7 +484,8 @@ namespace Qoollo.Turbo.Threading
 
             lock (this)
             {
-                for (int i = 0; i < count; i++)
+                int countToPulse = Math.Min(_waiterCount, count);
+                for (int i = 0; i < countToPulse; i++)
                     Monitor.Pulse(this);
             }
         }
