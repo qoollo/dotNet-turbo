@@ -15,7 +15,7 @@ namespace Qoollo.Turbo.PerformanceTests
             //ObjectPoolTest.RunTest();
             //ThreadPoolTests.RunOptimization();
             //ThreadPoolTests.FuncForOptimization();
-            HighConcurrencyLoadTest.RunTest();
+            //HighConcurrencyLoadTest.RunTest();
             //HighConcurrencyLoadTest.RunOptimization();
             //InliningTest.RunTest();
             //ThreadPoolTaskSpawnPerformanceTest.RunTest();
@@ -26,6 +26,7 @@ namespace Qoollo.Turbo.PerformanceTests
             //LocalThreadQueueTest.RunTest();
             //ThreadPoolTests.RunCompareTest();
             //ThreadPoolTests.RunAllTests();
+            LevelingQueueTest.RunTest();
             Console.ReadLine();
         }
     }
