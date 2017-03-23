@@ -58,7 +58,6 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 itemCount++;
             itemCount--;
 
-            Assert.AreEqual(bound, itemCount);
             Assert.AreEqual(itemCount, queue.Count);
             Assert.IsFalse(queue.IsEmpty);
 
@@ -89,10 +88,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void AddTakeTestOrdBcg() { RunTest(10, 10, true, true, q => AddTakeTest(q, 20)); }
         [TestMethod]
         public void AddTakeTestNonOrdNoBcg() { RunTest(10, 10, false, false, q => AddTakeTest(q, 20)); }
-
-        // Not works
         [TestMethod]
-        [Ignore]
         public void AddTakeTestNonOrdBcg() { RunTest(10, 10, false, true, q => AddTakeTest(q, 20)); }
 
 
@@ -199,12 +195,19 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                 while (queue.TryAdd(-1)) ;
 
+                if (queue.IsBackgroundTransferingEnabled)
+                {
+                    queue.AddForcedToHighLevelQueue(-1);
+                    queue.AddForced(-1); // To prevent background transferer from freeing the space
+                }
+
                 AtomicSet(ref addResult, queue.TryAdd(100, 100));
             });
 
             bar.SignalAndWait();
-            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref takeResult));
-            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref addResult));
+
+            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref takeResult), "take");
+            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref addResult), "Add");
 
             task.Wait();
         }
@@ -242,6 +245,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 }
 
                 while (queue.TryAdd(-1)) ;
+                if (queue.IsBackgroundTransferingEnabled)
+                    queue.AddForced(-1);
 
                 try
                 {
@@ -324,6 +329,44 @@ namespace Qoollo.Turbo.UnitTests.Queues
             }
         }
 
+        // ==========================
+
+        private void StableIsEmptyAndCountTest(bool ord, bool bcg)
+        {
+            const int ItemCount = 100000;
+
+            MemoryQueue<int> high = new MemoryQueue<int>();
+            MemoryQueue<int> low = new MemoryQueue<int>();
+
+            for (int i = 0; i < ItemCount + 1; i++)
+                low.Add(i);
+
+            using (var q = new LevelingQueue<int>(high, low, ord ? LevelingQueueAddingMode.PreserveOrder : LevelingQueueAddingMode.PreferLiveData, bcg))
+            {
+                Assert.AreEqual(ItemCount + 1, q.Count);
+                if (bcg && !ord)
+                    q.Take();
+                else
+                    Assert.AreEqual(0, q.Take());
+
+                int startTime = Environment.TickCount;
+                while (!low.IsEmpty && (Environment.TickCount - startTime) < 500)
+                {
+                    Assert.AreEqual(ItemCount, q.Count);
+                    Assert.IsFalse(q.IsEmpty);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void StableIsEmptyAndCountTestOrdNoBcg() { StableIsEmptyAndCountTest(true, false); }
+        [TestMethod]
+        public void StableIsEmptyAndCountTestOrdBcg() { StableIsEmptyAndCountTest(true, true); }
+        [TestMethod]
+        public void StableIsEmptyAndCountTestNonOrdNoBcg() { StableIsEmptyAndCountTest(false, false); }
+        [TestMethod]
+        public void StableIsEmptyAndCountTestNonOrdBcg() { StableIsEmptyAndCountTest(false, true); }
+
 
         // ==========================
 
@@ -381,6 +424,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
             };
 
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
             Task addTask = Task.Factory.StartNew(addAction, TaskCreationOptions.LongRunning);
             Task takeTask = Task.Factory.StartNew(takeAction, TaskCreationOptions.LongRunning);
 
@@ -397,9 +442,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [Timeout(2 * 60 * 1000)]
         public void PreserveOrderTestOrdNoBcg()
         {
+            RunTest(1, 1, true, false, q => PreserveOrderTest(q, 500));
             RunTest(1, 2, true, false, q => PreserveOrderTest(q, 500));
-            RunTest(1000, 2000, true, false, q => PreserveOrderTest(q, 1000000));
-            RunTest(2013, 17003, true, false, q => PreserveOrderTest(q, 2000000));
+            RunTest(1000, 2000, true, false, q => PreserveOrderTest(q, 500000));
+            RunTest(2013, 17003, true, false, q => PreserveOrderTest(q, 1000000));
         }
 
         // not works

@@ -158,7 +158,7 @@ namespace Qoollo.Turbo.PerformanceTests
             }
 
             if (name != null)
-                Console.WriteLine(name + ". LvlQ. Time = " + sw.ElapsedMilliseconds.ToString() + "ms");
+                Console.WriteLine(name + ". MemQ. Time = " + sw.ElapsedMilliseconds.ToString() + "ms");
             return sw.Elapsed;
         }
 
@@ -285,38 +285,38 @@ namespace Qoollo.Turbo.PerformanceTests
         {
             for (int i = 0; i < 10; i++)
             {
-                //RunConcurrentMemQ("1, 1", 5000000, 1, 1, 10, 10);
-                //Free();
+                RunConcurrentMemQ("1, 1", 5000000, 1, 1, 10, 10);
+                Free();
 
-                //RunConcurrentMemQ("4, 4", 5000000, 4, 4, 10, 10);
-                //Free();
+                RunConcurrentMemQ("4, 4", 5000000, 4, 4, 10, 10);
+                Free();
 
-                //RunConcurrentMemQ("16, 1", 5000000, 16, 1, 10, 10);
-                //Free();
+                RunConcurrentMemQ("16, 1", 5000000, 16, 1, 10, 10);
+                Free();
 
-                //RunConcurrentMemQ("1, 16", 5000000, 1, 16, 10, 10);
-                //Free();
+                RunConcurrentMemQ("1, 16", 5000000, 1, 16, 10, 10);
+                Free();
 
-                //RunConcurrentMemQ("16, 16", 5000000, 16, 16, 10, 10);
-                //Free();
+                RunConcurrentMemQ("16, 16", 5000000, 16, 16, 10, 10);
+                Free();
 
-                //Console.WriteLine();
+                Console.WriteLine();
 
 
-                //RunConcurrentLvlQ("1, 1", 5000000, 1, 1, 10, 10);
-                //Free();
+                RunConcurrentLvlQ("1, 1", 5000000, 1, 1, 10, 10);
+                Free();
 
                 RunConcurrentLvlQ("4, 4", 5000000, 4, 4, 10, 10);
                 Free();
 
-                //RunConcurrentLvlQ("16, 1", 5000000, 16, 1, 10, 10);
-                //Free();
+                RunConcurrentLvlQ("16, 1", 5000000, 16, 1, 10, 10);
+                Free();
 
-                //RunConcurrentLvlQ("1, 16", 5000000, 1, 16, 10, 10);
-                //Free();
+                RunConcurrentLvlQ("1, 16", 5000000, 1, 16, 10, 10);
+                Free();
 
-                //RunConcurrentLvlQ("16, 16", 5000000, 16, 16, 10, 10);
-                //Free();
+                RunConcurrentLvlQ("16, 16", 5000000, 16, 16, 10, 10);
+                Free();
 
                 Console.WriteLine();
             }
