@@ -414,8 +414,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     while (!cancelled.IsCancellationRequested)
                     {
                         takenElems.Add(queue.Take(cancelled.Token));
-                        if (takenElems[takenElems.Count - 1] != takenElems.Count - 1)
-                            badInfo.Append("Is taken from high = " + queue.LastTakeTop.ToString());
+                        //if (takenElems[takenElems.Count - 1] != takenElems.Count - 1)
+                        //    badInfo.Append("Is taken from high = " + queue.LastTakeTop.ToString());
 
                         if (rnd.Next(100) == 0)
                             Thread.Yield();
@@ -467,6 +467,136 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
+        }
+
+
+
+        // ==========================
+
+        private void RunComplexTest(LevelingQueue<int> q, int elemCount, int thCount)
+        {
+            int atomicRandom = 0;
+
+            int trackElemCount = elemCount;
+            int addFinished = 0;
+
+            Thread[] threadsTake = new Thread[thCount];
+            Thread[] threadsAdd = new Thread[thCount];
+
+            CancellationTokenSource tokSrc = new CancellationTokenSource();
+
+            List<int> global = new List<int>(elemCount);
+
+            Action addAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Interlocked.Increment(ref atomicRandom) * thCount * 2);
+
+                while (true)
+                {
+                    int item = Interlocked.Decrement(ref trackElemCount);
+                    if (item < 0)
+                        break;
+
+                    if (rnd.Next(100) == 0)
+                        q.AddForced(item);
+                    else
+                        q.Add(item);
+
+
+                    int sleepTime = rnd.Next(100);
+
+                    if (sleepTime > 0)
+                        Thread.SpinWait(sleepTime);
+                }
+
+                Interlocked.Increment(ref addFinished);
+            };
+
+
+            Action takeAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Interlocked.Increment(ref atomicRandom) * thCount * 2);
+
+                List<int> data = new List<int>();
+
+                try
+                {
+                    while (Volatile.Read(ref addFinished) < thCount)
+                    {
+                        int tmp = 0;
+                        if (q.TryTake(out tmp, -1, tokSrc.Token))
+                            data.Add((int)tmp);
+
+                        int sleepTime = rnd.Next(100);
+                        if (sleepTime > 0)
+                            Thread.SpinWait(sleepTime);
+                    }
+                }
+                catch (OperationCanceledException) { }
+
+                int tmp2;
+                while (q.TryTake(out tmp2))
+                    data.Add((int)tmp2);
+
+                lock (global)
+                    global.AddRange(data);
+            };
+
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i] = new Thread(new ThreadStart(takeAction));
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i] = new Thread(new ThreadStart(addAction));
+
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i].Start();
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i].Start();
+
+
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i].Join();
+            tokSrc.Cancel();
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i].Join();
+
+
+            Assert.AreEqual(elemCount, global.Count);
+            global.Sort();
+
+            for (int i = 0; i < elemCount; i++)
+                Assert.AreEqual(i, global[i]);
+        }
+
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOrdNoBcg()
+        {
+            RunTest(1000, 2000, true, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(1000, 2000, true, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOrdBcg()
+        {
+            RunTest(1000, 2000, true, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(1000, 2000, true, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestNonOrdNoBcg()
+        {
+            RunTest(1000, 2000, false, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(1000, 2000, false, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestNonOrdBcg()
+        {
+            RunTest(1000, 2000, false, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(1000, 2000, false, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
         }
     }
 }

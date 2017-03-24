@@ -419,7 +419,7 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         private bool TryTakeExclusively(out T item, int timeout, uint startTime, CancellationToken token)
         {
-            Debug.Assert(_isBackgroundTransferingEnabled && _addingMode == LevelingQueueAddingMode.PreserveOrder);
+            Debug.Assert(_isBackgroundTransferingEnabled);
 
             using (var gateGuard = _bacgoundTransfererExclusive.OpenAndEnterGate1(Timeout.Infinite, token)) // This should happen fast
             {
