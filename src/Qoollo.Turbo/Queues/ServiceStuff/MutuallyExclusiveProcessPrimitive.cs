@@ -201,8 +201,8 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                     if (_event.IsSet)
                     {
                         _event.Reset();
-                        ExitClient();
                         srcToCancel = _cancellationRequest;
+                        ExitClient(); // This can request reopen                  
                     }
                 }
                 if (srcToCancel != null)
@@ -228,11 +228,6 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 {
                     int numberOfClients = Interlocked.Increment(ref _currentCountInner);
                     Debug.Assert(numberOfClients > 0);
-                    if (numberOfClients != 1)
-                    {
-                        Interlocked.Decrement(ref _currentCountInner);
-                        return false;
-                    }
                     _cancellationRequest = new CancellationTokenSource();
                     _event.Set();
 
@@ -269,11 +264,14 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
     {
         private readonly MutuallyExclusiveProcessGate _gate1;
         private readonly MutuallyExclusiveProcessGate _gate2;
+        private readonly object _syncObj;
+        private volatile int _forceGate1Waiter;
         private volatile bool _isDisposed;
 
 
         public MutuallyExclusiveProcessPrimitive(bool gate1Opened)
         {
+            _syncObj = new object();
             _gate1 = new MutuallyExclusiveProcessGate(gate1Opened, Gate1Closed);
             _gate2 = new MutuallyExclusiveProcessGate(!gate1Opened, Gate2Closed);
         }
@@ -289,7 +287,15 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             {
                 sw.SpinOnce();
                 if (sw.Count > 200)
-                    Debug.Assert(false, "Invalid MutuallyExclusiveProcessPrimitive state. At least one gate should be opened");
+                    Debug.Fail("Invalid MutuallyExclusiveProcessPrimitive state. At least one gate should be opened");
+            }
+
+            sw.Reset();
+            while (!_gate1.IsFullyClosed && !_gate2.IsFullyClosed)
+            {
+                sw.SpinOnce();
+                if (sw.Count > 20)
+                    Debug.Fail("Both gates opened");
             }
         }
 
@@ -299,8 +305,16 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             Debug.Assert(!_gate2.IsOpened, "gate2 is not closed");
             if (!_isDisposed)
             {
-                bool opened = _gate2.Open();
-                Debug.Assert(opened, "gate2 open failed");
+                if (_forceGate1Waiter == 0)
+                {
+                    bool opened = _gate2.Open();
+                    Debug.Assert(opened, "gate2 open failed. It's state = " + _gate2.IsOpened);
+                }
+                else
+                {
+                    bool opened = _gate1.Open();
+                    Debug.Assert(opened, "gate1 open failed");
+                }
             }
         }
         private void Gate2Closed()
@@ -320,7 +334,13 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         public void RequestGate1Open()
         {
             ValidateState();
-            _gate2.Close();
+            if (_gate2.IsOpened)
+            {
+                lock (_syncObj)
+                {
+                    _gate2.Close();
+                }
+            }
         }
         /// <summary>
         /// Request Gate 2 to be opened and Gate 1 to be closed
@@ -328,7 +348,14 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         public void RequestGate2Open()
         {
             ValidateState();
-            _gate1.Close();
+            if (_forceGate1Waiter == 0 && _gate1.IsOpened)
+            {
+                lock (_syncObj)
+                {
+                    if (_forceGate1Waiter == 0)
+                        _gate1.Close();
+                }
+            }
         }
 
         /// <summary>
@@ -339,6 +366,27 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         {
             ValidateState();
             return _gate1.EnterClient(timeout, token);
+        }
+        /// <summary>
+        /// Open gate 1 and attempt to pass it
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public MutuallyExclusiveProcessGuard OpenAndEnterGate1(int timeout, CancellationToken token)
+        {
+            ValidateState();
+            try
+            {
+                Interlocked.Increment(ref _forceGate1Waiter);
+                lock (_syncObj)
+                {            
+                    _gate2.Close();
+                }
+                return _gate1.EnterClient(timeout, token);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _forceGate1Waiter);
+            }
         }
         /// <summary>
         /// Attempts to pass the gate 2 if it is open
