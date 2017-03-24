@@ -438,9 +438,12 @@ namespace Qoollo.Turbo.Queues
             else if (timeout < -1)
                 timeout = Timeout.Infinite;
 
-            if (_isBackgroundTransferingEnabled && _addingMode == LevelingQueueAddingMode.PreserveOrder)
+            if (_isBackgroundTransferingEnabled)
             {
                 result = _highLevelQueue.TryTake(out item, 0, default(CancellationToken));
+                if (!result && _addingMode == LevelingQueueAddingMode.PreferLiveData)
+                    result = _lowLevelQueue.TryTake(out item, 0, default(CancellationToken)); // Can take from lower queue only when ordering is not required
+
                 if (!result)
                     result = TryTakeExclusively(out item, timeout, startTime, token); // Should be mutually exclusive with background transferer
                 else if (!_lowLevelQueue.IsEmpty)
