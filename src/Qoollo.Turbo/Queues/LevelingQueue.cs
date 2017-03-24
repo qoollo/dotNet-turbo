@@ -1,5 +1,6 @@
 ﻿using Qoollo.Turbo.Queues.ServiceStuff;
 using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using Qoollo.Turbo.Threading.ThreadManagement;
 using System;
 using System.Collections.Generic;
@@ -255,12 +256,17 @@ namespace Qoollo.Turbo.Queues
         /// Slow path to add the item (waits on <see cref="_addMonitor"/>)
         /// </summary>
         /// <param name="item">New item</param>
+        /// <param name="startTime">Start time of the whole operation</param>
         /// <param name="timeout">Timeout</param>
         /// <param name="token">Token</param>
         /// <returns>Was added sucessufully</returns>
-        private bool TryAddSlow(T item, int timeout, CancellationToken token)
+        private bool TryAddSlow(T item, int timeout, uint startTime, CancellationToken token)
         {
-            using (var waiter = _addMonitor.Enter(timeout, token))
+            if (timeout != 0 && _addMonitor.WaiterCount >= 0)
+                Thread.Yield();
+
+            int restTimeout = TimeoutHelper.RecalculateTimeout(startTime, timeout);
+            using (var waiter = _addMonitor.Enter(restTimeout, token))
             {
                 if (TryAddFast(item))
                     return true;
@@ -285,12 +291,17 @@ namespace Qoollo.Turbo.Queues
         /// <returns>Was added sucessufully</returns>
         protected override bool TryAddCore(T item, int timeout, CancellationToken token)
         {
-            CheckDisposed();
-
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
             bool result = false;
+            uint startTime = 0;
+            if (timeout > 0)
+                startTime = TimeoutHelper.GetTimestamp();
+            else if (timeout < -1)
+                timeout = Timeout.Infinite;
 
             if (_addingMode == LevelingQueueAddingMode.PreferLiveData)
             {
@@ -298,12 +309,12 @@ namespace Qoollo.Turbo.Queues
                 {
                     result = TryAddFast(item);
                     if (!result && timeout != 0)
-                        result = TryAddSlow(item, timeout, token); // Use slow path to add to any queue
+                        result = TryAddSlow(item, timeout, startTime, token); // Use slow path to add to any queue
                 }
                 else
                 {
                     // Enter slow path if any waiter presented
-                    result = TryAddSlow(item, timeout, token);
+                    result = TryAddSlow(item, timeout, startTime, token);
                 }
             }
             else
@@ -355,11 +366,16 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         /// <param name="item">The item removed from queue</param>
         /// <param name="timeout">Timeout</param>
+        /// <param name="startTime">Start time of the operation</param>
         /// <param name="token">Token</param>
         /// <returns>True if the item was removed</returns>
-        private bool TryTakeSlow(out T item, int timeout, CancellationToken token)
+        private bool TryTakeSlow(out T item, int timeout, uint startTime, CancellationToken token)
         {
-            using (var waiter = _takeMonitor.Enter(timeout, token))
+            if (timeout != 0 && _takeMonitor.WaiterCount >= 0)
+                Thread.Yield();
+
+            int restTimeout = TimeoutHelper.RecalculateTimeout(startTime, timeout);
+            using (var waiter = _takeMonitor.Enter(restTimeout, token))
             {
                 if (TryTakeFast(out item))
                     return true;
@@ -375,7 +391,10 @@ namespace Qoollo.Turbo.Queues
             return false;
         }
 
-        private bool TryTakeExclusively(out T item, int timeout, CancellationToken token)
+        /// <summary>
+        /// Blocks background transferer and attempts to take the item
+        /// </summary>
+        private bool TryTakeExclusively(out T item, int timeout, uint startTime, CancellationToken token)
         {
             Debug.Assert(_isBackgroundTransferingEnabled && _addingMode == LevelingQueueAddingMode.PreserveOrder);
 
@@ -384,10 +403,15 @@ namespace Qoollo.Turbo.Queues
             {
                 Debug.Assert(gateGuard.IsAcquired);
 
-                if (TryTakeFast(out item))
-                    return true;
+                if (_takeMonitor.WaiterCount == 0)
+                {
+                    if (TryTakeFast(out item))
+                        return true;
+                    if (timeout == 0)
+                        return false;
+                }
 
-                return TryTakeSlow(out item, timeout, token);
+                return TryTakeSlow(out item, timeout, startTime, token);
             }
         }
 
@@ -400,16 +424,25 @@ namespace Qoollo.Turbo.Queues
         /// <returns>True if the item was removed</returns>
         protected override bool TryTakeCore(out T item, int timeout, CancellationToken token)
         {
-            CheckDisposed();
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+            if (token.IsCancellationRequested)
+                throw new OperationCanceledException(token);
 
             bool result = false;
             item = default(T);
+
+            uint startTime = 0;
+            if (timeout > 0)
+                startTime = TimeoutHelper.GetTimestamp();
+            else if (timeout < -1)
+                timeout = Timeout.Infinite;
 
             if (_isBackgroundTransferingEnabled && _addingMode == LevelingQueueAddingMode.PreserveOrder)
             {
                 result = _highLevelQueue.TryTake(out item, 0, default(CancellationToken));
                 if (!result)
-                    result = TryTakeExclusively(out item, timeout, token); // Should be mutually exclusive with background transferer
+                    result = TryTakeExclusively(out item, timeout, startTime, token); // Should be mutually exclusive with background transferer
                 else if (!_lowLevelQueue.IsEmpty)
                     _bacgoundTransfererExclusive.RequestGate2Open(); // allow Background transfering
             }
@@ -419,11 +452,12 @@ namespace Qoollo.Turbo.Queues
                 {
                     result = TryTakeFast(out item);
                     if (!result && timeout != 0)
-                        result = TryTakeSlow(out item, timeout, token);
+                        result = TryTakeSlow(out item, timeout, startTime, token);
                 }
                 else
                 {
-                    result = TryTakeSlow(out item, timeout, token);
+                    // Preserve fairness
+                    result = TryTakeSlow(out item, timeout, startTime, token);
                 }
             }
 

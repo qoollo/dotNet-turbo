@@ -39,5 +39,20 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 
             return rest;
         }
+        /// <summary>
+        /// Recalculate the timeout value based on elapsed time (additionally checks wether the originalTimeout is zero or Infinite)
+        /// </summary>
+        /// <param name="startTime">Timestamp for the moment when processing started</param>
+        /// <param name="originalTimeout">Original timeout value</param>
+        /// <returns>Rest time in milliseconds</returns>
+        public static int RecalculateTimeout(uint startTime, int originalTimeout)
+        {
+            if (originalTimeout == 0)
+                return 0;
+            if (originalTimeout == System.Threading.Timeout.Infinite)
+                return System.Threading.Timeout.Infinite;
+
+            return UpdateTimeout(startTime, originalTimeout);
+        }
     }
 }
