@@ -316,10 +316,13 @@ namespace Qoollo.Turbo.Queues
                     // Enter slow path if any waiter presented
                     result = TryAddSlow(item, timeout, startTime, token);
                 }
+
+                if (_isBackgroundTransferingEnabled && !_lowLevelQueue.IsEmpty)
+                    _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering
             }
             else
             {
-                if (_isBackgroundTransferingEnabled && !_lowLevelQueue.IsEmpty && IsInsideInterval(Volatile.Read(ref _itemCount), 0, ProcessorCount))
+                if (_isBackgroundTransferingEnabled && timeout != 0 && !_lowLevelQueue.IsEmpty && Volatile.Read(ref _itemCount) <= ProcessorCount)
                 {
                     // Attempt to wait for lowLevelQueue to become empty
                     SpinWait sw = new SpinWait();
@@ -329,9 +332,29 @@ namespace Qoollo.Turbo.Queues
                         sw.SpinOnce();
                 }
 
-                result = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
+                if (_isBackgroundTransferingEnabled)
+                {
+                    if (_lowLevelQueue.IsEmpty)
+                    {
+                        // Only in exclusive mode
+                        using (var gateGuard = _bacgoundTransfererExclusive.OpenAndEnterGate1(Timeout.Infinite, token)) // This should happen fast
+                        {
+                            Debug.Assert(gateGuard.IsAcquired);
+                            result = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
+                        }
+                    }
+                }
+                else
+                {
+                    result = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
+                }
+
                 if (!result)
+                {
                     result = _lowLevelQueue.TryAdd(item, timeout, token); // To preserve order we try to add only to the lower queue
+                    if (result && _isBackgroundTransferingEnabled)
+                        _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering
+                }
             }
 
             if (result)
@@ -398,8 +421,7 @@ namespace Qoollo.Turbo.Queues
         {
             Debug.Assert(_isBackgroundTransferingEnabled && _addingMode == LevelingQueueAddingMode.PreserveOrder);
 
-            _bacgoundTransfererExclusive.RequestGate1Open(); // Open current gate
-            using (var gateGuard = _bacgoundTransfererExclusive.EnterGate1(Timeout.Infinite, token)) // This should happen fast
+            using (var gateGuard = _bacgoundTransfererExclusive.OpenAndEnterGate1(Timeout.Infinite, token)) // This should happen fast
             {
                 Debug.Assert(gateGuard.IsAcquired);
 
@@ -445,7 +467,7 @@ namespace Qoollo.Turbo.Queues
                     result = _lowLevelQueue.TryTake(out item, 0, default(CancellationToken)); // Can take from lower queue only when ordering is not required
 
                 if (!result)
-                    result = TryTakeExclusively(out item, timeout, startTime, token); // Should be mutually exclusive with background transferer
+                    result = TryTakeExclusively(out item, timeout, startTime, token); // Should be mutually exclusive with background transferer to prevent item lost or reordering
                 else if (!_lowLevelQueue.IsEmpty)
                     _bacgoundTransfererExclusive.RequestGate2Open(); // allow Background transfering
             }
@@ -508,22 +530,29 @@ namespace Qoollo.Turbo.Queues
 
                     T item = default(T);
                     bool itemTaken = false;
+
                     try
                     {
                         while (!linkedCancellation.IsCancellationRequested)
                         {
                             item = default(T);
-                            if (itemTaken = _lowLevelQueue.TryTake(out item, Timeout.Infinite, linkedCancellation.Token))
-                            {
-                                if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken))) // Fast path to ignore cancellation
-                                {
-                                    bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
-                                    Debug.Assert(itemAdded);
-                                }
+                            itemTaken = false;
 
-                                itemTaken = false;
-                                _takeMonitor.Pulse();
+                            if (!_lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
+                            {
+                                _bacgoundTransfererExclusive.RequestGate1Open(); // Nothing to do. Open another gate
+                                break;
                             }
+
+                            itemTaken = true;
+                            if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken))) // Fast path to ignore cancellation
+                            {
+                                bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
+                                Debug.Assert(itemAdded);
+                            }
+
+                            itemTaken = false;
+                            _takeMonitor.Pulse();
                         }
                     }
                     catch (OperationCanceledException)
