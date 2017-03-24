@@ -72,7 +72,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 Assert.AreEqual(itemCount - takenItems.Count, queue.Count);
             }
 
-            Assert.AreEqual(itemCount, takenItems.Count);
+            Assert.AreEqual(itemCount, takenItems.Count, "count diff");
             Assert.IsTrue(queue.IsEmpty);
 
             if (queue.AddingMode != LevelingQueueAddingMode.PreserveOrder)
@@ -97,6 +97,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
         private void AddWakesUpTest(LevelingQueue<int> queue)
         {
             while (queue.TryAdd(100)) ; // Fill queue
+            if (queue.IsBackgroundTransferingEnabled)
+                queue.AddForced(100);
 
             Barrier bar = new Barrier(2);
             int addResult = 0;
@@ -400,6 +402,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 cancelled.Cancel();
             };
 
+            StringBuilder badInfo = new StringBuilder();
+
             Action takeAction = () =>
             {
                 Random rnd = new Random(Environment.TickCount + Thread.CurrentThread.ManagedThreadId);
@@ -410,6 +414,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     while (!cancelled.IsCancellationRequested)
                     {
                         takenElems.Add(queue.Take(cancelled.Token));
+                        if (takenElems[takenElems.Count - 1] != takenElems.Count - 1)
+                            badInfo.Append("Is taken from high = " + queue.LastTakeTop.ToString());
 
                         if (rnd.Next(100) == 0)
                             Thread.Yield();
@@ -433,11 +439,11 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             Assert.AreEqual(elemCount, takenElems.Count);
             for (int i = 0; i < takenElems.Count; i++)
-                Assert.AreEqual(i, takenElems[i], "i != takenElems[i]");
+                if (i != takenElems[i])
+                    Assert.AreEqual(i, takenElems[i], $"i != takenElems[i], nextItem = {takenElems[i + 1]}, badInfo = '{badInfo}'");
         }
 
 
-        // strange
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
         public void PreserveOrderTestOrdNoBcg()
@@ -448,15 +454,19 @@ namespace Qoollo.Turbo.UnitTests.Queues
             RunTest(2013, 17003, true, false, q => PreserveOrderTest(q, 1000000));
         }
 
-        // not works
         [TestMethod]
-        [Ignore]
         [Timeout(2 * 60 * 1000)]
         public void PreserveOrderTestOrdBcg()
         {
-            //RunTest(1, 2, true, true, q => PreserveOrderTest(q, 500));
-            RunTest(1000, 2000, true, true, q => PreserveOrderTest(q, 1000000));
-            RunTest(2013, 17003, true, true, q => PreserveOrderTest(q, 2000000));
+           // for (int i = 0; i < 100; i++)
+            {
+                RunTest(1, 1, true, true, q => PreserveOrderTest(q, 500));
+                RunTest(1, 2, true, true, q => PreserveOrderTest(q, 500));
+                RunTest(1000, 2000, true, true, q => PreserveOrderTest(q, 500000));
+                RunTest(2013, 17003, true, true, q => PreserveOrderTest(q, 1000000));
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
         }
     }
 }

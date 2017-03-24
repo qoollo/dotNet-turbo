@@ -233,6 +233,48 @@ namespace Qoollo.Turbo.UnitTests.Queues
             }
         }
 
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void TestGateOpenAndEnter()
+        {
+            const int AttemptCount =500000;
+            using (var inst = new MutuallyExclusiveProcessPrimitive())
+            {
+                inst.RequestGate2Open();
+
+                using (var outerGuard = inst.EnterGate2(0, default(CancellationToken)))
+                {
+                    Assert.IsTrue(outerGuard.IsAcquired);
+
+                    Barrier bar = new Barrier(2);
+                    int entered = 0;
+                    var task = Task.Run(() =>
+                    {
+                        bar.SignalAndWait();
+                        for (int i = 0; i < AttemptCount; i++)
+                        {
+                            using (var guard = inst.OpenAndEnterGate1(60000, default(CancellationToken)))
+                            {
+                                Assert.IsTrue(guard.IsAcquired);
+                                Interlocked.Increment(ref entered);
+                            }
+                        }
+                    });
+
+                    bar.SignalAndWait();
+                    Thread.Sleep(100);
+
+                    outerGuard.Dispose();
+                    while (Volatile.Read(ref entered) < AttemptCount)
+                        inst.RequestGate2Open();
+
+                    Assert.AreEqual(AttemptCount, Volatile.Read(ref entered));
+
+                    task.Wait();
+                }
+            }
+        }
+
 
 
         // ===================
