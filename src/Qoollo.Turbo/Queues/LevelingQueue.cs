@@ -42,7 +42,7 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// As long as the inner queue possibly can be changed outside we use Polling on MonitorObject with reasonable WaitPollingTimeout
         /// </summary>
-        private const int WaitPollingTimeout = 2000;
+        private const int WaitPollingTimeout = 5000;
 
         private static readonly int ProcessorCount = Environment.ProcessorCount;
 
@@ -404,8 +404,11 @@ namespace Qoollo.Turbo.Queues
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryTakeFast(out T item)
         {
+            long itemCount = Volatile.Read(ref _itemCount);
             if (_highLevelQueue.TryTake(out item, 0, default(CancellationToken)))
                 return true;
+            if (itemCount == 0) // Prevent ordering problem
+                return false;
             if (_lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
                 return true;
 
