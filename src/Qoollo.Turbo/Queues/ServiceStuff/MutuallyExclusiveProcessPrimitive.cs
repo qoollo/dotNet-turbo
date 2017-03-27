@@ -164,13 +164,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             Debug.Assert(newCount == 0);
 
             if (!_isDisposed && !_event.IsSet && _clientsExitedNotification != null)
-            {
-                lock (_event)
-                {
-                    if (!_isDisposed && !_event.IsSet && _clientsExitedNotification != null)
-                        _clientsExitedNotification();
-                }
-            }
+                _clientsExitedNotification();
         }
 
         internal void ExitClient()
@@ -192,21 +186,10 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
             if (_event.IsSet)
             {
-                CancellationTokenSource srcToCancel = null;
-                lock (_event)
-                {
-                    if (_isDisposed)
-                        throw new ObjectDisposedException(this.GetType().Name);
-
-                    if (_event.IsSet)
-                    {
-                        _event.Reset();
-                        srcToCancel = _cancellationRequest;
-                        ExitClient(); // This can request reopen                  
-                    }
-                }
-                if (srcToCancel != null)
-                    srcToCancel.Cancel(); // Should cancel outside the lock
+                _event.Reset();
+                CancellationTokenSource srcToCancel = _cancellationRequest;
+                ExitClient(); // This can request reopen          
+                srcToCancel.Cancel(); // Should cancel after ExitClient    
             }
         }
         /// <summary>
@@ -216,23 +199,15 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
-            if (IsOpened)
-                return false;
 
-            lock (_event)
+            if (!_event.IsSet)
             {
-                if (_isDisposed)
-                    throw new ObjectDisposedException(this.GetType().Name);
+                int numberOfClients = Interlocked.Increment(ref _currentCountInner);
+                Debug.Assert(numberOfClients > 0);
+                _cancellationRequest = new CancellationTokenSource();
+                _event.Set();
 
-                if (!_event.IsSet)
-                {
-                    int numberOfClients = Interlocked.Increment(ref _currentCountInner);
-                    Debug.Assert(numberOfClients > 0);
-                    _cancellationRequest = new CancellationTokenSource();
-                    _event.Set();
-
-                    return true;
-                }
+                return true;
             }
 
             return false;
@@ -246,13 +221,10 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             if (!_isDisposed)
             {
                 _isDisposed = true;
-                lock (_event)
-                {
-                    _event.Set();
-                    _event.Dispose();
-                    _cancellationRequest.Cancel();
-                    _cancellationRequest.Dispose();
-                }
+                _event.Set();
+                _event.Dispose();
+                _cancellationRequest.Cancel();
+                _cancellationRequest.Dispose();
             }
         }
     }
@@ -305,15 +277,22 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             Debug.Assert(!_gate2.IsOpened, "gate2 is not closed");
             if (!_isDisposed)
             {
-                if (_forceGate1Waiter == 0)
+                lock (_syncObj)
                 {
-                    bool opened = _gate2.Open();
-                    Debug.Assert(opened, "gate2 open failed. It's state = " + _gate2.IsOpened);
-                }
-                else
-                {
-                    bool opened = _gate1.Open();
-                    Debug.Assert(opened, "gate1 open failed");
+                    if (!_isDisposed)
+                    {
+                        if (_forceGate1Waiter == 0)
+                        {
+                            bool opened = _gate2.Open();
+                            Debug.Assert(opened, "gate2 open failed. It's state = " + _gate2.IsOpened);
+                        }
+                        else
+                        {
+                            Debug.Assert(_gate2.IsFullyClosed, "gate2 is not fully closed");
+                            bool opened = _gate1.Open();
+                            Debug.Assert(opened, "gate1 open failed");
+                        }
+                    }
                 }
             }
         }
@@ -323,8 +302,14 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             Debug.Assert(!_gate2.IsOpened, "gate2 is not closed");
             if (!_isDisposed)
             {
-                bool opened = _gate1.Open();
-                Debug.Assert(opened, "gate1 open failed");
+                lock (_syncObj)
+                {
+                    if (!_isDisposed)
+                    {
+                        bool opened = _gate1.Open();
+                        Debug.Assert(opened, "gate1 open failed");
+                    }
+                }
             }
         }
 
@@ -406,9 +391,15 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         {
             if (!_isDisposed)
             {
-                _isDisposed = true;
-                _gate1.Dispose();
-                _gate2.Dispose();
+                lock (_syncObj)
+                {
+                    if (!_isDisposed)
+                    {
+                        _isDisposed = true;
+                        _gate1.Dispose();
+                        _gate2.Dispose();
+                    }
+                }
             }
         }
     }
