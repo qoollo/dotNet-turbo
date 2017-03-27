@@ -198,12 +198,39 @@ namespace Qoollo.Turbo.Queues
             if (_addingMode == LevelingQueueAddingMode.PreferLiveData)
             {
                 if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                {
                     _lowLevelQueue.AddForced(item);
+
+                    if (_isBackgroundTransferingEnabled)
+                        _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering
+                }
             }
             else
             {
-                if (!_lowLevelQueue.IsEmpty || !_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                bool addedToHighLevelQueue = false;
+                if (_isBackgroundTransferingEnabled)
+                {
+                    if (_lowLevelQueue.IsEmpty)
+                    {
+                        // Only in exclusive mode
+                        using (var gateGuard = _bacgoundTransfererExclusive.OpenAndEnterGate1(Timeout.Infinite, default(CancellationToken))) // This should happen fast
+                        {
+                            Debug.Assert(gateGuard.IsAcquired);
+                            addedToHighLevelQueue = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
+                        }
+                    }
+                }
+                else
+                {
+                    addedToHighLevelQueue = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
+                }
+
+                if (!addedToHighLevelQueue)
+                {
                     _lowLevelQueue.AddForced(item);
+                    if (_isBackgroundTransferingEnabled)
+                        _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering
+                }
             }
 
             Interlocked.Increment(ref _itemCount);
@@ -498,6 +525,19 @@ namespace Qoollo.Turbo.Queues
 
         // ===================== Peek ===============
 
+        /// <summary>
+        /// Fast path to peek the item (zero timeout)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryPeekFast(out T item)
+        {
+            if (_highLevelQueue.TryPeek(out item, 0, default(CancellationToken)))
+                return true;
+            if (_lowLevelQueue.TryPeek(out item, 0, default(CancellationToken)))
+                return true;
+
+            return false;
+        }
 
         /// <summary>
         /// Returns the item at the head of the queue without removing it (core method)
