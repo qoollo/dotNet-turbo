@@ -448,17 +448,20 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [Timeout(2 * 60 * 1000)]
         public void PreserveOrderTestOrdNoBcg()
         {
-            RunTest(1, 1, true, false, q => PreserveOrderTest(q, 500));
-            RunTest(1, 2, true, false, q => PreserveOrderTest(q, 500));
-            RunTest(1000, 2000, true, false, q => PreserveOrderTest(q, 500000));
-            RunTest(2013, 17003, true, false, q => PreserveOrderTest(q, 1000000));
+            //for (int i = 0; i < 30; i++)
+            {
+                RunTest(1, 1, true, false, q => PreserveOrderTest(q, 500));
+                RunTest(1, 2, true, false, q => PreserveOrderTest(q, 500));
+                RunTest(1000, 2000, true, false, q => PreserveOrderTest(q, 500000));
+                RunTest(2013, 17003, true, false, q => PreserveOrderTest(q, 1000000));
+            }
         }
 
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
         public void PreserveOrderTestOrdBcg()
         {
-           // for (int i = 0; i < 100; i++)
+            //for (int i = 0; i < 30; i++)
             {
                 RunTest(1, 1, true, true, q => PreserveOrderTest(q, 500));
                 RunTest(1, 2, true, true, q => PreserveOrderTest(q, 500));

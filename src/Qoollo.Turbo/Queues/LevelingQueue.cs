@@ -592,7 +592,6 @@ namespace Qoollo.Turbo.Queues
                             }
 
                             itemTaken = false;
-                            _takeMonitor.Pulse();
                         }
                     }
                     catch (OperationCanceledException)
@@ -601,7 +600,6 @@ namespace Qoollo.Turbo.Queues
                         {
                             _highLevelQueue.AddForced(item); // Prevent item lost
                             itemTaken = false;
-                            _takeMonitor.Pulse();
                         }
 
                         if (!linkedCancellation.IsCancellationRequested)
