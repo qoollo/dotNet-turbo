@@ -59,62 +59,97 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
     /// </summary>
     internal class MutuallyExclusiveProcessGate : IDisposable
     {
+        private const int OffsetToOpenedStateBit = 30;
+        private const int OpenedStateBitMask = 1 << OffsetToOpenedStateBit;
+        private const int CurrentCountBitMask = (1 << OffsetToOpenedStateBit) - 1;
+
         private readonly Action _clientsExitedNotification;
         private readonly ManualResetEventSlim _event;
+        private readonly SpinLock _lock;
+
         private volatile CancellationTokenSource _cancellationRequest;
-        private volatile int _currentCountInner;
+        private volatile int _combinedState;
         private volatile bool _isDisposed;
 
 
         public MutuallyExclusiveProcessGate(bool opened, Action clientsExitedNotification)
         {
+            _lock = new SpinLock(false);
+            _clientsExitedNotification = clientsExitedNotification;
+
             if (opened)
             {
-                _currentCountInner = 1;
-                _clientsExitedNotification = clientsExitedNotification;
+                _combinedState = OpenedStateBitMask;
                 _event = new ManualResetEventSlim(true);
-                _cancellationRequest = new CancellationTokenSource();
             }
             else
             {
-                _currentCountInner = 0;
-                _clientsExitedNotification = clientsExitedNotification;
+                _combinedState = 0;
                 _event = new ManualResetEventSlim(false);
-                _cancellationRequest = new CancellationTokenSource();
-                _cancellationRequest.Cancel();
             }
         }
 
         /// <summary>
         /// The current number of entered clients
         /// </summary>
-        public int CurrentCount { get { return Math.Max(0, _currentCountInner - 1); } }
+        public int CurrentCount { get { return _combinedState & CurrentCountBitMask; } }
         /// <summary>
         /// Is gate opened
         /// </summary>
-        public bool IsOpened { get { return _event.IsSet; } }
+        public bool IsOpened { get { return (_combinedState & OpenedStateBitMask) != 0; } }
+        /// <summary>
+        /// Is gate closed
+        /// </summary>
+        public bool IsClosed { get { return (_combinedState & OpenedStateBitMask) == 0; } }
         /// <summary>
         /// Is all clients exited
         /// </summary>
-        public bool IsFullyClosed { get { return !_event.IsSet && _currentCountInner <= 0; } }
+        public bool IsFullyClosed { get { return _combinedState == 0; } }
         /// <summary>
         /// Token to cancel processes depends on this gate
         /// </summary>
-        public CancellationToken Token { get { return _cancellationRequest.Token; } }
+        public CancellationToken Token { get { return (_cancellationRequest ?? EnsureTokenSourceCreatedSlow()).Token; } }
 
-
-        private bool TryEnterDoubleCheck()
+        /// <summary>
+        /// Lazy cretion of CancellationTokenSource
+        /// </summary>
+        private CancellationTokenSource EnsureTokenSourceCreatedSlow()
         {
-            int newCount = Interlocked.Increment(ref _currentCountInner);
-            Debug.Assert(newCount > 0);
-            if (_event.IsSet)
-                return true;
+            bool lockTaken = false;
+            try
+            {
+                _lock.Enter(ref lockTaken);
 
-            int newCountDec = Interlocked.Decrement(ref _currentCountInner);
-            if (newCount > 1 && newCountDec == 0)
-                ExitClientAdditionalActions(newCountDec);
+                CancellationTokenSource current = _cancellationRequest;
+                if (current != null)
+                    return current;
 
-            return false;
+                current = new CancellationTokenSource();
+                if (IsClosed || _isDisposed)
+                    current.Cancel();
+                _cancellationRequest = current;
+                return current;
+            }
+            finally
+            {
+                if (lockTaken)
+                    _lock.Exit();
+            }
+        }
+
+        private bool TryEnterClient()
+        {
+            SpinWait sw = new SpinWait();
+            int currentState = _combinedState;
+            Debug.Assert(currentState >= 0);
+            while ((currentState & OpenedStateBitMask) != 0 && Interlocked.CompareExchange(ref _combinedState, currentState + 1, currentState) != currentState)
+            {
+                sw.SpinOnce();
+                currentState = _combinedState;
+                Debug.Assert(currentState >= 0);
+            }
+
+            return (currentState & OpenedStateBitMask) != 0;
         }
         /// <summary>
         /// Attempts to pass the gate if it is open
@@ -126,14 +161,14 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
+            if (TryEnterClient())
+                return new MutuallyExclusiveProcessGuard(this);
+
             uint startTime = 0;
             if (timeout > 0)
                 startTime = TimeoutHelper.GetTimestamp();
             else if (timeout < -1)
                 timeout = Timeout.Infinite;
-
-            if (_event.Wait(0) && TryEnterDoubleCheck())
-                return new MutuallyExclusiveProcessGuard(this);
 
             if (timeout != 0)
             {
@@ -147,7 +182,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                             return new MutuallyExclusiveProcessGuard();
                     }
 
-                    if (_event.Wait(remainingWaitMilliseconds, token) && !_isDisposed && TryEnterDoubleCheck())
+                    if (_event.Wait(remainingWaitMilliseconds, token) && !_isDisposed && TryEnterClient())
                         return new MutuallyExclusiveProcessGuard(this);
                 }
 
@@ -159,58 +194,104 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         }
 
 
-        private void ExitClientAdditionalActions(int newCount)
+        private void ExitClientAdditionalActions(int newCombinedState)
         {
-            Debug.Assert(newCount == 0);
+            Debug.Assert(newCombinedState == 0);
 
-            if (!_isDisposed && !_event.IsSet && _clientsExitedNotification != null)
+            if (!_isDisposed && _clientsExitedNotification != null)
                 _clientsExitedNotification();
         }
 
         internal void ExitClient()
         {
-            int newCount = Interlocked.Decrement(ref _currentCountInner);
+            int newCombinedState = Interlocked.Decrement(ref _combinedState);
 
-            Debug.Assert(newCount >= 0);
-            if (newCount == 0)
-                ExitClientAdditionalActions(newCount);
+            Debug.Assert(newCombinedState >= 0);
+            if (newCombinedState == 0)
+                ExitClientAdditionalActions(newCombinedState);
         }
 
         /// <summary>
-        /// Close gate
+        /// Close gate. Should be syncronized
         /// </summary>
         public void Close()
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
 
-            if (_event.IsSet)
+            bool lockTaken = false;
+            CancellationTokenSource srcToCancel = null;
+            bool lastClient = false;
+            try
             {
-                _event.Reset();
-                CancellationTokenSource srcToCancel = _cancellationRequest;
-                ExitClient(); // This can request reopen          
-                srcToCancel.Cancel(); // Should cancel after ExitClient    
+                _lock.Enter(ref lockTaken);
             }
+            finally
+            {
+                SpinWait sw = new SpinWait();
+                int currentState = _combinedState;
+                Debug.Assert(currentState >= 0);
+                while ((currentState & OpenedStateBitMask) != 0 && Interlocked.CompareExchange(ref _combinedState, currentState & ~OpenedStateBitMask, currentState) != currentState)
+                {
+                    sw.SpinOnce();
+                    currentState = _combinedState;
+                    Debug.Assert(currentState >= 0);
+                }
+
+                if ((currentState & OpenedStateBitMask) != 0)
+                {
+                    // Closed
+                    _event.Reset();
+                    srcToCancel = _cancellationRequest;
+                    lastClient = (currentState & ~OpenedStateBitMask) == 0;
+                }
+
+                if (lockTaken)
+                    _lock.Exit();
+
+                if (lastClient)
+                    ExitClientAdditionalActions(0); // Last client. Send signal
+            }
+
+
+            if (srcToCancel != null)
+                srcToCancel.Cancel(); // Should cancel after ExitClientAdditionalActions  
         }
         /// <summary>
-        /// Reopen gate
+        /// Reopen gate. Should be syncronized
         /// </summary>
-        public bool Open()
+        public void Open()
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
 
-            if (!_event.IsSet)
+            bool lockTaken = false;
+            try
             {
-                int numberOfClients = Interlocked.Increment(ref _currentCountInner);
-                Debug.Assert(numberOfClients > 0);
-                _cancellationRequest = new CancellationTokenSource();
-                _event.Set();
-
-                return true;
+                _lock.Enter(ref lockTaken);
             }
+            finally
+            {
+                SpinWait sw = new SpinWait();
+                int currentState = _combinedState;
+                Debug.Assert(currentState >= 0);
+                while ((currentState & OpenedStateBitMask) == 0 && Interlocked.CompareExchange(ref _combinedState, currentState | OpenedStateBitMask, currentState) != currentState)
+                {
+                    sw.SpinOnce();
+                    currentState = _combinedState;
+                    Debug.Assert(currentState >= 0);
+                }
 
-            return false;
+                if ((currentState & OpenedStateBitMask) == 0)
+                {
+                    // Opened
+                    _cancellationRequest = null;
+                    _event.Set();
+                }
+
+                if (lockTaken)
+                    _lock.Exit();
+            }
         }
 
         /// <summary>
@@ -221,10 +302,12 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             if (!_isDisposed)
             {
                 _isDisposed = true;
-                _event.Set();
+                CancellationTokenSource srcToCancel = _cancellationRequest;
+                _cancellationRequest = null;
+                _event.Set(); // Open blocked clients
                 _event.Dispose();
-                _cancellationRequest.Cancel();
-                _cancellationRequest.Dispose();
+                if (srcToCancel != null)
+                    srcToCancel.Cancel();
             }
         }
     }
@@ -273,8 +356,6 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
         private void Gate1Closed()
         {
-            Debug.Assert(!_gate1.IsOpened, "gate1 is not closed");
-            Debug.Assert(!_gate2.IsOpened, "gate2 is not closed");
             if (!_isDisposed)
             {
                 lock (_syncObj)
@@ -283,14 +364,13 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                     {
                         if (_forceGate1Waiter == 0)
                         {
-                            bool opened = _gate2.Open();
-                            Debug.Assert(opened, "gate2 open failed. It's state = " + _gate2.IsOpened);
+                            Debug.Assert(_gate1.IsFullyClosed, "gate1 is not fully closed");
+                            _gate2.Open();
                         }
                         else
                         {
                             Debug.Assert(_gate2.IsFullyClosed, "gate2 is not fully closed");
-                            bool opened = _gate1.Open();
-                            Debug.Assert(opened, "gate1 open failed");
+                            _gate1.Open();
                         }
                     }
                 }
@@ -298,16 +378,14 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         }
         private void Gate2Closed()
         {
-            Debug.Assert(!_gate1.IsOpened, "gate1 is not closed");
-            Debug.Assert(!_gate2.IsOpened, "gate2 is not closed");
             if (!_isDisposed)
             {
                 lock (_syncObj)
                 {
                     if (!_isDisposed)
                     {
-                        bool opened = _gate1.Open();
-                        Debug.Assert(opened, "gate1 open failed");
+                        Debug.Assert(_gate2.IsFullyClosed, "gate2 is not fully closed");
+                        _gate1.Open();
                     }
                 }
             }
@@ -324,6 +402,8 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 lock (_syncObj)
                 {
                     _gate2.Close();
+                    if (_gate2.IsFullyClosed)
+                        _gate1.Open();          // Prevent deadlock
                 }
             }
         }
@@ -343,6 +423,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             }
         }
 
+
         /// <summary>
         /// Attempts to pass the gate 1 if it is open
         /// </summary>
@@ -352,6 +433,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             ValidateState();
             return _gate1.EnterClient(timeout, token);
         }
+
         /// <summary>
         /// Open gate 1 and attempt to pass it
         /// </summary>
@@ -365,6 +447,8 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 lock (_syncObj)
                 {            
                     _gate2.Close();
+                    if (_gate2.IsFullyClosed)
+                        _gate1.Open();          // Prevent deadlock
                 }
                 return _gate1.EnterClient(timeout, token);
             }

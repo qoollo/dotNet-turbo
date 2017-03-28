@@ -50,7 +50,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     Assert.IsFalse(guard.IsAcquired);
                 }
 
-                Assert.IsTrue(inst.Open());
+                inst.Open();
+                Assert.IsTrue(inst.IsOpened);
 
                 Assert.IsTrue(inst.IsOpened);
                 Assert.IsFalse(inst.IsFullyClosed);
@@ -207,7 +208,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             using (var inst = new MutuallyExclusiveProcessPrimitive())
             {
-                using (var guard = inst.EnterGate1(0, default(CancellationToken)))
+                using (var guard = inst.OpenAndEnterGate1(0, default(CancellationToken)))
                 {
                     Assert.IsTrue(guard.IsAcquired);
                     inst.RequestGate2Open();
@@ -342,7 +343,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 {
                     try
                     {
-                        using (var guard = gate == 1 ? inst.EnterGate1(Timeout.Infinite, token) : inst.EnterGate2(Timeout.Infinite, token))
+                        using (var guard = gate == 1 ? inst.OpenAndEnterGate1(Timeout.Infinite, token) : inst.EnterGate2(Timeout.Infinite, token))
                         {
                             using (var linked = CancellationTokenSource.CreateLinkedTokenSource(token, guard.Token))
                             {
