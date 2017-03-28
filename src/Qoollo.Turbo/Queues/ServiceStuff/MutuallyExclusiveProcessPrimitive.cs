@@ -219,6 +219,9 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
 
+            if (IsClosed)
+                return;
+
             bool lockTaken = false;
             CancellationTokenSource srcToCancel = null;
             bool lastClient = false;
@@ -264,6 +267,9 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
+
+            if (IsOpened)
+                return;
 
             bool lockTaken = false;
             try
@@ -364,13 +370,15 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                     {
                         if (_forceGate1Waiter == 0)
                         {
-                            Debug.Assert(_gate1.IsFullyClosed, "gate1 is not fully closed");
-                            _gate2.Open();
+                            Debug.Assert((_gate1.IsFullyClosed) || (_gate2.IsFullyClosed && _gate1.IsOpened), "Gates desync 1");
+                            if (_gate1.IsFullyClosed)
+                                _gate2.Open();
                         }
                         else
                         {
-                            Debug.Assert(_gate2.IsFullyClosed, "gate2 is not fully closed");
-                            _gate1.Open();
+                            Debug.Assert((_gate1.IsFullyClosed && _gate2.IsOpened) || (_gate2.IsFullyClosed), "Gates desync 2");
+                            if (_gate2.IsFullyClosed)
+                                _gate1.Open();
                         }
                     }
                 }
@@ -384,8 +392,9 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 {
                     if (!_isDisposed)
                     {
-                        Debug.Assert(_gate2.IsFullyClosed, "gate2 is not fully closed");
-                        _gate1.Open();
+                        Debug.Assert((_gate1.IsFullyClosed && _gate2.IsOpened) || (_gate2.IsFullyClosed), "Gates desync 3");
+                        if (_gate2.IsFullyClosed)
+                            _gate1.Open();
                     }
                 }
             }
@@ -402,8 +411,6 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 lock (_syncObj)
                 {
                     _gate2.Close();
-                    if (_gate2.IsFullyClosed)
-                        _gate1.Open();          // Prevent deadlock
                 }
             }
         }
@@ -447,8 +454,8 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 lock (_syncObj)
                 {            
                     _gate2.Close();
-                    if (_gate2.IsFullyClosed)
-                        _gate1.Open();          // Prevent deadlock
+                    //if (_gate2.IsFullyClosed)
+                    //    _gate1.Open();          // Prevent deadlock
                 }
                 return _gate1.EnterClient(timeout, token);
             }
