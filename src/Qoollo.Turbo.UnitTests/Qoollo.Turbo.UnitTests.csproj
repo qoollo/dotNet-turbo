@@ -79,6 +79,7 @@
     <Compile Include="QueueProcessing\QueueAsyncProcessorTest.cs" />
     <Compile Include="Queues\LevelingQueueTest.cs" />
     <Compile Include="Queues\MemoryQueueTests.cs" />
+    <Compile Include="Queues\MutuallyExclusivePrimitiveTest.cs" />
     <Compile Include="Queues\MutuallyExclusiveProcessPrimitiveTest.cs" />
     <Compile Include="Queues\TransformationQueueTests.cs" />
     <Compile Include="TestLoggingHelper.cs" />

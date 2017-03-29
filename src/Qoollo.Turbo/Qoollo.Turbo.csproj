@@ -282,6 +282,7 @@
     <Compile Include="Queues\IQueue.cs" />
     <Compile Include="Queues\LevelingQueue.cs" />
     <Compile Include="Queues\MemoryQueue.cs" />
+    <Compile Include="Queues\ServiceStuff\MutuallyExclusivePrimitive.cs" />
     <Compile Include="Queues\ServiceStuff\MutuallyExclusiveProcessPrimitive.cs" />
     <Compile Include="Queues\TransformationQueue.cs" />
     <Compile Include="Queues\TransformationQueueBase.cs" />
@@ -299,6 +300,7 @@
     <Compile Include="Threading\ServiceStuff\CancellationTokenHelper.cs" />
     <Compile Include="Threading\ServiceStuff\ManagementThreadController.cs" />
     <Compile Include="Threading\ServiceStuff\TaskHelper.cs" />
+    <Compile Include="Threading\ServiceStuff\TimeoutTracker.cs" />
     <Compile Include="Threading\SignalEvent.cs" />
     <Compile Include="Threading\SignalWaiter.cs" />
     <Compile Include="Threading\SignalWaiterFactory.cs" />
