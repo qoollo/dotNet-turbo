@@ -283,7 +283,6 @@
     <Compile Include="Queues\LevelingQueue.cs" />
     <Compile Include="Queues\MemoryQueue.cs" />
     <Compile Include="Queues\ServiceStuff\MutuallyExclusivePrimitive.cs" />
-    <Compile Include="Queues\ServiceStuff\MutuallyExclusiveProcessPrimitive.cs" />
     <Compile Include="Queues\TransformationQueue.cs" />
     <Compile Include="Queues\TransformationQueueBase.cs" />
     <Compile Include="Threading\AsyncAwaitSupport\ContextSwitchAwaitable.cs" />

@@ -56,7 +56,7 @@ namespace Qoollo.Turbo.Queues
         private readonly MonitorObject _takeMonitor;
 
         private readonly DelegateThreadSetManager _backgroundTransferer;
-        private readonly MutuallyExclusiveProcessPrimitive _bacgoundTransfererExclusive;
+        private readonly MutuallyExclusivePrimitive _bacgoundTransfererExclusive;
 
         private long _itemCount; // Required when background transfering enabled
 
@@ -90,9 +90,9 @@ namespace Qoollo.Turbo.Queues
 
             if (isBackgroundTransferingEnabled)
             {
-                _bacgoundTransfererExclusive = new MutuallyExclusiveProcessPrimitive();
+                _bacgoundTransfererExclusive = new MutuallyExclusivePrimitive();
                 if (addingMode == LevelingQueueAddingMode.PreferLiveData)
-                    _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering from the start
+                    _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering from the start
 
                 _backgroundTransferer = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString(), BackgroundTransferProc);
                 _backgroundTransferer.IsBackground = true;
@@ -202,7 +202,7 @@ namespace Qoollo.Turbo.Queues
                     _lowLevelQueue.AddForced(item);
 
                     if (_isBackgroundTransferingEnabled)
-                        _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering
+                        _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
                 }
             }
             else
@@ -213,7 +213,7 @@ namespace Qoollo.Turbo.Queues
                     if (_lowLevelQueue.IsEmpty)
                     {
                         // Only in exclusive mode
-                        using (var gateGuard = _bacgoundTransfererExclusive.OpenAndEnterGate1(Timeout.Infinite, default(CancellationToken))) // This should happen fast
+                        using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, default(CancellationToken))) // This should happen fast
                         {
                             Debug.Assert(gateGuard.IsAcquired);
                             addedToHighLevelQueue = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
@@ -229,7 +229,7 @@ namespace Qoollo.Turbo.Queues
                 {
                     _lowLevelQueue.AddForced(item);
                     if (_isBackgroundTransferingEnabled)
-                        _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering
+                        _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
                 }
             }
 
@@ -345,7 +345,7 @@ namespace Qoollo.Turbo.Queues
                 }
 
                 if (_isBackgroundTransferingEnabled && !_lowLevelQueue.IsEmpty)
-                    _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering
+                    _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
             }
             else
             {
@@ -364,7 +364,7 @@ namespace Qoollo.Turbo.Queues
                     if (_lowLevelQueue.IsEmpty)
                     {
                         // Only in exclusive mode
-                        using (var gateGuard = _bacgoundTransfererExclusive.OpenAndEnterGate1(Timeout.Infinite, token)) // This should happen fast
+                        using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
                         {
                             Debug.Assert(gateGuard.IsAcquired);
                             result = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
@@ -380,7 +380,7 @@ namespace Qoollo.Turbo.Queues
                 {
                     result = _lowLevelQueue.TryAdd(item, timeout, token); // To preserve order we try to add only to the lower queue
                     if (result && _isBackgroundTransferingEnabled)
-                        _bacgoundTransfererExclusive.RequestGate2Open(); // Allow background transfering
+                        _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
                 }
             }
 
@@ -451,7 +451,7 @@ namespace Qoollo.Turbo.Queues
         {
             Debug.Assert(_isBackgroundTransferingEnabled);
 
-            using (var gateGuard = _bacgoundTransfererExclusive.OpenAndEnterGate1(Timeout.Infinite, token)) // This should happen fast
+            using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
             {
                 Debug.Assert(gateGuard.IsAcquired);
 
@@ -499,7 +499,7 @@ namespace Qoollo.Turbo.Queues
                 if (!result)
                     result = TryTakeExclusively(out item, timeout, startTime, token); // Should be mutually exclusive with background transferer to prevent item lost or reordering
                 else if (!_lowLevelQueue.IsEmpty)
-                    _bacgoundTransfererExclusive.RequestGate2Open(); // allow Background transfering
+                    _bacgoundTransfererExclusive.AllowBackgroundGate(); // allow Background transfering
             }
             else
             {
@@ -566,7 +566,7 @@ namespace Qoollo.Turbo.Queues
         {
             while (!token.IsCancellationRequested)
             {
-                using (var gateGuard = _bacgoundTransfererExclusive.EnterGate2(Timeout.Infinite, token)) // Background is on Gate2
+                using (var gateGuard = _bacgoundTransfererExclusive.EnterBackground(Timeout.Infinite, token)) // Background is on Gate2
                 using (var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(token, gateGuard.Token))
                 {
                     Debug.Assert(gateGuard.IsAcquired);
@@ -583,7 +583,7 @@ namespace Qoollo.Turbo.Queues
 
                             if (!_lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
                             {
-                                _bacgoundTransfererExclusive.RequestGate1Open(); // Nothing to do. Open another gate
+                                _bacgoundTransfererExclusive.DisallowBackgroundGate(); // Nothing to do. Stop attempts
                                 break;
                             }
 
