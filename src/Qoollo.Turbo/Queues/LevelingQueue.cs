@@ -54,6 +54,7 @@ namespace Qoollo.Turbo.Queues
 
         private readonly MonitorObject _addMonitor;
         private readonly MonitorObject _takeMonitor;
+        private readonly MonitorObject _peekMonitor;
 
         private readonly DelegateThreadSetManager _backgroundTransferer;
         private readonly MutuallyExclusivePrimitive _bacgoundTransfererExclusive;
@@ -84,6 +85,7 @@ namespace Qoollo.Turbo.Queues
 
             _addMonitor = new MonitorObject("AddMonitor");
             _takeMonitor = new MonitorObject("TakeMonitor");
+            _peekMonitor = new MonitorObject("PeekMonitor");
 
             _itemCount = highLevelQueue.Count + lowLevelQueue.Count;
             _isDisposed = false;
@@ -394,6 +396,7 @@ namespace Qoollo.Turbo.Queues
             {
                 Interlocked.Increment(ref _itemCount);
                 _takeMonitor.Pulse();
+                _peekMonitor.PulseAll();
             }
 
             return result;
@@ -549,6 +552,59 @@ namespace Qoollo.Turbo.Queues
         }
 
         /// <summary>
+        /// Slow path to peek the item from queue (uses <see cref="_peekMonitor"/>)
+        /// </summary>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="startTime">Start time of the operation</param>
+        /// <param name="token">Token</param>
+        /// <returns>True if the item was removed</returns>
+        private bool TryPeekSlow(out T item, int timeout, uint startTime, CancellationToken token)
+        {
+            if (timeout != 0 && _peekMonitor.WaiterCount >= 0)
+                Thread.Yield();
+
+            int restTimeout = TimeoutHelper.RecalculateTimeout(startTime, timeout);
+            using (var waiter = _peekMonitor.Enter(restTimeout, token))
+            {
+                if (TryPeekFast(out item))
+                    return true;
+
+                while (!waiter.IsTimeouted)
+                {
+                    waiter.Wait(WaitPollingTimeout);
+                    if (TryPeekFast(out item))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Blocks background transferer and attempts to peek the item
+        /// </summary>
+        private bool TryPeekExclusively(out T item, int timeout, uint startTime, CancellationToken token)
+        {
+            Debug.Assert(_isBackgroundTransferingEnabled);
+
+            using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
+            {
+                Debug.Assert(gateGuard.IsAcquired);
+
+                if (_peekMonitor.WaiterCount == 0)
+                {
+                    if (TryPeekFast(out item))
+                        return true;
+                    if (timeout == 0)
+                        return false;
+                }
+
+                return TryPeekSlow(out item, timeout, startTime, token);
+            }
+        }
+
+        /// <summary>
         /// Returns the item at the head of the queue without removing it (core method)
         /// </summary>
         /// <param name="item">The item at the head of the queue</param>
@@ -557,9 +613,45 @@ namespace Qoollo.Turbo.Queues
         /// <returns>True if the item was read</returns>
         protected override bool TryPeekCore(out T item, int timeout, CancellationToken token)
         {
-            CheckDisposed();
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+            if (token.IsCancellationRequested)
+                throw new OperationCanceledException(token);
 
-            throw new NotImplementedException();
+            bool result = false;
+            item = default(T);
+
+            uint startTime = 0;
+            if (timeout > 0)
+                startTime = TimeoutHelper.GetTimestamp();
+            else if (timeout < -1)
+                timeout = Timeout.Infinite;
+
+            if (_isBackgroundTransferingEnabled)
+            {
+                result = _highLevelQueue.TryPeek(out item, 0, default(CancellationToken));
+                if (!result && _addingMode == LevelingQueueAddingMode.PreferLiveData)
+                    result = _lowLevelQueue.TryPeek(out item, 0, default(CancellationToken)); // Can peek from lower queue only when ordering is not required
+
+                if (!result)
+                    result = TryPeekExclusively(out item, timeout, startTime, token); // Should be mutually exclusive with background transferer to prevent item lost or reordering
+            }
+            else
+            {
+                if (_peekMonitor.WaiterCount == 0)
+                {
+                    result = TryPeekFast(out item);
+                    if (!result && timeout != 0)
+                        result = TryPeekSlow(out item, timeout, startTime, token);
+                }
+                else
+                {
+                    // Preserve fairness
+                    result = TryPeekSlow(out item, timeout, startTime, token);
+                }
+            }
+
+            return result;
         }
 
         // ====================== Background ===============

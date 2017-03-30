@@ -48,6 +48,11 @@ namespace Qoollo.Turbo.UnitTests.Queues
             Assert.AreEqual(1, queue.Count);
             Assert.IsFalse(queue.IsEmpty);
 
+            int peekVal = queue.Peek();
+            Assert.AreEqual(-1, peekVal);
+            Assert.AreEqual(1, queue.Count);
+            Assert.IsFalse(queue.IsEmpty);
+
             int takeVal = queue.Take();
             Assert.AreEqual(-1, takeVal);
             Assert.AreEqual(0, queue.Count);
@@ -188,6 +193,52 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void TakeWakesUpTestNonOrdNoBcg() { RunTest(10, 10, false, false, q => TakeWakesUpTest(q)); }
         [TestMethod]
         public void TakeWakesUpTestNonOrdBcg() { RunTest(10, 10, false, true, q => TakeWakesUpTest(q)); }
+
+
+
+
+        // =========================
+
+        private void PeekWakesUpTest(LevelingQueue<int> queue)
+        {
+            Barrier bar = new Barrier(3);
+            int peekResult = 0;
+            int peekResult2 = 0;
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                AtomicSet(ref peekResult, queue.TryPeek(out item, 60000));
+                Assert.AreEqual(100, item);
+            });
+
+            Task task2 = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                AtomicSet(ref peekResult2, queue.TryPeek(out item, 60000));
+                Assert.AreEqual(100, item);
+            });
+
+            bar.SignalAndWait();
+            Thread.Sleep(10);
+            Assert.AreEqual(0, Volatile.Read(ref peekResult));
+
+            queue.Add(100);
+            TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref peekResult));
+            TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref peekResult2));
+
+            Task.WaitAll(task, task2);
+        }
+
+        [TestMethod]
+        public void PeekWakesUpTestOrdNoBcg() { RunTest(10, 10, true, false, q => PeekWakesUpTest(q)); }
+        [TestMethod]
+        public void PeekWakesUpTestOrdBcg() { RunTest(10, 10, true, true, q => PeekWakesUpTest(q)); }
+        [TestMethod]
+        public void PeekWakesUpTestNonOrdNoBcg() { RunTest(10, 10, false, false, q => PeekWakesUpTest(q)); }
+        [TestMethod]
+        public void PeekWakesUpTestNonOrdBcg() { RunTest(10, 10, false, true, q => PeekWakesUpTest(q)); }
 
 
 
@@ -517,6 +568,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
 
                     int sleepTime = rnd.Next(100);
+
+                    int tmpItem = 0;
+                    if (q.TryPeek(out tmpItem) && tmpItem == item)
+                        sleepTime += 100;
 
                     if (sleepTime > 0)
                         Thread.SpinWait(sleepTime);

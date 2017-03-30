@@ -496,9 +496,12 @@ namespace Qoollo.Turbo.Threading
         /// <exception cref="SynchronizationLockException">External lock is not acquired</exception>
         public void PulseAll()
         {
-            lock (this)
+            if (_waiterCount > 0)
             {
-                Monitor.PulseAll(this);
+                lock (this)
+                {
+                    Monitor.PulseAll(this);
+                }
             }
         }
 
