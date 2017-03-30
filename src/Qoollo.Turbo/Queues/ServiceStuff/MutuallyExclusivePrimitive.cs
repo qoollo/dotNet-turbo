@@ -67,7 +67,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             private readonly bool _isBackgroundGate;
             private readonly MutuallyExclusivePrimitive _owner;
             private readonly ManualResetEventSlim _event;
-            private readonly SpinLock _lock;
+            private SpinLock _lock; // Should not be readonly
 
             private volatile CancellationTokenSource _cancellationRequest;
             private volatile int _waiterCount;
@@ -82,7 +82,11 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 _isBackgroundGate = isBackgroundGate;
                 _owner = owner;
                 _event = new ManualResetEventSlim(opened);
+#if DEBUG
+                _lock = new SpinLock(true);
+#else
                 _lock = new SpinLock(false);
+#endif
 
                 _cancellationRequest = null;
                 _waiterCount = 0;
@@ -117,6 +121,9 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 {
                     _lock.Enter(ref lockTaken);
 
+                    if (_cancellationRequest != null)
+                        return _cancellationRequest;
+
                     CancellationTokenSource current = _cancellationRequest;
                     if (current != null)
                         return current;
@@ -145,8 +152,6 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 _owner.ExitClient(_isBackgroundGate);
             }
 
-
-            public static int SpinWaitCount = 0;
 
             /// <summary>
             /// Attempts to pass the gate if it is open
@@ -213,26 +218,26 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 if (_isDisposed)
                     throw new ObjectDisposedException(this.GetType().Name);
 
-                if (!_event.IsSet)
-                    return;
-
-                bool lockTaken = false;
-                CancellationTokenSource srcToCancel = null;
-
-                _lock.Enter(ref lockTaken);
 
                 if (_event.IsSet)
                 {
-                    _event.Reset();
-                    srcToCancel = _cancellationRequest;
+                    bool lockTaken = false;
+                    CancellationTokenSource srcToCancel = null;
+
+                    _lock.Enter(ref lockTaken);
+
+                    if (_event.IsSet)
+                    {
+                        _event.Reset();
+                        srcToCancel = _cancellationRequest;
+                    }
+
+                    if (lockTaken)
+                        _lock.Exit();
+
+                    if (srcToCancel != null)
+                        srcToCancel.Cancel(); // Should cancell outside the lock
                 }
-
-                if (lockTaken)
-                    _lock.Exit();
-
-
-                if (srcToCancel != null)
-                    srcToCancel.Cancel(); // Should cancel outside the lock  
             }
             /// <summary>
             /// Reopen gate. Should be syncronized
@@ -242,20 +247,20 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 if (_isDisposed)
                     throw new ObjectDisposedException(this.GetType().Name);
 
-                if (_event.IsSet)
-                    return;
-
-                bool lockTaken = false;
-                _lock.Enter(ref lockTaken);
-
                 if (!_event.IsSet)
                 {
-                    _cancellationRequest = null;
-                    _event.Set();
-                }
+                    bool lockTaken = false;
+                    _lock.Enter(ref lockTaken);
 
-                if (lockTaken)
-                    _lock.Exit();
+                    if (!_event.IsSet)
+                    {
+                        _cancellationRequest = null;
+                        _event.Set();
+                    }
+
+                    if (lockTaken)
+                        _lock.Exit();
+                }
             }
 
             /// <summary>
@@ -312,7 +317,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
         private readonly MutuallyExclusiveGate _mainGate;
         private readonly MutuallyExclusiveGate _backgroundGate;
-        private readonly SpinLock _lock;
+        private SpinLock _lock; // Should not be readonly
 
         private volatile int _combinedState;
         private volatile bool _isDisposed;
@@ -322,7 +327,11 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         {
             _mainGate = new MutuallyExclusiveGate(this, false, gate1Opened);
             _backgroundGate = new MutuallyExclusiveGate(this, true, !gate1Opened);
+#if DEBUG
+            _lock = new SpinLock(true);
+#else
             _lock = new SpinLock(false);
+#endif
 
             _combinedState = gate1Opened ? MainGateBit : BackgroundGateBit | AllowBackgroundBit;
             _isDisposed = false;
@@ -392,28 +401,36 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
 
 
-        private void SwapGatesAtomic(int newValue)
+        private void SwapGatesAtomic(int newCombinedStateValue)
         {
+            Debug.Assert(!IsBackgroundGateOpened(newCombinedStateValue) || !IsMainGateOpened(newCombinedStateValue), "Two gates can't be opened at the same time");
+
             bool lockTaken = false;
             try
             {
                 _lock.Enter(ref lockTaken);
                 if (_isDisposed)
                     return;
+
+                int combinedState = _combinedState; // Should reread the current state
+                Debug.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
+
                 try { }
                 finally
                 {
-                    if (IsMainGateOpened(newValue))
-                    {
+                    if (!IsBackgroundGateOpened(combinedState))
                         _backgroundGate.Close();
-                        _mainGate.Open();
-                    }
-                    else
-                    {
+                    if (!IsMainGateOpened(combinedState))
                         _mainGate.Close();
+
+                    // Close gates before Opening another
+                    if (IsMainGateOpened(combinedState))
+                        _mainGate.Open();
+                    if (IsBackgroundGateOpened(combinedState))
                         _backgroundGate.Open();
-                    }
                 }
+
+                Debug.Assert(IsBackgroundGateOpened(combinedState) == _backgroundGate.IsOpened && IsMainGateOpened(combinedState) == _mainGate.IsOpened, "Gate states should be in sync");
             }
             finally
             {
@@ -428,14 +445,12 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
             if (_mainGate.WaiterCount > 0)
             {
-                if (IsBackgroundGateOpened(newCombinedStateValue))
-                    newCombinedStateValue = (newCombinedStateValue & ~BackgroundGateBit); // close background gate
+                newCombinedStateValue = (newCombinedStateValue & ~BackgroundGateBit); // close background gate
                 newCombinedStateValue = (newCombinedStateValue | MainGateBit); // Open main gate
             }
             else if (_backgroundGate.WaiterCount > 0 && IsAllowBackground(newCombinedStateValue))
             {
-                if (IsMainGateOpened(newCombinedStateValue))
-                    newCombinedStateValue = (newCombinedStateValue & ~MainGateBit); // close main gate
+                newCombinedStateValue = (newCombinedStateValue & ~MainGateBit); // close main gate
                 newCombinedStateValue = (newCombinedStateValue | BackgroundGateBit); // open background gate
             }
             return newCombinedStateValue;
@@ -455,14 +470,14 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 bool canEnter = false;
                 Debug.Assert(combinedState >= 0);
                 Debug.Assert(GetClientCount(combinedState) + 1 < ClientCountMask, "Client number is too large");
-                Debug.Assert((IsBackgroundGateOpened(combinedState) && !IsMainGateOpened(combinedState)) || 
-                             (!IsBackgroundGateOpened(combinedState) && IsMainGateOpened(combinedState)) ||
-                             (!IsBackgroundGateOpened(combinedState) && !IsMainGateOpened(combinedState)), "Two gates can't be opened at the same time");
+                Debug.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
                 Debug.Assert(IsAllowBackground(combinedState) || !IsBackgroundGateOpened(combinedState), "When background is not allowed, background gate should be closed");
 
 
                 if (GetClientCount(combinedState) == 0) // Can open any gate
                     newValue = UpdateZeroClientCountState(newValue);
+                else if (_mainGate.WaiterCount > 0) // Should close background gate
+                    newValue = (newValue & ~BackgroundGateBit);
 
                 if (canEnter = (isBackground && IsBackgroundGateOpened(newValue)) || (!isBackground && IsMainGateOpened(newValue)))
                     newValue = newValue + 1; // Can enter
@@ -490,10 +505,8 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 int newValue = combinedState - 1;
 
                 Debug.Assert(combinedState >= 0);
-                Debug.Assert((!IsMainGateOpened(combinedState) && isBackground) || (!IsBackgroundGateOpened(combinedState) && !isBackground), "Can enter only if specified gate opened");
-                Debug.Assert((IsBackgroundGateOpened(combinedState) && !IsMainGateOpened(combinedState)) ||
-                             (!IsBackgroundGateOpened(combinedState) && IsMainGateOpened(combinedState)) ||
-                             (!IsBackgroundGateOpened(combinedState) && !IsMainGateOpened(combinedState)), "Exit cannot be performed when another gate is opened");
+                Debug.Assert((!IsMainGateOpened(combinedState) && isBackground) || (!IsBackgroundGateOpened(combinedState) && !isBackground), "Can exit only if specified gate opened");
+                Debug.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
 
                 Debug.Assert(GetClientCount(combinedState) > 0, "Client number should be positive");
                 Debug.Assert(IsAllowBackground(combinedState) || !IsBackgroundGateOpened(combinedState), "When background is not allowed, background gate should be closed");

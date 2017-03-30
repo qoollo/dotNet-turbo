@@ -252,6 +252,26 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
 
+        [TestMethod]
+        public void ForegroundCancellBackgroundTest()
+        {
+            using (var inst = new MutuallyExclusivePrimitive())
+            {
+                inst.AllowBackgroundGate();
+                using (var guard = inst.EnterBackground(0, default(CancellationToken)))
+                {
+                    Assert.IsTrue(guard.IsAcquired);
+                    inst.AllowBackgroundGate();
+
+                    using (var guard2 = inst.EnterMain(0, default(CancellationToken)))
+                    {
+                        Assert.IsFalse(guard2.IsAcquired);
+                        Assert.IsTrue(guard.Token.IsCancellationRequested);
+                    }
+                }
+            }
+        } 
+
 
         // ===================
 
