@@ -177,6 +177,11 @@ namespace Qoollo.Turbo.Queues
             }
         }
 
+        /// <summary>
+        /// Wether background transferer is currently in work
+        /// </summary>
+        internal bool IsBackgroundInWork { get { return _bacgoundTransfererExclusive != null && _bacgoundTransfererExclusive.IsBackgroundGateAllowed; } }
+
 
         /// <summary>
         /// Checks if queue is disposed
@@ -378,9 +383,10 @@ namespace Qoollo.Turbo.Queues
 
                 if (!result)
                 {
+                    bool isLowLevelEmptyBeforeAdd = _lowLevelQueue.IsEmpty;
                     result = _lowLevelQueue.TryAdd(item, timeout, token); // To preserve order we try to add only to the lower queue
-                    if (result && _isBackgroundTransferingEnabled)
-                        _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
+                    if (result && !isLowLevelEmptyBeforeAdd && _isBackgroundTransferingEnabled)
+                        _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering when at least 2 elements in lowLevelQueue
                 }
             }
 
@@ -605,6 +611,7 @@ namespace Qoollo.Turbo.Queues
                             itemTaken = false;
                         }
 
+                        _bacgoundTransfererExclusive.DisallowBackgroundGate(); // Exclusivity contention. Stop attmpts
                         if (!linkedCancellation.IsCancellationRequested)
                             throw;
                     }

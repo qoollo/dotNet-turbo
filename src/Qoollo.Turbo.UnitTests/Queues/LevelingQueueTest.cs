@@ -98,7 +98,17 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             while (queue.TryAdd(100)) ; // Fill queue
             if (queue.IsBackgroundTransferingEnabled)
-                queue.AddForced(100);
+            {
+                SpinWait sw = new SpinWait();
+                while (queue.IsBackgroundInWork && sw.Count < 100)
+                    sw.SpinOnce();
+
+                for (int i = 0; i < 100; i++)
+                {
+                    queue.TryAdd(100);
+                    Thread.SpinWait(100);
+                }
+            }
 
             Barrier bar = new Barrier(2);
             int addResult = 0;
