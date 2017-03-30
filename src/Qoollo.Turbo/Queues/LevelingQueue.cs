@@ -727,6 +727,7 @@ namespace Qoollo.Turbo.Queues
 
                 _addMonitor.Dispose();
                 _takeMonitor.Dispose();
+                _peekMonitor.Dispose();
 
                 _lowLevelQueue.Dispose();
                 _highLevelQueue.Dispose();
