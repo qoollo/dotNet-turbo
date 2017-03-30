@@ -165,7 +165,11 @@ namespace Qoollo.Turbo.PerformanceTests
 
         private static TimeSpan RunConcurrentLvlQ(string name, int elemCount, int addThCount, int takeThCount, int addSpin, int takeSpin)
         {
-            LevelingQueue<int> col = new LevelingQueue<int>(new MemoryQueue<int>(3000), new MemoryQueue<int>(7000), LevelingQueueAddingMode.PreserveOrder, false);
+            LevelingQueue<int> col = new LevelingQueue<int>(
+                new MemoryQueue<int>(3000),
+                //new MemoryQueue<int>(7000), 
+                new LevelingQueue<int>(new MemoryQueue<int>(3000), new MemoryQueue<int>(4000), LevelingQueueAddingMode.PreferLiveData, true),
+                LevelingQueueAddingMode.PreserveOrder, false);
 
             CancellationTokenSource srcCancel = new CancellationTokenSource();
 

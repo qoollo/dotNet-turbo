@@ -611,5 +611,75 @@ namespace Qoollo.Turbo.UnitTests.Queues
             RunTest(1000, 2000, false, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
             RunTest(1000, 2000, false, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
         }
+
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexInceptionTestOrdNoBcg()
+        {
+            using (var q = new LevelingQueue<int>(new MemoryQueue<int>(1000),
+                new LevelingQueue<int>(new MemoryQueue<int>(1000), new MemoryQueue<int>(1000), LevelingQueueAddingMode.PreserveOrder, false),
+                LevelingQueueAddingMode.PreserveOrder, false))
+            {
+                RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2));
+            }
+            using (var q = new LevelingQueue<int>(new MemoryQueue<int>(1000),
+                new LevelingQueue<int>(new MemoryQueue<int>(1000), new MemoryQueue<int>(1000), LevelingQueueAddingMode.PreserveOrder, false),
+                LevelingQueueAddingMode.PreserveOrder, false))
+            {
+                RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2);
+            }
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexInceptionTestOrdBcg()
+        {
+            using (var q = new LevelingQueue<int>(new MemoryQueue<int>(1000),
+                new LevelingQueue<int>(new MemoryQueue<int>(1000), new MemoryQueue<int>(1000), LevelingQueueAddingMode.PreserveOrder, true),
+                LevelingQueueAddingMode.PreserveOrder, true))
+            {
+                RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2));
+            }
+            using (var q = new LevelingQueue<int>(new MemoryQueue<int>(1000),
+                new LevelingQueue<int>(new MemoryQueue<int>(1000), new MemoryQueue<int>(1000), LevelingQueueAddingMode.PreserveOrder, true),
+                LevelingQueueAddingMode.PreserveOrder, true))
+            {
+                RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2);
+            }
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexInceptionTestNonOrdNoBcg()
+        {
+            using (var q = new LevelingQueue<int>(new MemoryQueue<int>(1000),
+                new LevelingQueue<int>(new MemoryQueue<int>(1000), new MemoryQueue<int>(1000), LevelingQueueAddingMode.PreferLiveData, false),
+                LevelingQueueAddingMode.PreferLiveData, false))
+            {
+                RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2));
+            }
+            using (var q = new LevelingQueue<int>(new MemoryQueue<int>(1000),
+                new LevelingQueue<int>(new MemoryQueue<int>(1000), new MemoryQueue<int>(1000), LevelingQueueAddingMode.PreferLiveData, false),
+                LevelingQueueAddingMode.PreferLiveData, false))
+            {
+                RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2);
+            }
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexInceptionTestNonOrdBcg()
+        {
+            using (var q = new LevelingQueue<int>(new MemoryQueue<int>(1000),
+                new LevelingQueue<int>(new MemoryQueue<int>(1000), new MemoryQueue<int>(1000), LevelingQueueAddingMode.PreferLiveData, true),
+                LevelingQueueAddingMode.PreferLiveData, true))
+            {
+                RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2));
+            }
+            using (var q = new LevelingQueue<int>(new MemoryQueue<int>(1000),
+                new LevelingQueue<int>(new MemoryQueue<int>(1000), new MemoryQueue<int>(1000), LevelingQueueAddingMode.PreferLiveData, true),
+                LevelingQueueAddingMode.PreferLiveData, true))
+            {
+                RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2);
+            }
+        }
     }
 }
