@@ -31,7 +31,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         public TimeoutTracker(int timeout)
         {
             _originalTimeout = timeout;
-            _startTime = TimeoutHelper.GetTimestamp();
+            _startTime = timeout > 0 ? TimeoutHelper.GetTimestamp() : 0u;
         }
         /// <summary>
         /// TimeoutTracker constructor
@@ -44,7 +44,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
                 throw new ArgumentOutOfRangeException(nameof(timeout));
 
             _originalTimeout = (int)timeoutLong;
-            _startTime = TimeoutHelper.GetTimestamp();
+            _startTime = _originalTimeout > 0 ? TimeoutHelper.GetTimestamp() : 0u;
         }
 
         /// <summary>
