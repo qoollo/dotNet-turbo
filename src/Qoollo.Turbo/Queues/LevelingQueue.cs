@@ -184,6 +184,25 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         internal bool IsBackgroundInWork { get { return _bacgoundTransfererExclusive != null && _bacgoundTransfererExclusive.IsBackgroundGateAllowed; } }
 
+        /// <summary>
+        /// Notifies about item addition to one of the inner queues
+        /// </summary>
+        protected void NotifyItemAdded()
+        {
+            Interlocked.Increment(ref _itemCount);
+            _takeMonitor.Pulse();
+            _peekMonitor.PulseAll();
+        }
+        /// <summary>
+        /// Notifies that item was taken from one of the inner queues
+        /// </summary>
+        protected void NotifyItemTaken()
+        {
+            long itemCount = Interlocked.Decrement(ref _itemCount);
+            if (itemCount < 0) // This only can happen when inner queues updated from external code without any notification
+                Interlocked.Increment(ref _itemCount);
+            _addMonitor.Pulse();
+        }
 
         /// <summary>
         /// Checks if queue is disposed
@@ -192,51 +211,6 @@ namespace Qoollo.Turbo.Queues
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
-        }
-
-        /// <summary>
-        /// Calculates item count from HighLevelQueue and LowLevelQueue
-        /// </summary>
-        /// <returns>Actual item count</returns>
-        private long CalculateCountAtomic()
-        {
-            SpinWait sw = new SpinWait();
-            long highLevelCount = _highLevelQueue.Count;
-            long lowLevelCount = _lowLevelQueue.Count;
-            while (highLevelCount != _highLevelQueue.Count || lowLevelCount != _lowLevelQueue.Count)
-            {
-                sw.SpinOnce();
-                highLevelCount = _highLevelQueue.Count;
-                lowLevelCount = _lowLevelQueue.Count;
-            }
-
-            return highLevelCount + lowLevelCount;
-        }
-
-        /// <summary>
-        /// Updates state of the queue base on the state of inner queues (dangerous)
-        /// </summary>
-        private void RefreshState()
-        {
-            CheckDisposed();
-
-            if (_isBackgroundTransferingEnabled)
-            {
-                // Only in exclusive mode
-                using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, default(CancellationToken)))
-                {
-                    Debug.Assert(gateGuard.IsAcquired);
-                    Interlocked.Exchange(ref _itemCount, CalculateCountAtomic());
-                }
-            }
-            else
-            {
-                Interlocked.Exchange(ref _itemCount, CalculateCountAtomic());
-            }
-
-            _takeMonitor.PulseAll();
-            _addMonitor.PulseAll();
-            _peekMonitor.PulseAll();
         }
 
         /// <summary>
@@ -285,9 +259,7 @@ namespace Qoollo.Turbo.Queues
                 }
             }
 
-            Interlocked.Increment(ref _itemCount);
-            _takeMonitor.Pulse();
-            _peekMonitor.PulseAll();
+            NotifyItemAdded();
         }
 
         /// <summary>
@@ -298,9 +270,7 @@ namespace Qoollo.Turbo.Queues
         {
             CheckDisposed();
             _highLevelQueue.AddForced(item);
-            Interlocked.Increment(ref _itemCount);
-            _takeMonitor.Pulse();
-            _peekMonitor.PulseAll();
+            NotifyItemAdded();
         }
 
 
@@ -440,11 +410,7 @@ namespace Qoollo.Turbo.Queues
             }
 
             if (result)
-            {
-                Interlocked.Increment(ref _itemCount);
-                _takeMonitor.Pulse();
-                _peekMonitor.PulseAll();
-            }
+                NotifyItemAdded();
 
             return result;
         }
@@ -573,12 +539,7 @@ namespace Qoollo.Turbo.Queues
             }
 
             if (result)
-            {
-                long itemCount = Interlocked.Decrement(ref _itemCount);
-                if (itemCount < 0) // This only can happen when inner queues updated from external code
-                    Interlocked.Increment(ref _itemCount);
-                _addMonitor.Pulse();
-            }
+                NotifyItemTaken();
 
             return result;
         }
