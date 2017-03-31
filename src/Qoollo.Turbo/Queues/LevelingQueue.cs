@@ -312,8 +312,12 @@ namespace Qoollo.Turbo.Queues
         /// <returns>Was added sucessufully</returns>
         private bool TryAddSlow(T item, TimeoutTracker timeoutTracker, CancellationToken token)
         {
-            if (timeoutTracker.OriginalTimeout != 0 && _addMonitor.WaiterCount >= 0)
+            if (timeoutTracker.OriginalTimeout != 0 && _addMonitor.WaiterCount > 0)
+            {
                 Thread.Yield();
+                if (_addMonitor.WaiterCount == 0 && TryAddFast(item))
+                    return true;
+            }
 
             using (var waiter = _addMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
             {
@@ -439,8 +443,12 @@ namespace Qoollo.Turbo.Queues
         /// <returns>True if the item was removed</returns>
         private bool TryTakeSlow(out T item, TimeoutTracker timeoutTracker, CancellationToken token)
         {
-            if (timeoutTracker.OriginalTimeout != 0 && _takeMonitor.WaiterCount >= 0)
+            if (timeoutTracker.OriginalTimeout != 0 && _takeMonitor.WaiterCount > 0)
+            {
                 Thread.Yield();
+                if (_takeMonitor.WaiterCount == 0 && TryTakeFast(out item))
+                    return true;
+            }
 
             using (var waiter = _takeMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
             {
