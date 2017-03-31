@@ -482,11 +482,14 @@ namespace Qoollo.Turbo.Threading
             if (count < 0 || count > short.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(count));
 
-            lock (this)
+            if (_waiterCount > 0)
             {
-                int countToPulse = Math.Min(_waiterCount, count);
-                for (int i = 0; i < countToPulse; i++)
-                    Monitor.Pulse(this);
+                lock (this)
+                {
+                    int countToPulse = Math.Min(_waiterCount, count);
+                    for (int i = 0; i < countToPulse; i++)
+                        Monitor.Pulse(this);
+                }
             }
         }
 

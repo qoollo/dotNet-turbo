@@ -96,7 +96,7 @@ namespace Qoollo.Turbo.Queues
                 if (addingMode == LevelingQueueAddingMode.PreferLiveData)
                     _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering from the start
 
-                _backgroundTransferer = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString(), BackgroundTransferProc);
+                _backgroundTransferer = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString() + " Background Transferer", BackgroundTransferProc);
                 _backgroundTransferer.IsBackground = true;
                 _backgroundTransferer.Start();
             }
@@ -195,6 +195,51 @@ namespace Qoollo.Turbo.Queues
         }
 
         /// <summary>
+        /// Calculates item count from HighLevelQueue and LowLevelQueue
+        /// </summary>
+        /// <returns>Actual item count</returns>
+        private long CalculateCountAtomic()
+        {
+            SpinWait sw = new SpinWait();
+            long highLevelCount = _highLevelQueue.Count;
+            long lowLevelCount = _lowLevelQueue.Count;
+            while (highLevelCount != _highLevelQueue.Count || lowLevelCount != _lowLevelQueue.Count)
+            {
+                sw.SpinOnce();
+                highLevelCount = _highLevelQueue.Count;
+                lowLevelCount = _lowLevelQueue.Count;
+            }
+
+            return highLevelCount + lowLevelCount;
+        }
+
+        /// <summary>
+        /// Updates state of the queue base on the state of inner queues (dangerous)
+        /// </summary>
+        private void RefreshState()
+        {
+            CheckDisposed();
+
+            if (_isBackgroundTransferingEnabled)
+            {
+                // Only in exclusive mode
+                using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, default(CancellationToken)))
+                {
+                    Debug.Assert(gateGuard.IsAcquired);
+                    Interlocked.Exchange(ref _itemCount, CalculateCountAtomic());
+                }
+            }
+            else
+            {
+                Interlocked.Exchange(ref _itemCount, CalculateCountAtomic());
+            }
+
+            _takeMonitor.PulseAll();
+            _addMonitor.PulseAll();
+            _peekMonitor.PulseAll();
+        }
+
+        /// <summary>
         /// Adds new item to the queue, even when the bounded capacity reached
         /// </summary>
         /// <param name="item">New item</param>
@@ -242,6 +287,7 @@ namespace Qoollo.Turbo.Queues
 
             Interlocked.Increment(ref _itemCount);
             _takeMonitor.Pulse();
+            _peekMonitor.PulseAll();
         }
 
         /// <summary>
@@ -254,6 +300,7 @@ namespace Qoollo.Turbo.Queues
             _highLevelQueue.AddForced(item);
             Interlocked.Increment(ref _itemCount);
             _takeMonitor.Pulse();
+            _peekMonitor.PulseAll();
         }
 
 
@@ -356,7 +403,7 @@ namespace Qoollo.Turbo.Queues
             }
             else
             {
-                if (_isBackgroundTransferingEnabled && timeout != 0 && !_lowLevelQueue.IsEmpty && Volatile.Read(ref _itemCount) <= ProcessorCount)
+                if (_isBackgroundTransferingEnabled && timeout != 0 && !_lowLevelQueue.IsEmpty && IsInsideInterval(_lowLevelQueue.Count, 0, 2))
                 {
                     // Attempt to wait for lowLevelQueue to become empty
                     SpinWait sw = new SpinWait();
@@ -527,7 +574,9 @@ namespace Qoollo.Turbo.Queues
 
             if (result)
             {
-                Interlocked.Decrement(ref _itemCount);
+                long itemCount = Interlocked.Decrement(ref _itemCount);
+                if (itemCount < 0) // This only can happen when inner queues updated from external code
+                    Interlocked.Increment(ref _itemCount);
                 _addMonitor.Pulse();
             }
 
