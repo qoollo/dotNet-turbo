@@ -565,8 +565,12 @@ namespace Qoollo.Turbo.Queues
         /// <returns>True if the item was removed</returns>
         private bool TryPeekSlow(out T item, TimeoutTracker timeoutTracker, CancellationToken token)
         {
-            if (timeoutTracker.OriginalTimeout != 0 && _peekMonitor.WaiterCount >= 0)
+            if (timeoutTracker.OriginalTimeout != 0 && _peekMonitor.WaiterCount > 0)
+            {
                 Thread.Yield();
+                if (_peekMonitor.WaiterCount == 0 && TryPeekFast(out item))
+                    return true;
+            }
 
             using (var waiter = _peekMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
             {
