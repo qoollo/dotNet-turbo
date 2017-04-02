@@ -7,12 +7,28 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Queues.DiskQueueComponents
 {
-    public abstract class DiskQueueSegment<T>
+    /// <summary>
+    /// Base class for the segment of the DiskQueue
+    /// </summary>
+    /// <typeparam name="T">The type of elements in segment</typeparam>
+    public abstract class DiskQueueSegment<T>: IDisposable
     {
-        public abstract int Number { get; }
+        public DiskQueueSegment(long number)
+        {
+            if (number < 0)
+                throw new ArgumentOutOfRangeException(nameof(number));
 
-        public abstract int BoundedCapacity { get; }
+            Number = number;
+        }
+
+        /// <summary>
+        /// Unique number of the segment that represents its position in the queue
+        /// </summary>
+        public long Number { get; private set; }
+
+
         public abstract int Count { get; }
+        public abstract bool IsFull { get; }
         public abstract bool IsCompleted { get; }
 
         public abstract bool TryAdd(T item);
@@ -20,6 +36,16 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         public abstract bool TryPeek(out T item, int timeout, CancellationToken token);
 
 
-        public abstract void Dispose();
+        protected virtual void Dispose(bool isUserCall)
+        {
+        }
+        /// <summary>
+        /// Cleans-up resources
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
     }
 }
