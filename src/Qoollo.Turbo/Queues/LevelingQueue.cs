@@ -666,48 +666,90 @@ namespace Qoollo.Turbo.Queues
         {
             while (!token.IsCancellationRequested)
             {
-                using (var gateGuard = _bacgoundTransfererExclusive.EnterBackground(Timeout.Infinite, token)) // Background is on Gate2
-                using (var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(token, gateGuard.Token))
+                using (var gateGuard = _bacgoundTransfererExclusive.EnterBackground(Timeout.Infinite, token))
                 {
                     Debug.Assert(gateGuard.IsAcquired);
 
                     T item = default(T);
                     bool itemTaken = false;
+                    bool needSlowPath = true;
 
-                    try
+                    // Lightweight pipeline
+                    while (!token.IsCancellationRequested && !gateGuard.IsCancellationRequested)
                     {
-                        while (!linkedCancellation.IsCancellationRequested)
+                        if (itemTaken = _lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
                         {
+                            if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
+                                break;
+
                             item = default(T);
                             itemTaken = false;
+                        }
+                        else
+                        {
+                            _bacgoundTransfererExclusive.DisallowBackgroundGate(); // Nothing to do. Stop attempts
+                            needSlowPath = false;
+                            break;
+                        }
+                    }
 
-                            if (!_lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
-                            {
-                                _bacgoundTransfererExclusive.DisallowBackgroundGate(); // Nothing to do. Stop attempts
-                                break;
-                            }
+                    if (itemTaken && (token.IsCancellationRequested || gateGuard.IsCancellationRequested))
+                    {
+                        _highLevelQueue.AddForced(item); // Prevent item lost
+                        itemTaken = false;
+                        continue;
+                    }
 
-                            itemTaken = true;
-                            if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken))) // Fast path to ignore cancellation
+                    if (!needSlowPath || token.IsCancellationRequested || gateGuard.IsCancellationRequested)
+                    {
+                        Debug.Assert(!itemTaken);
+                        continue;
+                    }
+
+                    using (var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(token, gateGuard.Token))
+                    {
+                        try
+                        {
+                            if (itemTaken)
                             {
                                 bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
                                 Debug.Assert(itemAdded);
+                                itemTaken = false;
                             }
 
-                            itemTaken = false;
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        if (itemTaken)
-                        {
-                            _highLevelQueue.AddForced(item); // Prevent item lost
-                            itemTaken = false;
-                        }
+                            while (!linkedCancellation.IsCancellationRequested)
+                            {
+                                if (itemTaken = _lowLevelQueue.TryTake(out item, 0, default(CancellationToken)))
+                                {
+                                    if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken))) // Fast path to ignore cancellation
+                                    {
+                                        bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
+                                        Debug.Assert(itemAdded);
+                                    }
 
-                        _bacgoundTransfererExclusive.DisallowBackgroundGate(); // Exclusivity contention. Stop attmpts
-                        if (!linkedCancellation.IsCancellationRequested)
-                            throw;
+                                    item = default(T);
+                                    itemTaken = false;
+                                }
+                                else
+                                {
+                                    _bacgoundTransfererExclusive.DisallowBackgroundGate(); // Nothing to do. Stop attempts
+                                    break;
+                                }
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            if (itemTaken)
+                            {
+                                _highLevelQueue.AddForced(item); // Prevent item lost
+                                itemTaken = false;
+                            }
+
+
+                            //_bacgoundTransfererExclusive.DisallowBackgroundGate(); // Exclusivity contention. Stop attmpts
+                            if (!linkedCancellation.IsCancellationRequested)
+                                throw;
+                        }
                     }
                 }
             }

@@ -40,6 +40,17 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 return _srcGate != null ? _srcGate.Token : new CancellationToken(true);
             }
         }
+        /// <summary>
+        /// Is operation should be cancelled (lightweight analog of Token.IsCancellationRequested)
+        /// </summary>
+        public bool IsCancellationRequested
+        {
+            get
+            {
+                return _srcGate == null || _srcGate.IsCancelled;
+            }
+        }
+
 
         /// <summary>
         /// Exits the protected code section
@@ -110,6 +121,10 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
             /// Token to cancel processes depends on this gate
             /// </summary>
             public CancellationToken Token { get { return (_cancellationRequest ?? EnsureTokenSourceCreatedSlow()).Token; } }
+            /// <summary>
+            /// Is opertion on this gate should be cancelled
+            /// </summary>
+            public bool IsCancelled { get { return _isDisposed || !_event.IsSet; } }
 
             /// <summary>
             /// Lazy cretion of CancellationTokenSource
@@ -129,7 +144,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                         return current;
 
                     current = new CancellationTokenSource();
-                    if (IsClosed || _isDisposed)
+                    if (_isDisposed || IsClosed)
                         current.Cancel();
                     _cancellationRequest = current;
                     return current;
