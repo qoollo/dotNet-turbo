@@ -326,6 +326,14 @@ namespace Qoollo.Turbo.Threading
         public string Name { get { return _name; } }
 
 
+        /// <summary>
+        /// Determines whether the current thread holds the lock
+        /// </summary>
+        /// <returns>True if the thead holds the lock</returns>
+        public bool IsEntered()
+        {
+            return Monitor.IsEntered(this);
+        }
 
         /// <summary>
         /// Enter the lock on the current <see cref="MonitorObject"/> object
@@ -503,7 +511,8 @@ namespace Qoollo.Turbo.Threading
             {
                 lock (this)
                 {
-                    Monitor.PulseAll(this);
+                    if (_waiterCount > 0)
+                        Monitor.PulseAll(this);
                 }
             }
         }
