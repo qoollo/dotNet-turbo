@@ -68,7 +68,7 @@ namespace Qoollo.Turbo.Threading
             if (_sourceWaiter == null)
                 throw new ObjectDisposedException(nameof(MonitorWaiter), "Lock section has exited");
             if (_sourceWaiter.IsDisposed)
-                throw new ObjectDisposedException(nameof(MonitorObject));
+                throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed");
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
@@ -98,7 +98,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed"));
 
             return true;
         }
@@ -116,7 +116,7 @@ namespace Qoollo.Turbo.Threading
             if (_sourceWaiter == null)
                 throw new ObjectDisposedException(nameof(MonitorWaiter), "Lock section has exited");
             if (_sourceWaiter.IsDisposed)
-                throw new ObjectDisposedException(nameof(MonitorObject));
+                throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed");
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
@@ -136,7 +136,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed"));
 
             return true;
         }
@@ -159,7 +159,7 @@ namespace Qoollo.Turbo.Threading
             if (_sourceWaiter == null)
                 throw new ObjectDisposedException(nameof(MonitorWaiter), "Lock section has exited");
             if (_sourceWaiter.IsDisposed)
-                throw new ObjectDisposedException(nameof(MonitorObject));
+                throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed");
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
@@ -191,7 +191,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed"));
 
             // Final check for predicate
             return predicate(state);
@@ -215,7 +215,7 @@ namespace Qoollo.Turbo.Threading
             if (_sourceWaiter == null)
                 throw new ObjectDisposedException(nameof(MonitorWaiter), "Lock section has exited");
             if (_sourceWaiter.IsDisposed)
-                throw new ObjectDisposedException(nameof(MonitorObject));
+                throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed");
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
@@ -247,7 +247,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed"));
 
             // Final check for predicate
             return predicate(ref state);
@@ -346,7 +346,7 @@ namespace Qoollo.Turbo.Threading
         public MonitorWaiter Enter(int timeout, CancellationToken token)
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(nameof(MonitorObject));
+                throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{Name}' was disposed");
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
@@ -436,7 +436,7 @@ namespace Qoollo.Turbo.Threading
         internal bool Wait(int timeout)
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(nameof(MonitorObject));
+                throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{Name}' was disposed");
 
             Debug.Assert(Monitor.IsEntered(this), "External lock should be acquired");
 
@@ -452,7 +452,7 @@ namespace Qoollo.Turbo.Threading
                     return false;
 
                 if (_isDisposed)
-                    throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject)));
+                    throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{Name}' was disposed"));
             }
             finally
             {

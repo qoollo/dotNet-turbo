@@ -83,9 +83,9 @@ namespace Qoollo.Turbo.Queues
             _addingMode = addingMode;
             _isBackgroundTransferingEnabled = isBackgroundTransferingEnabled;
 
-            _addMonitor = new MonitorObject("AddMonitor");
-            _takeMonitor = new MonitorObject("TakeMonitor");
-            _peekMonitor = new MonitorObject("PeekMonitor");
+            _addMonitor = new MonitorObject("LevelingQueue.AddMonitor");
+            _takeMonitor = new MonitorObject("LevelingQueue.TakeMonitor");
+            _peekMonitor = new MonitorObject("LevelingQueue.PeekMonitor");
 
             _itemCount = highLevelQueue.Count + lowLevelQueue.Count;
             _isDisposed = false;
