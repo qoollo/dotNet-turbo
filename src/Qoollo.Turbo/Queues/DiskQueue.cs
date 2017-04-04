@@ -9,6 +9,7 @@ using System.Threading;
 using Qoollo.Turbo.Collections;
 using System.IO;
 using System.Diagnostics;
+using Qoollo.Turbo.Threading.ThreadManagement;
 
 namespace Qoollo.Turbo.Queues
 {
@@ -18,6 +19,8 @@ namespace Qoollo.Turbo.Queues
     /// <typeparam name="T">Type of items stored inside queue</typeparam>
     public class DiskQueue<T>: Common.CommonQueueImpl<T>
     {
+        private const int CompactionPeriodMs = 2 * 60 * 1000;
+
         private readonly DiskQueueSegmentFactory<T> _segmentFactory;
         private readonly MonitorObject _segmentOperationsMonitor;
         private readonly int _maxSegmentCount;
@@ -32,10 +35,12 @@ namespace Qoollo.Turbo.Queues
         private long _itemCount;
         private readonly long _boundedCapacity;
 
+        private readonly DelegateThreadSetManager _backgroundCompactionThread;
+
         private volatile bool _isDisposed;
 
 
-        public DiskQueue(string path, DiskQueueSegmentFactory<T> segmentFactory, int maxSegmentCount)
+        public DiskQueue(string path, DiskQueueSegmentFactory<T> segmentFactory, int maxSegmentCount, bool backgroundCompaction)
         {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
@@ -49,7 +54,7 @@ namespace Qoollo.Turbo.Queues
                 Directory.CreateDirectory(path);
 
             _segmentFactory = segmentFactory;
-            _segmentOperationsMonitor = new MonitorObject("SegmentOperations");
+            _segmentOperationsMonitor = new MonitorObject("DiskQueue.SegmentOperations");
             _maxSegmentCount = maxSegmentCount;
             _segmentsPath = path;
 
@@ -79,6 +84,13 @@ namespace Qoollo.Turbo.Queues
                 }
             }
 
+            if (backgroundCompaction)
+            {
+                _backgroundCompactionThread = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString() + " Background compaction", BackgroundCompactionProc);
+                _backgroundCompactionThread.IsBackground = true;
+                _backgroundCompactionThread.Start();
+            }
+
             _isDisposed = false;
         }
 
@@ -95,7 +107,55 @@ namespace Qoollo.Turbo.Queues
         /// Indicates whether the queue is empty
         /// </summary>
         public override bool IsEmpty { get { return Volatile.Read(ref _itemCount) == 0; } }
+        /// <summary>
+        /// Is background compaction enabled
+        /// </summary>
+        public bool IsBackgroundCompactionEnabled { get { return _backgroundCompactionThread != null; } }
 
+
+        /// <summary>
+        /// Checks if queue is disposed
+        /// </summary>
+        private void CheckDisposed()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+        }
+
+        /// <summary>
+        /// Removes completed segments
+        /// </summary>
+        private void Compact()
+        {
+            if (_isDisposed)
+                return;
+
+            List<DiskQueueSegment<T>> _segmentsToCleanUp = null;
+            lock (_segmentOperationsMonitor)
+            {
+                if (_isDisposed)
+                    return;
+
+                Debug.Assert(_tailSegment != null);
+                Debug.Assert(_segments.Count > 0);
+                Debug.Assert(_tailSegment == _segments[_segments.Count - 1]);
+                Debug.Assert(_headSegment != null);
+                Debug.Assert(_segments.Contains(_headSegment));
+                Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted));
+                Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment));
+
+                MoveHeadToNonCompletedSegment(); // Correct head segment
+                while (_segments.Count > 1 && _headSegment != _segments[0] && _segments[0].IsCompleted)
+                {
+                    _segmentsToCleanUp = _segmentsToCleanUp ?? new List<DiskQueueSegment<T>>();
+                    _segmentsToCleanUp.Add(_segments.RemoveFirst());
+                }
+            }
+
+            if (_segmentsToCleanUp != null)
+                foreach (var segment in _segmentsToCleanUp)
+                    segment.Dispose(DiskQueueSegmentDisposeBehaviour.Delete);
+        }
 
         /// <summary>
         /// Creates a new segment
@@ -103,7 +163,9 @@ namespace Qoollo.Turbo.Queues
         /// <returns>Created segment</returns>
         private DiskQueueSegment<T> AllocateNewSegment()
         {
-            Debug.Assert(Monitor.IsEntered(_segmentOperationsMonitor));
+            CheckDisposed();
+
+            Debug.Assert(_segmentOperationsMonitor.IsEntered());
 
             var result = _segmentFactory.CreateSegment(_segmentsPath, checked(++_lastSegmentNumber));
             if (result == null)
@@ -134,6 +196,7 @@ namespace Qoollo.Turbo.Queues
                     Debug.Assert(_headSegment != null);
                     Debug.Assert(_segments.Contains(_headSegment));
                     Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted));
+                    Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment));
 
                     DiskQueueSegment<T> result = _tailSegment;
                     if (!result.IsFull)
@@ -162,21 +225,40 @@ namespace Qoollo.Turbo.Queues
         }
 
 
+        /// <summary>
+        /// Moves head to the next non-completed segment
+        /// </summary>
+        /// <returns>New head segment</returns>
         private DiskQueueSegment<T> MoveHeadToNonCompletedSegment()
         {
-            Debug.Assert(Monitor.IsEntered(_segmentOperationsMonitor));
+            Debug.Assert(_segmentOperationsMonitor.IsEntered());
+
+            DiskQueueSegment<T> curHeadSegment = _headSegment;
+
+            if (!curHeadSegment.IsCompleted)
+                return curHeadSegment;
+
+            if (curHeadSegment == _segments[_segments.Count - 1])
+                return curHeadSegment;
 
             for (int i = 0; i < _segments.Count; i++)
             {
-                if (!_segments[i].IsCompleted)
+                if (!_segments[i].IsCompleted || i == _segments.Count - 1)
                 {
                     var result = _segments[i];
                     _headSegment = result;
+
+                    Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment));
                     return result;
                 }
             }
-            return null;
+
+            Debug.Fail("Operation should be completed inside cycle");
+            return _headSegment;
         }
+        /// <summary>
+        /// Get head segment if available or traverse the head forward
+        /// </summary>
         private DiskQueueSegment<T> GetHeadSegmentSlow(int timeout, CancellationToken token)
         {
             using (var waiter = _segmentOperationsMonitor.Enter(timeout, token))
@@ -189,21 +271,33 @@ namespace Qoollo.Turbo.Queues
                     Debug.Assert(_headSegment != null);
                     Debug.Assert(_segments.Contains(_headSegment));
                     Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted));
+                    Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment));
 
                     DiskQueueSegment<T> result = _headSegment;
                     if (!result.IsCompleted)
                         return result;
 
                     // Search for not completed segment
-                    if ((result = MoveHeadToNonCompletedSegment()) != null)
+                    result = MoveHeadToNonCompletedSegment();
+                    if (!result.IsCompleted)
+                    {
+                        // Perform compaction
+                        if (!IsBackgroundCompactionEnabled && _headSegment != _segments[0])
+                            Compact();
+
                         return result;
+                    }
                 }
-                while (!waiter.Wait());
+                while (waiter.Wait());
             }
 
             return null;
         }
 
+        /// <summary>
+        /// Gets that active head segment available for take
+        /// </summary>
+        /// <returns>Head segment if succeeded or null otherwise</returns>
         private DiskQueueSegment<T> GetHeadSegment(int timeout, CancellationToken token)
         {
             var result = _headSegment;
@@ -233,6 +327,22 @@ namespace Qoollo.Turbo.Queues
         protected override bool TryPeekCore(out T item, int timeout, CancellationToken token)
         {
             throw new NotImplementedException();
+        }
+
+
+        // ============== Background compaction ===============
+
+        /// <summary>
+        /// Background compaction logic
+        /// </summary>
+        /// <param name="token">Cancellation Token</param>
+        private void BackgroundCompactionProc(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (!token.WaitHandle.WaitOne(CompactionPeriodMs))
+                    Compact();
+            }
         }
 
 

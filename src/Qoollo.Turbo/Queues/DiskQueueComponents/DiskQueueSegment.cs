@@ -7,6 +7,13 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Queues.DiskQueueComponents
 {
+    public enum DiskQueueSegmentDisposeBehaviour
+    {
+        None,
+        Delete
+    }
+    
+
     /// <summary>
     /// Base class for the segment of the DiskQueue
     /// </summary>
@@ -36,6 +43,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         public abstract bool TryPeek(out T item, int timeout, CancellationToken token);
 
 
+        protected abstract void Delete();
+
         protected virtual void Dispose(bool isUserCall)
         {
         }
@@ -46,6 +55,12 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+        public void Dispose(DiskQueueSegmentDisposeBehaviour disposeBehaviour)
+        {
+            if (disposeBehaviour == DiskQueueSegmentDisposeBehaviour.Delete)
+                Delete();
+            Dispose();
         }
     }
 }
