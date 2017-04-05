@@ -30,15 +30,27 @@ namespace Qoollo.Turbo.PerformanceTests
 
             public bool TryAdd(T value, int timeout, CancellationToken token)
             {
-                lock (SharedSyncObj)
+                using (var waiter = VarFull.Enter(timeout, token))
                 {
-                    if (VarFull.Wait(s => s.ItemCount < s.MaxCount, this, timeout, token))
+                    do
                     {
-                        Queue.Enqueue(value);
-                        Interlocked.Increment(ref ItemCount);
-                        VarEmpty.Pulse();
-                        return true;
+                        if (ItemCount < MaxCount)
+                        {
+                            Queue.Enqueue(value);
+                            Interlocked.Increment(ref ItemCount);
+                            VarEmpty.Pulse();
+                            return true;
+                        }
                     }
+                    while (waiter.Wait());
+
+                    //if (waiter.Wait(s => s.ItemCount < s.MaxCount, this))
+                    //{
+                    //    Queue.Enqueue(value);
+                    //    Interlocked.Increment(ref ItemCount);
+                    //    VarEmpty.Pulse();
+                    //    return true;
+                    //}
 
                     return false;
                 }
@@ -50,15 +62,27 @@ namespace Qoollo.Turbo.PerformanceTests
 
             public bool TryTake(out T value, int timeout, CancellationToken token)
             {
-                lock (SharedSyncObj)
+                using (var waiter = VarEmpty.Enter(timeout, token))
                 {
-                    if (VarEmpty.Wait(s => s.ItemCount > 0, this, timeout, token))
+                    do
                     {
-                        value = Queue.Dequeue();
-                        Interlocked.Decrement(ref ItemCount);
-                        VarFull.Pulse();
-                        return true;
+                        if (ItemCount > 0)
+                        {
+                            value = Queue.Dequeue();
+                            Interlocked.Decrement(ref ItemCount);
+                            VarFull.Pulse();
+                            return true;
+                        }
                     }
+                    while (waiter.Wait());
+
+                    //if (waiter.Wait(s => s.ItemCount > 0, this))
+                    //{
+                    //    value = Queue.Dequeue();
+                    //    Interlocked.Decrement(ref ItemCount);
+                    //    VarFull.Pulse();
+                    //    return true;
+                    //}
 
                     value = default(T);
                     return false;
@@ -75,6 +99,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 return TryTake(out val, 0, default(CancellationToken));
             }
         }
+
         // ==============
 
 

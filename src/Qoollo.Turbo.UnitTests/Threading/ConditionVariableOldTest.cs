@@ -10,18 +10,18 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class ConditionVariableTest
+    public class ConditionVariableOldTest
     {
         [TestMethod]
         public void TestAlwaysPositivePredicate()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            lock (syncObj)
             {
-                using (var waiter = testInst.Enter(100000))
+                using (var testInst = new ConditionVariableOld(syncObj))
                 {
                     int called = 0;
-                    bool result = waiter.Wait((s) => { called++; return true; }, new object());
+                    bool result = testInst.Wait((s) => { called++; return true; }, new object(), 100000);
                     Assert.IsTrue(result);
                     Assert.AreEqual(1, called);
                 }
@@ -33,12 +33,12 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestStatePassedCorrectly()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            lock (syncObj)
             {
-                using (var waiter = testInst.Enter(100000))
+                using (var testInst = new ConditionVariableOld(syncObj))
                 {
                     object state = new object();
-                    bool result = waiter.Wait((s) => { Assert.AreEqual(state, s); return true; }, state);
+                    bool result = testInst.Wait((s) => { Assert.AreEqual(state, s); return true; }, state, 100000);
                     Assert.IsTrue(result);
                 }
             }
@@ -50,29 +50,21 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestExceptionPassedFromPredicate()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            lock (syncObj)
             {
-                try
+                using (var testInst = new ConditionVariableOld(syncObj))
                 {
-                    using (var waiter = testInst.Enter(100000))
+                    try
                     {
-                        try
-                        {
-                            object state = new object();
-                            bool result = waiter.Wait((s) => { throw new ApplicationException("test"); }, state);
-                            Assert.IsTrue(result);
-                        }
-                        catch (Exception)
-                        {
-                            Assert.AreEqual(1, testInst.WaiterCount);
-                            throw;
-                        }
+                        object state = new object();
+                        bool result = testInst.Wait((s) => { throw new ApplicationException("test"); }, state, 100000);
+                        Assert.IsTrue(result);
                     }
-                }
-                catch (Exception)
-                {
-                    Assert.AreEqual(0, testInst.WaiterCount);
-                    throw;
+                    catch (Exception)
+                    {
+                        Assert.AreEqual(0, testInst.WaiterCount);
+                        throw;
+                    }
                 }
             }
         }
@@ -82,14 +74,14 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestNotificationReceived()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int result = 0;
                 var task = Task.Run(() =>
                 {
-                    using (var waiter = testInst.Enter(60000))
+                    lock (syncObj)
                     {
-                        if (waiter.Wait())
+                        if (testInst.Wait(60000))
                             Interlocked.Exchange(ref result, 1);
                         else
                             Interlocked.Exchange(ref result, 2);
@@ -113,15 +105,15 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestNotificationWithPredicate()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int result = 0;
                 int state = 0;
                 var task = Task.Run(() =>
                 {
-                    using (var waiter = testInst.Enter(60000))
+                    lock (syncObj)
                     {
-                        if (waiter.Wait((s) => Volatile.Read(ref state) > 0, new object()))
+                        if (testInst.Wait((s) => Volatile.Read(ref state) > 0, new object(), 60000))
                             Interlocked.Exchange(ref result, 1);
                         else
                             Interlocked.Exchange(ref result, 2);
@@ -153,14 +145,14 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestTimeoutWorks()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int result = 0;
                 var task = Task.Run(() =>
                 {
-                    using (var waiter = testInst.Enter(500))
+                    lock (syncObj)
                     {
-                        if (waiter.Wait(_ => false, (object)null))
+                        if (testInst.Wait(_ => false, (object)null, 500))
                             Interlocked.Exchange(ref result, 1);
                         else
                             Interlocked.Exchange(ref result, 2);
@@ -180,7 +172,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestCancellationWorks()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int result = 0;
                 CancellationTokenSource tokenSrc = new CancellationTokenSource();
@@ -188,9 +180,9 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 {
                     try
                     {
-                        using (var waiter = testInst.Enter(60000, tokenSrc.Token))
+                        lock (syncObj)
                         {
-                            if (waiter.Wait(_ => false, (object)null))
+                            if (testInst.Wait(_ => false, (object)null, 60000, tokenSrc.Token))
                                 Interlocked.Exchange(ref result, 1);
                             else
                                 Interlocked.Exchange(ref result, 2);
@@ -202,15 +194,14 @@ namespace Qoollo.Turbo.UnitTests.Threading
                     }
                 });
 
-
-                TimingAssert.AreEqual(10000, 1, () => testInst.WaiterCount);
                 lock (syncObj)
                 {
                     testInst.Pulse();
                 }
-                Assert.AreEqual(0, Volatile.Read(ref result));
 
                 Thread.Sleep(100);
+                Assert.AreEqual(0, Volatile.Read(ref result));
+
                 tokenSrc.Cancel();
                 TimingAssert.AreEqual(10000, 3, () => Volatile.Read(ref result));
             }
@@ -221,15 +212,15 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestLongPredicateEstimatesOnceWithSmallTimeout()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int result = 0;
                 int estimCount = 0;
                 var task = Task.Run(() =>
                 {
-                    using (var waiter = testInst.Enter(200))
+                    lock (syncObj)
                     {
-                        if (waiter.Wait(_ => { Interlocked.Increment(ref estimCount); Thread.Sleep(500); return false; }, (object)null))
+                        if (testInst.Wait(_ => { Interlocked.Increment(ref estimCount); Thread.Sleep(500); return false; }, (object)null, 200))
                             Interlocked.Exchange(ref result, 1);
                         else
                             Interlocked.Exchange(ref result, 2);
@@ -250,7 +241,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestSingleThreadWakeUpOnSignal()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int exitCount = 0;
                 int state = 0;
@@ -259,9 +250,9 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 {
                     var task = Task.Run(() =>
                     {
-                        using (var waiter = testInst.Enter())
+                        lock (syncObj)
                         {
-                            waiter.Wait(_ => { return Volatile.Read(ref state) > 0; }, (object)null);
+                            testInst.Wait(_ => { return Volatile.Read(ref state) > 0; }, (object)null);
                             Interlocked.Increment(ref exitCount);
                         }
                     });
@@ -290,7 +281,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestAllThreadWakeUpOnSignalAll()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int exitCount = 0;
                 int state = 0;
@@ -299,9 +290,9 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 {
                     var task = Task.Run(() =>
                     {
-                        using (var waiter = testInst.Enter())
+                        lock (syncObj)
                         {
-                            waiter.Wait(_ => { return Volatile.Read(ref state) > 0; }, (object)null);
+                            testInst.Wait(_ => { return Volatile.Read(ref state) > 0; }, (object)null);
                             Interlocked.Increment(ref exitCount);
                         }
                     });
@@ -325,16 +316,16 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestInterruptOnDispose()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int exitCount = 0;
                 var task = Task.Run(() =>
                 {
                     try
                     {
-                        using (var waiter = testInst.Enter())
+                        lock (syncObj)
                         {
-                            waiter.Wait(_ => false, (object)null);
+                            testInst.Wait(_ => false, (object)null);
                         }
                     }
                     catch (OperationInterruptedException) { }
@@ -355,7 +346,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestPredicateCalledInsideLock()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int result = 0;
                 int estimCount = 0;
@@ -363,15 +354,15 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 int stopEstim = 0;
                 var task = Task.Run(() =>
                 {
-                    using (var waiter = testInst.Enter(60000))
+                    lock (syncObj)
                     {
-                        if (waiter.Wait(_ => 
+                        if (testInst.Wait(_ => 
                         {
                             if (Monitor.IsEntered(syncObj))
                                 Interlocked.Increment(ref inMonitorCount);
                             Interlocked.Increment(ref estimCount);
                             return Volatile.Read(ref stopEstim) != 0;
-                        }, (object)null))
+                        }, (object)null, 60000))
                             Interlocked.Exchange(ref result, 1);
                         else
                             Interlocked.Exchange(ref result, 2);
@@ -401,18 +392,22 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
         [TestMethod]
         [ExpectedException(typeof(SynchronizationLockException))]
-        public void TestWaitThrowsIfRecursiveEnter()
+        public void TestWaitThrowsIfExternalLockNotAcquired()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
-                using (var waiter2 = testInst.Enter(10))
-                {
-                    using (var waiter = testInst.Enter(10))
-                    {
-                        waiter.Wait();
-                    }
-                }
+                testInst.Wait(10);
+            }
+        }
+        [TestMethod]
+        [ExpectedException(typeof(SynchronizationLockException))]
+        public void TestWaitWithPredicateThrowsIfExternalLockNotAcquired()
+        {
+            object syncObj = new object();
+            using (var testInst = new ConditionVariableOld(syncObj))
+            {
+                testInst.Wait(_ => true, (object)null, 10);
             }
         }
         [TestMethod]
@@ -420,7 +415,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestPulseThrowsIfExternalLockNotAcquired()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 testInst.Pulse();
             }
@@ -431,13 +426,13 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestWaitThrowsIfExternalLockTakenRecursively()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 lock (syncObj)
                 {
-                    using (var waiter = testInst.Enter(10))
+                    lock (syncObj)
                     {
-                        waiter.Wait();
+                        testInst.Wait(10);
                     }
                 }
             }
@@ -447,13 +442,13 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestWaitWithPredicateThrowsIfExternalLockTakenRecursively()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 lock (syncObj)
                 {
-                    using (var waiter = testInst.Enter(10))
+                    lock (syncObj)
                     {
-                        waiter.Wait(_ => false, (object)null);
+                        testInst.Wait(_ => false, (object)null,10);
                     }
                 }
             }
@@ -464,16 +459,16 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestPredicateCalledTwiceOnDelayedSuccess()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int result = 0;
                 int state = 0;
                 int called = 0;
                 var task = Task.Run(() =>
                 {
-                    using (var waiter = testInst.Enter(60000))
+                    lock (syncObj)
                     {
-                        if (waiter.Wait((s) => { Interlocked.Increment(ref called); return Volatile.Read(ref state) > 0; }, new object()))
+                        if (testInst.Wait((s) => { Interlocked.Increment(ref called); return Volatile.Read(ref state) > 0; }, new object(), 60000))
                             Interlocked.Exchange(ref result, 1);
                         else
                             Interlocked.Exchange(ref result, 2);
@@ -495,16 +490,16 @@ namespace Qoollo.Turbo.UnitTests.Threading
         public void TestPredicateCalledOnTimeout()
         {
             object syncObj = new object();
-            using (var testInst = new ConditionVariable(syncObj))
+            using (var testInst = new ConditionVariableOld(syncObj))
             {
                 int result = 0;
                 int state = 0;
                 int called = 0;
                 var task = Task.Run(() =>
                 {
-                    using (var waiter = testInst.Enter(100))
+                    lock (syncObj)
                     {
-                        if (waiter.Wait((s) => { Interlocked.Increment(ref called); return Volatile.Read(ref state) > 0; }, new object()))
+                        if (testInst.Wait((s) => { Interlocked.Increment(ref called); return Volatile.Read(ref state) > 0; }, new object(), 100))
                             Interlocked.Exchange(ref result, 1);
                         else
                             Interlocked.Exchange(ref result, 2);
@@ -525,22 +520,22 @@ namespace Qoollo.Turbo.UnitTests.Threading
         private class ThreadSafeQueue<T>
         {
             public object SharedSyncObj = new object();
-            public ConditionVariable VarFull = null;
-            public ConditionVariable VarEmpty = null;
+            public ConditionVariableOld VarFull = null;
+            public ConditionVariableOld VarEmpty = null;
             public Queue<T> Queue = new Queue<T>();
             public int MaxCount = 1000;
 
             public ThreadSafeQueue()
             {
-                VarFull = new ConditionVariable(SharedSyncObj);
-                VarEmpty = new ConditionVariable(SharedSyncObj);
+                VarFull = new ConditionVariableOld(SharedSyncObj);
+                VarEmpty = new ConditionVariableOld(SharedSyncObj);
             }
 
             public bool TryAdd(T value, int timeout, CancellationToken token)
             {
-                using (var waiter = VarFull.Enter(timeout, token))
+                lock (SharedSyncObj)
                 {
-                    if (waiter.Wait(s => { Assert.IsTrue(Monitor.IsEntered(s.SharedSyncObj)); return s.Queue.Count < s.MaxCount; }, this))
+                    if (VarFull.Wait(s => { Assert.IsTrue(Monitor.IsEntered(s.SharedSyncObj)); return s.Queue.Count < s.MaxCount; }, this, timeout, token))
                     {
                         Assert.IsTrue(Monitor.IsEntered(SharedSyncObj));
                         Queue.Enqueue(value);
@@ -555,9 +550,9 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
             public bool TryTake(out T value, int timeout, CancellationToken token)
             {
-                using (var waiter = VarEmpty.Enter(timeout, token))
+                lock (SharedSyncObj)
                 {
-                    if (waiter.Wait(s => { Assert.IsTrue(Monitor.IsEntered(s.SharedSyncObj)); return s.Queue.Count > 0; }, this))
+                    if (VarEmpty.Wait(s => { Assert.IsTrue(Monitor.IsEntered(s.SharedSyncObj)); return s.Queue.Count > 0; }, this, timeout, token))
                     {
                         Assert.IsTrue(Monitor.IsEntered(SharedSyncObj));
                         value = Queue.Dequeue();
