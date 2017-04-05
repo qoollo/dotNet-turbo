@@ -460,6 +460,7 @@ namespace Qoollo.Turbo.Queues
 
             // Fast path
             var tailSegment = _tailSegment;
+            Debug.Assert(tailSegment != null);
             while (tailSegment.TryAdd(item))
                 return true;
 
@@ -471,8 +472,29 @@ namespace Qoollo.Turbo.Queues
         // ============ Take ============
 
 
+
+        /// <summary>
+        /// Removes item from the head of the queue (core method)
+        /// </summary>
+        /// <param name="item">The item removed from queue</param>
+        /// <param name="timeout">Removing timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the item was removed</returns>
         protected override bool TryTakeCore(out T item, int timeout, CancellationToken token)
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+            if (token.IsCancellationRequested)
+                throw new OperationCanceledException(token);
+
+            // Fast path
+            var headSegment = _headSegment;
+            Debug.Assert(headSegment != null);
+            if (headSegment.TryTake(out item, 0, default(CancellationToken)))
+                return true;
+
+
+
             throw new NotImplementedException();
         }
 

@@ -79,11 +79,6 @@ namespace Qoollo.Turbo.Threading
             _sourceWaiter._waiters.Enqueue(mres);
             try
             {
-                Monitor.Exit(_sourceWaiter._externalLock);
-                if (Monitor.IsEntered(_sourceWaiter._externalLock))
-                    throw new SynchronizationLockException("Recursive lock is not supported");
-
-
 
                 int remainingWaitMilliseconds = Timeout.Infinite;
                 if (_timeout != Timeout.Infinite)
@@ -92,6 +87,12 @@ namespace Qoollo.Turbo.Threading
                     if (remainingWaitMilliseconds <= 0)
                         return false;
                 }
+
+                Monitor.Exit(_sourceWaiter._externalLock);
+                if (Monitor.IsEntered(_sourceWaiter._externalLock))
+                    throw new SynchronizationLockException("Recursive lock is not supported");
+
+
 
                 if (!mres.Wait(remainingWaitMilliseconds))
                     return false;
@@ -257,6 +258,15 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         internal bool IsDisposed { get { return _isDisposed; } }
 
+        /// <summary>
+        /// Determines whether the current thread holds the lock
+        /// </summary>
+        /// <returns>True if the thead holds the lock</returns>
+        public bool IsEntered()
+        {
+            return Monitor.IsEntered(_externalLock);
+        }
+
 
         public ConditionVariableAltWaiter Enter(int timeout, CancellationToken token)
         {
@@ -404,6 +414,14 @@ namespace Qoollo.Turbo.Threading
             lock (_externalLock)
             {
                 Pulse(int.MaxValue);
+            }
+        }
+
+        internal void PulseInLock()
+        {
+            lock (_externalLock)
+            {
+                Pulse(1);
             }
         }
 
