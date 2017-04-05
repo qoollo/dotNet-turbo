@@ -72,6 +72,8 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
+            Debug.Assert(_sourceWaiter.IsEntered());
+
             int remainingWaitMilliseconds = Timeout.Infinite;
             if (_timeout != Timeout.Infinite)
             {
@@ -120,6 +122,8 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
+            Debug.Assert(_sourceWaiter.IsEntered());
+
             int remainingWaitMilliseconds = Timeout.Infinite;
             if (_timeout != Timeout.Infinite)
             {
@@ -162,6 +166,8 @@ namespace Qoollo.Turbo.Threading
                 throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed");
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
+
+            Debug.Assert(_sourceWaiter.IsEntered());
 
             if (predicate(state))
                 return true;
@@ -218,6 +224,8 @@ namespace Qoollo.Turbo.Threading
                 throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed");
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
+
+            Debug.Assert(_sourceWaiter.IsEntered());
 
             if (predicate(ref state))
                 return true;

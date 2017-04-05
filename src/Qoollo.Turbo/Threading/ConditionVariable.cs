@@ -106,6 +106,8 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
+            Debug.Assert(_sourceWaiter.IsEntered());
+
             bool internalLockTaken = false;
             bool externalLockTaken = true;
 
@@ -183,6 +185,8 @@ namespace Qoollo.Turbo.Threading
                 throw new ObjectDisposedException(nameof(ConditionVariable), $"ConditionVariable '{_sourceWaiter.Name}' was disposed");
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
+
+            Debug.Assert(_sourceWaiter.IsEntered());
 
             bool internalLockTaken = false;
             bool externalLockTaken = true;
@@ -301,6 +305,8 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
+            Debug.Assert(_sourceWaiter.IsEntered());
+
             if (predicate(state))
                 return true;
             else if (_timeout == 0)
@@ -406,6 +412,8 @@ namespace Qoollo.Turbo.Threading
                 throw new ObjectDisposedException(nameof(ConditionVariable), $"ConditionVariable '{_sourceWaiter.Name}' was disposed");
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
+
+            Debug.Assert(_sourceWaiter.IsEntered());
 
             if (predicate(ref state))
                 return true;
