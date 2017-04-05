@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Collections;
 
 namespace Qoollo.Turbo.Threading
 {
@@ -69,16 +70,20 @@ namespace Qoollo.Turbo.Threading
             ManualResetEventSlim mres = _sourceWaiter._waitEvent.Value;
             if (mres == null)
             {
-                mres = _sourceWaiter._waitEvent.Value = new ManualResetEventSlim(false);
+                mres = _sourceWaiter._waitEvent.Value = new ManualResetEventSlim(false, 0);
             }
             else
             {
                 mres.Reset();
             }
 
-            _sourceWaiter._waiters.Enqueue(mres);
+            _sourceWaiter._waiters.AddLast(mres);
             try
             {
+                Monitor.Exit(_sourceWaiter._externalLock);
+                if (Monitor.IsEntered(_sourceWaiter._externalLock))
+                    throw new SynchronizationLockException("Recursive lock is not supported");
+
 
                 int remainingWaitMilliseconds = Timeout.Infinite;
                 if (_timeout != Timeout.Infinite)
@@ -87,11 +92,6 @@ namespace Qoollo.Turbo.Threading
                     if (remainingWaitMilliseconds <= 0)
                         return false;
                 }
-
-                Monitor.Exit(_sourceWaiter._externalLock);
-                if (Monitor.IsEntered(_sourceWaiter._externalLock))
-                    throw new SynchronizationLockException("Recursive lock is not supported");
-
 
 
                 if (!mres.Wait(remainingWaitMilliseconds))
@@ -106,6 +106,8 @@ namespace Qoollo.Turbo.Threading
             finally
             {
                 Monitor.Enter(_sourceWaiter._externalLock);
+                _sourceWaiter.LockOwner = Thread.CurrentThread.ManagedThreadId;
+                _sourceWaiter._waiters.Remove(mres);
             }
 
 
@@ -161,7 +163,7 @@ namespace Qoollo.Turbo.Threading
                 // Lazily initialze our event, if necessary.
 
                 mres.Reset();
-                _sourceWaiter._waiters.Enqueue(mres);
+                _sourceWaiter._waiters.AddLast(mres);
 
                 try
                 {
@@ -183,6 +185,7 @@ namespace Qoollo.Turbo.Threading
                 finally
                 {
                     Monitor.Enter(_sourceWaiter._externalLock);
+                    _sourceWaiter._waiters.Remove(mres);
                 }
 
                 if (predicate.Invoke(state))
@@ -235,10 +238,12 @@ namespace Qoollo.Turbo.Threading
         // ==============
 
         internal readonly object _externalLock;
-        internal readonly Queue<ManualResetEventSlim> _waiters = new Queue<ManualResetEventSlim>();
+        internal readonly CircularList<ManualResetEventSlim> _waiters = new CircularList<ManualResetEventSlim>();
         internal readonly ThreadLocal<ManualResetEventSlim> _waitEvent = new ThreadLocal<ManualResetEventSlim>();
         private volatile int _waiterCount;
         private volatile bool _isDisposed;
+
+        public volatile int LockOwner = 0;
 
         public ConditionVariableAlt(object externalLock)
         {
@@ -303,6 +308,7 @@ namespace Qoollo.Turbo.Threading
                 Monitor.Enter(_externalLock);
             }
 
+            LockOwner = Thread.CurrentThread.ManagedThreadId;
             Interlocked.Increment(ref _waiterCount);
             return new ConditionVariableAltWaiter(this, timeout, startTime, token, cancellationTokenRegistration);
         }
@@ -363,7 +369,7 @@ namespace Qoollo.Turbo.Threading
                 mres.Reset();
             }
 
-            _waiters.Enqueue(mres);
+            _waiters.AddLast(mres);
             try
             {
                 Monitor.Exit(_externalLock);
@@ -388,7 +394,7 @@ namespace Qoollo.Turbo.Threading
                 if (_waiters.Count == 0)
                     break;
 
-                var waiter = _waiters.Dequeue();
+                var waiter = _waiters.RemoveFirst();
                 if (waiter.IsSet)
                 {
                     i--;
