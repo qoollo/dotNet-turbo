@@ -82,6 +82,7 @@
     <Compile Include="Queues\MutuallyExclusivePrimitiveTest.cs" />
     <Compile Include="Queues\TransformationQueueTests.cs" />
     <Compile Include="TestLoggingHelper.cs" />
+    <Compile Include="Threading\ConditionVariableAltTest.cs" />
     <Compile Include="Threading\ConditionVariableTest.cs" />
     <Compile Include="Threading\ConditionVariableOldTest.cs" />
     <Compile Include="Threading\EntryCountingEventTest.cs" />
