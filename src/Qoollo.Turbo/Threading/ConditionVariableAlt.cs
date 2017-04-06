@@ -449,6 +449,7 @@ namespace Qoollo.Turbo.Threading
             {
                 lock (_externalLock)
                 {
+                    Debug.Assert(_waiterCount >= _waiterQueue.Count);
                     for (int i = 0; i < count; i++)
                     {
                         if (_waiterQueue.Count == 0)
@@ -491,6 +492,7 @@ namespace Qoollo.Turbo.Threading
                 _isDisposed = true;
                 PulseAll();
 
+                Debug.Assert(_waiterQueue.Count == 0);
                 _perThreadWaitEvent.Dispose();
             }
         }
