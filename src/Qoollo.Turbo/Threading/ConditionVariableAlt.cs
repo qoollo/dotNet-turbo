@@ -12,7 +12,7 @@ using Qoollo.Turbo.Collections;
 namespace Qoollo.Turbo.Threading
 {
     /// <summary>
-    /// Guard helper for <see cref="ConditionVariable"/> to use it with 'using' statement
+    /// Guard helper for <see cref="ConditionVariableAlt"/> to use it with 'using' statement
     /// </summary>
     internal struct ConditionVariableAltWaiter : IDisposable
     {
@@ -56,6 +56,14 @@ namespace Qoollo.Turbo.Threading
         }
 
 
+
+        /// <summary>
+        /// Blocks the current thread until the next notification
+        /// </summary>
+        /// <returns>True if the current thread successfully received a notification</returns>
+        /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
         public bool Wait()
         {
             if (_sourceWaiter == null)
@@ -65,54 +73,48 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
+            Debug.Assert(_sourceWaiter.IsEntered());
 
-            // Lazily initialze our event, if necessary.
-            ManualResetEventSlim mres = _sourceWaiter._waitEvent.Value;
-            if (mres == null)
-            {
-                mres = _sourceWaiter._waitEvent.Value = new ManualResetEventSlim(false, 0);
-            }
-            else
-            {
-                mres.Reset();
-            }
+            bool timeouted = false;
 
-            _sourceWaiter._waiters.AddLast(mres);
+            var waitingPrimitive = _sourceWaiter.RegisterWaiter();
+            _sourceWaiter.AddWaiterToQueue(waitingPrimitive);
+
             try
             {
-                Monitor.Exit(_sourceWaiter._externalLock);
-                if (Monitor.IsEntered(_sourceWaiter._externalLock))
+                Monitor.Exit(_sourceWaiter.ExternalLock);
+                if (Monitor.IsEntered(_sourceWaiter.ExternalLock))
                     throw new SynchronizationLockException("Recursive lock is not supported");
-
 
                 int remainingWaitMilliseconds = Timeout.Infinite;
                 if (_timeout != Timeout.Infinite)
                 {
                     remainingWaitMilliseconds = TimeoutHelper.UpdateTimeout(_startTime, _timeout);
                     if (remainingWaitMilliseconds <= 0)
-                        return false;
+                        timeouted = true;
                 }
 
+                if (!timeouted && !waitingPrimitive.Wait(remainingWaitMilliseconds))
+                    timeouted = true;
 
-                if (!mres.Wait(remainingWaitMilliseconds))
-                    return false;
-
-                // Check if cancellation or dispose was the reasons of the signal
-                if (_token.IsCancellationRequested)
-                    throw new OperationCanceledException(_token);
-                if (_sourceWaiter.IsDisposed)
-                    throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(ConditionVariable), $"ConditionVariable '{_sourceWaiter.Name}' was disposed"));
+                if (!timeouted)
+                {
+                    // Check if cancellation or dispose was the reasons of the signal
+                    if (_token.IsCancellationRequested)
+                        throw new OperationCanceledException(_token);
+                    if (_sourceWaiter.IsDisposed)
+                        throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(ConditionVariable), $"ConditionVariable '{_sourceWaiter.Name}' was disposed"));
+                }
             }
             finally
             {
-                Monitor.Enter(_sourceWaiter._externalLock);
-                _sourceWaiter.LockOwner = Thread.CurrentThread.ManagedThreadId;
-                _sourceWaiter._waiters.Remove(mres);
+                Monitor.Enter(_sourceWaiter.ExternalLock);
+
+                if (!waitingPrimitive.IsSet)
+                    _sourceWaiter.RemoveWaiterFromQueue(waitingPrimitive);
             }
 
-
-
-            return true;
+            return waitingPrimitive.IsSet;
         }
 
 
@@ -142,6 +144,8 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
+            Debug.Assert(_sourceWaiter.IsEntered());
+
             if (predicate(state))
                 return true;
             else if (_timeout == 0)
@@ -152,25 +156,23 @@ namespace Qoollo.Turbo.Threading
 
             int remainingWaitMilliseconds = Timeout.Infinite;
 
-            ManualResetEventSlim mres = _sourceWaiter._waitEvent.Value;
-            if (mres == null)
-            {
-                mres = _sourceWaiter._waitEvent.Value = new ManualResetEventSlim(false);
-            }
+            var waitingPrimitive = _sourceWaiter.RegisterWaiter();
+            bool firstTry = true;
 
             while (!_token.IsCancellationRequested && !_sourceWaiter.IsDisposed)
             {
-                // Lazily initialze our event, if necessary.
-
-                mres.Reset();
-                _sourceWaiter._waiters.AddLast(mres);
-
                 try
                 {
-                    Monitor.Exit(_sourceWaiter._externalLock);
-                    if (Monitor.IsEntered(_sourceWaiter._externalLock))
-                        throw new SynchronizationLockException("Recursive lock is not supported");
+                    if (waitingPrimitive.IsSet || firstTry)
+                    {
+                        firstTry = false;
+                        waitingPrimitive.Reset();
+                        _sourceWaiter.AddWaiterToQueue(waitingPrimitive);
+                    }
 
+                    Monitor.Exit(_sourceWaiter.ExternalLock);
+                    if (Monitor.IsEntered(_sourceWaiter.ExternalLock))
+                        throw new SynchronizationLockException("Recursive lock is not supported");
 
                     if (_timeout != Timeout.Infinite)
                     {
@@ -179,16 +181,17 @@ namespace Qoollo.Turbo.Threading
                             break;
                     }
 
-                    if (!mres.Wait(remainingWaitMilliseconds))
+                    if (!waitingPrimitive.Wait(remainingWaitMilliseconds))
                         break;
                 }
                 finally
                 {
-                    Monitor.Enter(_sourceWaiter._externalLock);
-                    _sourceWaiter._waiters.Remove(mres);
+                    Monitor.Enter(_sourceWaiter.ExternalLock);
+                    if (!waitingPrimitive.IsSet)
+                        _sourceWaiter.RemoveWaiterFromQueue(waitingPrimitive);
                 }
 
-                if (predicate.Invoke(state))
+                if (predicate(state))
                     return true;
             }
 
@@ -197,7 +200,6 @@ namespace Qoollo.Turbo.Threading
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
                 throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed"));
-
 
 
             // Final check for predicate
@@ -221,6 +223,9 @@ namespace Qoollo.Turbo.Threading
     }
 
 
+    /// <summary>
+    /// Synchronization primitive that blocks the current thread until a specified condition occurs
+    /// </summary>
     internal class ConditionVariableAlt: IDisposable
     {
         private static readonly Action<object> _cancellationTokenCanceledEventHandler = new Action<object>(CancellationTokenCanceledEventHandler);
@@ -232,36 +237,103 @@ namespace Qoollo.Turbo.Threading
         {
             ConditionVariableAlt conditionVar = obj as ConditionVariableAlt;
             Debug.Assert(conditionVar != null);
-            conditionVar.PulseAllInLock();
+            conditionVar.PulseAll();
         }
 
         // ==============
 
-        internal readonly object _externalLock;
-        internal readonly CircularList<ManualResetEventSlim> _waiters = new CircularList<ManualResetEventSlim>();
-        internal readonly ThreadLocal<ManualResetEventSlim> _waitEvent = new ThreadLocal<ManualResetEventSlim>();
+        private readonly string _name;
+        private readonly object _externalLock;
+        private readonly CircularList<ManualResetEventSlim> _waiterQueue;
+        private readonly ThreadLocal<ManualResetEventSlim> _perThreadWaitEvent;
         private volatile int _waiterCount;
         private volatile bool _isDisposed;
 
-        public volatile int LockOwner = 0;
 
-        public ConditionVariableAlt(object externalLock)
+        /// <summary>
+        /// ConditionVariable constructor
+        /// </summary>
+        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
+        /// <param name="name">Name for the current <see cref="ConditionVariableAlt"/></param>
+        public ConditionVariableAlt(object externalLock, string name)
         {
             if (externalLock == null)
                 throw new ArgumentNullException(nameof(externalLock));
 
+            _name = name ?? nameof(ConditionVariable);
+            _waiterCount = 0;
             _externalLock = externalLock;
+            _waiterQueue = new CircularList<ManualResetEventSlim>();
+            _perThreadWaitEvent = new ThreadLocal<ManualResetEventSlim>();
+        }
+        /// <summary>
+        /// ConditionVariable constructor
+        /// </summary>
+        /// <param name="externalLock">External lock object that should be aqcuired before entering the ConditionVariable</param>
+        public ConditionVariableAlt(object externalLock) 
+            : this(externalLock, null)
+        {
         }
 
         /// <summary>
         /// The number of waiting threads on the ConditionVariable
         /// </summary>
         public int WaiterCount { get { return _waiterCount; } }
-        public string Name { get { return nameof(ConditionVariableAlt); } }
+        /// <summary>
+        /// Name to identify ConditionVariable instance
+        /// </summary>
+        public string Name { get { return _name; } }
         /// <summary>
         /// Is ConditionVariable in disposed state
         /// </summary>
         internal bool IsDisposed { get { return _isDisposed; } }
+        /// <summary>
+        /// External lock object
+        /// </summary>
+        internal object ExternalLock { get { return _externalLock; } }
+
+        /// <summary>
+        /// Register the current thread as waiting thread
+        /// </summary>
+        /// <returns>Object to wait on</returns>
+        internal ManualResetEventSlim RegisterWaiter()
+        {
+            ManualResetEventSlim result = _perThreadWaitEvent.Value;
+            if (result == null)
+            {
+                result = new ManualResetEventSlim(false, 6);
+                _perThreadWaitEvent.Value = result;
+            }
+            else
+            {
+                result.Reset();
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Adds waiter to notification queue
+        /// </summary>
+        /// <param name="waitingPrimitive">Waiting primitive</param>
+        internal void AddWaiterToQueue(ManualResetEventSlim waitingPrimitive)
+        {
+            Debug.Assert(waitingPrimitive != null);
+            Debug.Assert(this.IsEntered());
+
+            _waiterQueue.AddLast(waitingPrimitive);
+        }
+        /// <summary>
+        /// Removes waiter from notification queue
+        /// </summary>
+        /// <param name="waitingPrimitive">Waiting primitive to remove</param>
+        /// <returns>Was removed or not</returns>
+        internal bool RemoveWaiterFromQueue(ManualResetEventSlim waitingPrimitive)
+        {
+            Debug.Assert(waitingPrimitive != null);
+            Debug.Assert(this.IsEntered());
+
+            return _waiterQueue.Remove(waitingPrimitive);
+        }
 
         /// <summary>
         /// Determines whether the current thread holds the lock
@@ -273,6 +345,15 @@ namespace Qoollo.Turbo.Threading
         }
 
 
+        /// <summary>
+        /// Enter the lock on the current <see cref="ConditionVariableAlt"/> object
+        /// </summary>
+        /// <param name="timeout">Total operation timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Lock guard to work with 'using' statement</returns>
+        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation requested</exception>
+        /// <exception cref="SynchronizationLockException">externalLock is already acquired</exception>
         public ConditionVariableAltWaiter Enter(int timeout, CancellationToken token)
         {
             if (_isDisposed)
@@ -308,12 +389,11 @@ namespace Qoollo.Turbo.Threading
                 Monitor.Enter(_externalLock);
             }
 
-            LockOwner = Thread.CurrentThread.ManagedThreadId;
             Interlocked.Increment(ref _waiterCount);
             return new ConditionVariableAltWaiter(this, timeout, startTime, token, cancellationTokenRegistration);
         }
         /// <summary>
-        /// Enter the lock on the current <see cref="ConditionVariable"/> object
+        /// Enter the lock on the current <see cref="ConditionVariableAlt"/> object
         /// </summary>
         /// <param name="timeout">Total operation timeout</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
@@ -324,7 +404,7 @@ namespace Qoollo.Turbo.Threading
             return Enter(timeout, default(CancellationToken));
         }
         /// <summary>
-        /// Enter the lock on the current <see cref="ConditionVariable"/> object
+        /// Enter the lock on the current <see cref="ConditionVariableAlt"/> object
         /// </summary>
         /// <param name="token">Cancellation token</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
@@ -336,7 +416,7 @@ namespace Qoollo.Turbo.Threading
             return Enter(Timeout.Infinite, default(CancellationToken));
         }
         /// <summary>
-        /// Enter the lock on the current <see cref="ConditionVariable"/> object
+        /// Enter the lock on the current <see cref="ConditionVariableAlt"/> object
         /// </summary>
         /// <returns>Lock guard to work with 'using' statement</returns>
         /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
@@ -346,6 +426,12 @@ namespace Qoollo.Turbo.Threading
             return Enter(Timeout.Infinite, default(CancellationToken));
         }
 
+
+        /// <summary>
+        /// Leaves the lock section for current <see cref="ConditionVariableAlt"/> object.
+        /// Should be called from <see cref="ConditionVariableAltWaiter.Dispose"/>
+        /// </summary>
+        /// <param name="cvLock">ConditionVariableWaiter with required info</param>
         internal void Exit(ref ConditionVariableAltWaiter cvLock)
         {
             Interlocked.Decrement(ref _waiterCount);
@@ -353,82 +439,42 @@ namespace Qoollo.Turbo.Threading
         }
 
 
-        private void Wait()
+        /// <summary>
+        /// Notifies specified number of threads about possible state change
+        /// </summary>
+        /// <param name="count">Number of threads to be notified</param>
+        public void Pulse(int count)
         {
-            if (!Monitor.IsEntered(_externalLock))
-                throw new SynchronizationLockException("Lock is not held");
-
-            // Lazily initialze our event, if necessary.
-            ManualResetEventSlim mres = _waitEvent.Value;
-            if (mres == null)
+            if (_waiterCount > 0)
             {
-                mres = _waitEvent.Value = new ManualResetEventSlim(false);
-            }
-            else
-            {
-                mres.Reset();
-            }
-
-            _waiters.AddLast(mres);
-            try
-            {
-                Monitor.Exit(_externalLock);
-                if (!Monitor.IsEntered(_externalLock))
-                    throw new SynchronizationLockException("Recursive lock is not supported");
-                mres.Wait();
-            }
-            finally
-            {
-                Monitor.Enter(_externalLock);
-            }
-        }
-
-
-        public void Pulse(int maxPulses)
-        {
-            if (!Monitor.IsEntered(_externalLock))
-                throw new SynchronizationLockException("Lock is not held");
-
-            for (int i = 0; i < maxPulses; i++)
-            {
-                if (_waiters.Count == 0)
-                    break;
-
-                var waiter = _waiters.RemoveFirst();
-                if (waiter.IsSet)
+                lock (_externalLock)
                 {
-                    i--;
-                    continue;
-                }
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (_waiterQueue.Count == 0)
+                            break;
 
-                waiter.Set();
+                        var waiter = _waiterQueue.RemoveFirst();
+                        waiter.Set();
+                    }
+                }
             }
         }
 
+        /// <summary>
+        /// Notifies single waiting thread about possible state change
+        /// </summary>
         public void Pulse()
         {
             Pulse(1);
         }
 
+        /// <summary>
+        /// Notifies all waiting threads about possible state change
+        /// </summary>
         public void PulseAll()
         {
             Pulse(int.MaxValue);
-        }
-
-        internal void PulseAllInLock()
-        {
-            lock (_externalLock)
-            {
-                Pulse(int.MaxValue);
-            }
-        }
-
-        internal void PulseInLock()
-        {
-            lock (_externalLock)
-            {
-                Pulse(1);
-            }
         }
 
 
@@ -444,6 +490,8 @@ namespace Qoollo.Turbo.Threading
             {
                 _isDisposed = true;
                 PulseAll();
+
+                _perThreadWaitEvent.Dispose();
             }
         }
     }

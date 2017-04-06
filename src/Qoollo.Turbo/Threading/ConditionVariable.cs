@@ -652,18 +652,19 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Notifies single waiting thread about possible state change
         /// </summary>
-        /// <exception cref="SynchronizationLockException">External lock is not acquired</exception>
         public void Pulse()
         {
-            if (!Monitor.IsEntered(_externalLock))
-                throw new SynchronizationLockException("External lock should be acquired");
-
             if (_waiterCount > 0)
             {
-                lock (_internalLock)
+                lock (_externalLock)
                 {
                     if (_waiterCount > 0)
-                        Monitor.Pulse(_internalLock);
+                    {
+                        lock (_internalLock)
+                        {
+                            Monitor.Pulse(_internalLock);
+                        }
+                    }
                 }
             }
         }
@@ -672,21 +673,24 @@ namespace Qoollo.Turbo.Threading
         /// Notifies specified number of threads about possible state change
         /// </summary>
         /// <param name="count">Number of threads to be notified</param>
-        /// <exception cref="SynchronizationLockException">External lock is not acquired</exception>
         public void Pulse(int count)
         {
             if (count < 0 || count > short.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (!Monitor.IsEntered(_externalLock))
-                throw new SynchronizationLockException("External lock should be acquired");
 
             if (_waiterCount > 0)
             {
-                lock (_internalLock)
+                lock (_externalLock)
                 {
-                    int countToPulse = Math.Min(_waiterCount, count);
-                    for (int i = 0; i < countToPulse; i++)
-                        Monitor.Pulse(_internalLock);
+                    if (_waiterCount > 0)
+                    {
+                        lock (_internalLock)
+                        {
+                            int countToPulse = Math.Min(_waiterCount, count);
+                            for (int i = 0; i < countToPulse; i++)
+                                Monitor.Pulse(_internalLock);
+                        }
+                    }
                 }
             }
         }
@@ -694,18 +698,19 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Notifies all waiting threads about possible state change
         /// </summary>
-        /// <exception cref="SynchronizationLockException">External lock is not acquired</exception>
         public void PulseAll()
         {
-            if (!Monitor.IsEntered(_externalLock))
-                throw new SynchronizationLockException("External lock should be acquired");
-
             if (_waiterCount > 0)
             {
-                lock (_internalLock)
+                lock (_externalLock)
                 {
                     if (_waiterCount > 0)
-                        Monitor.PulseAll(_internalLock);
+                    {
+                        lock (_internalLock)
+                        {
+                            Monitor.PulseAll(_internalLock);
+                        }
+                    }
                 }
             }
         }

@@ -416,8 +416,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             }
         }
         [TestMethod]
-        [ExpectedException(typeof(SynchronizationLockException))]
-        public void TestPulseThrowsIfExternalLockNotAcquired()
+        public void TestPulseWorksWithoutLock()
         {
             object syncObj = new object();
             using (var testInst = new ConditionVariableAlt(syncObj))
