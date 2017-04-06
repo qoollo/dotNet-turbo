@@ -102,6 +102,88 @@ namespace Qoollo.Turbo.PerformanceTests
 
         // ==============
 
+        private class MonitorThreadSafeQueue<T>
+        {
+            private readonly Threading.MonitorObject VarFull = new Threading.MonitorObject();
+            private readonly Threading.MonitorObject VarEmpty = new Threading.MonitorObject();
+            private readonly ConcurrentQueue<T> Queue = new ConcurrentQueue<T>();
+            private readonly int MaxCount = 1000;
+            private volatile int ItemCount = 0;
+
+            public MonitorThreadSafeQueue(int boundingCapacity)
+            {
+                MaxCount = boundingCapacity;
+            }
+
+            public bool TryAdd(T value, int timeout, CancellationToken token)
+            {
+                bool result = false;
+                using (var waiter = VarFull.Enter(timeout, token))
+                {
+                    do
+                    {
+                        if (ItemCount < MaxCount)
+                        {
+                            Queue.Enqueue(value);
+                            Interlocked.Increment(ref ItemCount);
+                            result = true;
+                            break;
+                        }
+                    }
+                    while (waiter.Wait());
+                }
+
+                if (result)
+                    VarEmpty.Pulse();
+                return result;
+            }
+            public void Add(T value)
+            {
+                TryAdd(value, Timeout.Infinite, default(CancellationToken));
+            }
+
+            public bool TryTake(out T value, int timeout, CancellationToken token)
+            {
+                bool result = false;
+                value = default(T);
+
+                using (var waiter = VarEmpty.Enter(timeout, token))
+                {
+                    do
+                    {
+                        if (ItemCount > 0)
+                        {
+                            Queue.TryDequeue(out value);
+                            Interlocked.Decrement(ref ItemCount);
+                            result = true;
+                            break;
+                        }
+                    }
+                    while (waiter.Wait());
+                }
+
+                if (result)
+                {
+                    VarFull.Pulse();
+                    return true;
+                }
+
+                return false;
+            }
+            public T Take(CancellationToken token)
+            {
+                T val;
+                TryTake(out val, Timeout.Infinite, token);
+                return val;
+            }
+            public bool TryTake(out T val)
+            {
+                return TryTake(out val, 0, default(CancellationToken));
+            }
+        }
+
+        // ==============
+
 
         private static TimeSpan RunConcurrentBC(string name, int elemCount, int addThCount, int takeThCount, int addSpin, int takeSpin)
         {
@@ -429,6 +511,116 @@ namespace Qoollo.Turbo.PerformanceTests
 
 
 
+        private static TimeSpan RunConcurrentMon(string name, int elemCount, int addThCount, int takeThCount, int addSpin, int takeSpin)
+        {
+            MonitorThreadSafeQueue<int> col = new MonitorThreadSafeQueue<int>(10000);
+
+            CancellationTokenSource srcCancel = new CancellationTokenSource();
+
+            Thread[] addThreads = new Thread[addThCount];
+            Thread[] takeThreads = new Thread[takeThCount];
+
+            int addedElemCount = 0;
+            List<int> globalList = new List<int>();
+
+            Barrier barierStart = new Barrier(1 + addThreads.Length + takeThreads.Length);
+            Barrier barierAdders = new Barrier(1 + addThreads.Length);
+            Barrier barierTakers = new Barrier(1 + takeThreads.Length);
+
+            Action addAction = () =>
+            {
+                barierStart.SignalAndWait();
+
+                int index = 0;
+                while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
+                {
+                    col.Add(index - 1);
+                    Thread.SpinWait(addSpin);
+                }
+
+                barierAdders.SignalAndWait();
+            };
+
+
+            Action takeAction = () =>
+            {
+                CancellationToken myToken = srcCancel.Token;
+                List<int> valList = new List<int>(elemCount / takeThCount + 100);
+
+                barierStart.SignalAndWait();
+
+                try
+                {
+                    while (!srcCancel.IsCancellationRequested)
+                    {
+                        int val = 0;
+                        val = col.Take(myToken);
+
+                        valList.Add(val);
+                        Thread.SpinWait(takeSpin);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                }
+
+                int val2 = 0;
+                while (col.TryTake(out val2))
+                    valList.Add(val2);
+
+                barierTakers.SignalAndWait();
+
+                lock (globalList)
+                {
+                    globalList.AddRange(valList);
+                }
+            };
+
+            for (int i = 0; i < addThreads.Length; i++)
+                addThreads[i] = new Thread(new ThreadStart(addAction));
+            for (int i = 0; i < takeThreads.Length; i++)
+                takeThreads[i] = new Thread(new ThreadStart(takeAction));
+
+
+            for (int i = 0; i < takeThreads.Length; i++)
+                takeThreads[i].Start();
+            for (int i = 0; i < addThreads.Length; i++)
+                addThreads[i].Start();
+
+            barierStart.SignalAndWait();
+
+            Stopwatch sw = Stopwatch.StartNew();
+
+            barierAdders.SignalAndWait();
+            srcCancel.Cancel();
+            barierTakers.SignalAndWait();
+            sw.Stop();
+
+            for (int i = 0; i < addThreads.Length; i++)
+                addThreads[i].Join();
+            for (int i = 0; i < takeThreads.Length; i++)
+                takeThreads[i].Join();
+
+            globalList.Sort();
+            if (globalList.Count != elemCount)
+                Console.WriteLine("Bad count");
+
+            for (int i = 0; i < globalList.Count; i++)
+            {
+                if (globalList[i] != i)
+                {
+                    Console.WriteLine("invalid elements");
+                    break;
+                }
+            }
+
+            if (name != null)
+                Console.WriteLine(name + ". MonQ. Time = " + sw.ElapsedMilliseconds.ToString() + "ms");
+            return sw.Elapsed;
+        }
+
+
+
         private static void Free()
         {
             GC.Collect();
@@ -594,6 +786,23 @@ namespace Qoollo.Turbo.PerformanceTests
                 Free();
 
                 RunConcurrentCondVar("16, 16", 5000000, 16, 16, 10, 10);
+                Free();
+
+                Console.WriteLine();
+
+                RunConcurrentMon("1, 1", 5000000, 1, 1, 10, 10);
+                Free();
+
+                RunConcurrentMon("4, 4", 5000000, 4, 4, 10, 10);
+                Free();
+
+                RunConcurrentMon("16, 1", 5000000, 16, 1, 10, 10);
+                Free();
+
+                RunConcurrentMon("1, 16", 5000000, 1, 16, 10, 10);
+                Free();
+
+                RunConcurrentMon("16, 16", 5000000, 16, 16, 10, 10);
                 Free();
 
 
