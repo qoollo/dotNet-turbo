@@ -57,7 +57,7 @@ namespace Qoollo.Turbo.Queues
         private readonly MonitorObject _peekMonitor;
 
         private readonly DelegateThreadSetManager _backgroundTransferer;
-        private readonly MutuallyExclusivePrimitive _bacgoundTransfererExclusive;
+        private readonly MutuallyExclusivePrimitive _backgoundTransfererExclusive;
 
         private long _itemCount; // Required when background transfering enabled
 
@@ -92,9 +92,9 @@ namespace Qoollo.Turbo.Queues
 
             if (isBackgroundTransferingEnabled)
             {
-                _bacgoundTransfererExclusive = new MutuallyExclusivePrimitive();
+                _backgoundTransfererExclusive = new MutuallyExclusivePrimitive();
                 if (addingMode == LevelingQueueAddingMode.PreferLiveData)
-                    _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering from the start
+                    _backgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering from the start
 
                 _backgroundTransferer = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString() + " Background Transferer", BackgroundTransferProc);
                 _backgroundTransferer.IsBackground = true;
@@ -182,7 +182,7 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// Wether background transferer is currently in work
         /// </summary>
-        internal bool IsBackgroundInWork { get { return _bacgoundTransfererExclusive != null && _bacgoundTransfererExclusive.IsBackgroundGateAllowed; } }
+        internal bool IsBackgroundInWork { get { return _backgoundTransfererExclusive != null && _backgoundTransfererExclusive.IsBackgroundGateAllowed; } }
 
         /// <summary>
         /// Notifies about item addition to one of the inner queues
@@ -228,7 +228,7 @@ namespace Qoollo.Turbo.Queues
                     _lowLevelQueue.AddForced(item);
 
                     if (_isBackgroundTransferingEnabled)
-                        _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
+                        _backgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
                 }
             }
             else
@@ -239,7 +239,7 @@ namespace Qoollo.Turbo.Queues
                     if (_lowLevelQueue.IsEmpty)
                     {
                         // Only in exclusive mode
-                        using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, default(CancellationToken))) // This should happen fast
+                        using (var gateGuard = _backgoundTransfererExclusive.EnterMain(Timeout.Infinite, default(CancellationToken))) // This should happen fast
                         {
                             Debug.Assert(gateGuard.IsAcquired);
                             addedToHighLevelQueue = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
@@ -255,7 +255,7 @@ namespace Qoollo.Turbo.Queues
                 {
                     _lowLevelQueue.AddForced(item);
                     if (_isBackgroundTransferingEnabled)
-                        _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
+                        _backgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
                 }
             }
 
@@ -367,7 +367,7 @@ namespace Qoollo.Turbo.Queues
                 }
 
                 if (_isBackgroundTransferingEnabled && !_lowLevelQueue.IsEmpty)
-                    _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
+                    _backgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering
             }
             else
             {
@@ -386,7 +386,7 @@ namespace Qoollo.Turbo.Queues
                     if (_lowLevelQueue.IsEmpty)
                     {
                         // Only in exclusive mode
-                        using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
+                        using (var gateGuard = _backgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
                         {
                             Debug.Assert(gateGuard.IsAcquired);
                             result = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
@@ -403,7 +403,7 @@ namespace Qoollo.Turbo.Queues
                     bool isLowLevelEmptyBeforeAdd = _lowLevelQueue.IsEmpty;
                     result = _lowLevelQueue.TryAdd(item, timeout, token); // To preserve order we try to add only to the lower queue
                     if (result && !isLowLevelEmptyBeforeAdd && _isBackgroundTransferingEnabled)
-                        _bacgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering when at least 2 elements in lowLevelQueue
+                        _backgoundTransfererExclusive.AllowBackgroundGate(); // Allow background transfering when at least 2 elements in lowLevelQueue
                 }
             }
 
@@ -473,7 +473,7 @@ namespace Qoollo.Turbo.Queues
         {
             Debug.Assert(_isBackgroundTransferingEnabled);
 
-            using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
+            using (var gateGuard = _backgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
             {
                 Debug.Assert(gateGuard.IsAcquired);
 
@@ -516,7 +516,7 @@ namespace Qoollo.Turbo.Queues
                 if (!result)
                     result = TryTakeExclusively(out item, timeoutTracker, token); // Should be mutually exclusive with background transferer to prevent item lost or reordering
                 else if (!_lowLevelQueue.IsEmpty)
-                    _bacgoundTransfererExclusive.AllowBackgroundGate(); // allow Background transfering
+                    _backgoundTransfererExclusive.AllowBackgroundGate(); // allow Background transfering
             }
             else
             {
@@ -595,7 +595,7 @@ namespace Qoollo.Turbo.Queues
         {
             Debug.Assert(_isBackgroundTransferingEnabled);
 
-            using (var gateGuard = _bacgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
+            using (var gateGuard = _backgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
             {
                 Debug.Assert(gateGuard.IsAcquired);
 
@@ -666,7 +666,7 @@ namespace Qoollo.Turbo.Queues
         {
             while (!token.IsCancellationRequested)
             {
-                using (var gateGuard = _bacgoundTransfererExclusive.EnterBackground(Timeout.Infinite, token))
+                using (var gateGuard = _backgoundTransfererExclusive.EnterBackground(Timeout.Infinite, token))
                 {
                     Debug.Assert(gateGuard.IsAcquired);
 
@@ -687,7 +687,7 @@ namespace Qoollo.Turbo.Queues
                         }
                         else
                         {
-                            _bacgoundTransfererExclusive.DisallowBackgroundGate(); // Nothing to do. Stop attempts
+                            _backgoundTransfererExclusive.DisallowBackgroundGate(); // Nothing to do. Stop attempts
                             needSlowPath = false;
                             break;
                         }
@@ -732,7 +732,7 @@ namespace Qoollo.Turbo.Queues
                                 }
                                 else
                                 {
-                                    _bacgoundTransfererExclusive.DisallowBackgroundGate(); // Nothing to do. Stop attempts
+                                    _backgoundTransfererExclusive.DisallowBackgroundGate(); // Nothing to do. Stop attempts
                                     break;
                                 }
                             }
@@ -776,8 +776,8 @@ namespace Qoollo.Turbo.Queues
                 _lowLevelQueue.Dispose();
                 _highLevelQueue.Dispose();
 
-                if (_bacgoundTransfererExclusive != null)
-                    _bacgoundTransfererExclusive.Dispose();
+                if (_backgoundTransfererExclusive != null)
+                    _backgoundTransfererExclusive.Dispose();
             }
         }
     }
