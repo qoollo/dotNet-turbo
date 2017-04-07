@@ -40,8 +40,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
         public abstract void AddForced(T item);
         public abstract bool TryAdd(T item);
-        public abstract bool TryTake(out T item, int timeout, CancellationToken token);
-        public abstract bool TryPeek(out T item, int timeout, CancellationToken token);
+        public abstract bool TryTake(out T item);
+        public abstract bool TryPeek(out T item);
 
 
         protected abstract void Delete();

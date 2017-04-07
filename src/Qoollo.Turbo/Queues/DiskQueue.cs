@@ -23,7 +23,7 @@ namespace Qoollo.Turbo.Queues
         private const int CompactionPeriodMs = 2 * 60 * 1000;
 
         private readonly DiskQueueSegmentFactory<T> _segmentFactory;
-        private readonly MonitorObject _segmentOperationsMonitor;
+        private readonly object _segmentOperationsLock;
         private readonly int _maxSegmentCount;
         private readonly string _segmentsPath;
 
@@ -36,11 +36,21 @@ namespace Qoollo.Turbo.Queues
         private long _itemCount;
         private readonly long _boundedCapacity;
 
+        private readonly MonitorObject _addMonitor;
+        private readonly MonitorObject _takeMonitor;
+        private readonly MonitorObject _peekMonitor;
+
         private readonly DelegateThreadSetManager _backgroundCompactionThread;
 
         private volatile bool _isDisposed;
 
-
+        /// <summary>
+        /// DiskQueue constructor
+        /// </summary>
+        /// <param name="path">Path to the folder on the disk to store queue segments</param>
+        /// <param name="segmentFactory">Factory to create DiskQueueSegments</param>
+        /// <param name="maxSegmentCount">Maximum number of simultaniously active segments</param>
+        /// <param name="backgroundCompaction">Is background compaction allowed (if not then compaction happens synchronously within the Take operation)</param>
         public DiskQueue(string path, DiskQueueSegmentFactory<T> segmentFactory, int maxSegmentCount, bool backgroundCompaction)
         {
             if (string.IsNullOrEmpty(path))
@@ -54,8 +64,12 @@ namespace Qoollo.Turbo.Queues
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
+            _addMonitor = new MonitorObject("DiskQueue.AddMonitor");
+            _takeMonitor = new MonitorObject("DiskQueue.TakeMonitor");
+            _peekMonitor = new MonitorObject("DiskQueue.PeekMonitor");
+
             _segmentFactory = segmentFactory;
-            _segmentOperationsMonitor = new MonitorObject("DiskQueue.SegmentOperations");
+            _segmentOperationsLock = new object();
             _maxSegmentCount = maxSegmentCount;
             _segmentsPath = path;
 
@@ -79,7 +93,7 @@ namespace Qoollo.Turbo.Queues
             else
             {
                 // Allocate new segment
-                lock (_segmentOperationsMonitor)
+                lock (_segmentOperationsLock)
                 {
                     _headSegment = _tailSegment = AllocateNewSegment();
                 }
@@ -94,6 +108,16 @@ namespace Qoollo.Turbo.Queues
 
             _isDisposed = false;
         }
+        /// <summary>
+        /// DiskQueue constructor
+        /// </summary>
+        /// <param name="path">Path to the folder on the disk to store queue segments</param>
+        /// <param name="segmentFactory">Factory to create DiskQueueSegments</param>
+        public DiskQueue(string path, DiskQueueSegmentFactory<T> segmentFactory)
+            : this(path, segmentFactory, -1, false)
+        {
+        }
+
 
 
         /// <summary>
@@ -124,6 +148,45 @@ namespace Qoollo.Turbo.Queues
         }
 
         /// <summary>
+        /// Checks that the queue in the consistent state (should be called inside lock)
+        /// </summary>
+        [Conditional("DEBUG")]
+        private void VerifyConsistency([System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1)
+        {
+            Debug.Assert(Monitor.IsEntered(_segmentOperationsLock), $"segment lock is not acquired. Line: {lineNumber}");
+
+            Debug.Assert(_tailSegment != null, $"_tailSegment != null. Line: {lineNumber}");
+            Debug.Assert(_segments.Count > 0, $"_segments.Count > 0. Line: {lineNumber}");
+            Debug.Assert(_tailSegment == _segments[_segments.Count - 1], $"_tailSegment == _segments[_segments.Count - 1]. Line: {lineNumber}");
+            Debug.Assert(_headSegment != null, $"_headSegment != null. Line: {lineNumber}");
+            Debug.Assert(_segments.Contains(_headSegment), $"_segments.Contains(_headSegment). Line: {lineNumber}");
+            Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted), $"All segements before head should be in IsCompleted state. Line: {lineNumber}");
+            Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment), $"_headSegement cannot be after _tailSegment. Line: {lineNumber}");
+        }
+
+
+        /// <summary>
+        /// Notifies about item addition
+        /// </summary>
+        private void NotifyItemAdded()
+        {
+            long itemCount = Interlocked.Increment(ref _itemCount);
+            Debug.Assert(itemCount >= 0);
+            _takeMonitor.Pulse();
+            _peekMonitor.PulseAll();
+        }
+        /// <summary>
+        /// Notifies that item was taken
+        /// </summary>
+        private void NotifyItemTaken()
+        {
+            long itemCount = Interlocked.Decrement(ref _itemCount);
+            Debug.Assert(itemCount >= 0);
+            _addMonitor.Pulse();
+        }
+
+
+        /// <summary>
         /// Removes completed segments
         /// </summary>
         private void Compact()
@@ -132,18 +195,12 @@ namespace Qoollo.Turbo.Queues
                 return;
 
             List<DiskQueueSegment<T>> _segmentsToCleanUp = null;
-            lock (_segmentOperationsMonitor)
+            lock (_segmentOperationsLock)
             {
                 if (_isDisposed)
                     return;
 
-                Debug.Assert(_tailSegment != null);
-                Debug.Assert(_segments.Count > 0);
-                Debug.Assert(_tailSegment == _segments[_segments.Count - 1]);
-                Debug.Assert(_headSegment != null);
-                Debug.Assert(_segments.Contains(_headSegment));
-                Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted));
-                Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment));
+                VerifyConsistency();
 
                 MoveHeadToNonCompletedSegment(); // Correct head segment
                 while (_segments.Count > 1 && _headSegment != _segments[0] && _segments[0].IsCompleted)
@@ -166,7 +223,11 @@ namespace Qoollo.Turbo.Queues
         {
             CheckDisposed();
 
-            Debug.Assert(_segmentOperationsMonitor.IsEntered());
+            Debug.Assert(Monitor.IsEntered(_segmentOperationsLock));
+            Debug.Assert(!Monitor.IsEntered(_takeMonitor));
+            Debug.Assert(!Monitor.IsEntered(_peekMonitor));
+
+            VerifyConsistency();
 
             var result = _segmentFactory.CreateSegment(_segmentsPath, checked(++_lastSegmentNumber));
             if (result == null)
@@ -177,8 +238,9 @@ namespace Qoollo.Turbo.Queues
             _tailSegment = result;
 
             // Notify all waiters
-            _segmentOperationsMonitor.PulseAll();
+            _addMonitor.PulseAll();
 
+            VerifyConsistency();
             return result;
         }
 
@@ -189,7 +251,9 @@ namespace Qoollo.Turbo.Queues
         /// <returns>New head segment</returns>
         private DiskQueueSegment<T> MoveHeadToNonCompletedSegment()
         {
-            Debug.Assert(_segmentOperationsMonitor.IsEntered());
+            Debug.Assert(Monitor.IsEntered(_segmentOperationsLock));
+
+            VerifyConsistency();
 
             DiskQueueSegment<T> curHeadSegment = _headSegment;
 
@@ -206,7 +270,7 @@ namespace Qoollo.Turbo.Queues
                     var result = _segments[i];
                     _headSegment = result;
 
-                    Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment));
+                    VerifyConsistency();
                     return result;
                 }
             }
@@ -222,59 +286,52 @@ namespace Qoollo.Turbo.Queues
         /// Attempts to get non-full segment
         /// </summary>
         /// <returns>Non-full tail segment if found (null otherwise)</returns>
-        private DiskQueueSegment<T> TryGetTailSegmentCore()
+        private DiskQueueSegment<T> TryGetNonFullTailSegment()
         {
-            Debug.Assert(_segmentOperationsMonitor.IsEntered());
-
-            Debug.Assert(_tailSegment != null);
-            Debug.Assert(_segments.Count > 0);
-            Debug.Assert(_tailSegment == _segments[_segments.Count - 1]);
-            Debug.Assert(_headSegment != null);
-            Debug.Assert(_segments.Contains(_headSegment));
-            Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted));
-            Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment));
-
             DiskQueueSegment<T> result = _tailSegment;
             if (!result.IsFull)
                 return result;
 
-            if (_segments.Count < _maxSegmentCount)
-                return AllocateNewSegment();
-
-            return null;
-        }
-
-        /// <summary>
-        /// Gets tail segment if it is available or try to create a new segement
-        /// </summary>
-        private DiskQueueSegment<T> GetTailSegmentSlow(int timeout, CancellationToken token)
-        {
-            using (var waiter = _segmentOperationsMonitor.Enter(timeout, token))
+            lock (_segmentOperationsLock)
             {
-                do
-                {
-                    var result = TryGetTailSegmentCore();
-                    if (result != null)
-                        return result;
-                }
-                while (waiter.Wait());
+                if (_segments.Count < _maxSegmentCount)
+                    return AllocateNewSegment();
             }
 
             return null;
         }
-        /// <summary>
-        /// Gets the active head segment available for add
-        /// </summary>
-        /// <returns>Tail segment if succeeded or null otherwise</returns>
-        private DiskQueueSegment<T> GetTailSegment(int timeout, CancellationToken token)
-        {
-            var result = _tailSegment;
-            Debug.Assert(result != null);
-            if (!result.IsFull)
-                return result;
 
-            return GetTailSegmentSlow(timeout, token);
-        }
+        ///// <summary>
+        ///// Gets tail segment if it is available or try to create a new segement
+        ///// </summary>
+        //private DiskQueueSegment<T> GetTailSegmentSlow(int timeout, CancellationToken token)
+        //{
+        //    using (var waiter = _segmentOperationsMonitor.Enter(timeout, token))
+        //    {
+        //        do
+        //        {
+        //            var result = TryGetTailSegmentCore();
+        //            if (result != null)
+        //                return result;
+        //        }
+        //        while (waiter.Wait());
+        //    }
+
+        //    return null;
+        //}
+        ///// <summary>
+        ///// Gets the active head segment available for add
+        ///// </summary>
+        ///// <returns>Tail segment if succeeded or null otherwise</returns>
+        //private DiskQueueSegment<T> GetTailSegment(int timeout, CancellationToken token)
+        //{
+        //    var result = _tailSegment;
+        //    Debug.Assert(result != null);
+        //    if (!result.IsFull)
+        //        return result;
+
+        //    return GetTailSegmentSlow(timeout, token);
+        //}
 
         // ============== Head segment ops =============
 
@@ -282,67 +339,60 @@ namespace Qoollo.Turbo.Queues
         /// Attempts to find non-completed head segment
         /// </summary>
         /// <returns>Non-completed head segment if found (null otherwise)</returns>
-        private DiskQueueSegment<T> TryGetHeadSegmentCore()
+        private DiskQueueSegment<T> TryGetNonCompletedHeadSegment()
         {
-            Debug.Assert(_segmentOperationsMonitor.IsEntered());
-
-            Debug.Assert(_tailSegment != null);
-            Debug.Assert(_segments.Count > 0);
-            Debug.Assert(_tailSegment == _segments[_segments.Count - 1]);
-            Debug.Assert(_headSegment != null);
-            Debug.Assert(_segments.Contains(_headSegment));
-            Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted));
-            Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment));
-
             DiskQueueSegment<T> result = _headSegment;
             if (!result.IsCompleted)
                 return result;
 
-            // Search for not completed segment
-            result = MoveHeadToNonCompletedSegment();
-            if (!result.IsCompleted)
+            lock (_segmentOperationsLock)
             {
-                // Perform compaction
-                if (!IsBackgroundCompactionEnabled && _headSegment != _segments[0])
-                    Compact();
-
-                return result;
-            }
-
-            return null;
-        }
-        /// <summary>
-        /// Get head segment if available or traverse the head forward
-        /// </summary>
-        private DiskQueueSegment<T> GetHeadSegmentSlow(int timeout, CancellationToken token)
-        {
-            using (var waiter = _segmentOperationsMonitor.Enter(timeout, token))
-            {
-                do
+                // Search for not completed segment
+                result = MoveHeadToNonCompletedSegment();
+                if (!result.IsCompleted)
                 {
-                    var result = TryGetHeadSegmentCore();
-                    if (result != null)
-                        return result;
+                    // Perform compaction
+                    if (!IsBackgroundCompactionEnabled && _headSegment != _segments[0])
+                        Compact();
+
+                    return result;
                 }
-                while (waiter.Wait());
             }
 
             return null;
         }
+        ///// <summary>
+        ///// Get head segment if available or traverse the head forward
+        ///// </summary>
+        //private DiskQueueSegment<T> GetHeadSegmentSlow(int timeout, CancellationToken token)
+        //{
+        //    using (var waiter = _segmentOperationsMonitor.Enter(timeout, token))
+        //    {
+        //        do
+        //        {
+        //            var result = TryGetHeadSegmentCore();
+        //            if (result != null)
+        //                return result;
+        //        }
+        //        while (waiter.Wait());
+        //    }
 
-        /// <summary>
-        /// Gets that active head segment available for take
-        /// </summary>
-        /// <returns>Head segment if succeeded or null otherwise</returns>
-        private DiskQueueSegment<T> GetHeadSegment(int timeout, CancellationToken token)
-        {
-            var result = _headSegment;
-            Debug.Assert(result != null);
-            if (!result.IsCompleted)
-                return result;
+        //    return null;
+        //}
 
-            return GetHeadSegmentSlow(timeout, token);
-        }
+        ///// <summary>
+        ///// Gets that active head segment available for take
+        ///// </summary>
+        ///// <returns>Head segment if succeeded or null otherwise</returns>
+        //private DiskQueueSegment<T> GetHeadSegment(int timeout, CancellationToken token)
+        //{
+        //    var result = _headSegment;
+        //    Debug.Assert(result != null);
+        //    if (!result.IsCompleted)
+        //        return result;
+
+        //    return GetHeadSegmentSlow(timeout, token);
+        //}
 
 
         // ================ Add ===================
@@ -353,11 +403,11 @@ namespace Qoollo.Turbo.Queues
         /// <param name="item">New item</param>
         private void AddForcedSlow(T item)
         {
-            lock (_segmentOperationsMonitor)
+            lock (_addMonitor)
             {
                 while (!_isDisposed)
                 {
-                    var tailSegment = TryGetTailSegmentCore();
+                    var tailSegment = TryGetNonFullTailSegment();
                     if (tailSegment == null)
                     {
                         tailSegment = _tailSegment;
@@ -389,12 +439,13 @@ namespace Qoollo.Turbo.Queues
 
             // Fast path
             var tailSegment = _tailSegment;
-            while (tailSegment.TryAdd(item))
-                return;
+            if (!tailSegment.TryAdd(item))
+            {
+                Debug.Assert(tailSegment.IsFull);
+                AddForcedSlow(item); // Enter slow path (should be rare with reasonable size of the segment)
+            }
 
-            Debug.Assert(tailSegment.IsFull);
-
-            AddForcedSlow(item);
+            NotifyItemAdded();
         }
 
 
@@ -408,13 +459,13 @@ namespace Qoollo.Turbo.Queues
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
             // Zero timeout attempts
-            lock (_segmentOperationsMonitor)
+            lock (_addMonitor)
             {
                 while (true)
                 {
                     token.ThrowIfCancellationRequested();
 
-                    var tailSegment = TryGetTailSegmentCore();
+                    var tailSegment = TryGetNonFullTailSegment();
                     if (tailSegment == null)
                         break;
                     if (tailSegment.TryAdd(item))
@@ -428,11 +479,11 @@ namespace Qoollo.Turbo.Queues
                 return false;
 
             // Use waiting scheme
-            using (var waiter = _segmentOperationsMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
+            using (var waiter = _addMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
             {
                 do
                 {
-                    var tailSegment = TryGetTailSegmentCore();
+                    var tailSegment = TryGetNonFullTailSegment();
                     if (tailSegment != null && tailSegment.TryAdd(item))
                         return true;
 
@@ -458,19 +509,70 @@ namespace Qoollo.Turbo.Queues
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
-            // Fast path
+            bool result = false;
+
             var tailSegment = _tailSegment;
             Debug.Assert(tailSegment != null);
-            while (tailSegment.TryAdd(item))
-                return true;
+            if (!(result = tailSegment.TryAdd(item)))
+            {
+                Debug.Assert(tailSegment.IsFull);
+                result = TryAddSlow(item, timeout, token); // Enter slow path (should be rare with reasonable size of the segment)
+            }
 
-            Debug.Assert(tailSegment.IsFull);
+            if (result)
+                NotifyItemAdded();
 
-            return TryAddSlow(item, timeout, token);
+            return result;
         }
 
         // ============ Take ============
 
+
+
+        /// <summary>
+        /// Removes item from the head of the queue (slow path)
+        /// </summary>
+        /// <returns>Was taken sucessufully</returns>
+        private bool TryTakeSlow(out T item, int timeout, CancellationToken token)
+        {
+            TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
+
+            // Zero timeout attempts
+            lock (_takeMonitor)
+            {
+                while (true)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    var headSegment = TryGetNonCompletedHeadSegment();
+                    if (headSegment == null)
+                        break;
+                    if (headSegment.TryTake(out item))
+                        return true;
+                }
+            }
+
+            if (timeout == 0 || timeoutTracker.IsTimeouted)
+            {
+                item = default(T);
+                return false;
+            }
+
+            // Use waiting scheme
+            using (var waiter = _takeMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
+            {
+                do
+                {
+                    var headSegment = TryGetNonCompletedHeadSegment();
+                    if (headSegment != null && headSegment.TryTake(out item))
+                        return true;
+                }
+                while (waiter.Wait());
+            }
+
+            item = default(T);
+            return false;
+        }
 
 
         /// <summary>
@@ -487,23 +589,91 @@ namespace Qoollo.Turbo.Queues
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
-            // Fast path
+            bool result = false;
+
             var headSegment = _headSegment;
             Debug.Assert(headSegment != null);
-            if (headSegment.TryTake(out item, 0, default(CancellationToken)))
-                return true;
+            if (!(result = headSegment.TryTake(out item)))
+            {
+                result = TryTakeSlow(out item, timeout, token);
+            }
 
+            if (result)
+                NotifyItemTaken();
 
-
-            throw new NotImplementedException();
+            return result;
         }
 
 
         // =============== Peek ===============
 
+
+        /// <summary>
+        /// Returns the item at the head of the queue without removing it (slow path)
+        /// </summary>
+        /// <returns>Was sucessufully</returns>
+        private bool TryPeekSlow(out T item, int timeout, CancellationToken token)
+        {
+            TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
+
+            // Zero timeout attempts
+            lock (_peekMonitor)
+            {
+                while (true)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    var headSegment = TryGetNonCompletedHeadSegment();
+                    if (headSegment == null)
+                        break;
+                    if (headSegment.TryPeek(out item))
+                        return true;
+                }
+            }
+
+            if (timeout == 0 || timeoutTracker.IsTimeouted)
+            {
+                item = default(T);
+                return false;
+            }
+
+            // Use waiting scheme
+            using (var waiter = _peekMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
+            {
+                do
+                {
+                    var headSegment = TryGetNonCompletedHeadSegment();
+                    if (headSegment != null && headSegment.TryPeek(out item))
+                        return true;
+                }
+                while (waiter.Wait());
+            }
+
+            item = default(T);
+            return false;
+        }
+
+
+        /// <summary>
+        /// Returns the item at the head of the queue without removing it (core method)
+        /// </summary>
+        /// <param name="item">The item at the head of the queue</param>
+        /// <param name="timeout">Peeking timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the item was read</returns>
         protected override bool TryPeekCore(out T item, int timeout, CancellationToken token)
         {
-            throw new NotImplementedException();
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+            if (token.IsCancellationRequested)
+                throw new OperationCanceledException(token);
+
+            var headSegment = _headSegment;
+            Debug.Assert(headSegment != null);
+            if (headSegment.TryPeek(out item))
+                return true;
+
+            return TryPeekSlow(out item, timeout, token);
         }
 
 
@@ -536,9 +706,11 @@ namespace Qoollo.Turbo.Queues
                 if (_backgroundCompactionThread != null)
                     _backgroundCompactionThread.Stop(true);
 
-                _segmentOperationsMonitor.Dispose();
+                _addMonitor.Dispose();
+                _takeMonitor.Dispose();
+                _peekMonitor.Dispose();
 
-                lock (_segmentOperationsMonitor)
+                lock (_segmentOperationsLock)
                 {
                     foreach (var segment in _segments)
                         segment.Dispose();
