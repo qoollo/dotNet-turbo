@@ -338,17 +338,21 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
         private volatile bool _isDisposed;
 
 
-        public MutuallyExclusivePrimitive(bool gate1Opened)
+        /// <summary>
+        /// MutuallyExclusivePrimitive constructor
+        /// </summary>
+        /// <param name="mainGateOpened">True - MainGate opened, BackgroundGate closed, False - MainGate closed, BackgroundGate opened</param>
+        public MutuallyExclusivePrimitive(bool mainGateOpened)
         {
-            _mainGate = new MutuallyExclusiveGate(this, false, gate1Opened);
-            _backgroundGate = new MutuallyExclusiveGate(this, true, !gate1Opened);
+            _mainGate = new MutuallyExclusiveGate(this, false, mainGateOpened);
+            _backgroundGate = new MutuallyExclusiveGate(this, true, !mainGateOpened);
 #if DEBUG
             _lock = new SpinLock(true);
 #else
             _lock = new SpinLock(false);
 #endif
 
-            _combinedState = gate1Opened ? MainGateBit : BackgroundGateBit | AllowBackgroundBit;
+            _combinedState = mainGateOpened ? MainGateBit : BackgroundGateBit | AllowBackgroundBit;
             _isDisposed = false;
         }
         public MutuallyExclusivePrimitive() : this(true)
