@@ -61,9 +61,6 @@ namespace Qoollo.Turbo.Queues
             if (maxSegmentCount <= 0 || maxSegmentCount > int.MaxValue / 4)
                 maxSegmentCount = int.MaxValue / 4;
 
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-
             _addMonitor = new MonitorObject("DiskQueue.AddMonitor");
             _takeMonitor = new MonitorObject("DiskQueue.TakeMonitor");
             _peekMonitor = new MonitorObject("DiskQueue.PeekMonitor");
