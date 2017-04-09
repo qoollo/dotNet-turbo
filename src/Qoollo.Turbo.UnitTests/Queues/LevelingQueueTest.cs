@@ -249,12 +249,14 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             Barrier bar = new Barrier(2);
             int takeResult = 0;
+            int peekResult = 0;
             int addResult = 0;
             Task task = Task.Run(() =>
             {
                 bar.SignalAndWait();
                 int item = 0;
                 AtomicSet(ref takeResult, queue.TryTake(out item, 100));
+                AtomicSet(ref peekResult, queue.TryPeek(out item, 100));
 
                 while (queue.TryAdd(-1)) ;
 
@@ -270,6 +272,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
             bar.SignalAndWait();
 
             TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref takeResult), "take");
+            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref peekResult), "peek");
             TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref addResult), "Add");
 
             task.Wait();
@@ -292,6 +295,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
             Barrier bar = new Barrier(2);
             CancellationTokenSource takeSource = new CancellationTokenSource();
             int takeResult = 0;
+            CancellationTokenSource peekSource = new CancellationTokenSource();
+            int peekResult = 0;
             CancellationTokenSource addSource = new CancellationTokenSource();
             int addResult = 0;
             Task task = Task.Run(() =>
@@ -305,6 +310,15 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 catch (OperationCanceledException)
                 {
                     Interlocked.Exchange(ref takeResult, 3);
+                }
+
+                try
+                {
+                    AtomicSet(ref peekResult, queue.TryPeek(out item, 60000, peekSource.Token));
+                }
+                catch (OperationCanceledException)
+                {
+                    Interlocked.Exchange(ref peekResult, 3);
                 }
 
                 while (queue.TryAdd(-1)) ;
@@ -327,6 +341,11 @@ namespace Qoollo.Turbo.UnitTests.Queues
             Assert.AreEqual(0, takeResult);
             takeSource.Cancel();
             TimingAssert.AreEqual(10000, 3, () => Volatile.Read(ref takeResult));
+
+            Thread.Sleep(10);
+            Assert.AreEqual(0, peekResult);
+            peekSource.Cancel();
+            TimingAssert.AreEqual(10000, 3, () => Volatile.Read(ref peekResult));
 
             Thread.Sleep(10);
             Assert.AreEqual(0, addResult);

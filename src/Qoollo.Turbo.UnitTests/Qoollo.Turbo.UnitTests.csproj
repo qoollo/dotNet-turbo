@@ -50,6 +50,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="Atomic.cs" />
     <Compile Include="Collections\BlockingQueueTest.cs" />
     <Compile Include="Collections\CircularListTest.cs" />
     <Compile Include="Collections\IndexedContainerTests.cs" />

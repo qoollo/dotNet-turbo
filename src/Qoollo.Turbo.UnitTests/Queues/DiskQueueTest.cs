@@ -27,7 +27,6 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 Queue = new BlockingQueue<T>(capacity);
             }
 
-
             public override int Count { get { return Queue.Count; } }
 
             public override bool IsCompleted { get { return FilledItemCount >= Capacity && Queue.Count == 0; } }
@@ -84,24 +83,34 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public class MemorySegmentFactory<T> : DiskQueueSegmentFactory<T>
         {
             public readonly int Capacity;
-            public readonly List<MemorySegment<T>> PreallocatedSegments;
+            public readonly List<MemorySegment<T>> AllocatedSegments;
 
             public MemorySegmentFactory(int capacity)
             {
                 Capacity = capacity;
-                PreallocatedSegments = new List<MemorySegment<T>>();
+                AllocatedSegments = new List<MemorySegment<T>>();
             }
+
+            public override int SegmentCapacity { get { return Capacity; } }
 
             public override DiskQueueSegment<T> CreateSegment(string path, long number)
             {
                 Assert.AreEqual("dummy", path);
-                return new MemorySegment<T>(number, Capacity);
+                var newSeg = new MemorySegment<T>(number, Capacity);
+                lock (AllocatedSegments)
+                {
+                    AllocatedSegments.Add(newSeg);
+                }
+                return newSeg;
             }
 
             public override DiskQueueSegment<T>[] DiscoverSegments(string path)
             {
                 Assert.AreEqual("dummy", path);
-                return PreallocatedSegments.ToArray();
+                lock (AllocatedSegments)
+                {
+                    return AllocatedSegments.ToArray();
+                }
             }
         }
 
@@ -111,7 +120,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
         private static DiskQueue<int> CreateOnMem(int segmentCapacity, int segmentCount = -1, bool backComp = false)
         {
-            return new DiskQueue<int>("dummy", new MemorySegmentFactory<int>(segmentCapacity), segmentCount, backComp);
+            return new DiskQueue<int>("dummy", new MemorySegmentFactory<int>(segmentCapacity), segmentCount, backComp, 500);
         }
 
 
@@ -121,6 +130,33 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 testRunner(q);
         }
 
+
+
+        // ==============================
+
+        [TestMethod]
+        public void TestConstruction()
+        {
+            var factory = new MemorySegmentFactory<int>(100);
+            using (var queue = new DiskQueue<int>("dummy", factory, 10, true, 500))
+            {
+                Assert.AreEqual("dummy", queue.Path);
+                Assert.AreEqual(0, queue.Count);
+                Assert.IsTrue(queue.IsEmpty);
+                Assert.IsTrue(queue.IsBackgroundCompactionEnabled);
+                Assert.AreEqual(1, queue.SegmentCount);
+                Assert.AreEqual(1, factory.AllocatedSegments.Count);
+                Assert.AreEqual(factory.Capacity * 10, queue.BoundedCapacity);
+
+                for (int i = 0; i < factory.Capacity + 1; i++)
+                    queue.Add(1);
+
+                Assert.AreEqual(factory.Capacity + 1, queue.Count);
+                Assert.IsFalse(queue.IsEmpty);
+                Assert.AreEqual(2, queue.SegmentCount);
+                Assert.AreEqual(2, factory.AllocatedSegments.Count);
+            }
+        }
 
         // ==============================
 
@@ -178,6 +214,237 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [TestMethod]
         public void TestSimpleAddTakePeekMemStress() { RunMemTest(1, -1, true, q => TestSimpleAddTakePeek(q)); }
 
-        // ==============
+
+        // =========================
+
+        private void AddWakesUpTest(DiskQueue<int> queue, int segmentCapacity)
+        {
+            while (queue.TryAdd(100)) ; // Fill queue
+            queue.AddForced(200);
+
+            Barrier bar = new Barrier(2);
+            AtomicNullableBool addResult = new AtomicNullableBool();
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                addResult.Value = queue.TryAdd(-100, 60000);
+            });
+
+            bar.SignalAndWait();
+            Thread.Sleep(10);
+            Assert.IsFalse(addResult.HasValue);
+
+            queue.Take();
+            Thread.Sleep(10);
+            Assert.IsFalse(addResult.HasValue);
+
+            for (int i = 0; i < segmentCapacity; i++)
+            {
+                int tmp = 0;
+                Assert.IsTrue(queue.TryTake(out tmp));
+            }
+            TimingAssert.AreEqual(10000, true, () => addResult.Value);
+
+            task.Wait();
+        }
+
+        [TestMethod]
+        public void AddWakesUpTestMem() { RunMemTest(100, 10, false, q => AddWakesUpTest(q, 100)); }
+        [TestMethod]
+        public void AddWakesUpTestMemStress() { RunMemTest(1, 2, true, q => AddWakesUpTest(q, 1)); }
+
+
+        // =========================
+        
+        private void TakeWakesUpTest(DiskQueue<int> queue)
+        {
+            Barrier bar = new Barrier(2);
+            AtomicNullableBool takeResult = new AtomicNullableBool();
+            AtomicNullableBool takeResult2 = new AtomicNullableBool();
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                takeResult.Value = queue.TryTake(out item, 60000);
+                Assert.AreEqual(100, item);
+
+                item = 0;
+                takeResult2.Value = queue.TryTake(out item, 60000);
+                Assert.AreEqual(200, item);
+            });
+
+            bar.SignalAndWait();
+            Thread.Sleep(10);
+            Assert.IsFalse(takeResult.HasValue);
+
+            queue.Add(100);
+            TimingAssert.AreEqual(10000, true, () => takeResult.Value);
+
+            Thread.Sleep(10);
+            Assert.IsFalse(takeResult2.HasValue);
+
+            queue.Add(200);
+            TimingAssert.AreEqual(10000, true, () => takeResult2.Value);
+
+            task.Wait();
+        }
+
+        [TestMethod]
+        public void TakeWakesUpTestMem() { RunMemTest(100, 10, false, q => TakeWakesUpTest(q)); }
+        [TestMethod]
+        public void TakeWakesUpTestMemStress() { RunMemTest(1, 2, true, q => TakeWakesUpTest(q)); }
+
+
+
+
+        // =========================
+        
+        private void PeekWakesUpTest(DiskQueue<int> queue)
+        {
+            Barrier bar = new Barrier(3);
+            AtomicNullableBool peekResult = new AtomicNullableBool();
+            AtomicNullableBool peekResult2 = new AtomicNullableBool();
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                peekResult.Value = queue.TryPeek(out item, 60000);
+                Assert.AreEqual(100, item);
+            });
+
+            Task task2 = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                peekResult2.Value = queue.TryPeek(out item, 60000);
+                Assert.AreEqual(100, item);
+            });
+
+            bar.SignalAndWait();
+            Thread.Sleep(10);
+            Assert.IsFalse(peekResult.HasValue);
+            Assert.IsFalse(peekResult2.HasValue);
+
+            queue.Add(100);
+            TimingAssert.AreEqual(10000, true, () => peekResult.Value);
+            TimingAssert.AreEqual(10000, true, () => peekResult2.Value);
+
+            Task.WaitAll(task, task2);
+        }
+
+        [TestMethod]
+        public void PeekWakesUpTestMem() { RunMemTest(100, 10, false, q => PeekWakesUpTest(q)); }
+        [TestMethod]
+        public void PeekWakesUpTestMemStress() { RunMemTest(1, 2, true, q => PeekWakesUpTest(q)); }
+
+
+
+
+        // =========================
+        
+        private void TimeoutWorksTest(DiskQueue<int> queue)
+        {
+            Barrier bar = new Barrier(2);
+            AtomicNullableBool takeResult = new AtomicNullableBool();
+            AtomicNullableBool peekResult = new AtomicNullableBool();
+            AtomicNullableBool addResult = new AtomicNullableBool();
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                takeResult.Value = queue.TryTake(out item, 100);
+                peekResult.Value = queue.TryPeek(out item, 100);
+
+                while (queue.TryAdd(-1)) ;
+
+                addResult.Value = queue.TryAdd(100, 100);
+            });
+
+            bar.SignalAndWait();
+
+            TimingAssert.AreEqual(10000, false, () => takeResult.Value, "take");
+            TimingAssert.AreEqual(10000, false, () => peekResult.Value, "peek");
+            TimingAssert.AreEqual(10000, false, () => addResult.Value, "Add");
+
+            task.Wait();
+        }
+
+        [TestMethod]
+        public void TimeoutWorksTestMem() { RunMemTest(100, 10, false, q => TimeoutWorksTest(q)); }
+        [TestMethod]
+        public void TimeoutWorksTestMemStress() { RunMemTest(1, 2, true, q => TimeoutWorksTest(q)); }
+        
+
+        // =========================
+        
+        private void CancellationWorksTest(DiskQueue<int> queue)
+        {
+            Barrier bar = new Barrier(2);
+            CancellationTokenSource takeSource = new CancellationTokenSource();
+            AtomicInt takeResult = new AtomicInt();
+            CancellationTokenSource peekSource = new CancellationTokenSource();
+            AtomicInt peekResult = new AtomicInt();
+            CancellationTokenSource addSource = new CancellationTokenSource();
+            AtomicInt addResult = new AtomicInt();
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                try
+                {
+                    takeResult.Value = queue.TryTake(out item, 60000, takeSource.Token) ? 1 : -1;
+                }
+                catch (OperationCanceledException)
+                {
+                    takeResult.Value = 3;
+                }
+
+                try
+                {
+                    peekResult.Value = queue.TryPeek(out item, 60000, peekSource.Token) ? 1 : -1;
+                }
+                catch (OperationCanceledException)
+                {
+                    peekResult.Value = 3;
+                }
+
+                while (queue.TryAdd(-1)) ;
+
+                try
+                {
+                    addResult.Value = queue.TryAdd(100, 60000, addSource.Token) ? 1 : -1;
+                }
+                catch (OperationCanceledException)
+                {
+                    addResult.Value = 3;
+                }
+            });
+
+            bar.SignalAndWait();
+
+            Thread.Sleep(10);
+            Assert.AreEqual(0, takeResult);
+            takeSource.Cancel();
+            TimingAssert.AreEqual(10000, 3, () => takeResult);
+
+            Thread.Sleep(10);
+            Assert.AreEqual(0, peekResult);
+            peekSource.Cancel();
+            TimingAssert.AreEqual(10000, 3, () => peekResult);
+
+            Thread.Sleep(10);
+            Assert.AreEqual(0, addResult);
+            addSource.Cancel();
+            TimingAssert.AreEqual(10000, 3, () => addResult);
+
+            task.Wait();
+        }
+
+        [TestMethod]
+        public void CancellationWorksTestMem() { RunMemTest(100, 10, false, q => CancellationWorksTest(q)); }
+        [TestMethod]
+        public void CancellationWorksTestMemStress() { RunMemTest(1, 2, true, q => CancellationWorksTest(q)); }
+        
+        // ======================
     }
 }

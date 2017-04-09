@@ -40,6 +40,7 @@ namespace Qoollo.Turbo.Queues
         private readonly MonitorObject _takeMonitor;
         private readonly MonitorObject _peekMonitor;
 
+        private readonly int _compactionPeriod;
         private readonly DelegateThreadSetManager _backgroundCompactionThread;
 
         private volatile bool _isDisposed;
@@ -51,12 +52,19 @@ namespace Qoollo.Turbo.Queues
         /// <param name="segmentFactory">Factory to create DiskQueueSegments</param>
         /// <param name="maxSegmentCount">Maximum number of simultaniously active segments</param>
         /// <param name="backgroundCompaction">Is background compaction allowed (if not then compaction happens synchronously within the Take operation)</param>
-        public DiskQueue(string path, DiskQueueSegmentFactory<T> segmentFactory, int maxSegmentCount, bool backgroundCompaction)
+        /// <param name="compactionPeriod">Compaction period in milliseconds</param>
+        internal DiskQueue(string path, DiskQueueSegmentFactory<T> segmentFactory, int maxSegmentCount, bool backgroundCompaction, int compactionPeriod)
         {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
             if (segmentFactory == null)
                 throw new ArgumentNullException(nameof(segmentFactory));
+            if (compactionPeriod <= 0)
+                throw new ArgumentOutOfRangeException(nameof(compactionPeriod), "Compaction period should be positive");
+            if (maxSegmentCount == 0 || maxSegmentCount == 1)
+                throw new ArgumentOutOfRangeException(nameof(maxSegmentCount), "At least two segments should be available");
+            if (maxSegmentCount > int.MaxValue / 4)
+                throw new ArgumentOutOfRangeException(nameof(maxSegmentCount), "Segment count is too large");
 
             if (maxSegmentCount <= 0 || maxSegmentCount > int.MaxValue / 4)
                 maxSegmentCount = int.MaxValue / 4;
@@ -92,10 +100,14 @@ namespace Qoollo.Turbo.Queues
                 // Allocate new segment
                 lock (_segmentOperationsLock)
                 {
-                    _headSegment = _tailSegment = AllocateNewSegment();
+                    _headSegment = _tailSegment = segmentFactory.CreateSegment(path, ++_lastSegmentNumber);
+                    if (_tailSegment == null)
+                        throw new InvalidOperationException("CreateSegment returned null");
+                    _segments.Add(_tailSegment);
                 }
             }
 
+            _compactionPeriod = compactionPeriod;
             if (backgroundCompaction)
             {
                 _backgroundCompactionThread = new DelegateThreadSetManager(1, this.GetType().GetCSName() + "_" + this.GetHashCode().ToString() + " Background compaction", BackgroundCompactionProc);
@@ -104,6 +116,17 @@ namespace Qoollo.Turbo.Queues
             }
 
             _isDisposed = false;
+        }
+        /// <summary>
+        /// DiskQueue constructor
+        /// </summary>
+        /// <param name="path">Path to the folder on the disk to store queue segments</param>
+        /// <param name="segmentFactory">Factory to create DiskQueueSegments</param>
+        /// <param name="maxSegmentCount">Maximum number of simultaniously active segments</param>
+        /// <param name="backgroundCompaction">Is background compaction allowed (if not then compaction happens synchronously within the Take operation)</param>
+        public DiskQueue(string path, DiskQueueSegmentFactory<T> segmentFactory, int maxSegmentCount, bool backgroundCompaction)
+            : this(path, segmentFactory, maxSegmentCount, backgroundCompaction, CompactionPeriodMs)
+        {
         }
         /// <summary>
         /// DiskQueue constructor
@@ -133,7 +156,14 @@ namespace Qoollo.Turbo.Queues
         /// Is background compaction enabled
         /// </summary>
         public bool IsBackgroundCompactionEnabled { get { return _backgroundCompactionThread != null; } }
-
+        /// <summary>
+        /// Path to the folder on the disk to store queue segments
+        /// </summary>
+        public string Path { get { return _segmentsPath; } }
+        /// <summary>
+        /// Queue segments count
+        /// </summary>
+        internal int SegmentCount { get { return _segments.Count; } }
 
         /// <summary>
         /// Checks if queue is disposed
@@ -186,18 +216,22 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// Removes completed segments
         /// </summary>
-        private void Compact()
+        /// <param name="allowNotification">Allows to send notification for adders (only when called from background thread)</param>
+        private void Compact(bool allowNotification)
         {
             if (_isDisposed)
                 return;
 
             List<DiskQueueSegment<T>> _segmentsToCleanUp = null;
+            bool shouldNotifyWaiters = false;
             lock (_segmentOperationsLock)
             {
                 if (_isDisposed)
                     return;
 
                 VerifyConsistency();
+
+                shouldNotifyWaiters = allowNotification && _segments.Count >= _maxSegmentCount;
 
                 MoveHeadToNonCompletedSegment(); // Correct head segment
                 while (_segments.Count > 1 && _headSegment != _segments[0] && _segments[0].IsCompleted)
@@ -208,8 +242,13 @@ namespace Qoollo.Turbo.Queues
             }
 
             if (_segmentsToCleanUp != null)
+            {
+                if (shouldNotifyWaiters)
+                    _addMonitor.PulseAll(); // Segment allocation is now possible
+
                 foreach (var segment in _segmentsToCleanUp)
                     segment.Dispose(DiskQueueSegmentDisposeBehaviour.Delete);
+            }
         }
 
         /// <summary>
@@ -287,13 +326,10 @@ namespace Qoollo.Turbo.Queues
             if (!result.IsFull)
                 return result;
 
-            if (_segments.Count < _maxSegmentCount) // Fast check of possibility to allocate new segment (Count should be safe)
+            lock (_segmentOperationsLock)
             {
-                lock (_segmentOperationsLock)
-                {
-                    if (_segments.Count < _maxSegmentCount)
-                        return AllocateNewSegment();
-                }
+                if (_segments.Count < _maxSegmentCount)
+                    return AllocateNewSegment();
             }
 
             return null;
@@ -320,7 +356,7 @@ namespace Qoollo.Turbo.Queues
                     {
                         // Perform compaction
                         if (!IsBackgroundCompactionEnabled && _headSegment != _segments[0])
-                            Compact();
+                            Compact(allowNotification: false);
 
                         return result;
                     }
@@ -478,8 +514,10 @@ namespace Qoollo.Turbo.Queues
                 var headSegment = TryGetNonCompletedHeadSegment();
                 if (headSegment == null)
                     break;
-                if (headSegment.TryTake(out item))
+                if (headSegment.TryTake(out item)) // False means that only current segment is empty (there can be other non-empty ones)
                     return true;
+                if (headSegment == _tailSegment) // This was the last segment to check
+                    break;
             }
 
             if (timeout == 0 || timeoutTracker.IsTimeouted)
@@ -556,6 +594,8 @@ namespace Qoollo.Turbo.Queues
                     break;
                 if (headSegment.TryPeek(out item))
                     return true;
+                if (headSegment == _tailSegment) // This was the last segment to check
+                    break;
             }
 
             if (timeout == 0 || timeoutTracker.IsTimeouted)
@@ -614,8 +654,8 @@ namespace Qoollo.Turbo.Queues
         {
             while (!token.IsCancellationRequested)
             {
-                if (!token.WaitHandle.WaitOne(CompactionPeriodMs))
-                    Compact();
+                if (!token.WaitHandle.WaitOne(_compactionPeriod))
+                    Compact(allowNotification: true);
             }
         }
 
