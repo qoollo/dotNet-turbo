@@ -94,6 +94,7 @@ namespace Qoollo.Turbo.Queues
                 _headSegment = _segments[0];
                 _tailSegment = _segments[_segments.Count - 1];
                 _lastSegmentNumber = _tailSegment.Number;
+                _itemCount = _segments.Sum(o => o.Count);
             }
             else
             {

@@ -109,7 +109,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 Assert.AreEqual("dummy", path);
                 lock (AllocatedSegments)
                 {
-                    return AllocatedSegments.ToArray();
+                    return AllocatedSegments.Where(o => !o.IsCompleted && !o.IsDeleted).ToArray();
                 }
             }
         }
@@ -445,6 +445,93 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [TestMethod]
         public void CancellationWorksTestMemStress() { RunMemTest(1, 2, true, q => CancellationWorksTest(q)); }
         
+        // ======================
+
+
+        [TestMethod]
+        public void SegmentAllocationCompactionTest()
+        {
+            var segmentFactory = new MemorySegmentFactory<int>(10);
+            using (var queue = new DiskQueue<int>("dummy", segmentFactory, -1, false))
+            {
+                Assert.AreEqual(1, queue.SegmentCount);
+
+                for (int i = 0; i < segmentFactory.Capacity; i++)
+                    queue.Add(i);
+
+                Assert.AreEqual(1, queue.SegmentCount);
+
+                queue.Add(-1);
+                Assert.AreEqual(2, queue.SegmentCount);
+                Assert.AreEqual(2, segmentFactory.AllocatedSegments.Count);
+
+                for (int i = 0; i < segmentFactory.Capacity; i++)
+                    queue.Take();
+
+                Assert.IsTrue(segmentFactory.AllocatedSegments[0].IsCompleted);
+
+                // should trigger compaction
+                queue.Take();
+
+                Assert.AreEqual(1, queue.SegmentCount);
+                Assert.AreEqual(2, segmentFactory.AllocatedSegments.Count);
+            }
+        }
+
+
+        [TestMethod]
+        public void SegmentBackgroundCompactionTest()
+        {
+            var segmentFactory = new MemorySegmentFactory<int>(10);
+            using (var queue = new DiskQueue<int>("dummy", segmentFactory, -1, true, 100))
+            {
+                Assert.AreEqual(1, queue.SegmentCount);
+
+                for (int i = 0; i < segmentFactory.Capacity; i++)
+                    queue.Add(i);
+
+                Assert.AreEqual(1, queue.SegmentCount);
+
+                queue.Add(-1);
+                Assert.AreEqual(2, queue.SegmentCount);
+                Assert.AreEqual(2, segmentFactory.AllocatedSegments.Count);
+
+                for (int i = 0; i < segmentFactory.Capacity; i++)
+                    queue.Take();
+
+                Assert.IsTrue(segmentFactory.AllocatedSegments[0].IsCompleted);
+
+                TimingAssert.AreEqual(10000, 1, () => { Interlocked.MemoryBarrier(); return queue.SegmentCount; });
+                Assert.AreEqual(2, segmentFactory.AllocatedSegments.Count);
+            }
+        }
+
+
+        [TestMethod]
+        public void SegmentDiscoveryTest()
+        {
+            var segmentFactory = new MemorySegmentFactory<int>(10);
+            using (var queue = new DiskQueue<int>("dummy", segmentFactory, -1, false))
+            {
+                Assert.AreEqual(1, queue.SegmentCount);
+
+                for (int i = 0; i < segmentFactory.Capacity * 2; i++)
+                    queue.Add(i);
+
+                Assert.AreEqual(2, queue.SegmentCount);
+            }
+
+            using (var queue = new DiskQueue<int>("dummy", segmentFactory, -1, false))
+            {
+                Assert.AreEqual(2, queue.SegmentCount);
+
+                for (int i = 0; i < segmentFactory.Capacity * 2; i++)
+                    Assert.AreEqual(i, queue.Take());
+
+                Assert.AreEqual(1, queue.SegmentCount);
+            }
+        }
+
         // ======================
     }
 }
