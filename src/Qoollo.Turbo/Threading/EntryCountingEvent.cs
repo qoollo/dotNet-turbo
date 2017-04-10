@@ -56,7 +56,7 @@ namespace Qoollo.Turbo.Threading
 		private int _currentCountInner;
 		private readonly ManualResetEventSlim _event;
         private volatile bool _isTerminateRequested;
-		private bool _isDisposed;
+		private volatile bool _isDisposed;
 
         /// <summary>
         /// EntryCountingEvent constructor
@@ -288,7 +288,7 @@ namespace Qoollo.Turbo.Threading
         public void Reset()
         {
             if (!TryReset())
-                throw new InvalidOperationException("Reset can be performed only when full termination performed");
+                throw new InvalidOperationException("Reset can be performed only when full termination completed");
         }
 
 

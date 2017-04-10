@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConcurrentQueueTest.cs" />
+    <Compile Include="EntryCountingEventPerfTest.cs" />
     <Compile Include="ExecutionContextTest.cs" />
     <Compile Include="HighConcurrencyLoadTest.cs" />
     <Compile Include="InliningTest.cs" />
