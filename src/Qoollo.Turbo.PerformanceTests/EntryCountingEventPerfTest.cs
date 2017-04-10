@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Qoollo.Turbo.Threading;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -92,13 +93,97 @@ namespace Qoollo.Turbo.PerformanceTests
         }
 
 
+        private static TimeSpan MeasureNormalProc(int count, int thCount, int spin)
+        {
+            int value = 0;
+            Barrier barStart = new Barrier(thCount + 1);
+            Barrier barEnd = new Barrier(thCount + 1);
+
+            Action act = () =>
+            {
+                barStart.SignalAndWait();
+
+                while (Interlocked.Increment(ref value) < count)
+                {
+                    Thread.SpinWait(spin);
+                }
+
+                barEnd.SignalAndWait();
+            };
+
+            Thread[] threads = new Thread[thCount];
+
+            for (int i = 0; i < threads.Length; i++)
+            {
+                threads[i] = new Thread(new ThreadStart(act));
+                threads[i].Start();
+            }
+
+            barStart.SignalAndWait();
+            Stopwatch sw = Stopwatch.StartNew();
+
+            barEnd.SignalAndWait();
+            sw.Stop();
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i].Join();
+
+            Console.WriteLine($"Normal. Elapsed = {sw.ElapsedMilliseconds}ms");
+            return sw.Elapsed;
+        }
+
+        private static TimeSpan MeasureCountingProc(int count, int thCount, int spin)
+        {
+            int value = 0;
+            Barrier barStart = new Barrier(thCount + 1);
+            Barrier barEnd = new Barrier(thCount + 1);
+            EntryCountingEvent inst = new EntryCountingEvent();
+
+            Action act = () =>
+            {
+                barStart.SignalAndWait();
+
+                while (Interlocked.Increment(ref value) < count)
+                {
+                    using (var guard = inst.TryEnterClientGuarded())
+                    {
+                        Thread.SpinWait(spin);
+                    }
+                }
+
+                barEnd.SignalAndWait();
+            };
+
+            Thread[] threads = new Thread[thCount];
+
+            for (int i = 0; i < threads.Length; i++)
+            {
+                threads[i] = new Thread(new ThreadStart(act));
+                threads[i].Start();
+            }
+
+            barStart.SignalAndWait();
+            Stopwatch sw = Stopwatch.StartNew();
+
+            barEnd.SignalAndWait();
+            sw.Stop();
+
+            for (int i = 0; i < threads.Length; i++)
+                threads[i].Join();
+            inst.Dispose();
+
+            Console.WriteLine($"Counting. Elapsed = {sw.ElapsedMilliseconds}ms");
+            return sw.Elapsed;
+        }
+
+
 
         public static void RunTest()
         {
             for (int i = 0; i < 10; i++)
             {
-                MeasureInterlockedInc(100000000, 8);
-                MeasureCompExchg(100000000, 8);
+                MeasureNormalProc(50000000, 4, 25);
+                MeasureCountingProc(50000000, 4, 25);
 
                 Console.WriteLine();
             }
