@@ -863,8 +863,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [Ignore]
         public void ComplexTestOnMemStress()
         {
-            RunMemTest(1, 1000, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
-            RunMemTest(1, -1, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+            RunMemTest(1, 1000, false, q => RunComplexTest(q, 200000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunMemTest(1, -1, true, q => RunComplexTest(q, 200000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
         }
     }
 }

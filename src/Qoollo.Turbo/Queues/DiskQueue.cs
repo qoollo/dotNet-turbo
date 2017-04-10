@@ -246,7 +246,8 @@ namespace Qoollo.Turbo.Queues
         }
 
         /// <summary>
-        /// Creates a new segment
+        /// Creates a new segment.
+        /// Attention: waiters notification is required after the segment allocation (<see cref="_addMonitor"/>)
         /// </summary>
         /// <returns>Created segment</returns>
         private DiskQueueSegmentWrapper<T> AllocateNewSegment()
@@ -266,9 +267,6 @@ namespace Qoollo.Turbo.Queues
 
             _segments.Add(result);
             _tailSegment = result;
-
-            // Notify all waiters
-            _addMonitor.PulseAll();
 
             VerifyConsistency();
             return result;
@@ -320,13 +318,18 @@ namespace Qoollo.Turbo.Queues
             if (!result.IsFull)
                 return result;
 
+            
             lock (_segmentOperationsLock)
             {
+                result = null;
                 if (_segments.Count < _maxSegmentCount)
-                    return AllocateNewSegment();
+                    result = AllocateNewSegment();
             }
 
-            return null;
+            if (result != null) // Segment was allocated => should notify all waiters outside the lock
+                _addMonitor.PulseAll();
+
+            return result;
         }
 
 
