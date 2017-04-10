@@ -433,7 +433,10 @@ namespace Qoollo.Turbo.Queues
             // Zero timeout attempts
             while (true)
             {
-                token.ThrowIfCancellationRequested();
+                if (token.IsCancellationRequested)
+                    token.ThrowIfCancellationRequested();
+                if (_isDisposed)
+                    CheckDisposed();
 
                 var tailSegment = TryGetNonFullTailSegment();
                 if (tailSegment == null)
@@ -509,7 +512,10 @@ namespace Qoollo.Turbo.Queues
             // Zero timeout attempts
             while (true)
             {
-                token.ThrowIfCancellationRequested();
+                if (token.IsCancellationRequested)
+                    token.ThrowIfCancellationRequested();
+                if (_isDisposed)
+                    CheckDisposed();
 
                 var headSegment = TryGetNonCompletedHeadSegment();
                 if (headSegment == null)
@@ -587,7 +593,10 @@ namespace Qoollo.Turbo.Queues
             // Zero timeout attempts
             while (true)
             {
-                token.ThrowIfCancellationRequested();
+                if (token.IsCancellationRequested)
+                    token.ThrowIfCancellationRequested();
+                if (_isDisposed)
+                    CheckDisposed();
 
                 var headSegment = TryGetNonCompletedHeadSegment();
                 if (headSegment == null)
