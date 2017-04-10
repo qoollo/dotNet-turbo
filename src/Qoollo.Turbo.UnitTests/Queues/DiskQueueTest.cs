@@ -91,6 +91,14 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 AllocatedSegments = new List<MemorySegment<T>>();
             }
 
+            public long SumCountFromAllocated()
+            {
+                lock (AllocatedSegments)
+                {
+                    return AllocatedSegments.Sum(o => (long)o.Count);
+                }
+            }
+
             public override int SegmentCapacity { get { return Capacity; } }
 
             public override DiskQueueSegment<T> CreateSegment(string path, long number)
@@ -128,6 +136,12 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             using (var q = CreateOnMem(segmentCapacity, segmentCount, backComp))
                 testRunner(q);
+        }
+        private static void RunMemTest(int segmentCapacity, int segmentCount, bool backComp, Action<DiskQueue<int>, MemorySegmentFactory<int>> testRunner)
+        {
+            var factory = new MemorySegmentFactory<int>(segmentCapacity);
+            using (var q = new DiskQueue<int>("dummy", factory, segmentCount, backComp, 500))
+                testRunner(q, factory);
         }
 
 
@@ -533,5 +547,323 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
         // ======================
+
+
+        private void PreserveOrderTest(DiskQueue<int> queue, int elemCount)
+        {
+            Barrier bar = new Barrier(2);
+            CancellationTokenSource cancelled = new CancellationTokenSource();
+            List<int> takenElems = new List<int>(elemCount + 1);
+
+            Action addAction = () =>
+            {
+                int curElem = 0;
+                Random rnd = new Random(Environment.TickCount + Thread.CurrentThread.ManagedThreadId);
+
+                bar.SignalAndWait();
+                while (curElem < elemCount)
+                {
+                    if (rnd.Next(100) == 0)
+                        queue.AddForced(curElem);
+                    else
+                        queue.Add(curElem);
+
+                    if (rnd.Next(100) == 0)
+                        Thread.Yield();
+                    Thread.SpinWait(rnd.Next(100));
+
+                    curElem++;
+                }
+
+                cancelled.Cancel();
+            };
+
+            Action takeAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Thread.CurrentThread.ManagedThreadId);
+
+                bar.SignalAndWait();
+                try
+                {
+                    while (!cancelled.IsCancellationRequested)
+                    {
+                        takenElems.Add(queue.Take(cancelled.Token));
+
+                        if (rnd.Next(100) == 0)
+                            Thread.Yield();
+                        Thread.SpinWait(rnd.Next(100));
+                    }
+                }
+                catch (OperationCanceledException) { }
+
+                int item = 0;
+                while (queue.TryTake(out item))
+                    takenElems.Add(item);
+            };
+
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            Task addTask = Task.Factory.StartNew(addAction, TaskCreationOptions.LongRunning);
+            Task takeTask = Task.Factory.StartNew(takeAction, TaskCreationOptions.LongRunning);
+
+            Task.WaitAll(addTask, takeTask);
+
+            Assert.AreEqual(elemCount, takenElems.Count);
+            for (int i = 0; i < takenElems.Count; i++)
+                if (i != takenElems[i])
+                    Assert.AreEqual(i, takenElems[i], $"i != takenElems[i], nextItem = {takenElems[i + 1]}");
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void PreserveOrderTestOnMem()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunMemTest(100, 2, false, q => PreserveOrderTest(q, 5090));
+                RunMemTest(100, 5, true, q => PreserveOrderTest(q, 5000));
+                RunMemTest(1000, -1, false, q => PreserveOrderTest(q, 500000));
+                RunMemTest(2000, -1, true, q => PreserveOrderTest(q, 1000000));
+            }
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void PreserveOrderTestOnMemStress()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunMemTest(1, 2, false, q => PreserveOrderTest(q, 500));
+                RunMemTest(1, 2, true, q => PreserveOrderTest(q, 500));
+                RunMemTest(1, -1, false, q => PreserveOrderTest(q, 20000));
+                RunMemTest(1, -1, true, q => PreserveOrderTest(q, 20000));
+            }
+        }
+
+        // ======================
+
+        private void ValidateCountTest(DiskQueue<int> queue, MemorySegmentFactory<int> factory, int elemCount)
+        {
+            Barrier bar = new Barrier(2);
+            CancellationTokenSource cancelled = new CancellationTokenSource();
+            List<int> takenElems = new List<int>(elemCount + 1);
+            AtomicBool needSync = new AtomicBool();
+
+            Action addAction = () =>
+            {
+                int curElem = 0;
+                Random rnd = new Random(Environment.TickCount + Thread.CurrentThread.ManagedThreadId);
+
+                bar.SignalAndWait();
+                while (curElem < elemCount)
+                {
+                    bool itemAdded = true;
+                    if (rnd.Next(100) == 0)
+                        queue.AddForced(curElem);
+                    else if (needSync.Value)
+                        itemAdded = queue.TryAdd(curElem);
+                    else
+                        queue.Add(curElem);
+
+                    if (rnd.Next(100) == 0)
+                        Thread.Yield();
+                    Thread.SpinWait(rnd.Next(100));
+
+                    if (itemAdded)
+                        curElem++;
+
+                    Assert.IsTrue(itemAdded || needSync.Value);
+
+                    if (curElem % 1000 == 0)
+                    {
+                        needSync.Value = true;
+                    }
+                    if (needSync.Value && bar.ParticipantsRemaining == 1)
+                    {
+                        Assert.AreEqual(factory.SumCountFromAllocated(), queue.Count);
+                        needSync.Value = false;
+                        bar.SignalAndWait();
+                    }
+                }
+
+                cancelled.Cancel();
+            };
+
+            Action takeAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Thread.CurrentThread.ManagedThreadId);
+
+                bar.SignalAndWait();
+                try
+                {
+                    while (!cancelled.IsCancellationRequested)
+                    {
+                        takenElems.Add(queue.Take(cancelled.Token));
+
+                        if (rnd.Next(100) == 0)
+                            Thread.Yield();
+                        Thread.SpinWait(rnd.Next(100));
+
+                        if (needSync.Value)
+                        {
+                            bar.SignalAndWait(cancelled.Token);
+                        }
+                    }
+                }
+                catch (OperationCanceledException) { }
+
+                int item = 0;
+                while (queue.TryTake(out item))
+                    takenElems.Add(item);
+            };
+
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            Task addTask = Task.Factory.StartNew(addAction, TaskCreationOptions.LongRunning);
+            Task takeTask = Task.Factory.StartNew(takeAction, TaskCreationOptions.LongRunning);
+
+            Task.WaitAll(addTask, takeTask);
+
+            Assert.AreEqual(elemCount, takenElems.Count);
+            for (int i = 0; i < takenElems.Count; i++)
+                if (i != takenElems[i])
+                    Assert.AreEqual(i, takenElems[i], $"i != takenElems[i], nextItem = {takenElems[i + 1]}");
+        }
+
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ValidateCountTestOnMem()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunMemTest(1, 2, false, (q, f) => ValidateCountTest(q, f, 2000));
+                RunMemTest(100, 5, true, (q, f) => ValidateCountTest(q, f, 10000));
+                RunMemTest(1000, -1, false, (q, f) => ValidateCountTest(q, f, 5000000));
+                RunMemTest(2000, -1, true, (q, f) => ValidateCountTest(q, f, 1000000));
+            }
+        }
+
+        // ==================================
+
+        private void RunComplexTest(DiskQueue<int> q, int elemCount, int thCount)
+        {
+            int atomicRandom = 0;
+
+            int trackElemCount = elemCount;
+            int addFinished = 0;
+
+            Thread[] threadsTake = new Thread[thCount];
+            Thread[] threadsAdd = new Thread[thCount];
+
+            CancellationTokenSource tokSrc = new CancellationTokenSource();
+
+            List<int> global = new List<int>(elemCount);
+
+            Action addAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Interlocked.Increment(ref atomicRandom) * thCount * 2);
+
+                while (true)
+                {
+                    int item = Interlocked.Decrement(ref trackElemCount);
+                    if (item < 0)
+                        break;
+
+                    if (rnd.Next(100) == 0)
+                        q.AddForced(item);
+                    else
+                        q.Add(item);
+
+
+                    int sleepTime = rnd.Next(100);
+
+                    //int tmpItem = 0;
+                    //if (q.TryPeek(out tmpItem) && tmpItem == item)
+                    //    sleepTime += 100;
+
+                    if (sleepTime > 0)
+                        Thread.SpinWait(sleepTime);
+                }
+
+                Interlocked.Increment(ref addFinished);
+            };
+
+
+            Action takeAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Interlocked.Increment(ref atomicRandom) * thCount * 2);
+
+                List<int> data = new List<int>();
+
+                try
+                {
+                    while (Volatile.Read(ref addFinished) < thCount)
+                    {
+                        int tmp = 0;
+                        if (q.TryTake(out tmp, -1, tokSrc.Token))
+                            data.Add((int)tmp);
+
+                        int sleepTime = rnd.Next(100);
+                        if (sleepTime > 0)
+                            Thread.SpinWait(sleepTime);
+                    }
+                }
+                catch (OperationCanceledException) { }
+
+                int tmp2;
+                while (q.TryTake(out tmp2))
+                    data.Add((int)tmp2);
+
+                lock (global)
+                    global.AddRange(data);
+            };
+
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i] = new Thread(new ThreadStart(takeAction));
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i] = new Thread(new ThreadStart(addAction));
+
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i].Start();
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i].Start();
+
+
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i].Join();
+            tokSrc.Cancel();
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i].Join();
+
+
+            Assert.AreEqual(elemCount, global.Count);
+            global.Sort();
+
+            for (int i = 0; i < elemCount; i++)
+                Assert.AreEqual(i, global[i]);
+        }
+
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        [Ignore]
+        public void ComplexTestOnMem()
+        {
+            RunMemTest(1000, -1, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunMemTest(20000, 2000, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        [Ignore]
+        public void ComplexTestOnMemStress()
+        {
+            RunMemTest(1, 1000, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunMemTest(1, -1, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
     }
 }

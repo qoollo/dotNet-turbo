@@ -148,7 +148,7 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// Number of items inside the queue
         /// </summary>
-        public override long Count { get { return Volatile.Read(ref _itemCount); } }
+        public override long Count { get { return Math.Max(Volatile.Read(ref _itemCount), 0); } }
         /// <summary>
         /// Indicates whether the queue is empty
         /// </summary>
@@ -179,17 +179,17 @@ namespace Qoollo.Turbo.Queues
         /// Checks that the queue in the consistent state (should be called inside lock)
         /// </summary>
         [Conditional("DEBUG")]
-        private void VerifyConsistency([System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1)
+        private void VerifyConsistency()
         {
-            Debug.Assert(Monitor.IsEntered(_segmentOperationsLock), $"segment lock is not acquired. Line: {lineNumber}");
+            Debug.Assert(Monitor.IsEntered(_segmentOperationsLock), "segment lock is not acquired");
 
-            Debug.Assert(_tailSegment != null, $"_tailSegment != null. Line: {lineNumber}");
-            Debug.Assert(_segments.Count > 0, $"_segments.Count > 0. Line: {lineNumber}");
-            Debug.Assert(_tailSegment == _segments[_segments.Count - 1], $"_tailSegment == _segments[_segments.Count - 1]. Line: {lineNumber}");
-            Debug.Assert(_headSegment != null, $"_headSegment != null. Line: {lineNumber}");
-            Debug.Assert(_segments.Contains(_headSegment), $"_segments.Contains(_headSegment). Line: {lineNumber}");
-            Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted), $"All segements before head should be in IsCompleted state. Line: {lineNumber}");
-            Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment), $"_headSegement cannot be after _tailSegment. Line: {lineNumber}");
+            Debug.Assert(_tailSegment != null, "_tailSegment != null");
+            Debug.Assert(_segments.Count > 0, "_segments.Count > 0");
+            Debug.Assert(_tailSegment == _segments[_segments.Count - 1], "_tailSegment == _segments[_segments.Count - 1]");
+            Debug.Assert(_headSegment != null, "_headSegment != null");
+            Debug.Assert(_segments.Contains(_headSegment), "_segments.Contains(_headSegment)");
+            Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted), "All segements before head should be in IsCompleted state");
+            Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment), "_headSegement cannot be after _tailSegment");
         }
 
 
@@ -198,8 +198,7 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         private void NotifyItemAdded()
         {
-            long itemCount = Interlocked.Increment(ref _itemCount);
-            Debug.Assert(itemCount >= 0);
+            Interlocked.Increment(ref _itemCount);
             _takeMonitor.Pulse();
             _peekMonitor.PulseAll();
         }
@@ -208,8 +207,7 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         private void NotifyItemTaken()
         {
-            long itemCount = Interlocked.Decrement(ref _itemCount);
-            Debug.Assert(itemCount >= 0);
+            Interlocked.Decrement(ref _itemCount);
             _addMonitor.Pulse();
         }
 
@@ -355,8 +353,9 @@ namespace Qoollo.Turbo.Queues
                     result = MoveHeadToNonCompletedSegment();
                     if (!result.IsCompleted)
                     {
-                        // Perform compaction
-                        if (!IsBackgroundCompactionEnabled && _headSegment != _segments[0])
+                        // Perform compaction 
+                        // Force compaction when we reach limit of available segments
+                        if ((!IsBackgroundCompactionEnabled || _segments.Count == _maxSegmentCount) && _headSegment != _segments[0])
                             Compact(allowNotification: false);
 
                         return result;

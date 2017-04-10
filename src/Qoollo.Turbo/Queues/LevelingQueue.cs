@@ -153,7 +153,7 @@ namespace Qoollo.Turbo.Queues
             get
             {
                 if (_isBackgroundTransferingEnabled)
-                    return Volatile.Read(ref _itemCount);
+                    return Math.Max(Volatile.Read(ref _itemCount), 0);
 
                 long highLevelCount = _highLevelQueue.Count;
                 if (highLevelCount < 0)
@@ -173,7 +173,7 @@ namespace Qoollo.Turbo.Queues
             get
             {
                 if (_isBackgroundTransferingEnabled)
-                    return Volatile.Read(ref _itemCount) == 0;
+                    return Volatile.Read(ref _itemCount) <= 0;
 
                 return _highLevelQueue.IsEmpty && _lowLevelQueue.IsEmpty;
             }
@@ -198,9 +198,7 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         protected void NotifyItemTaken()
         {
-            long itemCount = Interlocked.Decrement(ref _itemCount);
-            if (itemCount < 0) // This only can happen when inner queues updated from external code without any notification
-                Interlocked.Increment(ref _itemCount);
+            Interlocked.Decrement(ref _itemCount);
             _addMonitor.Pulse();
         }
 
