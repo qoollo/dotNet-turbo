@@ -74,9 +74,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 return Queue.TryTake(out item);
             }
 
-            protected override void Delete()
+            protected override void Dispose(DiskQueueSegmentDisposeBehaviour disposeBehaviour, bool isUserCall)
             {
-                IsDeleted = true;
+                if (disposeBehaviour == DiskQueueSegmentDisposeBehaviour.Delete)
+                    IsDeleted = true;
             }
         }
 

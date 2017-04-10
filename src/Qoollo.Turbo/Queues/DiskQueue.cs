@@ -27,9 +27,9 @@ namespace Qoollo.Turbo.Queues
         private readonly int _maxSegmentCount;
         private readonly string _segmentsPath;
 
-        private readonly CircularList<DiskQueueSegment<T>> _segments;
-        private volatile DiskQueueSegment<T> _tailSegment;
-        private volatile DiskQueueSegment<T> _headSegment;
+        private readonly CircularList<DiskQueueSegmentWrapper<T>> _segments;
+        private volatile DiskQueueSegmentWrapper<T> _tailSegment;
+        private volatile DiskQueueSegmentWrapper<T> _headSegment;
 
         private long _lastSegmentNumber;
 
@@ -84,11 +84,8 @@ namespace Qoollo.Turbo.Queues
                 _boundedCapacity = (long)_segmentFactory.SegmentCapacity * maxSegmentCount;
 
 
-            var discoveredSegments = segmentFactory.DiscoverSegments(path);
-            if (discoveredSegments == null || discoveredSegments.Any(o => o == null))
-                throw new InvalidOperationException("Existed segment discovery returned null");
-
-            _segments = new CircularList<DiskQueueSegment<T>>(discoveredSegments.OrderBy(o => o.Number));
+            var discoveredSegments = segmentFactory.DiscoverSegmentsWrapped(path);
+            _segments = new CircularList<DiskQueueSegmentWrapper<T>>(discoveredSegments.OrderBy(o => o.Number));
             if (_segments.Count > 0)
             {
                 _headSegment = _segments[0];
@@ -101,9 +98,7 @@ namespace Qoollo.Turbo.Queues
                 // Allocate new segment
                 lock (_segmentOperationsLock)
                 {
-                    _headSegment = _tailSegment = segmentFactory.CreateSegment(path, ++_lastSegmentNumber);
-                    if (_tailSegment == null)
-                        throw new InvalidOperationException("CreateSegment returned null");
+                    _headSegment = _tailSegment = segmentFactory.CreateSegmentWrapped(path, ++_lastSegmentNumber);
                     _segments.Add(_tailSegment);
                 }
             }
@@ -221,7 +216,7 @@ namespace Qoollo.Turbo.Queues
             if (_isDisposed)
                 return;
 
-            List<DiskQueueSegment<T>> _segmentsToCleanUp = null;
+            List<DiskQueueSegmentWrapper<T>> _segmentsToCleanUp = null;
             bool shouldNotifyWaiters = false;
             lock (_segmentOperationsLock)
             {
@@ -235,7 +230,7 @@ namespace Qoollo.Turbo.Queues
                 MoveHeadToNonCompletedSegment(); // Correct head segment
                 while (_segments.Count > 1 && _headSegment != _segments[0] && _segments[0].IsCompleted)
                 {
-                    _segmentsToCleanUp = _segmentsToCleanUp ?? new List<DiskQueueSegment<T>>();
+                    _segmentsToCleanUp = _segmentsToCleanUp ?? new List<DiskQueueSegmentWrapper<T>>();
                     _segmentsToCleanUp.Add(_segments.RemoveFirst());
                 }
             }
@@ -254,7 +249,7 @@ namespace Qoollo.Turbo.Queues
         /// Creates a new segment
         /// </summary>
         /// <returns>Created segment</returns>
-        private DiskQueueSegment<T> AllocateNewSegment()
+        private DiskQueueSegmentWrapper<T> AllocateNewSegment()
         {
             CheckDisposed();
 
@@ -264,7 +259,7 @@ namespace Qoollo.Turbo.Queues
 
             VerifyConsistency();
 
-            var result = _segmentFactory.CreateSegment(_segmentsPath, checked(++_lastSegmentNumber));
+            var result = _segmentFactory.CreateSegmentWrapped(_segmentsPath, checked(++_lastSegmentNumber));
             if (result == null)
                 throw new InvalidOperationException("CreateSegment returned null");
             Debug.Assert(result.Number == _lastSegmentNumber);
@@ -284,13 +279,13 @@ namespace Qoollo.Turbo.Queues
         /// Moves head to the next non-completed segment
         /// </summary>
         /// <returns>New head segment</returns>
-        private DiskQueueSegment<T> MoveHeadToNonCompletedSegment()
+        private DiskQueueSegmentWrapper<T> MoveHeadToNonCompletedSegment()
         {
             Debug.Assert(Monitor.IsEntered(_segmentOperationsLock));
 
             VerifyConsistency();
 
-            DiskQueueSegment<T> curHeadSegment = _headSegment;
+            DiskQueueSegmentWrapper<T> curHeadSegment = _headSegment;
 
             if (!curHeadSegment.IsCompleted)
                 return curHeadSegment;
@@ -319,9 +314,9 @@ namespace Qoollo.Turbo.Queues
         /// Attempts to get non-full segment
         /// </summary>
         /// <returns>Non-full tail segment if found (null otherwise)</returns>
-        private DiskQueueSegment<T> TryGetNonFullTailSegment()
+        private DiskQueueSegmentWrapper<T> TryGetNonFullTailSegment()
         {
-            DiskQueueSegment<T> result = _tailSegment;
+            DiskQueueSegmentWrapper<T> result = _tailSegment;
             if (!result.IsFull)
                 return result;
 
@@ -339,9 +334,9 @@ namespace Qoollo.Turbo.Queues
         /// Attempts to find non-completed head segment
         /// </summary>
         /// <returns>Non-completed head segment if found (null otherwise)</returns>
-        private DiskQueueSegment<T> TryGetNonCompletedHeadSegment()
+        private DiskQueueSegmentWrapper<T> TryGetNonCompletedHeadSegment()
         {
-            DiskQueueSegment<T> result = _headSegment;
+            DiskQueueSegmentWrapper<T> result = _headSegment;
             if (!result.IsCompleted)
                 return result;
 
