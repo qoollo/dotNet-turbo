@@ -284,6 +284,7 @@
     <Compile Include="Queues\DiskQueueComponents\DiskQueueSegmentFactory.cs" />
     <Compile Include="Queues\DiskQueueComponents\DiskQueueSegmentWrapper.cs" />
     <Compile Include="Queues\DiskQueueComponents\MemoryDiskQueueSegment.cs" />
+    <Compile Include="Queues\DiskQueueComponents\NonPersistentDiskQueueSegment.cs" />
     <Compile Include="Queues\IQueue.cs" />
     <Compile Include="Queues\LevelingQueue.cs" />
     <Compile Include="Queues\MemoryQueue.cs" />
