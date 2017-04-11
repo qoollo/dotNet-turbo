@@ -56,6 +56,77 @@ namespace Qoollo.Turbo.Threading
         }
 
 
+        /// <summary>
+        /// Blocks the current thread until the next notification
+        /// </summary>
+        /// <param name="customTimeout">Additional timeout in milliseconds that will be combined with initial timeout by Min operation</param>
+        /// <returns>True if the current thread successfully received a notification</returns>
+        /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        public bool Wait(int customTimeout)
+        {
+            if (_sourceWaiter == null)
+                throw new ObjectDisposedException(nameof(ConditionVariableWaiter), "Lock section has exited");
+            if (_sourceWaiter.IsDisposed)
+                throw new ObjectDisposedException(nameof(ConditionVariable), $"ConditionVariable '{_sourceWaiter.Name}' was disposed");
+            if (_token.IsCancellationRequested)
+                throw new OperationCanceledException(_token);
+
+            Debug.Assert(_sourceWaiter.IsEntered());
+
+            bool timeouted = false;
+
+            var waitingPrimitive = _sourceWaiter.RegisterWaiter();
+            _sourceWaiter.AddWaiterToQueue(waitingPrimitive);
+
+            try
+            {
+                Monitor.Exit(_sourceWaiter.ExternalLock);
+                if (Monitor.IsEntered(_sourceWaiter.ExternalLock))
+                    throw new SynchronizationLockException("Recursive lock is not supported");
+
+                int remainingWaitMilliseconds = Timeout.Infinite;
+                if (_timeout != Timeout.Infinite)
+                {
+                    remainingWaitMilliseconds = TimeoutHelper.UpdateTimeout(_startTime, _timeout);
+                    if (customTimeout >= 0)
+                        remainingWaitMilliseconds = Math.Min(remainingWaitMilliseconds, customTimeout);
+                    if (remainingWaitMilliseconds <= 0)
+                        return false;
+                }
+                else if (customTimeout > 0)
+                {
+                    remainingWaitMilliseconds = customTimeout;
+                }
+                else if (customTimeout == 0)
+                {
+                    return false;
+                }
+
+                if (!timeouted && !waitingPrimitive.Wait(remainingWaitMilliseconds))
+                    timeouted = true;
+
+                if (!timeouted)
+                {
+                    // Check if cancellation or dispose was the reasons of the signal
+                    if (_token.IsCancellationRequested)
+                        throw new OperationCanceledException(_token);
+                    if (_sourceWaiter.IsDisposed)
+                        throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(ConditionVariable), $"ConditionVariable '{_sourceWaiter.Name}' was disposed"));
+                }
+            }
+            finally
+            {
+                Monitor.Enter(_sourceWaiter.ExternalLock);
+
+                if (!waitingPrimitive.IsSet)
+                    _sourceWaiter.RemoveWaiterFromQueue(waitingPrimitive);
+            }
+
+            return waitingPrimitive.IsSet;
+        }
+
 
         /// <summary>
         /// Blocks the current thread until the next notification
@@ -199,11 +270,95 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
             if (_sourceWaiter.IsDisposed)
-                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{_sourceWaiter.Name}' was disposed"));
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(ConditionVariableAlt), $"ConditionVariable '{_sourceWaiter.Name}' was disposed"));
 
 
             // Final check for predicate
             return predicate(state);
+        }
+
+        /// <summary>
+        /// Blocks the current thread until predicate estimates as True
+        /// </summary>
+        /// <typeparam name="TState">Type of the state object</typeparam>
+        /// <param name="predicate">Predicate that should return True to complete waiting</param>
+        /// <param name="state">State object for the predicate</param>
+        /// <returns>True if predicate evaluates to True</returns>
+        /// <exception cref="ArgumentNullException">predicate is null</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable was disposed</exception>
+        /// <exception cref="OperationCanceledException">Cancellation happened</exception>
+        /// <exception cref="OperationInterruptedException">Waiting was interrupted by Dispose</exception>
+        public bool Wait<TState>(WaitPredicateRef<TState> predicate, ref TState state)
+        {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            if (_sourceWaiter == null)
+                throw new ObjectDisposedException(nameof(ConditionVariableWaiter), "Lock section has exited");
+            if (_sourceWaiter.IsDisposed)
+                throw new ObjectDisposedException(nameof(ConditionVariable), $"ConditionVariable '{_sourceWaiter.Name}' was disposed");
+            if (_token.IsCancellationRequested)
+                throw new OperationCanceledException(_token);
+
+            Debug.Assert(_sourceWaiter.IsEntered());
+
+            if (predicate(ref state))
+                return true;
+            else if (_timeout == 0)
+                return false;
+
+            if (_timeout > 0 && TimeoutHelper.UpdateTimeout(_startTime, _timeout) <= 0) // Predicate estimation took too much time
+                return false;
+
+            int remainingWaitMilliseconds = Timeout.Infinite;
+
+            var waitingPrimitive = _sourceWaiter.RegisterWaiter();
+            bool firstTry = true;
+
+            while (!_token.IsCancellationRequested && !_sourceWaiter.IsDisposed)
+            {
+                try
+                {
+                    if (waitingPrimitive.IsSet || firstTry)
+                    {
+                        firstTry = false;
+                        waitingPrimitive.Reset();
+                        _sourceWaiter.AddWaiterToQueue(waitingPrimitive);
+                    }
+
+                    Monitor.Exit(_sourceWaiter.ExternalLock);
+                    if (Monitor.IsEntered(_sourceWaiter.ExternalLock))
+                        throw new SynchronizationLockException("Recursive lock is not supported");
+
+                    if (_timeout != Timeout.Infinite)
+                    {
+                        remainingWaitMilliseconds = TimeoutHelper.UpdateTimeout(_startTime, _timeout);
+                        if (remainingWaitMilliseconds <= 0)
+                            break;
+                    }
+
+                    if (!waitingPrimitive.Wait(remainingWaitMilliseconds))
+                        break;
+                }
+                finally
+                {
+                    Monitor.Enter(_sourceWaiter.ExternalLock);
+                    if (!waitingPrimitive.IsSet)
+                        _sourceWaiter.RemoveWaiterFromQueue(waitingPrimitive);
+                }
+
+                if (predicate(ref state))
+                    return true;
+            }
+
+            // Check if cancellation or dispose was the reasons of the signal
+            if (_token.IsCancellationRequested)
+                throw new OperationCanceledException(_token);
+            if (_sourceWaiter.IsDisposed)
+                throw new OperationInterruptedException("Wait was interrupted by Dispose", new ObjectDisposedException(nameof(ConditionVariableAlt), $"ConditionVariable '{_sourceWaiter.Name}' was disposed"));
+
+
+            // Final check for predicate
+            return predicate(ref state);
         }
 
 
@@ -351,13 +506,13 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Total operation timeout</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation requested</exception>
         /// <exception cref="SynchronizationLockException">externalLock is already acquired</exception>
         public ConditionVariableAltWaiter Enter(int timeout, CancellationToken token)
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(nameof(MonitorObject), $"ConditionVariable '{Name}' was disposed");
+                throw new ObjectDisposedException(nameof(ConditionVariableAlt), $"ConditionVariable '{Name}' was disposed");
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
             if (Monitor.IsEntered(_externalLock))
@@ -397,7 +552,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Total operation timeout</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable disposed</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConditionVariableAltWaiter Enter(int timeout)
         {
@@ -408,7 +563,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="token">Cancellation token</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation requested</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConditionVariableAltWaiter Enter(CancellationToken token)
@@ -419,7 +574,7 @@ namespace Qoollo.Turbo.Threading
         /// Enter the lock on the current <see cref="ConditionVariableAlt"/> object
         /// </summary>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable disposed</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConditionVariableAltWaiter Enter()
         {

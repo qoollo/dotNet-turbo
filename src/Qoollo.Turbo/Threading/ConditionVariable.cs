@@ -560,13 +560,13 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Total operation timeout</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation requested</exception>
         /// <exception cref="SynchronizationLockException">externalLock is already acquired</exception>
         public ConditionVariableWaiter Enter(int timeout, CancellationToken token)
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(nameof(MonitorObject), $"ConditionVariable '{Name}' was disposed");
+                throw new ObjectDisposedException(nameof(ConditionVariable), $"ConditionVariable '{Name}' was disposed");
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
             if (Monitor.IsEntered(_externalLock))
@@ -606,7 +606,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Total operation timeout</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable disposed</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConditionVariableWaiter Enter(int timeout)
         {
@@ -617,7 +617,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="token">Cancellation token</param>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable disposed</exception>
         /// <exception cref="OperationCanceledException">Cancellation requested</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConditionVariableWaiter Enter(CancellationToken token)
@@ -628,7 +628,7 @@ namespace Qoollo.Turbo.Threading
         /// Enter the lock on the current <see cref="ConditionVariable"/> object
         /// </summary>
         /// <returns>Lock guard to work with 'using' statement</returns>
-        /// <exception cref="ObjectDisposedException">MonitorObject disposed</exception>
+        /// <exception cref="ObjectDisposedException">ConditionVariable disposed</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConditionVariableWaiter Enter()
         {
