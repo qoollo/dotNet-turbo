@@ -923,6 +923,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
             if (_innerQueue.TryPeek(out item))
                 return true;
+            else if (timeout == 0)
+                return false;
 
 
             bool waitForSemaphoreWasSuccessful = false;

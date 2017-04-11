@@ -194,6 +194,43 @@ namespace Qoollo.Turbo.UnitTests.Collections
                 Assert.AreEqual(i, col.Take());
         }
 
+        [TestMethod]
+        public void PeekWakesUpTest()
+        {
+            var queue = new BlockingQueue<int>();
+
+            Barrier bar = new Barrier(3);
+            AtomicNullableBool peekResult = new AtomicNullableBool();
+            AtomicNullableBool peekResult2 = new AtomicNullableBool();
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                peekResult.Value = queue.TryPeek(out item, 60000);
+                Assert.AreEqual(100, item);
+            });
+
+            Task task2 = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                peekResult2.Value = queue.TryPeek(out item, 60000);
+                Assert.AreEqual(100, item);
+            });
+
+            bar.SignalAndWait();
+            Thread.Sleep(20);
+            Assert.IsFalse(peekResult.HasValue);
+            Assert.IsFalse(peekResult2.HasValue);
+
+            queue.Add(100);
+            TimingAssert.AreEqual(10000, true, () => peekResult.Value);
+            TimingAssert.AreEqual(10000, true, () => peekResult2.Value);
+
+            Task.WaitAll(task, task2);
+        }
+
+
 
         [TestMethod]
         public void AddTakeMultithreadTest()
