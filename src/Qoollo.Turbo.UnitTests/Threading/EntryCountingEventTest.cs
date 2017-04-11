@@ -36,7 +36,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         {
             using (EntryCountingEvent inst = new EntryCountingEvent())
             {
-                using (var guard = inst.EnterClientGuarded())
+                using (var guard = inst.Enter())
                 {
                     Assert.AreEqual(1, inst.CurrentCount);
                 }
@@ -62,7 +62,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             {
                 bool finished = false;
                 Task task = null;
-                using (inst.EnterClientGuarded())
+                using (inst.Enter())
                 {
                     task = Task.Run(() =>
                         {
@@ -90,7 +90,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 Assert.IsFalse(inst.IsTerminateRequested);
                 Assert.IsFalse(inst.IsTerminated);
 
-                using (var guard = inst.TryEnterClientGuarded())
+                using (var guard = inst.TryEnter())
                 {
                     Assert.IsTrue(guard.IsAcquired);
                     Assert.AreEqual(1, inst.CurrentCount);
@@ -110,7 +110,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             tasks.Add(Task.Run(() =>
             {
                 enterBar.SignalAndWait();
-                using (var guard = inst.TryEnterClientGuarded())
+                using (var guard = inst.TryEnter())
                 {
                 }
             }));
@@ -152,7 +152,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                         bar.SignalAndWait();
                         for (int j = 0; j < 1000; j++)
                         {
-                            using (var eee = inst.TryEnterClientGuarded())
+                            using (var eee = inst.TryEnter())
                             {
                                 if (!eee.IsAcquired)
                                     break;

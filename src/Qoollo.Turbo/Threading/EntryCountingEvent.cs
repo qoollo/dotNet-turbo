@@ -120,7 +120,7 @@ namespace Qoollo.Turbo.Threading
         /// Attempts to enter to the protected code section
         /// </summary>
         /// <returns>Is entered successfully</returns>
-        [Obsolete("Unsafe. Consider to use TryEnterClientGuarded instead", false)]
+        [Obsolete("Unsafe. Consider to use TryEnter instead", false)]
         public bool TryEnterClient()
         {
             return TryEnterClientCore();
@@ -131,8 +131,39 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> was disposed</exception>
         /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
-        [Obsolete("Unsafe. Consider to use EnterClientGuarded instead", false)]
+        [Obsolete("Unsafe. Consider to use Enter instead", false)]
         public void EnterClient()
+        {
+            Enter();
+        }
+
+
+        /// <summary>
+        /// Attemts to enter to the protected code section
+        /// </summary>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
+        public EntryCountingEventGuard TryEnter()
+        {
+            if (!TryEnterClientCore())
+                return new EntryCountingEventGuard();
+            return new EntryCountingEventGuard(this);
+        }
+        /// <summary>
+        /// Attemts to enter to the protected code section
+        /// </summary>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
+        [Obsolete("Renamed. Consider to use TryEnter instead", false)]
+        public EntryCountingEventGuard TryEnterClientGuarded()
+        {
+            return TryEnter();
+        }
+        /// <summary>
+        /// Enters to the protected code section. Throws <see cref="InvalidOperationException"/> if termination was requested
+        /// </summary>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
+        /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> was disposed</exception>
+        /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
+        public EntryCountingEventGuard Enter()
         {
             if (!this.TryEnterClientCore())
             {
@@ -142,16 +173,7 @@ namespace Qoollo.Turbo.Threading
                 if (this.IsTerminateRequested)
                     throw new InvalidOperationException(this.GetType().Name + " is terminated");
             }
-        }
 
-        /// <summary>
-        /// Attemts to enter to the protected code section
-        /// </summary>
-        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
-        public EntryCountingEventGuard TryEnterClientGuarded()
-        {
-            if (!TryEnterClientCore())
-                return new EntryCountingEventGuard();
             return new EntryCountingEventGuard(this);
         }
         /// <summary>
@@ -160,18 +182,10 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
         /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> was disposed</exception>
         /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
+        [Obsolete("Renamed. Consider to use Enter instead", false)]
         public EntryCountingEventGuard EnterClientGuarded()
         {
-            if (!this.TryEnterClientCore())
-            {
-                if (this._isDisposed)
-                    throw new ObjectDisposedException(this.GetType().Name);
-
-                if (this.IsTerminateRequested)
-                    throw new InvalidOperationException(this.GetType().Name + " is terminated");
-            }
-
-            return new EntryCountingEventGuard(this);
+            return Enter();
         }
 
 
@@ -181,7 +195,7 @@ namespace Qoollo.Turbo.Threading
         /// <typeparam name="TException">The type of exception to throw when attempt was unsuccessful</typeparam>
         /// <param name="message">Message, that will be passed to Exception constructor</param>
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
-        public EntryCountingEventGuard EnterClientGuarded<TException>(string message) where TException: Exception
+        public EntryCountingEventGuard Enter<TException>(string message) where TException: Exception
         {
             if (!TryEnterClientCore())
                 TurboException.Throw<TException>(message);
@@ -191,44 +205,42 @@ namespace Qoollo.Turbo.Threading
         /// Enters to the protected code section. Throws user exception if termination was requested
         /// </summary>
         /// <typeparam name="TException">The type of exception to throw when attempt was unsuccessful</typeparam>
+        /// <param name="message">Message, that will be passed to Exception constructor</param>
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
-        public EntryCountingEventGuard EnterClientGuarded<TException>() where TException : Exception
+        [Obsolete("Renamed. Consider to use Enter instead", false)]
+        public EntryCountingEventGuard EnterClientGuarded<TException>(string message) where TException : Exception
+        {
+            return Enter<TException>(message);
+        }
+        /// <summary>
+        /// Enters to the protected code section. Throws user exception if termination was requested
+        /// </summary>
+        /// <typeparam name="TException">The type of exception to throw when attempt was unsuccessful</typeparam>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
+        public EntryCountingEventGuard Enter<TException>() where TException : Exception
         {
             if (!TryEnterClientCore())
                 TurboException.Throw<TException>();
             return new EntryCountingEventGuard(this);
         }
-
         /// <summary>
-        /// Attempts to enter the protected section with additional user-specified condition
+        /// Enters to the protected code section. Throws user exception if termination was requested
         /// </summary>
-        /// <param name="condition">User-sepcified condition</param>
-        /// <returns>Is entered successfully</returns>
-        [Obsolete("Unsafe. Consider to use TryEnterClientConditionalGuarded instead", false)]
-        public bool TryEnterClientConditional(Func<bool> condition)
+        /// <typeparam name="TException">The type of exception to throw when attempt was unsuccessful</typeparam>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
+        [Obsolete("Renamed. Consider to use Enter instead", false)]
+        public EntryCountingEventGuard EnterClientGuarded<TException>() where TException : Exception
         {
-            if (condition == null)
-                throw new ArgumentNullException(nameof(condition));
-
-            if (condition())
-            {
-                if (TryEnterClientCore())
-                {
-                    if (condition())
-                        return true;
-                    else
-                        ExitClientCore();
-                }
-            }
-
-            return false;
+            return Enter<TException>();
         }
+
+
         /// <summary>
         /// Attempts to enter the protected section with additional user-specified condition
         /// </summary>
         /// <param name="condition">User-sepcified condition</param>
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
-        public EntryCountingEventGuard TryEnterClientConditionalGuarded(Func<bool> condition)
+        public EntryCountingEventGuard TryEnterConditional(Func<bool> condition)
         {
             if (condition == null)
                 throw new ArgumentNullException(nameof(condition));
@@ -245,6 +257,16 @@ namespace Qoollo.Turbo.Threading
             }
 
             return new EntryCountingEventGuard();
+        }
+        /// <summary>
+        /// Attempts to enter the protected section with additional user-specified condition
+        /// </summary>
+        /// <param name="condition">User-sepcified condition</param>
+        /// <returns>Is entered successfully</returns>
+        [Obsolete("Unsafe. Consider to use TryEnterConditional instead", false)]
+        public bool TryEnterClientConditional(Func<bool> condition)
+        {
+            return TryEnterConditional(condition).IsAcquired;
         }
 
 

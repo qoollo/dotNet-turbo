@@ -145,7 +145,7 @@ namespace Qoollo.Turbo.PerformanceTests
 
                 while (Interlocked.Increment(ref value) < count)
                 {
-                    using (var guard = inst.TryEnterClientGuarded())
+                    using (var guard = inst.TryEnter())
                     {
                         Thread.SpinWait(spin);
                     }

@@ -86,7 +86,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="item">New item</param>
         public void AddForced(T item)
         {
-            using (var guard = _entryCounter.TryEnterClientGuarded())
+            using (var guard = _entryCounter.TryEnter())
             {
                 if (!guard.IsAcquired)
                     return;
@@ -101,7 +101,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>Was added sucessufully</returns>
         public bool TryAdd(T item)
         {
-            using (var guard = _entryCounter.TryEnterClientGuarded())
+            using (var guard = _entryCounter.TryEnter())
             {
                 if (!guard.IsAcquired)
                     return false;
@@ -116,7 +116,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>True if the item was removed</returns>
         public bool TryTake(out T item)
         {
-            using (var guard = _entryCounter.TryEnterClientGuarded())
+            using (var guard = _entryCounter.TryEnter())
             {
                 if (!guard.IsAcquired)
                 {
@@ -134,7 +134,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>True if the item was read</returns>
         public bool TryPeek(out T item)
         {
-            using (var guard = _entryCounter.TryEnterClientGuarded())
+            using (var guard = _entryCounter.TryEnter())
             {
                 if (!guard.IsAcquired)
                 {
