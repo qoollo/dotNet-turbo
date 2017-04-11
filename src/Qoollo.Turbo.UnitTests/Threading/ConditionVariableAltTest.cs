@@ -481,6 +481,8 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                 TimingAssert.AreEqual(10000, 1, () => testInst.WaiterCount);
                 Assert.AreEqual(0, Volatile.Read(ref result));
+                TimingAssert.AreEqual(10000, 1, () => Volatile.Read(ref called));
+                Assert.AreEqual(0, Volatile.Read(ref result));
                 Interlocked.Increment(ref state);
                 lock (syncObj)
                 {
