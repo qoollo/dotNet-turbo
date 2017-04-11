@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Collections.Concurrent;
 using Qoollo.Turbo.Queues;
 using Qoollo.Turbo.Queues.DiskQueueComponents;
+using System.Collections.Concurrent;
 
 namespace Qoollo.Turbo.UnitTests.Queues
 {
@@ -89,7 +90,12 @@ namespace Qoollo.Turbo.UnitTests.Queues
             }
         }
 
-        public class MemorySegmentFactory<T> : DiskQueueSegmentFactory<T>
+        public abstract class CommonSegmentFactory<T>: DiskQueueSegmentFactory<T>
+        {
+            public abstract long SumCountFromAllocated();
+        }
+
+        public class MemorySegmentFactory<T> : CommonSegmentFactory<T>
         {
             public readonly int Capacity;
             public readonly List<MemorySegment<T>> AllocatedSegments;
@@ -100,7 +106,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 AllocatedSegments = new List<MemorySegment<T>>();
             }
 
-            public long SumCountFromAllocated()
+            public override long SumCountFromAllocated()
             {
                 lock (AllocatedSegments)
                 {
@@ -132,12 +138,106 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
 
+        public class CountingMemorySegment<T> : CountingDiskQueueSegment<T>
+        {
+            public readonly ConcurrentQueue<T> Queue;
+            public volatile bool IsDeleted;
+            public volatile bool IsDisposed;
+
+            public CountingMemorySegment(long number, int capacity) 
+                : base(capacity, 0, 0, number)
+            {
+                Queue = new ConcurrentQueue<T>();
+            }
+
+            protected override void AddCore(T item)
+            {
+                Assert.IsFalse(IsDeleted);
+                Assert.IsFalse(IsDisposed);
+                Queue.Enqueue(item);
+            }
+
+            protected override bool TryTakeCore(out T item)
+            {
+                Assert.IsFalse(IsDeleted);
+                Assert.IsFalse(IsDisposed);
+                return Queue.TryDequeue(out item);
+            }
+
+            protected override bool TryPeekCore(out T item)
+            {
+                Assert.IsFalse(IsDeleted);
+                Assert.IsFalse(IsDisposed);
+                return Queue.TryPeek(out item);
+            }
+
+            protected override void Dispose(DiskQueueSegmentDisposeBehaviour disposeBehaviour, bool isUserCall)
+            {
+                if (disposeBehaviour == DiskQueueSegmentDisposeBehaviour.Delete)
+                    IsDeleted = true;
+
+                IsDisposed = true;
+            }
+        }
+
+        public class CountingMemorySegmentFactory<T> : CommonSegmentFactory<T>
+        {
+            public readonly int Capacity;
+            public readonly List<CountingMemorySegment<T>> AllocatedSegments;
+
+            public CountingMemorySegmentFactory(int capacity)
+            {
+                Capacity = capacity;
+                AllocatedSegments = new List<CountingMemorySegment<T>>();
+            }
+
+            public override long SumCountFromAllocated()
+            {
+                lock (AllocatedSegments)
+                {
+                    return AllocatedSegments.Sum(o => (long)o.Count);
+                }
+            }
+
+            public override int SegmentCapacity { get { return Capacity; } }
+
+            public override DiskQueueSegment<T> CreateSegment(string path, long number)
+            {
+                Assert.AreEqual("dummy", path);
+                var newSeg = new CountingMemorySegment<T>(number, Capacity);
+                lock (AllocatedSegments)
+                {
+                    AllocatedSegments.Add(newSeg);
+                }
+                return newSeg;
+            }
+
+            public override DiskQueueSegment<T>[] DiscoverSegments(string path)
+            {
+                Assert.AreEqual("dummy", path);
+                lock (AllocatedSegments)
+                {
+                    return AllocatedSegments.Where(o => !o.IsCompleted && !o.IsDeleted).ToArray();
+                }
+            }
+        }
+
+
+
         // ==============================
 
 
         private static DiskQueue<int> CreateOnMem(int segmentCapacity, int segmentCount = -1, bool backComp = false)
         {
             return new DiskQueue<int>("dummy", new MemorySegmentFactory<int>(segmentCapacity), segmentCount, backComp, 500);
+        }
+        private static DiskQueue<int> CreateOnMemCounting(int segmentCapacity, int segmentCount = -1, bool backComp = false)
+        {
+            return new DiskQueue<int>("dummy", new CountingMemorySegmentFactory<int>(segmentCapacity), segmentCount, backComp, 500);
+        }
+        private static DiskQueue<int> CreateOnMemDefault(int segmentCapacity, int segmentCount = -1, bool backComp = false)
+        {
+            return new DiskQueue<int>("dummy", new MemoryDiskQueueSegmentFactory<int>(segmentCapacity), segmentCount, backComp, 500);
         }
 
 
@@ -153,7 +253,23 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 testRunner(q, factory);
         }
 
+        private static void RunMemCountingTest(int segmentCapacity, int segmentCount, bool backComp, Action<DiskQueue<int>> testRunner)
+        {
+            using (var q = CreateOnMemCounting(segmentCapacity, segmentCount, backComp))
+                testRunner(q);
+        }
+        private static void RunMemCountingTest(int segmentCapacity, int segmentCount, bool backComp, Action<DiskQueue<int>, CountingMemorySegmentFactory<int>> testRunner)
+        {
+            var factory = new CountingMemorySegmentFactory<int>(segmentCapacity);
+            using (var q = new DiskQueue<int>("dummy", factory, segmentCount, backComp, 500))
+                testRunner(q, factory);
+        }
 
+        private static void RunMemDefaultTest(int segmentCapacity, int segmentCount, bool backComp, Action<DiskQueue<int>> testRunner)
+        {
+            using (var q = CreateOnMemDefault(segmentCapacity, segmentCount, backComp))
+                testRunner(q);
+        }
 
         // ==============================
 
@@ -236,7 +352,14 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void TestSimpleAddTakePeekMem() { RunMemTest(100, -1, false, q => TestSimpleAddTakePeek(q)); }
         [TestMethod]
         public void TestSimpleAddTakePeekMemStress() { RunMemTest(1, -1, true, q => TestSimpleAddTakePeek(q)); }
-
+        [TestMethod]
+        public void TestSimpleAddTakePeekMemCounting() { RunMemCountingTest(100, -1, false, q => TestSimpleAddTakePeek(q)); }
+        [TestMethod]
+        public void TestSimpleAddTakePeekMemCountingStress() { RunMemCountingTest(1, -1, true, q => TestSimpleAddTakePeek(q)); }
+        [TestMethod]
+        public void TestSimpleAddTakePeekMemDefault() { RunMemDefaultTest(100, -1, false, q => TestSimpleAddTakePeek(q)); }
+        [TestMethod]
+        public void TestSimpleAddTakePeekMemDefaultStress() { RunMemDefaultTest(1, -1, true, q => TestSimpleAddTakePeek(q)); }
 
         // =========================
 
@@ -275,10 +398,11 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void AddWakesUpTestMem() { RunMemTest(100, 10, false, q => AddWakesUpTest(q, 100)); }
         [TestMethod]
         public void AddWakesUpTestMemStress() { RunMemTest(1, 2, true, q => AddWakesUpTest(q, 1)); }
-
+        [TestMethod]
+        public void AddWakesUpTestMemCountingStress() { RunMemCountingTest(1, 2, true, q => AddWakesUpTest(q, 1)); }
 
         // =========================
-        
+
         private void TakeWakesUpTest(DiskQueue<int> queue)
         {
             Barrier bar = new Barrier(2);
@@ -316,12 +440,13 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void TakeWakesUpTestMem() { RunMemTest(100, 10, false, q => TakeWakesUpTest(q)); }
         [TestMethod]
         public void TakeWakesUpTestMemStress() { RunMemTest(1, 2, true, q => TakeWakesUpTest(q)); }
-
+        [TestMethod]
+        public void TakeWakesUpTestMemCountingStress() { RunMemCountingTest(1, 2, true, q => TakeWakesUpTest(q)); }
 
 
 
         // =========================
-        
+
         private void PeekWakesUpTest(DiskQueue<int> queue)
         {
             Barrier bar = new Barrier(3);
@@ -359,12 +484,13 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void PeekWakesUpTestMem() { RunMemTest(100, 10, false, q => PeekWakesUpTest(q)); }
         [TestMethod]
         public void PeekWakesUpTestMemStress() { RunMemTest(1, 2, true, q => PeekWakesUpTest(q)); }
-
+        [TestMethod]
+        public void PeekWakesUpTestMemCountingStress() { RunMemCountingTest(1, 2, true, q => PeekWakesUpTest(q)); }
 
 
 
         // =========================
-        
+
         private void TimeoutWorksTest(DiskQueue<int> queue)
         {
             Barrier bar = new Barrier(2);
@@ -396,10 +522,11 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void TimeoutWorksTestMem() { RunMemTest(100, 10, false, q => TimeoutWorksTest(q)); }
         [TestMethod]
         public void TimeoutWorksTestMemStress() { RunMemTest(1, 2, true, q => TimeoutWorksTest(q)); }
-        
+        [TestMethod]
+        public void TimeoutWorksTestMemCountingStress() { RunMemCountingTest(1, 2, true, q => TimeoutWorksTest(q)); }
 
         // =========================
-        
+
         private void CancellationWorksTest(DiskQueue<int> queue)
         {
             Barrier bar = new Barrier(2);
@@ -467,7 +594,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void CancellationWorksTestMem() { RunMemTest(100, 10, false, q => CancellationWorksTest(q)); }
         [TestMethod]
         public void CancellationWorksTestMemStress() { RunMemTest(1, 2, true, q => CancellationWorksTest(q)); }
-        
+        [TestMethod]
+        public void CancellationWorksTestMemCountingStress() { RunMemCountingTest(1, 2, true, q => CancellationWorksTest(q)); }
+
+
         // ======================
 
 
@@ -650,9 +780,61 @@ namespace Qoollo.Turbo.UnitTests.Queues
             }
         }
 
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void PreserveOrderTestOnMemCounting()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunMemCountingTest(100, 2, false, q => PreserveOrderTest(q, 5090));
+                RunMemCountingTest(100, 5, true, q => PreserveOrderTest(q, 5000));
+                RunMemCountingTest(1000, -1, false, q => PreserveOrderTest(q, 500000));
+                RunMemCountingTest(2000, -1, true, q => PreserveOrderTest(q, 1000000));
+            }
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void PreserveOrderTestOnMemCountingStress()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunMemCountingTest(1, 2, false, q => PreserveOrderTest(q, 500));
+                RunMemCountingTest(1, 2, true, q => PreserveOrderTest(q, 500));
+                RunMemCountingTest(1, -1, false, q => PreserveOrderTest(q, 10000));
+                RunMemCountingTest(1, -1, true, q => PreserveOrderTest(q, 10000));
+            }
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void PreserveOrderTestOnMemDefault()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunMemDefaultTest(100, 2, false, q => PreserveOrderTest(q, 5090));
+                RunMemDefaultTest(100, 5, true, q => PreserveOrderTest(q, 5000));
+                RunMemDefaultTest(1000, -1, false, q => PreserveOrderTest(q, 500000));
+                RunMemDefaultTest(2000, -1, true, q => PreserveOrderTest(q, 1000000));
+            }
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void PreserveOrderTestOnMemDefaultStress()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunMemDefaultTest(1, 2, false, q => PreserveOrderTest(q, 500));
+                RunMemDefaultTest(1, 2, true, q => PreserveOrderTest(q, 500));
+                RunMemDefaultTest(1, -1, false, q => PreserveOrderTest(q, 10000));
+                RunMemDefaultTest(1, -1, true, q => PreserveOrderTest(q, 10000));
+            }
+        }
+
         // ======================
 
-        private void ValidateCountTest(DiskQueue<int> queue, MemorySegmentFactory<int> factory, int elemCount)
+        private void ValidateCountTest(DiskQueue<int> queue, CommonSegmentFactory<int> factory, int elemCount)
         {
             Barrier bar = new Barrier(2);
             CancellationTokenSource cancelled = new CancellationTokenSource();
@@ -752,6 +934,18 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 RunMemTest(100, 5, true, (q, f) => ValidateCountTest(q, f, 10000));
                 RunMemTest(1000, -1, false, (q, f) => ValidateCountTest(q, f, 5000000));
                 RunMemTest(2000, -1, true, (q, f) => ValidateCountTest(q, f, 1000000));
+            }
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ValidateCountTestOnMemCounting()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunMemCountingTest(1, 2, false, (q, f) => ValidateCountTest(q, f, 2000));
+                RunMemCountingTest(100, 5, true, (q, f) => ValidateCountTest(q, f, 10000));
+                RunMemCountingTest(1000, -1, false, (q, f) => ValidateCountTest(q, f, 5000000));
+                RunMemCountingTest(2000, -1, true, (q, f) => ValidateCountTest(q, f, 1000000));
             }
         }
 
@@ -871,6 +1065,36 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             RunMemTest(1, 1000, false, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2)));
             RunMemTest(1, -1, true, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOnMemCounting()
+        {
+            RunMemCountingTest(1000, -1, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunMemCountingTest(20000, 2000, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOnMemCountingStress()
+        {
+            RunMemCountingTest(1, 1000, false, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunMemCountingTest(1, -1, true, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOnMemDefault()
+        {
+            RunMemDefaultTest(1000, -1, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunMemDefaultTest(20000, 2000, true, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOnMemDefaultStress()
+        {
+            RunMemDefaultTest(1, 1000, false, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunMemDefaultTest(1, -1, true, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
         }
     }
 }

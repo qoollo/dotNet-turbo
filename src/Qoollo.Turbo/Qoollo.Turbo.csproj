@@ -279,9 +279,11 @@
     <Compile Include="Profiling\ProfilingProviderWrapper.cs" />
     <Compile Include="Queues\Common\CommonQueueImpl.cs" />
     <Compile Include="Queues\DiskQueue.cs" />
+    <Compile Include="Queues\DiskQueueComponents\CountingDiskQueueSegment.cs" />
     <Compile Include="Queues\DiskQueueComponents\DiskQueueSegment.cs" />
     <Compile Include="Queues\DiskQueueComponents\DiskQueueSegmentFactory.cs" />
     <Compile Include="Queues\DiskQueueComponents\DiskQueueSegmentWrapper.cs" />
+    <Compile Include="Queues\DiskQueueComponents\MemoryDiskQueueSegment.cs" />
     <Compile Include="Queues\IQueue.cs" />
     <Compile Include="Queues\LevelingQueue.cs" />
     <Compile Include="Queues\MemoryQueue.cs" />
