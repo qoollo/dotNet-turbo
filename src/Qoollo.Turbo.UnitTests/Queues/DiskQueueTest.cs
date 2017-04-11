@@ -983,9 +983,9 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                     int sleepTime = rnd.Next(100);
 
-                    //int tmpItem = 0;
-                    //if (q.TryPeek(out tmpItem) && tmpItem == item)
-                    //    sleepTime += 100;
+                    int tmpItem = 0;
+                    if (q.TryPeek(out tmpItem) && tmpItem == item)
+                        sleepTime += 100;
 
                     if (sleepTime > 0)
                         Thread.SpinWait(sleepTime);
