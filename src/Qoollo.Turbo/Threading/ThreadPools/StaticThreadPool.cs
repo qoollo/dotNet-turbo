@@ -36,11 +36,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <summary>
         /// Стандартное значения для параметра использования своего шедуллера задач
         /// </summary>
-        public const bool DefaultUseOwnTaskScheduler = true;
+        public const bool DefaultUseOwnTaskScheduler = false;
         /// <summary>
         /// Стандартное значения для параметра использования своего контекста синхронизации
         /// </summary>
-        public const bool DefaultUseOwnSyncContext = true;
+        public const bool DefaultUseOwnSyncContext = false;
         /// <summary>
         /// Стандартное значения для параметра протаскивания контекст исполнения
         /// </summary>
