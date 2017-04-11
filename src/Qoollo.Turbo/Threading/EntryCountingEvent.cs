@@ -41,7 +41,7 @@ namespace Qoollo.Turbo.Threading
         {
             if (_srcCounter != null)
             {
-                _srcCounter.ExitClient();
+                _srcCounter.ExitClientCore();
                 _srcCounter = null;
             }
         }
@@ -98,7 +98,7 @@ namespace Qoollo.Turbo.Threading
         /// Attempts to enter to the protected code section
         /// </summary>
         /// <returns>Is entered successfully</returns>
-        public bool TryEnterClient()
+        private bool TryEnterClientCore()
         {
             if (_isDisposed || _isTerminateRequested)
                 return false;
@@ -117,13 +117,24 @@ namespace Qoollo.Turbo.Threading
             return true;
         }
         /// <summary>
+        /// Attempts to enter to the protected code section
+        /// </summary>
+        /// <returns>Is entered successfully</returns>
+        [Obsolete("Unsafe. Consider to use TryEnterClientGuarded instead", false)]
+        public bool TryEnterClient()
+        {
+            return TryEnterClientCore();
+        }
+
+        /// <summary>
         /// Enters to the protected code section. Throws <see cref="InvalidOperationException"/> if termination was requested
         /// </summary>
         /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> was disposed</exception>
         /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
+        [Obsolete("Unsafe. Consider to use EnterClientGuarded instead", false)]
         public void EnterClient()
         {
-            if (!this.TryEnterClient())
+            if (!this.TryEnterClientCore())
             {
                 if (this._isDisposed)
                     throw new ObjectDisposedException(this.GetType().Name);
@@ -139,7 +150,7 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
         public EntryCountingEventGuard TryEnterClientGuarded()
         {
-            if (!TryEnterClient())
+            if (!TryEnterClientCore())
                 return new EntryCountingEventGuard();
             return new EntryCountingEventGuard(this);
         }
@@ -151,7 +162,15 @@ namespace Qoollo.Turbo.Threading
         /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
         public EntryCountingEventGuard EnterClientGuarded()
         {
-            EnterClient();
+            if (!this.TryEnterClientCore())
+            {
+                if (this._isDisposed)
+                    throw new ObjectDisposedException(this.GetType().Name);
+
+                if (this.IsTerminateRequested)
+                    throw new InvalidOperationException(this.GetType().Name + " is terminated");
+            }
+
             return new EntryCountingEventGuard(this);
         }
 
@@ -164,7 +183,7 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
         public EntryCountingEventGuard EnterClientGuarded<TException>(string message) where TException: Exception
         {
-            if (!TryEnterClient())
+            if (!TryEnterClientCore())
                 TurboException.Throw<TException>(message);
             return new EntryCountingEventGuard(this);
         }
@@ -175,7 +194,7 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
         public EntryCountingEventGuard EnterClientGuarded<TException>() where TException : Exception
         {
-            if (!TryEnterClient())
+            if (!TryEnterClientCore())
                 TurboException.Throw<TException>();
             return new EntryCountingEventGuard(this);
         }
@@ -185,6 +204,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="condition">User-sepcified condition</param>
         /// <returns>Is entered successfully</returns>
+        [Obsolete("Unsafe. Consider to use TryEnterClientConditionalGuarded instead", false)]
         public bool TryEnterClientConditional(Func<bool> condition)
         {
             if (condition == null)
@@ -192,16 +212,39 @@ namespace Qoollo.Turbo.Threading
 
             if (condition())
             {
-                if (TryEnterClient())
+                if (TryEnterClientCore())
                 {
                     if (condition())
                         return true;
                     else
-                        ExitClient();
+                        ExitClientCore();
                 }
             }
 
             return false;
+        }
+        /// <summary>
+        /// Attempts to enter the protected section with additional user-specified condition
+        /// </summary>
+        /// <param name="condition">User-sepcified condition</param>
+        /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
+        public EntryCountingEventGuard TryEnterClientConditionalGuarded(Func<bool> condition)
+        {
+            if (condition == null)
+                throw new ArgumentNullException(nameof(condition));
+
+            if (condition())
+            {
+                if (TryEnterClientCore())
+                {
+                    if (condition())
+                        return new EntryCountingEventGuard(this);
+                    else
+                        ExitClientCore();
+                }
+            }
+
+            return new EntryCountingEventGuard();
         }
 
 
@@ -229,12 +272,20 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Exits the protected code section (better to use <see cref="EntryCountingEventGuard"/> for safety)
         /// </summary>
-        public void ExitClient()
+        internal void ExitClientCore()
         {
             int newCount = Interlocked.Decrement(ref this._currentCountInner);
 
             if (newCount <= 0) // Throws exception when negative
                 ExitClientAdditionalActions(newCount);
+        }
+        /// <summary>
+        /// Exits the protected code section (better to use <see cref="EntryCountingEventGuard"/> for safety)
+        /// </summary>
+        [Obsolete("Unsafe. Consider to use Guarded version of methods", false)]
+        public void ExitClient()
+        {
+            ExitClientCore();
         }
 
 
@@ -246,7 +297,7 @@ namespace Qoollo.Turbo.Threading
             if (!_isTerminateRequested)
             {
                 _isTerminateRequested = true;
-                ExitClient();
+                ExitClientCore();
             }
         }
 

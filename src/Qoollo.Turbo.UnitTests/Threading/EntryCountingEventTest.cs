@@ -36,11 +36,10 @@ namespace Qoollo.Turbo.UnitTests.Threading
         {
             using (EntryCountingEvent inst = new EntryCountingEvent())
             {
-
-                inst.EnterClient();
-                Assert.AreEqual(1, inst.CurrentCount);
-
-                inst.ExitClient();
+                using (var guard = inst.EnterClientGuarded())
+                {
+                    Assert.AreEqual(1, inst.CurrentCount);
+                }
                 Assert.AreEqual(0, inst.CurrentCount);
             }
         }
@@ -52,7 +51,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         {
             using (EntryCountingEvent inst = new EntryCountingEvent())
             {
-                inst.ExitClient();
+                inst.ExitClientCore();
             }
         }
 
@@ -61,18 +60,18 @@ namespace Qoollo.Turbo.UnitTests.Threading
         {
             using (EntryCountingEvent inst = new EntryCountingEvent())
             {
-                inst.EnterClient();
-
                 bool finished = false;
-                var task = Task.Run(() =>
-                    {
-                        inst.TerminateAndWait();
-                        finished = true;
-                    });
+                Task task = null;
+                using (inst.EnterClientGuarded())
+                {
+                    task = Task.Run(() =>
+                        {
+                            inst.TerminateAndWait();
+                            finished = true;
+                        });
 
-                TimingAssert.IsFalse(5000, () => finished);
-
-                inst.ExitClient();
+                    TimingAssert.IsFalse(5000, () => finished);
+                }
                 TimingAssert.IsTrue(5000, () => finished);
 
                 task.Wait();
@@ -91,9 +90,11 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 Assert.IsFalse(inst.IsTerminateRequested);
                 Assert.IsFalse(inst.IsTerminated);
 
-                Assert.IsTrue(inst.TryEnterClient());
-                Assert.AreEqual(1, inst.CurrentCount);
-                inst.ExitClient();
+                using (var guard = inst.TryEnterClientGuarded())
+                {
+                    Assert.IsTrue(guard.IsAcquired);
+                    Assert.AreEqual(1, inst.CurrentCount);
+                }
                 Assert.AreEqual(0, inst.CurrentCount);
             }
         }
@@ -109,8 +110,9 @@ namespace Qoollo.Turbo.UnitTests.Threading
             tasks.Add(Task.Run(() =>
             {
                 enterBar.SignalAndWait();
-                if (inst.TryEnterClient())
-                    inst.ExitClient();
+                using (var guard = inst.TryEnterClientGuarded())
+                {
+                }
             }));
             tasks.Add(Task.Run(() =>
             {
