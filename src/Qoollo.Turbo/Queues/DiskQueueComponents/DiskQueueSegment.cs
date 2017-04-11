@@ -60,7 +60,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <summary>
         /// Indicates whether the segment is completed and can be safely removed (should be equivalent to <see cref="Count"/> == 0 &amp;&amp; <see cref="IsFull"/>)
         /// </summary>
-        public virtual bool IsCompleted { get { return IsFull && Count == 0; } }
+        public abstract bool IsCompleted { get; }
 
 
         /// <summary>

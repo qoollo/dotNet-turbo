@@ -20,6 +20,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
             public readonly int Capacity;
             public volatile bool IsDeleted;
             public volatile int FilledItemCount;
+            public volatile int TakenItemCount;
 
             public MemorySegment(long number, int capacity) : base(number)
             {
@@ -29,7 +30,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             public override int Count { get { return Queue.Count; } }
 
-            public override bool IsCompleted { get { return FilledItemCount >= Capacity && Queue.Count == 0; } }
+            public override bool IsCompleted { get { return FilledItemCount >= Capacity && TakenItemCount == FilledItemCount; } }
 
             public override bool IsFull { get { return FilledItemCount >= Capacity; } }
 
@@ -44,15 +45,16 @@ namespace Qoollo.Turbo.UnitTests.Queues
             {
                 Assert.IsFalse(IsDeleted);
 
-                if (FilledItemCount >= Capacity)
-                    return false;
-
-                int filledItems = Interlocked.Increment(ref FilledItemCount);
-                if (filledItems > Capacity)
+                SpinWait sw = new SpinWait();
+                int filledItemCount = FilledItemCount;
+                while (filledItemCount < Capacity && Interlocked.CompareExchange(ref FilledItemCount, filledItemCount + 1, filledItemCount) != filledItemCount)
                 {
-                    Interlocked.Decrement(ref FilledItemCount);
-                    return false;
+                    sw.SpinOnce();
+                    filledItemCount = FilledItemCount;
                 }
+
+                if (filledItemCount >= Capacity)
+                    return false;
 
                 if (!Queue.TryAdd(item))
                 {
@@ -71,7 +73,13 @@ namespace Qoollo.Turbo.UnitTests.Queues
             public override bool TryTake(out T item)
             {
                 Assert.IsFalse(IsDeleted);
-                return Queue.TryTake(out item);
+                if (Queue.TryTake(out item))
+                {
+                    Interlocked.Increment(ref TakenItemCount);
+                    return true;
+                }
+
+                return false;
             }
 
             protected override void Dispose(DiskQueueSegmentDisposeBehaviour disposeBehaviour, bool isUserCall)
@@ -852,7 +860,6 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
-        [Ignore]
         public void ComplexTestOnMem()
         {
             RunMemTest(1000, -1, false, q => RunComplexTest(q, 2000000, Math.Max(1, Environment.ProcessorCount / 2)));
@@ -860,11 +867,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
-        [Ignore]
         public void ComplexTestOnMemStress()
         {
-            RunMemTest(1, 1000, false, q => RunComplexTest(q, 200000, Math.Max(1, Environment.ProcessorCount / 2)));
-            RunMemTest(1, -1, true, q => RunComplexTest(q, 200000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+            RunMemTest(1, 1000, false, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunMemTest(1, -1, true, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
         }
     }
 }

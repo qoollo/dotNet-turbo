@@ -178,13 +178,16 @@ namespace Qoollo.Turbo.Queues
         {
             Debug.Assert(Monitor.IsEntered(_segmentOperationsLock), "segment lock is not acquired");
 
+            Debug.Assert(_headSegment != null, "_headSegment != null");
             Debug.Assert(_tailSegment != null, "_tailSegment != null");
             Debug.Assert(_segments.Count > 0, "_segments.Count > 0");
             Debug.Assert(_tailSegment == _segments[_segments.Count - 1], "_tailSegment == _segments[_segments.Count - 1]");
-            Debug.Assert(_headSegment != null, "_headSegment != null");
-            Debug.Assert(_segments.Contains(_headSegment), "_segments.Contains(_headSegment)");
-            Debug.Assert(_segments.TakeWhile(o => o != _headSegment).All(o => o.IsCompleted), "All segements before head should be in IsCompleted state");
-            Debug.Assert(_segments.IndexOf(_headSegment) <= _segments.IndexOf(_tailSegment), "_headSegement cannot be after _tailSegment");
+
+            int headIndex = _segments.IndexOf(_headSegment);
+            int tailIndex = _segments.Count - 1;
+            Debug.Assert(headIndex >= 0, "_segments.Contains(_headSegment)");
+            Debug.Assert(_segments.Take(headIndex).All(o => o.IsCompleted), "All segements before head should be in IsCompleted state");
+            Debug.Assert(headIndex <= tailIndex, "_headSegement cannot be after _tailSegment");
         }
 
 
@@ -318,18 +321,34 @@ namespace Qoollo.Turbo.Queues
             if (!result.IsFull)
                 return result;
 
-            
-            lock (_segmentOperationsLock)
+            bool lockTaken = false;
+            bool segmentAllocated = false;
+
+            try
             {
-                result = null;
+                Monitor.Enter(_segmentOperationsLock, ref lockTaken);
+
+                result = _tailSegment; // Should retry inside lock
+                if (!result.IsFull)
+                    return result;
+
                 if (_segments.Count < _maxSegmentCount)
+                {
                     result = AllocateNewSegment();
+                    segmentAllocated = true;
+                    return result;
+                }
+            }
+            finally
+            {
+                if (lockTaken)
+                    Monitor.Exit(_segmentOperationsLock);
+
+                if (segmentAllocated) // Segment was allocated => should notify all waiters outside the lock
+                    _addMonitor.PulseAll();
             }
 
-            if (result != null) // Segment was allocated => should notify all waiters outside the lock
-                _addMonitor.PulseAll();
-
-            return result;
+            return null;
         }
 
 
@@ -347,6 +366,10 @@ namespace Qoollo.Turbo.Queues
             {
                 lock (_segmentOperationsLock)
                 {
+                    result = _headSegment; // Retry inside lock
+                    if (!result.IsCompleted)
+                        return result;
+
                     // Search for not completed segment
                     result = MoveHeadToNonCompletedSegment();
                     if (!result.IsCompleted)
