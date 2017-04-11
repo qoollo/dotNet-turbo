@@ -14,18 +14,6 @@ namespace Qoollo.Turbo.Queues.Common
     /// <typeparam name="T">Type of items stored inside queue</typeparam>
     public abstract class CommonQueueImpl<T> : IQueue<T>
     {
-        private static ManualResetEvent _alwaysSettedWaitHandle = null;
-        /// <summary>
-        /// Wait handle that is always in Set state
-        /// </summary>
-        protected static WaitHandle AlwaysSettedWaitHandle
-        {
-            get
-            {
-                return LazyInitializer.EnsureInitialized(ref _alwaysSettedWaitHandle, () => new ManualResetEvent(true));
-            }
-        }
-
         /// <summary>
         /// The bounded size of the queue (-1 means not bounded)
         /// </summary>
