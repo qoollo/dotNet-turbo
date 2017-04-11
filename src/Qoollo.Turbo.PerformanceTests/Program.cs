@@ -26,8 +26,8 @@ namespace Qoollo.Turbo.PerformanceTests
             //LocalThreadQueueTest.RunTest();
             //ThreadPoolTests.RunCompareTest();
             //ThreadPoolTests.RunAllTests();
-            //LevelingQueueTest.RunTest();
-            EntryCountingEventPerfTest.RunTest();
+            LevelingQueueTest.RunTest();
+            //EntryCountingEventPerfTest.RunTest();
             Console.ReadLine();
         }
     }

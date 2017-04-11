@@ -272,6 +272,120 @@ namespace Qoollo.Turbo.PerformanceTests
 
             if (name != null)
                 Console.WriteLine(name + ". LvlQ. Time = " + sw.ElapsedMilliseconds.ToString() + "ms");
+
+            col.Dispose();
+            return sw.Elapsed;
+        }
+
+        private static TimeSpan RunConcurrentDiskQ(string name, int elemCount, int addThCount, int takeThCount, int addSpin, int takeSpin)
+        {
+            DiskQueue<int> col = new DiskQueue<int>("dummy",
+                new Queues.DiskQueueComponents.MemoryDiskQueueSegmentFactory<int>(1000),
+                10, true);
+
+            CancellationTokenSource srcCancel = new CancellationTokenSource();
+
+            Thread[] addThreads = new Thread[addThCount];
+            Thread[] takeThreads = new Thread[takeThCount];
+
+            int addedElemCount = 0;
+            List<int> globalList = new List<int>();
+
+            Barrier barierStart = new Barrier(1 + addThreads.Length + takeThreads.Length);
+            Barrier barierAdders = new Barrier(1 + addThreads.Length);
+            Barrier barierTakers = new Barrier(1 + takeThreads.Length);
+
+            Action addAction = () =>
+            {
+                barierStart.SignalAndWait();
+
+                int index = 0;
+                while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
+                {
+                    col.Add(index - 1);
+                    Thread.SpinWait(addSpin);
+                }
+
+                barierAdders.SignalAndWait();
+            };
+
+
+            Action takeAction = () =>
+            {
+                CancellationToken myToken = srcCancel.Token;
+                List<int> valList = new List<int>(elemCount / takeThCount + 100);
+
+                barierStart.SignalAndWait();
+
+                try
+                {
+                    while (!srcCancel.IsCancellationRequested)
+                    {
+                        int val = 0;
+                        val = col.Take(myToken);
+
+                        valList.Add(val);
+                        Thread.SpinWait(takeSpin);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                }
+
+                int val2 = 0;
+                while (col.TryTake(out val2))
+                    valList.Add(val2);
+
+                barierTakers.SignalAndWait();
+
+                lock (globalList)
+                {
+                    globalList.AddRange(valList);
+                }
+            };
+
+            for (int i = 0; i < addThreads.Length; i++)
+                addThreads[i] = new Thread(new ThreadStart(addAction));
+            for (int i = 0; i < takeThreads.Length; i++)
+                takeThreads[i] = new Thread(new ThreadStart(takeAction));
+
+
+            for (int i = 0; i < takeThreads.Length; i++)
+                takeThreads[i].Start();
+            for (int i = 0; i < addThreads.Length; i++)
+                addThreads[i].Start();
+
+            barierStart.SignalAndWait();
+
+            Stopwatch sw = Stopwatch.StartNew();
+
+            barierAdders.SignalAndWait();
+            srcCancel.Cancel();
+            barierTakers.SignalAndWait();
+            sw.Stop();
+
+            for (int i = 0; i < addThreads.Length; i++)
+                addThreads[i].Join();
+            for (int i = 0; i < takeThreads.Length; i++)
+                takeThreads[i].Join();
+
+            globalList.Sort();
+            if (globalList.Count != elemCount)
+                Console.WriteLine("Bad count");
+
+            for (int i = 0; i < globalList.Count; i++)
+            {
+                if (globalList[i] != i)
+                {
+                    Console.WriteLine("invalid elements");
+                    break;
+                }
+            }
+
+            if (name != null)
+                Console.WriteLine(name + ". DiskQ. Time = " + sw.ElapsedMilliseconds.ToString() + "ms");
+
+            col.Dispose();
             return sw.Elapsed;
         }
 
@@ -320,6 +434,24 @@ namespace Qoollo.Turbo.PerformanceTests
                 Free();
 
                 RunConcurrentLvlQ("16, 16", 5000000, 16, 16, 10, 10);
+                Free();
+
+                Console.WriteLine();
+
+
+                RunConcurrentDiskQ("1, 1", 5000000, 1, 1, 10, 10);
+                Free();
+
+                RunConcurrentDiskQ("4, 4", 5000000, 4, 4, 10, 10);
+                Free();
+
+                RunConcurrentDiskQ("16, 1", 5000000, 16, 1, 10, 10);
+                Free();
+
+                RunConcurrentDiskQ("1, 16", 5000000, 1, 16, 10, 10);
+                Free();
+
+                RunConcurrentDiskQ("16, 16", 5000000, 16, 16, 10, 10);
                 Free();
 
                 Console.WriteLine();
