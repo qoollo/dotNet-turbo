@@ -485,6 +485,18 @@ namespace Qoollo.Turbo.Queues
             if (timeout == 0 || timeoutTracker.IsTimeouted)
                 return false;
 
+
+            if (_addMonitor.WaiterCount > 0)
+            {
+                Thread.Yield(); // Reduce contention on _addMonitor
+                if (_addMonitor.WaiterCount == 0)
+                {
+                    var tailSegment = TryGetNonFullTailSegment();
+                    if (tailSegment != null && tailSegment.TryAdd(item))
+                        return true;
+                }
+            }
+
             // Use waiting scheme
             using (var waiter = _addMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
             {
@@ -545,6 +557,7 @@ namespace Qoollo.Turbo.Queues
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
             // Zero timeout attempts
+            SpinWait sw = new SpinWait();
             while (true)
             {
                 if (token.IsCancellationRequested)
@@ -559,12 +572,25 @@ namespace Qoollo.Turbo.Queues
                     return true;
                 if (headSegment == _tailSegment) // This was the last segment to check
                     break;
+
+                sw.SpinOnce(); // Reduce concurrency
             }
 
             if (timeout == 0 || timeoutTracker.IsTimeouted)
             {
                 item = default(T);
                 return false;
+            }
+
+            if (_takeMonitor.WaiterCount > 0)
+            {
+                Thread.Yield(); // Reduce contention on _takeMonitor
+                if (_takeMonitor.WaiterCount == 0)
+                {
+                    var headSegment = TryGetNonCompletedHeadSegment();
+                    if (headSegment != null && headSegment.TryTake(out item))
+                        return true;
+                }
             }
 
             // Use waiting scheme
@@ -626,6 +652,7 @@ namespace Qoollo.Turbo.Queues
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
             // Zero timeout attempts
+            SpinWait sw = new SpinWait();
             while (true)
             {
                 if (token.IsCancellationRequested)
@@ -640,12 +667,25 @@ namespace Qoollo.Turbo.Queues
                     return true;
                 if (headSegment == _tailSegment) // This was the last segment to check
                     break;
+
+                sw.SpinOnce();
             }
 
             if (timeout == 0 || timeoutTracker.IsTimeouted)
             {
                 item = default(T);
                 return false;
+            }
+
+            if (_peekMonitor.WaiterCount > 0)
+            {
+                Thread.Yield(); // Reduce contention on _peekMonitor
+                if (_peekMonitor.WaiterCount == 0)
+                {
+                    var headSegment = TryGetNonCompletedHeadSegment();
+                    if (headSegment != null && headSegment.TryPeek(out item))
+                        return true;
+                }
             }
 
             // Use waiting scheme
