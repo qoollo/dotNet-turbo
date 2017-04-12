@@ -21,6 +21,8 @@ namespace Qoollo.Turbo.Queues
     public class DiskQueue<T>: Common.CommonQueueImpl<T>
     {
         private const int CompactionPeriodMs = 2 * 60 * 1000;
+        private static readonly int NonFairItemThreshold = 16 * Environment.ProcessorCount;
+        private const int NonFairSegmentThreshold = 4;
 
         private readonly DiskQueueSegmentFactory<T> _segmentFactory;
         private readonly object _segmentOperationsLock;
@@ -465,36 +467,17 @@ namespace Qoollo.Turbo.Queues
         {
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
-            // Zero timeout attempts
-            while (true)
-            {
-                if (token.IsCancellationRequested)
-                    token.ThrowIfCancellationRequested();
-                if (_isDisposed)
-                    CheckDisposed();
+            if (_addMonitor.WaiterCount > 0 && timeout != 0)
+                Thread.Yield();
 
+            // Check WaiterCount to preserve fairness
+            if (_addMonitor.WaiterCount == 0)
+            {
                 var tailSegment = TryGetNonFullTailSegment();
-                if (tailSegment == null)
-                    break;
-                if (tailSegment.TryAdd(item))
+                if (tailSegment != null && tailSegment.TryAdd(item))
                     return true;
-
-                Debug.Assert(tailSegment.IsFull);
-            }
-
-            if (timeout == 0 || timeoutTracker.IsTimeouted)
-                return false;
-
-
-            if (_addMonitor.WaiterCount > 0)
-            {
-                Thread.Yield(); // Reduce contention on _addMonitor
-                if (_addMonitor.WaiterCount == 0)
-                {
-                    var tailSegment = TryGetNonFullTailSegment();
-                    if (tailSegment != null && tailSegment.TryAdd(item))
-                        return true;
-                }
+                if (timeout == 0 || timeoutTracker.IsTimeouted)
+                    return false;
             }
 
             // Use waiting scheme
@@ -530,13 +513,16 @@ namespace Qoollo.Turbo.Queues
 
             bool result = false;
 
-            var tailSegment = _tailSegment;
-            Debug.Assert(tailSegment != null);
-            if (!(result = tailSegment.TryAdd(item)))
+            if (_addMonitor.WaiterCount == 0) // Check WaiterCount to preserve fairness
             {
-                Debug.Assert(tailSegment.IsFull);
-                result = TryAddSlow(item, timeout, token); // Enter slow path (should be rare with reasonable size of the segment)
+                var tailSegment = _tailSegment;
+                Debug.Assert(tailSegment != null);
+                result = tailSegment.TryAdd(item);
+                Debug.Assert(result || tailSegment.IsFull);
             }
+
+            if (!result)
+                result = TryAddSlow(item, timeout, token); // Enter slow path (should be rare with reasonable size of the segment)
 
             if (result)
                 NotifyItemAdded();
@@ -556,40 +542,21 @@ namespace Qoollo.Turbo.Queues
         {
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
-            // Zero timeout attempts
-            SpinWait sw = new SpinWait();
-            while (true)
-            {
-                if (token.IsCancellationRequested)
-                    token.ThrowIfCancellationRequested();
-                if (_isDisposed)
-                    CheckDisposed();
+            if (_takeMonitor.WaiterCount > 0 && timeout != 0)
+                Thread.Yield();
 
+            // Check WaiterCount to preserve fairness
+            // Check ItemCount to prevent stucking inside lock on _takeMonitor
+            if (_takeMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > NonFairItemThreshold)
+            {
                 var headSegment = TryGetNonCompletedHeadSegment();
-                if (headSegment == null)
-                    break;
-                if (headSegment.TryTake(out item)) // False means that only current segment is empty (there can be other non-empty ones)
+                if (headSegment != null && headSegment.TryTake(out item))
                     return true;
-                if (headSegment == _tailSegment) // This was the last segment to check
-                    break;
 
-                sw.SpinOnce(); // Reduce concurrency
-            }
-
-            if (timeout == 0 || timeoutTracker.IsTimeouted)
-            {
-                item = default(T);
-                return false;
-            }
-
-            if (_takeMonitor.WaiterCount > 0)
-            {
-                Thread.Yield(); // Reduce contention on _takeMonitor
-                if (_takeMonitor.WaiterCount == 0)
+                if (timeout == 0 || timeoutTracker.IsTimeouted)
                 {
-                    var headSegment = TryGetNonCompletedHeadSegment();
-                    if (headSegment != null && headSegment.TryTake(out item))
-                        return true;
+                    item = default(T);
+                    return false;
                 }
             }
 
@@ -625,13 +592,17 @@ namespace Qoollo.Turbo.Queues
                 throw new OperationCanceledException(token);
 
             bool result = false;
+            item = default(T);
 
-            var headSegment = _headSegment;
-            Debug.Assert(headSegment != null);
-            if (!(result = headSegment.TryTake(out item)))
+            if (_takeMonitor.WaiterCount == 0) // Check WaiterCount to preserve fairness
             {
-                result = TryTakeSlow(out item, timeout, token);
+                var headSegment = _headSegment;
+                Debug.Assert(headSegment != null);
+                result = headSegment.TryTake(out item);
             }
+
+            if (!result)
+                result = TryTakeSlow(out item, timeout, token);
 
             if (result)
                 NotifyItemTaken();
@@ -651,40 +622,21 @@ namespace Qoollo.Turbo.Queues
         {
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
-            // Zero timeout attempts
-            SpinWait sw = new SpinWait();
-            while (true)
-            {
-                if (token.IsCancellationRequested)
-                    token.ThrowIfCancellationRequested();
-                if (_isDisposed)
-                    CheckDisposed();
+            if (_peekMonitor.WaiterCount > 0 && timeout != 0)
+                Thread.Yield();
 
+            // Check WaiterCount to preserve fairness
+            // Check ItemCount to prevent stucking inside lock on _peekMonitor
+            if (_peekMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > NonFairItemThreshold)
+            {
                 var headSegment = TryGetNonCompletedHeadSegment();
-                if (headSegment == null)
-                    break;
-                if (headSegment.TryPeek(out item))
+                if (headSegment != null && headSegment.TryPeek(out item))
                     return true;
-                if (headSegment == _tailSegment) // This was the last segment to check
-                    break;
 
-                sw.SpinOnce();
-            }
-
-            if (timeout == 0 || timeoutTracker.IsTimeouted)
-            {
-                item = default(T);
-                return false;
-            }
-
-            if (_peekMonitor.WaiterCount > 0)
-            {
-                Thread.Yield(); // Reduce contention on _peekMonitor
-                if (_peekMonitor.WaiterCount == 0)
+                if (timeout == 0 || timeoutTracker.IsTimeouted)
                 {
-                    var headSegment = TryGetNonCompletedHeadSegment();
-                    if (headSegment != null && headSegment.TryPeek(out item))
-                        return true;
+                    item = default(T);
+                    return false;
                 }
             }
 
@@ -719,10 +671,13 @@ namespace Qoollo.Turbo.Queues
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
-            var headSegment = _headSegment;
-            Debug.Assert(headSegment != null);
-            if (headSegment.TryPeek(out item))
-                return true;
+            if (_peekMonitor.WaiterCount == 0) // Preserve fairness
+            {
+                var headSegment = _headSegment;
+                Debug.Assert(headSegment != null);
+                if (headSegment.TryPeek(out item))
+                    return true;
+            }
 
             return TryPeekSlow(out item, timeout, token);
         }
