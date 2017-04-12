@@ -47,6 +47,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
     {
         private readonly DiskQueueSegment<T> _segment;
         private readonly EntryCountingEvent _entryCounter;
+        private volatile DiskQueueSegmentWrapper<T> _nextSegment;
 
 
         /// <summary>
@@ -60,7 +61,13 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
             _segment = segment;
             _entryCounter = new EntryCountingEvent();
+            _nextSegment = null;
         }
+
+        /// <summary>
+        /// Link to the next segment (used to build linked-list of segments)
+        /// </summary>
+        public DiskQueueSegmentWrapper<T> NextSegment { get { return _nextSegment; } set { _nextSegment = value; } }
 
         /// <summary>
         /// Unique number of the segment that represents its position in the queue

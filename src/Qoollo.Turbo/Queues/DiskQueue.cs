@@ -88,10 +88,20 @@ namespace Qoollo.Turbo.Queues
             _segments = new CircularList<DiskQueueSegmentWrapper<T>>(discoveredSegments.OrderBy(o => o.Number));
             if (_segments.Count > 0)
             {
+                for (int i = 0; i < _segments.Count; i++)
+                {
+                    if (i + 1 < _segments.Count)
+                    {
+                        _segments[i].NextSegment = _segments[i + 1]; // Build linked-list
+                        if (_segments[i].Number == _segments[i + 1].Number)
+                            throw new InvalidOperationException("DiscoverSegments returned duplicated segment numbers");
+                    }
+                    _itemCount += _segments[i].Count;
+                }
+
                 _headSegment = _segments[0];
                 _tailSegment = _segments[_segments.Count - 1];
                 _lastSegmentNumber = _tailSegment.Number;
-                _itemCount = _segments.Sum(o => o.Count);
             }
             else
             {
@@ -183,11 +193,27 @@ namespace Qoollo.Turbo.Queues
             Debug.Assert(_segments.Count > 0, "_segments.Count > 0");
             Debug.Assert(_tailSegment == _segments[_segments.Count - 1], "_tailSegment == _segments[_segments.Count - 1]");
 
-            int headIndex = _segments.IndexOf(_headSegment);
-            int tailIndex = _segments.Count - 1;
-            Debug.Assert(headIndex >= 0, "_segments.Contains(_headSegment)");
-            Debug.Assert(_segments.Take(headIndex).All(o => o.IsCompleted), "All segements before head should be in IsCompleted state");
-            Debug.Assert(headIndex <= tailIndex, "_headSegement cannot be after _tailSegment");
+            bool beforeHead = true;
+            DiskQueueSegmentWrapper<T> prevSegment = null;
+            _segments.ForEach(curSegment =>
+            {
+                if (prevSegment != null)
+                    Debug.Assert(prevSegment.NextSegment == curSegment, "Linked-list of segments is broken");
+
+                if (curSegment == _headSegment)
+                {
+                    Debug.Assert(beforeHead, "Head segments met twice");
+                    beforeHead = false;
+                }
+
+                if (beforeHead)
+                    Debug.Assert(curSegment.IsCompleted, "All segements before head should be in IsCompleted state");
+                if (curSegment != _tailSegment)
+                    Debug.Assert(curSegment.IsFull, "All segements before tail should be in IsFull state");
+
+                prevSegment = curSegment;
+            });
+            Debug.Assert(!beforeHead, "HeadSegment is not found in the list of segments");
         }
 
 
@@ -261,14 +287,13 @@ namespace Qoollo.Turbo.Queues
             Debug.Assert(!Monitor.IsEntered(_takeMonitor));
             Debug.Assert(!Monitor.IsEntered(_peekMonitor));
 
-            VerifyConsistency();
-
             var result = _segmentFactory.CreateSegmentWrapped(_segmentsPath, checked(++_lastSegmentNumber));
             if (result == null)
                 throw new InvalidOperationException("CreateSegment returned null");
             Debug.Assert(result.Number == _lastSegmentNumber);
 
             _segments.Add(result);
+            _tailSegment.NextSegment = result;
             _tailSegment = result;
 
             VerifyConsistency();
@@ -284,30 +309,19 @@ namespace Qoollo.Turbo.Queues
         {
             Debug.Assert(Monitor.IsEntered(_segmentOperationsLock));
 
-            VerifyConsistency();
-
             DiskQueueSegmentWrapper<T> curHeadSegment = _headSegment;
 
-            if (!curHeadSegment.IsCompleted)
+            if (curHeadSegment.NextSegment == null || !curHeadSegment.IsCompleted)
                 return curHeadSegment;
 
-            if (curHeadSegment == _segments[_segments.Count - 1])
-                return curHeadSegment;
+            curHeadSegment = curHeadSegment.NextSegment;
+            while (curHeadSegment.NextSegment != null && curHeadSegment.IsCompleted)
+                curHeadSegment = curHeadSegment.NextSegment;
 
-            for (int i = 0; i < _segments.Count; i++)
-            {
-                if (!_segments[i].IsCompleted || i == _segments.Count - 1)
-                {
-                    var result = _segments[i];
-                    _headSegment = result;
+            _headSegment = curHeadSegment;
 
-                    VerifyConsistency();
-                    return result;
-                }
-            }
-
-            Debug.Fail("Operation should be completed inside cycle");
-            return _headSegment;
+            VerifyConsistency();
+            return curHeadSegment;
         }
 
 
@@ -362,7 +376,7 @@ namespace Qoollo.Turbo.Queues
             if (!result.IsCompleted)
                 return result;
 
-            if (_segments.Count > 1) // Fast check of head moving possibility (Count should be safe)
+            if (_headSegment.NextSegment != null)
             {
                 lock (_segmentOperationsLock)
                 {
