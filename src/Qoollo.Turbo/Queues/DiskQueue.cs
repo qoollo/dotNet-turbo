@@ -21,8 +21,6 @@ namespace Qoollo.Turbo.Queues
     public class DiskQueue<T>: Common.CommonQueueImpl<T>
     {
         private const int CompactionPeriodMs = 2 * 60 * 1000;
-        private static readonly int NonFairItemThreshold = 16 * Environment.ProcessorCount;
-        private const int NonFairSegmentThreshold = 4;
 
         private readonly DiskQueueSegmentFactory<T> _segmentFactory;
         private readonly object _segmentOperationsLock;
@@ -37,6 +35,9 @@ namespace Qoollo.Turbo.Queues
 
         private long _itemCount;
         private readonly long _boundedCapacity;
+
+        private readonly long _nonFairItemThreshold;
+        private readonly int _nonFairSegmentThreshold;
 
         private readonly MonitorObject _addMonitor;
         private readonly MonitorObject _takeMonitor;
@@ -85,6 +86,8 @@ namespace Qoollo.Turbo.Queues
             if (_segmentFactory.SegmentCapacity > 0)
                 _boundedCapacity = (long)_segmentFactory.SegmentCapacity * maxSegmentCount;
 
+            _nonFairItemThreshold = 8 * Environment.ProcessorCount;
+            _nonFairSegmentThreshold = _segmentFactory.SegmentCapacity > 0 ? Math.Max(1, (int)_nonFairItemThreshold / _segmentFactory.SegmentCapacity) : 16;
 
             var discoveredSegments = segmentFactory.DiscoverSegmentsWrapped(path);
             _segments = new CircularList<DiskQueueSegmentWrapper<T>>(discoveredSegments.OrderBy(o => o.Number));
@@ -467,11 +470,11 @@ namespace Qoollo.Turbo.Queues
         {
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
-            if (_addMonitor.WaiterCount > 0 && timeout != 0)
+            if (timeout != 0 && _addMonitor.WaiterCount > 0)
                 Thread.Yield();
 
             // Check WaiterCount to preserve fairness
-            if (_addMonitor.WaiterCount == 0)
+            if (_addMonitor.WaiterCount == 0 || _segments.Count < _maxSegmentCount - _nonFairSegmentThreshold)
             {
                 var tailSegment = TryGetNonFullTailSegment();
                 if (tailSegment != null && tailSegment.TryAdd(item))
@@ -542,12 +545,12 @@ namespace Qoollo.Turbo.Queues
         {
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
-            if (_takeMonitor.WaiterCount > 0 && timeout != 0)
+            if (timeout != 0 && _takeMonitor.WaiterCount > 0)
                 Thread.Yield();
 
             // Check WaiterCount to preserve fairness
             // Check ItemCount to prevent stucking inside lock on _takeMonitor
-            if (_takeMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > NonFairItemThreshold)
+            if (_takeMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > _nonFairItemThreshold)
             {
                 var headSegment = TryGetNonCompletedHeadSegment();
                 if (headSegment != null && headSegment.TryTake(out item))
@@ -559,6 +562,7 @@ namespace Qoollo.Turbo.Queues
                     return false;
                 }
             }
+
 
             // Use waiting scheme
             using (var waiter = _takeMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
@@ -622,12 +626,12 @@ namespace Qoollo.Turbo.Queues
         {
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
-            if (_peekMonitor.WaiterCount > 0 && timeout != 0)
+            if (timeout != 0 && _peekMonitor.WaiterCount > 0)
                 Thread.Yield();
 
             // Check WaiterCount to preserve fairness
             // Check ItemCount to prevent stucking inside lock on _peekMonitor
-            if (_peekMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > NonFairItemThreshold)
+            if (_peekMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > _nonFairItemThreshold)
             {
                 var headSegment = TryGetNonCompletedHeadSegment();
                 if (headSegment != null && headSegment.TryPeek(out item))
