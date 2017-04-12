@@ -1,4 +1,4 @@
-Qoollo Turbo
+Qoollo Turbo [![NuGet](https://img.shields.io/nuget/v/Qoollo.Turbo.svg?style=flat-square)](https://www.nuget.org/packages/Qoollo.Turbo/)
 ===============
 
 Collection of useful classes for your .NET application.
@@ -18,8 +18,9 @@ Library contains a number of reuseful base classes:
 10. [WeakDelegate, WeakEvent](https://github.com/qoollo/system-class-library/wiki/WeakEvent) - event with weak reference to subscribers;
 11. [Deque](https://github.com/qoollo/system-class-library/wiki/Deque) - collection of elements organized as deque;
 12. [Priority Queues](https://github.com/qoollo/system-class-library/wiki/Priority-Queues) - simple queue with limited number of priorities;
-13. [Read only collections](https://github.com/qoollo/system-class-library/wiki/Read-only-collections) - a number of useful readonly collections (List, Dictionary, HashSet);
-14. [A bunch of extension methods](https://github.com/qoollo/system-class-library/wiki/Extension-Methods) for IEnumerable, Type, Exception.
+13. [CircularList](https://github.com/qoollo/system-class-library/wiki/CircularList) - collection that stores elements inside circular buffer;
+14. [Read only collections](https://github.com/qoollo/system-class-library/wiki/Read-only-collections) - a number of useful readonly collections (List, Dictionary, HashSet);
+15. [A bunch of extension methods](https://github.com/qoollo/system-class-library/wiki/Extension-Methods) for IEnumerable, Type, Exception.
 
 
 ## NuGet
