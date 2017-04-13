@@ -36,7 +36,7 @@ namespace Qoollo.Turbo.Queues
         private long _itemCount;
         private readonly long _boundedCapacity;
 
-        private readonly long _nonFairItemThreshold;
+        private readonly int _nonFairItemThreshold;
         private readonly int _nonFairSegmentThreshold;
 
         private readonly MonitorObject _addMonitor;
@@ -86,8 +86,8 @@ namespace Qoollo.Turbo.Queues
             if (_segmentFactory.SegmentCapacity > 0)
                 _boundedCapacity = (long)_segmentFactory.SegmentCapacity * maxSegmentCount;
 
-            _nonFairItemThreshold = 8 * Environment.ProcessorCount;
-            _nonFairSegmentThreshold = _segmentFactory.SegmentCapacity > 0 ? Math.Max(1, (int)_nonFairItemThreshold / _segmentFactory.SegmentCapacity) : 16;
+            _nonFairItemThreshold = Environment.ProcessorCount;
+            _nonFairSegmentThreshold = _segmentFactory.SegmentCapacity > 0 ? Math.Max(1, (8 * Environment.ProcessorCount) / _segmentFactory.SegmentCapacity) : 16;
 
             var discoveredSegments = segmentFactory.DiscoverSegmentsWrapped(path);
             _segments = new CircularList<DiskQueueSegmentWrapper<T>>(discoveredSegments.OrderBy(o => o.Number));
@@ -474,7 +474,8 @@ namespace Qoollo.Turbo.Queues
                 Thread.Yield();
 
             // Check WaiterCount to preserve fairness
-            if (_addMonitor.WaiterCount == 0 || _segments.Count < _maxSegmentCount - _nonFairSegmentThreshold)
+            // Check _segments.Count to prevent stucking inside lock
+            if (_addMonitor.WaiterCount == 0 || _segments.Count <= _maxSegmentCount - _nonFairSegmentThreshold)
             {
                 var tailSegment = TryGetNonFullTailSegment();
                 if (tailSegment != null && tailSegment.TryAdd(item))
@@ -545,12 +546,17 @@ namespace Qoollo.Turbo.Queues
         {
             TimeoutTracker timeoutTracker = new TimeoutTracker(timeout);
 
-            if (timeout != 0 && _takeMonitor.WaiterCount > 0)
-                Thread.Yield();
-
             // Check WaiterCount to preserve fairness
             // Check ItemCount to prevent stucking inside lock on _takeMonitor
-            if (_takeMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > _nonFairItemThreshold)
+            bool canTakeConcurrently = _takeMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > _takeMonitor.WaiterCount + _nonFairItemThreshold;
+
+            if (timeout != 0 && !canTakeConcurrently)
+            {
+                Thread.Yield();
+                canTakeConcurrently = _takeMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > _takeMonitor.WaiterCount + _nonFairItemThreshold;
+            }
+
+            if (canTakeConcurrently)
             {
                 var headSegment = TryGetNonCompletedHeadSegment();
                 if (headSegment != null && headSegment.TryTake(out item))
@@ -631,7 +637,7 @@ namespace Qoollo.Turbo.Queues
 
             // Check WaiterCount to preserve fairness
             // Check ItemCount to prevent stucking inside lock on _peekMonitor
-            if (_peekMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > _nonFairItemThreshold)
+            if (_peekMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > 0)
             {
                 var headSegment = TryGetNonCompletedHeadSegment();
                 if (headSegment != null && headSegment.TryPeek(out item))
