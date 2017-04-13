@@ -44,8 +44,6 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         private const int WaitPollingTimeout = 5000;
 
-        private static readonly int ProcessorCount = Environment.ProcessorCount;
-
         private readonly IQueue<T> _highLevelQueue;
         private readonly IQueue<T> _lowLevelQueue;
 
@@ -441,12 +439,15 @@ namespace Qoollo.Turbo.Queues
         /// <returns>True if the item was removed</returns>
         private bool TryTakeSlow(out T item, TimeoutTracker timeoutTracker, CancellationToken token)
         {
-            if (timeoutTracker.OriginalTimeout != 0 && _takeMonitor.WaiterCount > 0)
+            bool canTakeConcurrently = _takeMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > _takeMonitor.WaiterCount + PlatformHelper.ProcessorCount;
+            if (timeoutTracker.OriginalTimeout != 0 && !canTakeConcurrently)
             {
                 Thread.Yield();
-                if (_takeMonitor.WaiterCount == 0 && TryTakeFast(out item))
-                    return true;
+                canTakeConcurrently = _takeMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > _takeMonitor.WaiterCount + PlatformHelper.ProcessorCount;
             }
+
+            if (canTakeConcurrently && TryTakeFast(out item))
+                return true;
 
             using (var waiter = _takeMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
             {
@@ -564,11 +565,11 @@ namespace Qoollo.Turbo.Queues
         private bool TryPeekSlow(out T item, TimeoutTracker timeoutTracker, CancellationToken token)
         {
             if (timeoutTracker.OriginalTimeout != 0 && _peekMonitor.WaiterCount > 0)
-            {
                 Thread.Yield();
-                if (_peekMonitor.WaiterCount == 0 && TryPeekFast(out item))
+
+            if (_peekMonitor.WaiterCount == 0 || Volatile.Read(ref _itemCount) > 0)
+                if (TryPeekFast(out item))
                     return true;
-            }
 
             using (var waiter = _peekMonitor.Enter(timeoutTracker.RemainingMilliseconds, token))
             {

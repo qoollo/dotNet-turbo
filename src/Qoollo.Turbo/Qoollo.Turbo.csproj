@@ -305,6 +305,7 @@
     <Compile Include="Threading\SemaphoreLight.cs" />
     <Compile Include="Threading\ServiceStuff\CancellationTokenHelper.cs" />
     <Compile Include="Threading\ServiceStuff\ManagementThreadController.cs" />
+    <Compile Include="Threading\ServiceStuff\PlatformHelper.cs" />
     <Compile Include="Threading\ServiceStuff\TaskHelper.cs" />
     <Compile Include="Threading\ServiceStuff\TimeoutTracker.cs" />
     <Compile Include="Threading\SignalEvent.cs" />
