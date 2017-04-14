@@ -13,7 +13,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
     class NonPersistentDiskQueueSegment<T> : CountingDiskQueueSegment<T>
     {
         private const int DefaultWriteBufferSize = 32;
-        private const int BufferingStreamLengthThreshold = 1024 * 1024;
+        private const int DefaultReadBufferSize = 32;
+        private const int DefaultMaxCachedMemoryWriteStreamLength = 512 * 1024;
 
         private readonly string _fileName;
         private readonly IDiskQueueItemSerializer<T> _serializer;
@@ -27,11 +28,18 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private readonly ConcurrentQueue<T> _writeBuffer;
         private volatile int _writeBufferSize;
         private readonly int _maxWriteBufferSize;
-        private volatile RegionBinaryWriter _bufferingWriteStream;
+
+        private volatile RegionBinaryWriter _cachedMemoryWriteStream;
+        private readonly int _maxCachedMemoryWriteStreamLength;
+
+        private readonly ConcurrentQueue<T> _readBuffer;
+        private readonly int _maxReadBufferSize;
 
         private volatile bool _isDisposed;
 
-        public NonPersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity, int writeBufferSize)
+
+        public NonPersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity, 
+            int writeBufferSize, int memoryWriteStreamSize, int readBufferSize)
             : base(segmentNumber, capacity, 0, 0)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -42,6 +50,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 throw new ArgumentException($"Can't create NonPersistentDiskQueueSegment on existing file '{fileName}'", nameof(fileName));
 
             _fileName = fileName;
+            _serializer = serializer;
+
             _writeStream = new FileStream(_fileName, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             _readStream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
 
@@ -50,31 +60,68 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
             _writeBufferSize = 0;
             _maxWriteBufferSize = writeBufferSize >= 0 ? writeBufferSize : DefaultWriteBufferSize;
-            _bufferingWriteStream = null;
             if (_maxWriteBufferSize > 0)
                 _writeBuffer = new ConcurrentQueue<T>();
 
+            _maxCachedMemoryWriteStreamLength = memoryWriteStreamSize;
+            _cachedMemoryWriteStream = null;
+
+            _maxReadBufferSize = readBufferSize >= 0 ? readBufferSize : DefaultReadBufferSize;
+            if (_maxReadBufferSize > 0)
+                _readBuffer = new ConcurrentQueue<T>();
+
+            // Prepare file header
+            WriteSegmentHeader(_writeStream, Number, Capacity);
+            _readStream.Seek(0, SeekOrigin.End); // Offset readStream
 
             _isDisposed = false;
         }
 
         public int WriteBufferSize { get { return _maxWriteBufferSize; } }
+        public int MemoryWriteStreamSize { get { return _maxCachedMemoryWriteStreamLength; } }
+        public int ReadBufferSize { get { return _maxReadBufferSize; } }
 
         /// <summary>
-        /// Gets cached buffering stream to write (if possible)
+        /// Writes segment header when file is created (should be called from constructor)
+        /// </summary>
+        private static void WriteSegmentHeader(FileStream stream, long number, int capacity)
+        {
+            BinaryWriter writer = new BinaryWriter(stream);
+
+            // Write 4-byte segment identifier
+            writer.Write((byte)'N');
+            writer.Write((byte)'P');
+            writer.Write((byte)'S');
+            writer.Write((byte)1);
+
+            // Write 8-byte segment number
+            writer.Write((long)number);
+
+            // Write 4-byte capacity
+            writer.Write((int)capacity);
+
+            writer.Flush();
+        }
+
+
+        /// <summary>
+        /// Gets cached memory stream to write (if possible)
         /// </summary>
         /// <returns>BinaryWriter with stream for in-memory writing</returns>
-        private RegionBinaryWriter GetWriteBufferingStream(int itemCount)
+        private RegionBinaryWriter GetMemoryWriteStream(int itemCount)
         {
             Debug.Assert(Monitor.IsEntered(_writeLock));
             Debug.Assert(itemCount > 0);
 
-            RegionBinaryWriter result = _bufferingWriteStream;
-            _bufferingWriteStream = null;
+            RegionBinaryWriter result = _cachedMemoryWriteStream;
+            _cachedMemoryWriteStream = null;
             if (result == null)
             {
                 int expectedItemSize = _serializer.ExpectedSizeInBytes;
-                result = new RegionBinaryWriter(Math.Min(BufferingStreamLengthThreshold, expectedItemSize < 0 ? itemCount * (expectedItemSize + 4) : itemCount * 8));
+                if (expectedItemSize < 0)
+                    result = new RegionBinaryWriter(Math.Min(itemCount * 8, _maxCachedMemoryWriteStreamLength));
+                else
+                    result = new RegionBinaryWriter(Math.Min(itemCount * (expectedItemSize + 4), _maxCachedMemoryWriteStreamLength));
             }
             else
             {
@@ -84,23 +131,23 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             return result;
         }
         /// <summary>
-        /// Release taken buffering stream (set it back to <see cref="_bufferingWriteStream"/>)
+        /// Release taken memory stream (set it back to <see cref="_cachedMemoryWriteStream"/>)
         /// </summary>
-        /// <param name="bufferingWriteStream">Buffering stream to release</param>
-        private void ReleaseWriteBufferingStream(RegionBinaryWriter bufferingWriteStream)
+        /// <param name="bufferingWriteStream">Buffered stream to release</param>
+        private void ReleaseMemoryWriteStream(RegionBinaryWriter bufferingWriteStream)
         {
             Debug.Assert(bufferingWriteStream != null);
             Debug.Assert(Monitor.IsEntered(_writeLock));
 
-            if (bufferingWriteStream.BaseStream.InnerStream.Length < BufferingStreamLengthThreshold)
-                _bufferingWriteStream = bufferingWriteStream;
+            if (bufferingWriteStream.BaseStream.InnerStream.Length < DefaultMaxCachedMemoryWriteStreamLength)
+                _cachedMemoryWriteStream = bufferingWriteStream;
         }
 
 
         /// <summary>
         /// Writes items from <see cref="_writeBuffer"/> to disk
         /// </summary>
-        private void WriteBufferToDisk()
+        private void SaveWriteBufferToDisk()
         {
             Debug.Assert(_writeBuffer != null);
             Debug.Assert(_maxWriteBufferSize > 0);
@@ -112,7 +159,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 if (_writeBuffer.IsEmpty)
                     return;
 
-                RegionBinaryWriter writer = GetWriteBufferingStream(_maxWriteBufferSize);
+                RegionBinaryWriter writer = GetMemoryWriteStream(_maxWriteBufferSize);
 
                 int itemCount = 0;
                 T item = default(T);
@@ -127,7 +174,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 writer.BaseStream.InnerStream.WriteTo(_writeStream);
                 _writeStream.Flush(flushToDisk: false);
 
-                ReleaseWriteBufferingStream(writer);
+                ReleaseMemoryWriteStream(writer);
             }
         }
 
@@ -135,25 +182,26 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// Writes single item to disk
         /// </summary>
         /// <param name="item">Item</param>
-        private void WriteSingleItemToDisk(T item)
+        private void SaveSingleItemToDisk(T item)
         {
             lock (_writeLock)
             {
                 if (_isDisposed)
                     throw new ObjectDisposedException(this.GetType().Name);
 
-                RegionBinaryWriter writer = GetWriteBufferingStream(1);
+                RegionBinaryWriter writer = GetMemoryWriteStream(1);
 
                 // Write all data to disk
                 writer.BaseStream.InnerStream.WriteTo(_writeStream);
                 _writeStream.Flush(flushToDisk: false);
 
-                ReleaseWriteBufferingStream(writer);
+                ReleaseMemoryWriteStream(writer);
             }
         }
 
         /// <summary>
-        /// Serializes record with specified item to memory stream
+        /// Build segment record with specified item in memory stream.
+        /// (writes length + item bytes)
         /// </summary>
         /// <param name="item">Item</param>
         /// <param name="writer">Writer that wraps memory stream</param>
@@ -196,6 +244,11 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             return (writeBufferSize % _maxWriteBufferSize) == 0;
         }
 
+
+        /// <summary>
+        /// Adds new item to the tail of the segment (core implementation)
+        /// </summary>
+        /// <param name="item">New item</param>
         protected override void AddCore(T item)
         {
             if (_isDisposed)
@@ -206,17 +259,60 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 if (AddToWriteBuffer(item))
                 {
                     // Should dump write buffer
-                    WriteBufferToDisk();
+                    SaveWriteBufferToDisk();
                 }
             }
             else
             {
-                WriteSingleItemToDisk(item);
+                SaveSingleItemToDisk(item);
             }
         }
 
+
+
+
+
+        private bool TryPeekOrTakeThroughReadBuffer(out T item, bool take)
+        {
+            Debug.Assert(_readBuffer != null);
+
+            lock (_readLock)
+            {
+                if (_isDisposed)
+                    throw new ObjectDisposedException(this.GetType().Name);
+
+                // retry read from buffer
+                if (take && _readBuffer.TryDequeue(out item))
+                    return true;
+                if (!take && _readBuffer.TryPeek(out item))
+                    return true;
+
+                // Buffer is empty => should read from disk
+
+
+                item = default(T);
+                return false;
+            }
+        }
+
+
         protected override bool TryTakeCore(out T item)
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+           
+            if (_readBuffer != null)
+            {
+                // Read from buffer first
+                if (_readBuffer.TryDequeue(out item))
+                    return true;
+            }
+            else
+            {
+
+            }
+
+
             throw new NotImplementedException();
         }
 
