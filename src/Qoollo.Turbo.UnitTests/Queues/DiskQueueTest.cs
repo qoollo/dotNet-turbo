@@ -145,7 +145,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
             public volatile bool IsDisposed;
 
             public CountingMemorySegment(long number, int capacity) 
-                : base(capacity, 0, 0, number)
+                : base(number, capacity, 0, 0)
             {
                 Queue = new ConcurrentQueue<T>();
             }

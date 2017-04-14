@@ -39,7 +39,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>Created segment</returns>
         public override DiskQueueSegment<T> CreateSegment(string path, long number)
         {
-            return new MemoryDiskQueueSegment<T>(_segmentCapacity, number);
+            return new MemoryDiskQueueSegment<T>(number, _segmentCapacity);
         }
         /// <summary>
         /// Discovers existing segments in specified path (always empty for MemoryDiskQueueSegmentFactory)
@@ -79,8 +79,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         /// <param name="capacity">Capacity</param>
         /// <param name="segmentNumber">Segment number</param>
-        public MemoryDiskQueueSegment(int capacity, long segmentNumber)
-            : base(capacity, 0, 0, segmentNumber)
+        public MemoryDiskQueueSegment(long segmentNumber, int capacity)
+            : base(segmentNumber, capacity, 0, 0)
         {
             _queue = new ConcurrentQueue<T>();
             _isDisposed = false;

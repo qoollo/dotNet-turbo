@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="initialItemCount">Count of already presented items inside the segment</param>
         /// <param name="fillCount">Number of items that was stored inside segment (number of filled slots for items)</param>
         /// <param name="segmentNumber">Segment number</param>
-        public CountingDiskQueueSegment(int capacity, int initialItemCount, int fillCount, long segmentNumber)
+        public CountingDiskQueueSegment(long segmentNumber, int capacity, int initialItemCount, int fillCount)
             : base(segmentNumber)
         {
             if (capacity <= 0)
