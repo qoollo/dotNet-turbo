@@ -9,6 +9,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 {
     internal interface IDiskQueueItemSerializer<T>
     {
+        int ExpectedSizeInBytes { get; }
         void Serialize(BinaryWriter writer, T item);
         void Deserialize(BinaryReader reader, out T item);
     }

@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Qoollo.Turbo.Queues.DiskQueueComponents.ServiceStuff;
+using Qoollo.Turbo.Queues.DiskQueueComponents;
 using System;
 using System.Collections.Generic;
 using System.IO;

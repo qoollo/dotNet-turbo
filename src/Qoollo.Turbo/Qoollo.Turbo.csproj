@@ -286,6 +286,7 @@
     <Compile Include="Queues\DiskQueueComponents\ServiceStuff\DiskQueueSegmentWrapper.cs" />
     <Compile Include="Queues\DiskQueueComponents\MemoryDiskQueueSegment.cs" />
     <Compile Include="Queues\DiskQueueComponents\NonPersistentDiskQueueSegment.cs" />
+    <Compile Include="Queues\DiskQueueComponents\ServiceStuff\RegionBinaryWriter.cs" />
     <Compile Include="Queues\DiskQueueComponents\ServiceStuff\RegionMemoryStream.cs" />
     <Compile Include="Queues\IQueue.cs" />
     <Compile Include="Queues\LevelingQueue.cs" />

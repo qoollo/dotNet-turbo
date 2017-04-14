@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Qoollo.Turbo.Queues.DiskQueueComponents.ServiceStuff
+namespace Qoollo.Turbo.Queues.DiskQueueComponents
 {
     /// <summary>
     /// Memory stream with limited observation window
@@ -50,6 +50,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents.ServiceStuff
         /// Current origin position
         /// </summary>
         internal int Origin { get { return _origin; } }
+        /// <summary>
+        /// Gets position for inner MemoryStream
+        /// </summary>
+        internal int InnerStreamPosition { get { return checked((int)_innerStream.Position); } }
 
         /// <summary>
         /// Gets a value indicating whether the current stream supports reading
