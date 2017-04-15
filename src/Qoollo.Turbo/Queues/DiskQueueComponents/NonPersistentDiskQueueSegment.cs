@@ -14,7 +14,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
     {
         private const int DefaultWriteBufferSize = 32;
         private const int DefaultReadBufferSize = 32;
-        private const int DefaultMaxCachedMemoryWriteStreamLength = 512 * 1024;
+        private const int DefaultMaxCachedMemoryStreamSize = 512 * 1024;
 
         private readonly string _fileName;
         private readonly IDiskQueueItemSerializer<T> _serializer;
@@ -30,7 +30,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private readonly int _maxWriteBufferSize;
 
         private volatile RegionBinaryWriter _cachedMemoryWriteStream;
-        private readonly int _maxCachedMemoryWriteStreamLength;
+        private readonly int _maxCachedMemoryWriteStreamSize;
 
         private readonly ConcurrentQueue<T> _readBuffer;
         private readonly int _maxReadBufferSize;
@@ -63,7 +63,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             if (_maxWriteBufferSize > 0)
                 _writeBuffer = new ConcurrentQueue<T>();
 
-            _maxCachedMemoryWriteStreamLength = memoryWriteStreamSize;
+            _maxCachedMemoryWriteStreamSize = memoryWriteStreamSize >= 0 ? memoryWriteStreamSize : DefaultMaxCachedMemoryStreamSize;
             _cachedMemoryWriteStream = null;
 
             _maxReadBufferSize = readBufferSize >= 0 ? readBufferSize : DefaultReadBufferSize;
@@ -78,7 +78,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         }
 
         public int WriteBufferSize { get { return _maxWriteBufferSize; } }
-        public int MemoryWriteStreamSize { get { return _maxCachedMemoryWriteStreamLength; } }
+        public int MemoryWriteStreamSize { get { return _maxCachedMemoryWriteStreamSize; } }
         public int ReadBufferSize { get { return _maxReadBufferSize; } }
 
         /// <summary>
@@ -119,9 +119,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             {
                 int expectedItemSize = _serializer.ExpectedSizeInBytes;
                 if (expectedItemSize < 0)
-                    result = new RegionBinaryWriter(Math.Min(itemCount * 8, _maxCachedMemoryWriteStreamLength));
+                    result = new RegionBinaryWriter(itemCount * 8);
                 else
-                    result = new RegionBinaryWriter(Math.Min(itemCount * (expectedItemSize + 4), _maxCachedMemoryWriteStreamLength));
+                    result = new RegionBinaryWriter(Math.Max(itemCount * 8, Math.Min(itemCount * (expectedItemSize + 4), _maxCachedMemoryWriteStreamSize)));
             }
             else
             {
@@ -139,8 +139,17 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             Debug.Assert(bufferingWriteStream != null);
             Debug.Assert(Monitor.IsEntered(_writeLock));
 
-            if (bufferingWriteStream.BaseStream.InnerStream.Length < DefaultMaxCachedMemoryWriteStreamLength)
+            if (bufferingWriteStream.BaseStream.InnerStream.Length <= _maxCachedMemoryWriteStreamSize)
+            {
+                if (bufferingWriteStream.BaseStream.InnerStream.Capacity > _maxCachedMemoryWriteStreamSize)
+                {
+                    bufferingWriteStream.BaseStream.SetOriginLength(0, -1);
+                    bufferingWriteStream.BaseStream.InnerStream.SetLength(0);
+                    bufferingWriteStream.BaseStream.InnerStream.Capacity = _maxCachedMemoryWriteStreamSize;
+                }
+
                 _cachedMemoryWriteStream = bufferingWriteStream;
+            }
         }
 
 
