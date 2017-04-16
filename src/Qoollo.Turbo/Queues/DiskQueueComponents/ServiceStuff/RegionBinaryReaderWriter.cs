@@ -28,4 +28,27 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         internal new RegionMemoryStream BaseStream { get { return _stream; } }
     }
+
+
+    /// <summary>
+    /// RegionBinaryReader that stores typed reference to RegionMemoryStream
+    /// </summary>
+    internal class RegionBinaryReader : BinaryReader
+    {
+        private readonly RegionMemoryStream _stream;
+        public RegionBinaryReader(RegionMemoryStream stream)
+            : base(stream)
+        {
+            _stream = stream;
+        }
+        public RegionBinaryReader(int capacity)
+            : this(new RegionMemoryStream(capacity))
+        {
+        }
+
+        /// <summary>
+        /// Gets the underlying stream
+        /// </summary>
+        internal new RegionMemoryStream BaseStream { get { return _stream; } }
+    }
 }

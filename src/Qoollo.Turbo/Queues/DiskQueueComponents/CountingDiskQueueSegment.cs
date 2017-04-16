@@ -197,6 +197,12 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>True if the item was read</returns>
         public sealed override bool TryPeek(out T item)
         {
+            if (_itemCount == 0) // Nothing to peek
+            {
+                item = default(T);
+                return false;
+            }
+
             return TryPeekCore(out item);
         }
     }

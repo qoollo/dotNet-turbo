@@ -10,11 +10,19 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Queues.DiskQueueComponents
 {
-    class NonPersistentDiskQueueSegment<T> : CountingDiskQueueSegment<T>
+    /// <summary>
+    /// Non persistent disk queue segment (not preserve items between restarts)
+    /// </summary>
+    /// <typeparam name="T">The type of elements in segment</typeparam>
+    public class NonPersistentDiskQueueSegment<T> : CountingDiskQueueSegment<T>
     {
         private const int DefaultWriteBufferSize = 32;
         private const int DefaultReadBufferSize = 32;
-        private const int DefaultMaxCachedMemoryStreamSize = 512 * 1024;
+
+        private const int ItemHeaderSize = 4;
+        private const int InitialCacheSizePerItem = 4;
+        private const int MaxChacheSizePerItem = 1024;
+        private const int MaxCachedMemoryStreamSize = 32 * 1024;
 
         private readonly string _fileName;
         private readonly IDiskQueueItemSerializer<T> _serializer;
@@ -26,7 +34,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private readonly FileStream _readStream;
 
         private readonly ConcurrentQueue<T> _writeBuffer;
-        private volatile int _writeBufferSize;
+        private volatile int _writeBufferMonotonicSize;
         private readonly int _maxWriteBufferSize;
 
         private volatile RegionBinaryWriter _cachedMemoryWriteStream;
@@ -35,11 +43,25 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private readonly ConcurrentQueue<T> _readBuffer;
         private readonly int _maxReadBufferSize;
 
+        private volatile RegionBinaryReader _cachedMemoryReadStream;
+        private readonly int _maxCachedMemoryReadStreamSize;
+
         private volatile bool _isDisposed;
 
 
+        /// <summary>
+        /// NonPersistentDiskQueueSegment constructor
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="writeBufferSize">Determines the number of items, that are stored in memory before save them to disk (-1 - set to default value, 0 - disable write buffer)</param>
+        /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         public NonPersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity, 
-            int writeBufferSize, int memoryWriteStreamSize, int readBufferSize)
+            int writeBufferSize, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
             : base(segmentNumber, capacity, 0, 0)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -58,28 +80,98 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             _writeLock = new object();
             _readLock = new object();
 
-            _writeBufferSize = 0;
+            _writeBufferMonotonicSize = 0;
             _maxWriteBufferSize = writeBufferSize >= 0 ? writeBufferSize : DefaultWriteBufferSize;
             if (_maxWriteBufferSize > 0)
                 _writeBuffer = new ConcurrentQueue<T>();
 
-            _maxCachedMemoryWriteStreamSize = memoryWriteStreamSize >= 0 ? memoryWriteStreamSize : DefaultMaxCachedMemoryStreamSize;
             _cachedMemoryWriteStream = null;
+            _maxCachedMemoryWriteStreamSize = cachedMemoryWriteStreamSize;
+            if (cachedMemoryWriteStreamSize < 0)
+            {
+                checked
+                {
+                    int expectedItemSize = MaxChacheSizePerItem;
+                    if (serializer.ExpectedSizeInBytes > 0)
+                        expectedItemSize = Math.Min(serializer.ExpectedSizeInBytes + ItemHeaderSize, MaxChacheSizePerItem);
+                    _maxCachedMemoryWriteStreamSize = Math.Min(MaxCachedMemoryStreamSize, (_maxWriteBufferSize + 1) * expectedItemSize);
+                }
+            }
+            
 
             _maxReadBufferSize = readBufferSize >= 0 ? readBufferSize : DefaultReadBufferSize;
             if (_maxReadBufferSize > 0)
                 _readBuffer = new ConcurrentQueue<T>();
 
+            _cachedMemoryReadStream = null;
+            _maxCachedMemoryReadStreamSize = cachedMemoryReadStreamSize;
+            if (cachedMemoryReadStreamSize < 0)
+            {
+                checked
+                {
+                    int expectedItemSize = MaxChacheSizePerItem;
+                    if (serializer.ExpectedSizeInBytes > 0)
+                        expectedItemSize = Math.Min(serializer.ExpectedSizeInBytes + ItemHeaderSize, MaxChacheSizePerItem);
+                    _maxCachedMemoryReadStreamSize = Math.Min(MaxCachedMemoryStreamSize, expectedItemSize);
+                }
+            }
+
+
             // Prepare file header
             WriteSegmentHeader(_writeStream, Number, Capacity);
-            _readStream.Seek(0, SeekOrigin.End); // Offset readStream
+            _readStream.Seek(0, SeekOrigin.End); // Offset readStream after the header
 
             _isDisposed = false;
+
+            Debug.Assert(_maxWriteBufferSize >= 0);
+            Debug.Assert(_maxCachedMemoryWriteStreamSize >= 0);
+            Debug.Assert(_maxReadBufferSize >= 0);
+            Debug.Assert(_maxCachedMemoryReadStreamSize >= 0);
+            Debug.Assert(_writeStream.Position == _readStream.Position);
+        }
+        /// <summary>
+        /// NonPersistentDiskQueueSegment constructor
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="writeBufferSize">Determines the number of items, that are stored in memory before save them to disk (-1 - set to default value, 0 - disable write buffer)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        public NonPersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
+            int writeBufferSize, int readBufferSize)
+            : this(segmentNumber, fileName, serializer, capacity, writeBufferSize, -1, readBufferSize, -1)
+        {
+        }
+        /// <summary>
+        /// NonPersistentDiskQueueSegment constructor
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        public NonPersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity)
+            : this(segmentNumber, fileName, serializer, capacity, -1, -1, -1, -1)
+        {
         }
 
+
+        /// <summary>
+        /// Size of the write buffer (determines the number of items, that are stored in memory before save them to disk)
+        /// </summary>
         public int WriteBufferSize { get { return _maxWriteBufferSize; } }
-        public int MemoryWriteStreamSize { get { return _maxCachedMemoryWriteStreamSize; } }
+        /// <summary>
+        /// Maximum size of the cached byte stream that used to serialize items in memory
+        /// </summary>
+        public int CachedMemoryWriteStreamSize { get { return _maxCachedMemoryWriteStreamSize; } }
+        /// <summary>
+        /// Size of the read buffer (determines the number of items, that are stored in memory for read purposes)
+        /// </summary>
         public int ReadBufferSize { get { return _maxReadBufferSize; } }
+        /// <summary>
+        /// Maximum size of the cached byte stream that used to deserialize items in memory
+        /// </summary>
+        public int CachedMemoryReadStreamSize { get { return _maxCachedMemoryReadStreamSize; } }
 
         /// <summary>
         /// Writes segment header when file is created (should be called from constructor)
@@ -104,8 +196,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         }
 
 
+        // ================= MemoryWriteStream ==================
+
         /// <summary>
-        /// Gets cached memory stream to write (if possible)
+        /// Gets cached memory stream to write
         /// </summary>
         /// <returns>BinaryWriter with stream for in-memory writing</returns>
         private RegionBinaryWriter GetMemoryWriteStream(int itemCount)
@@ -118,10 +212,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             if (result == null)
             {
                 int expectedItemSize = _serializer.ExpectedSizeInBytes;
-                if (expectedItemSize < 0)
-                    result = new RegionBinaryWriter(itemCount * 8);
-                else
-                    result = new RegionBinaryWriter(Math.Max(itemCount * 8, Math.Min(itemCount * (expectedItemSize + 4), _maxCachedMemoryWriteStreamSize)));
+                if (expectedItemSize <= 0)
+                    expectedItemSize = InitialCacheSizePerItem;
+                result = new RegionBinaryWriter(Math.Min(MaxCachedMemoryStreamSize, Math.Max(0, itemCount * (expectedItemSize + ItemHeaderSize)))); // Max used to protect from overflow
             }
             else
             {
@@ -138,6 +231,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         {
             Debug.Assert(bufferingWriteStream != null);
             Debug.Assert(Monitor.IsEntered(_writeLock));
+            Debug.Assert(_cachedMemoryWriteStream == null);
 
             if (bufferingWriteStream.BaseStream.InnerStream.Length <= _maxCachedMemoryWriteStreamSize)
             {
@@ -151,6 +245,62 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 _cachedMemoryWriteStream = bufferingWriteStream;
             }
         }
+
+
+        // ============= MemoryReadStream =================
+
+        /// <summary>
+        /// Gets cached memory stream to read
+        /// </summary>
+        /// <returns>BinaryReader with stream for in-memory reading</returns>
+        private RegionBinaryReader GetMemoryReadStream(int itemCount = 1)
+        {
+            Debug.Assert(Monitor.IsEntered(_readLock));
+            Debug.Assert(itemCount > 0);
+
+            RegionBinaryReader result = _cachedMemoryReadStream;
+            _cachedMemoryReadStream = null;
+            if (result == null)
+            {
+                int expectedItemSize = _serializer.ExpectedSizeInBytes;
+                if (expectedItemSize <= 0)
+                    expectedItemSize = InitialCacheSizePerItem;
+                result = new RegionBinaryReader(Math.Min(MaxCachedMemoryStreamSize, Math.Max(0, itemCount * (expectedItemSize + ItemHeaderSize)))); // Max used to protect from overflow
+            }
+            else
+            {
+                result.BaseStream.SetOriginLength(0, -1);
+                result.BaseStream.SetLength(0);
+            }
+            return result;
+        }
+        /// <summary>
+        /// Release taken memory stream (set it back to <see cref="_cachedMemoryReadStream"/>)
+        /// </summary>
+        /// <param name="bufferingReadStream">Buffered stream to release</param>
+        private void ReleaseMemoryReadStream(RegionBinaryReader bufferingReadStream)
+        {
+            Debug.Assert(bufferingReadStream != null);
+            Debug.Assert(Monitor.IsEntered(_readLock));
+            Debug.Assert(_cachedMemoryReadStream == null);
+
+            if (bufferingReadStream.BaseStream.InnerStream.Length <= _maxCachedMemoryReadStreamSize)
+            {
+                if (bufferingReadStream.BaseStream.InnerStream.Capacity > _maxCachedMemoryReadStreamSize)
+                {
+                    bufferingReadStream.BaseStream.SetOriginLength(0, -1);
+                    bufferingReadStream.BaseStream.InnerStream.SetLength(0);
+                    bufferingReadStream.BaseStream.InnerStream.Capacity = _maxCachedMemoryReadStreamSize;
+                }
+
+                _cachedMemoryReadStream = bufferingReadStream;
+            }
+        }
+
+
+        // =================================
+
+
 
 
         /// <summary>
@@ -179,9 +329,12 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     itemCount++;
                 }
 
-                // Write all data to disk
-                writer.BaseStream.InnerStream.WriteTo(_writeStream);
-                _writeStream.Flush(flushToDisk: false);
+                if (itemCount > 0)
+                {
+                    // Write all data to disk
+                    writer.BaseStream.InnerStream.WriteTo(_writeStream);
+                    _writeStream.Flush(flushToDisk: false);
+                }
 
                 ReleaseMemoryWriteStream(writer);
             }
@@ -249,7 +402,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             Debug.Assert(_maxWriteBufferSize > 0);
 
             _writeBuffer.Enqueue(item);
-            int writeBufferSize = Interlocked.Increment(ref _writeBufferSize);
+            int writeBufferSize = Interlocked.Increment(ref _writeBufferMonotonicSize);
             return (writeBufferSize % _maxWriteBufferSize) == 0;
         }
 
@@ -278,12 +431,116 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         }
 
 
+        // =============================
+
+        
+        /// <summary>
+        /// Read single item bytes from disk to <paramref name="targetStream"/> (incuding header)
+        /// </summary>
+        /// <param name="targetStream">Target stream to read bytes (Position is not changed after read)</param>
+        /// <param name="itemSize">Size of the readed item (without header)</param>
+        /// <param name="take">Should move readStream position</param>
+        /// <returns>Is read</returns>
+        private bool TryTakeOrPeekSingleItemBytesFromDisk(MemoryStream targetStream, out int itemSize, bool take)
+        {
+            Debug.Assert(targetStream != null);
+            Debug.Assert(Monitor.IsEntered(_readLock));
+
+            itemSize = 0;
+
+            long readStreamPosition = _readStream.Position;
+            if (readStreamPosition + ItemHeaderSize < _readStream.Length) // No space for item header
+                return false;
+
+            // Ensure capacity on MemoryStream
+            targetStream.SetLength(targetStream.Position + ItemHeaderSize);
+
+            // Read item header
+            var rawBuffer = targetStream.GetBuffer();
+            int readCount = _readStream.Read(rawBuffer, (int)targetStream.Position, ItemHeaderSize);
+            if (readCount != ItemHeaderSize)
+                throw new IOException($"Expected to read {ItemHeaderSize} bytes but actually read {readCount} bytes");
+
+            itemSize = BitConverter.ToInt32(rawBuffer, (int)targetStream.Position);
+            
+            if (readStreamPosition + itemSize < _readStream.Length) // No space for item (write in progress)
+            {
+                // should rewind stream position
+                _readStream.Seek(-ItemHeaderSize, SeekOrigin.Current);
+                return false;
+            }
+
+            // Ensure capacity on MemoryStream
+            targetStream.SetLength(targetStream.Position + ItemHeaderSize + itemSize);
+
+            // Read item
+            rawBuffer = targetStream.GetBuffer();
+            readCount = _readStream.Read(rawBuffer, (int)targetStream.Position + ItemHeaderSize, itemSize);
+            if (readCount != itemSize)
+                throw new IOException($"Expected to read {itemSize} bytes but actually read {readCount} bytes");
+
+            if (!take)
+            {
+                // For peek should rewind stream position
+                _readStream.Seek(-ItemHeaderSize - itemSize, SeekOrigin.Current);
+            }
+
+            Debug.Assert(targetStream.Position + ItemHeaderSize + itemSize == targetStream.Length);
+            Debug.Assert(take || _readStream.Position == readStreamPosition);
+            return true;
+        }
+
+        /// <summary>
+        /// Read signle item from disk and deserialize it
+        /// </summary>
+        /// <param name="item">Taken item</param>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="take">True = take, False = peek</param>
+        /// <returns>Success or not</returns>
+        private bool TryTakeOrPeekItemFromDisk(out T item, RegionBinaryReader buffer, bool take)
+        {
+            Debug.Assert(buffer != null);
+            Debug.Assert(Monitor.IsEntered(_readLock));
+
+            buffer.BaseStream.SetOriginLength(0, -1);
+
+            int itemSize = 0;
+            if (!TryTakeOrPeekSingleItemBytesFromDisk(buffer.BaseStream.InnerStream, out itemSize, take)) // Read from disk
+            {
+                item = default(T);
+                return false;
+            }
+
+            buffer.BaseStream.SetOriginLength(ItemHeaderSize, -itemSize);
+            Debug.Assert(buffer.BaseStream.Length == itemSize);
+
+            item = _serializer.Deserialize(buffer); // Deserialize
+            return true;
+        }
 
 
+        /// <summary>
+        /// Helper method to take or peek item from <see cref="ConcurrentQueue{T}"/>
+        /// </summary>
+        private static bool TryTakeOrPeekFromQueue(ConcurrentQueue<T> queue, out T item, bool take)
+        {
+            if (take)
+                return queue.TryDequeue(out item);
+            return queue.TryPeek(out item);
+        }
 
-        private bool TryPeekOrTakeThroughReadBuffer(out T item, bool take)
+        /// <summary>
+        /// Take or peek item inside readLock through read buffer. Also populate readBuffer with items
+        /// Steps:
+        /// - Reads item from readBuffer;
+        /// - Reads items from disk
+        /// - Reads items from disk in exclusive mode (lock on _writeLock)
+        /// - Reads items from writeBuffer (with lock on _writeLock)
+        /// </summary>
+        private bool TryTakeOrPeekThroughReadBuffer(out T item, bool take)
         {
             Debug.Assert(_readBuffer != null);
+            Debug.Assert(_maxReadBufferSize > 0);
 
             lock (_readLock)
             {
@@ -291,20 +548,118 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     throw new ObjectDisposedException(this.GetType().Name);
 
                 // retry read from buffer
-                if (take && _readBuffer.TryDequeue(out item))
-                    return true;
-                if (!take && _readBuffer.TryPeek(out item))
+                if (TryTakeOrPeekFromQueue(_readBuffer, out item, take))
                     return true;
 
-                // Buffer is empty => should read from disk
+                // Read buffer is empty => should read from disk
+                RegionBinaryReader memoryBuffer = GetMemoryReadStream();
+                try
+                {
+                    int itemTransfered = 0;
+                    T tmpItem = default(T);
+                    while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, take))
+                    {
+                        if (itemTransfered == 0)
+                            item = tmpItem;
+                        
+                        if (itemTransfered > 0 || !take) // First item should always be ours
+                            _readBuffer.Enqueue(tmpItem);
+
+                        itemTransfered++;
+                    }
+
+                    if (itemTransfered < _maxReadBufferSize)
+                    {
+                        // Should enter write lock to observe fully saved items
+                        lock (_writeLock)
+                        {
+                            // Retry read from disk
+                            while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, take))
+                            {
+                                if (itemTransfered == 0)
+                                    item = tmpItem;
+
+                                if (itemTransfered > 0 || !take) // First item should always be ours
+                                    _readBuffer.Enqueue(tmpItem);
+
+                                itemTransfered++;
+                            }
+
+                            // attempt to read from write buffer
+                            if (itemTransfered < _maxReadBufferSize && _writeBuffer != null)
+                            {
+                                while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekFromQueue(_writeBuffer, out tmpItem, take))
+                                {
+                                    if (itemTransfered == 0)
+                                        item = tmpItem;
+
+                                    if (itemTransfered > 0 || !take) // First item should always be ours
+                                        _readBuffer.Enqueue(tmpItem);
+
+                                    itemTransfered++;
+                                }
+                            }
+                        }
+                    }
+
+                    return itemTransfered > 0;
+                }
+                finally
+                {
+                    ReleaseMemoryReadStream(memoryBuffer);
+                }
+            }
+        }
 
 
-                item = default(T);
+        /// <summary>
+        /// Take or peek item inside readLock
+        /// Steps:
+        /// - Reads item from disk
+        /// - Reads item from disk in exclusive mode (lock on _writeLock)
+        /// - Reads item from writeBuffer (with lock on _writeLock)
+        /// </summary>
+        private bool TryTakeOrPeek(out T item, bool take)
+        {
+            lock (_readLock)
+            {
+                if (_isDisposed)
+                    throw new ObjectDisposedException(this.GetType().Name);
+
+                RegionBinaryReader memoryBuffer = GetMemoryReadStream();
+                try
+                {
+                    if (TryTakeOrPeekItemFromDisk(out item, memoryBuffer, take))
+                        return true;
+
+                    // Should enter write lock to observe fully saved items
+                    lock (_writeLock)
+                    {
+                        // Retry read from disk
+                        if (TryTakeOrPeekItemFromDisk(out item, memoryBuffer, take))
+                            return true;
+
+                        // Now attempt to read from write buffer
+                        if (_writeBuffer != null && TryTakeOrPeekFromQueue(_writeBuffer, out item, take))
+                            return true;
+                    }
+                }
+                finally
+                {
+                    ReleaseMemoryReadStream(memoryBuffer);
+                }
+
                 return false;
             }
         }
 
 
+
+        /// <summary>
+        /// Removes item from the head of the segment (core implementation)
+        /// </summary>
+        /// <param name="item">The item removed from segment</param>
+        /// <returns>True if the item was removed</returns>
         protected override bool TryTakeCore(out T item)
         {
             if (_isDisposed)
@@ -315,32 +670,58 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 // Read from buffer first
                 if (_readBuffer.TryDequeue(out item))
                     return true;
+
+                return TryTakeOrPeekThroughReadBuffer(out item, take: true);
             }
             else
             {
-
+                return TryTakeOrPeek(out item, take: true);
             }
-
-
-            throw new NotImplementedException();
         }
-
+        /// <summary>
+        /// Returns the item at the head of the segment without removing it (core implementation)
+        /// </summary>
+        /// <param name="item">The item at the head of the segment</param>
+        /// <returns>True if the item was read</returns>
         protected override bool TryPeekCore(out T item)
         {
-            throw new NotImplementedException();
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+
+            if (_readBuffer != null)
+            {
+                // Read from buffer first
+                if (_readBuffer.TryPeek(out item))
+                    return true;
+
+                return TryTakeOrPeekThroughReadBuffer(out item, take: false);
+            }
+            else
+            {
+                return TryTakeOrPeek(out item, take: false);
+            }
         }
 
 
+        /// <summary>
+        /// Cleans-up resources
+        /// </summary>
+        /// <param name="disposeBehaviour">Flag indicating whether the segment can be removed from disk</param>
+        /// <param name="isUserCall">Was called explicitly by user</param>
         protected override void Dispose(DiskQueueSegmentDisposeBehaviour disposeBehaviour, bool isUserCall)
         {
             if (!_isDisposed)
             {
                 _isDisposed = true;
 
+                _readStream.Dispose();
+                _writeStream.Dispose();
+
                 if (disposeBehaviour == DiskQueueSegmentDisposeBehaviour.Delete)
+                {
                     Debug.Assert(this.Count == 0);
-
-
+                    File.Delete(_fileName);
+                }
             }
         }
     }

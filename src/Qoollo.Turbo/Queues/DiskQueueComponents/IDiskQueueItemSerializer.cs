@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Queues.DiskQueueComponents
 {
-    internal interface IDiskQueueItemSerializer<T>
+    public interface IDiskQueueItemSerializer<T>
     {
         int ExpectedSizeInBytes { get; }
         void Serialize(BinaryWriter writer, T item);
-        void Deserialize(BinaryReader reader, out T item);
+        T Deserialize(BinaryReader reader);
     }
 }
