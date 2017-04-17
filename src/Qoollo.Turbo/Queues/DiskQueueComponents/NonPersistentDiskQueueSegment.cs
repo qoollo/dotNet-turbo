@@ -203,60 +203,73 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             _fileName = fileName;
             _serializer = serializer;
 
-            _writeStream = new FileStream(_fileName, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-            _readStream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-            _writeLock = new object();
-            _readLock = new object();
-
-            _writeBufferMonotonicSize = 0;
-            _maxWriteBufferSize = writeBufferSize >= 0 ? writeBufferSize : DefaultWriteBufferSize;
-            if (_maxWriteBufferSize > 0)
-                _writeBuffer = new ConcurrentQueue<T>();
-
-            _cachedMemoryWriteStream = null;
-            _maxCachedMemoryWriteStreamSize = cachedMemoryWriteStreamSize;
-            if (cachedMemoryWriteStreamSize < 0)
+            try
             {
-                checked
+                _writeStream = new FileStream(_fileName, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+                _readStream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                _writeLock = new object();
+                _readLock = new object();
+
+                _writeBufferMonotonicSize = 0;
+                _maxWriteBufferSize = writeBufferSize >= 0 ? writeBufferSize : DefaultWriteBufferSize;
+                if (_maxWriteBufferSize > 0)
+                    _writeBuffer = new ConcurrentQueue<T>();
+
+                _cachedMemoryWriteStream = null;
+                _maxCachedMemoryWriteStreamSize = cachedMemoryWriteStreamSize;
+                if (cachedMemoryWriteStreamSize < 0)
                 {
-                    int expectedItemSize = MaxChacheSizePerItem;
-                    if (serializer.ExpectedSizeInBytes > 0)
-                        expectedItemSize = Math.Min(serializer.ExpectedSizeInBytes + ItemHeaderSize, MaxChacheSizePerItem);
-                    _maxCachedMemoryWriteStreamSize = Math.Min(MaxCachedMemoryStreamSize, (_maxWriteBufferSize + 1) * expectedItemSize);
+                    checked
+                    {
+                        int expectedItemSize = MaxChacheSizePerItem;
+                        if (serializer.ExpectedSizeInBytes > 0)
+                            expectedItemSize = Math.Min(serializer.ExpectedSizeInBytes + ItemHeaderSize, MaxChacheSizePerItem);
+                        _maxCachedMemoryWriteStreamSize = Math.Min(MaxCachedMemoryStreamSize, (_maxWriteBufferSize + 1) * expectedItemSize);
+                    }
                 }
+
+
+                _maxReadBufferSize = readBufferSize >= 0 ? readBufferSize : DefaultReadBufferSize;
+                if (_maxReadBufferSize > 0)
+                    _readBuffer = new ConcurrentQueue<T>();
+
+                _cachedMemoryReadStream = null;
+                _maxCachedMemoryReadStreamSize = cachedMemoryReadStreamSize;
+                if (cachedMemoryReadStreamSize < 0)
+                {
+                    checked
+                    {
+                        int expectedItemSize = MaxChacheSizePerItem;
+                        if (serializer.ExpectedSizeInBytes > 0)
+                            expectedItemSize = Math.Min(serializer.ExpectedSizeInBytes + ItemHeaderSize, MaxChacheSizePerItem);
+                        _maxCachedMemoryReadStreamSize = Math.Min(MaxCachedMemoryStreamSize, expectedItemSize);
+                    }
+                }
+
+
+                // Prepare file header
+                WriteSegmentHeader(_writeStream, Number, Capacity);
+                _readStream.Seek(0, SeekOrigin.End); // Offset readStream after the header
+
+                _isDisposed = false;
+
+                Debug.Assert(_maxWriteBufferSize >= 0);
+                Debug.Assert(_maxCachedMemoryWriteStreamSize >= 0);
+                Debug.Assert(_maxReadBufferSize >= 0);
+                Debug.Assert(_maxCachedMemoryReadStreamSize >= 0);
+                Debug.Assert(_writeStream.Position == _readStream.Position);
             }
-            
-
-            _maxReadBufferSize = readBufferSize >= 0 ? readBufferSize : DefaultReadBufferSize;
-            if (_maxReadBufferSize > 0)
-                _readBuffer = new ConcurrentQueue<T>();
-
-            _cachedMemoryReadStream = null;
-            _maxCachedMemoryReadStreamSize = cachedMemoryReadStreamSize;
-            if (cachedMemoryReadStreamSize < 0)
+            catch
             {
-                checked
-                {
-                    int expectedItemSize = MaxChacheSizePerItem;
-                    if (serializer.ExpectedSizeInBytes > 0)
-                        expectedItemSize = Math.Min(serializer.ExpectedSizeInBytes + ItemHeaderSize, MaxChacheSizePerItem);
-                    _maxCachedMemoryReadStreamSize = Math.Min(MaxCachedMemoryStreamSize, expectedItemSize);
-                }
+                // Should close streams to make created files available to delete
+                if (_writeStream != null)
+                    _writeStream.Dispose();
+                if (_readStream != null)
+                    _readStream.Dispose();
+
+                throw;
             }
-
-
-            // Prepare file header
-            WriteSegmentHeader(_writeStream, Number, Capacity);
-            _readStream.Seek(0, SeekOrigin.End); // Offset readStream after the header
-
-            _isDisposed = false;
-
-            Debug.Assert(_maxWriteBufferSize >= 0);
-            Debug.Assert(_maxCachedMemoryWriteStreamSize >= 0);
-            Debug.Assert(_maxReadBufferSize >= 0);
-            Debug.Assert(_maxCachedMemoryReadStreamSize >= 0);
-            Debug.Assert(_writeStream.Position == _readStream.Position);
         }
         /// <summary>
         /// NonPersistentDiskQueueSegment constructor
@@ -486,6 +499,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 RegionBinaryWriter writer = GetMemoryWriteStream(1);
 
+                SerializeItemToStream(item, writer);
+
                 // Write all data to disk
                 writer.BaseStream.InnerStream.WriteTo(_writeStream);
                 _writeStream.Flush(flushToDisk: false);
@@ -582,7 +597,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             itemSize = 0;
 
             long readStreamPosition = _readStream.Position;
-            if (readStreamPosition + ItemHeaderSize < _readStream.Length) // No space for item header
+            if (readStreamPosition + ItemHeaderSize > _readStream.Length) // No space for item header
                 return false;
 
             // Ensure capacity on MemoryStream
@@ -596,7 +611,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
             itemSize = BitConverter.ToInt32(rawBuffer, (int)targetStream.Position);
             
-            if (readStreamPosition + itemSize < _readStream.Length) // No space for item (write in progress)
+            if (readStreamPosition + itemSize > _readStream.Length) // No space for item (write in progress)
             {
                 // should rewind stream position
                 _readStream.Seek(-ItemHeaderSize, SeekOrigin.Current);
