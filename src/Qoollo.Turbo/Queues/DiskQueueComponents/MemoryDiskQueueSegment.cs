@@ -63,7 +63,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// Creates new instance of <see cref="MemoryDiskQueueSegmentFactory{T}"/>
         /// </summary>
         /// <param name="segmentCapacity">Capacity of the segments created by factory</param>
-        /// <returns>Create <see cref="MemoryDiskQueueSegmentFactory{T}"/></returns>
+        /// <returns>Created <see cref="MemoryDiskQueueSegmentFactory{T}"/></returns>
         public static MemoryDiskQueueSegmentFactory<T> CreateFactory(int segmentCapacity)
         {
             return new MemoryDiskQueueSegmentFactory<T>(segmentCapacity);

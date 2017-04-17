@@ -11,11 +11,140 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Queues.DiskQueueComponents
 {
     /// <summary>
+    /// Factory to create and discover NonPersistentDiskQueueSegment
+    /// </summary>
+    /// <typeparam name="T">Type of items stored in segment</typeparam>
+    public class NonPersistentDiskQueueSegmentFactory<T> : DiskQueueSegmentFactory<T>
+    {
+        /// <summary>
+        /// Segment file extension
+        /// </summary>
+        public const string SegmentFileExtension = ".npsdq";
+
+        private readonly int _capacity;
+        private readonly string _fileNamePrefix;
+        private readonly IDiskQueueItemSerializer<T> _serializer;
+        private readonly int _writeBufferSize;
+        private readonly int _cachedMemoryWriteStreamSize;
+        private readonly int _readBufferSize;
+        private readonly int _cachedMemoryReadStreamSize;
+
+        /// <summary>
+        /// NonPersistentDiskQueueSegmentFactory constructor
+        /// </summary>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="fileNamePrefix">Prefix for the segment file name</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="writeBufferSize">Determines the number of items, that are stored in memory before save them to disk (-1 - set to default value, 0 - disable write buffer)</param>
+        /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        public NonPersistentDiskQueueSegmentFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer,
+            int writeBufferSize, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
+        {
+            if (capacity <= 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity should be positive");
+            if (string.IsNullOrEmpty(fileNamePrefix))
+                throw new ArgumentNullException(nameof(fileNamePrefix));
+            if (serializer == null)
+                throw new ArgumentNullException(nameof(serializer));
+
+            _capacity = capacity;
+            _fileNamePrefix = fileNamePrefix;
+            _serializer = serializer;
+
+            _writeBufferSize = writeBufferSize;
+            _cachedMemoryWriteStreamSize = cachedMemoryWriteStreamSize;
+            _readBufferSize = readBufferSize;
+            _cachedMemoryReadStreamSize = cachedMemoryReadStreamSize;
+        }
+        /// <summary>
+        /// NonPersistentDiskQueueSegmentFactory constructor
+        /// </summary>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="fileNamePrefix">Prefix for the segment file name</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="writeBufferSize">Determines the number of items, that are stored in memory before save them to disk (-1 - set to default value, 0 - disable write buffer)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        public NonPersistentDiskQueueSegmentFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer,
+            int writeBufferSize, int readBufferSize)
+            :this (capacity, fileNamePrefix, serializer, writeBufferSize, -1, readBufferSize, -1)
+        {
+        }
+        /// <summary>
+        /// NonPersistentDiskQueueSegmentFactory constructor
+        /// </summary>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="fileNamePrefix">Prefix for the segment file name</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        public NonPersistentDiskQueueSegmentFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer)
+            : this(capacity, fileNamePrefix, serializer, -1, -1, -1, -1)
+        {
+        }
+
+        /// <summary>
+        /// Capacity of a single segment
+        /// </summary>
+        public override int SegmentCapacity { get { return _capacity; } }
+
+        /// <summary>
+        /// Creates a new segment
+        /// </summary>
+        /// <param name="path">Path to the folder where the new segment will be allocated</param>
+        /// <param name="number">Number of a segment (should be part of a segment name)</param>
+        /// <returns>Created NonPersistentDiskQueueSegment</returns>
+        public override DiskQueueSegment<T> CreateSegment(string path, long number)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            string fileName = Path.Combine(path, GenerateFileName(_fileNamePrefix, number, SegmentFileExtension));
+            return new NonPersistentDiskQueueSegment<T>(number, fileName, _serializer, _capacity,
+                _writeBufferSize, _cachedMemoryWriteStreamSize, _readBufferSize, _cachedMemoryReadStreamSize);
+        }
+
+        /// <summary>
+        /// Discovers existing segments in specified path
+        /// </summary>
+        /// <param name="path">Path to the folder for the segments</param>
+        /// <returns>Segments loaded from disk (can be empty)</returns>
+        public override DiskQueueSegment<T>[] DiscoverSegments(string path)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            var files = DiscoverSegmentFiles(path, _fileNamePrefix, SegmentFileExtension);
+            // Should delete all existing segments
+            foreach (var file in files)
+                File.Delete(file.FileName);
+
+            return new DiskQueueSegment<T>[0];
+        }
+    }
+
+
+
+    /// <summary>
     /// Non persistent disk queue segment (not preserve items between restarts)
     /// </summary>
     /// <typeparam name="T">The type of elements in segment</typeparam>
     public class NonPersistentDiskQueueSegment<T> : CountingDiskQueueSegment<T>
     {
+        /// <summary>
+        /// Creates new instance of <see cref="NonPersistentDiskQueueSegmentFactory{T}"/>
+        /// </summary>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="fileNamePrefix">Prefix for the segment file name</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <returns>Created <see cref="NonPersistentDiskQueueSegmentFactory{T}"/></returns>
+        public static NonPersistentDiskQueueSegmentFactory<T> CreateFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer)
+        {
+            return new NonPersistentDiskQueueSegmentFactory<T>(capacity, fileNamePrefix, serializer);
+        }
+
+
+        // ========================
+
         private const int DefaultWriteBufferSize = 32;
         private const int DefaultReadBufferSize = 32;
 
@@ -172,6 +301,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// Maximum size of the cached byte stream that used to deserialize items in memory
         /// </summary>
         public int CachedMemoryReadStreamSize { get { return _maxCachedMemoryReadStreamSize; } }
+        /// <summary>
+        /// Full file name for the segment
+        /// </summary>
+        public string FileName { get { return _fileName; } }
 
         /// <summary>
         /// Writes segment header when file is created (should be called from constructor)
