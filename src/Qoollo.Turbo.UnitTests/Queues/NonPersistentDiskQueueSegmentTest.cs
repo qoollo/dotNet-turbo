@@ -123,7 +123,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
             Assert.AreEqual(0, segment.Count);
         }
 
-        /*
+        
         [TestMethod]
         public void AddTakePeekTestNoBuffer() { RunTest(100, 0, 0, s => AddTakePeekTest(s)); }
         [TestMethod]
@@ -133,6 +133,6 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [TestMethod]
         public void AddTakePeekTestReadWriteBuffer() { RunTest(100, 16, 16, s => AddTakePeekTest(s)); }
         [TestMethod]
-        public void AddTakePeekTestSmallBuffer() { RunTest(100, 1, 1, s => AddTakePeekTest(s)); }*/
+        public void AddTakePeekTestSmallBuffer() { RunTest(100, 2, 2, s => AddTakePeekTest(s)); }
     }
 }

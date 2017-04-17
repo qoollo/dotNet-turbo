@@ -465,6 +465,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     return;
 
                 RegionBinaryWriter writer = GetMemoryWriteStream(_maxWriteBufferSize);
+                Debug.Assert(writer.BaseStream.Length == 0);
+                Debug.Assert(writer.BaseStream.InnerStream.Length == 0);
 
                 int itemCount = 0;
                 T item = default(T);
@@ -498,6 +500,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     throw new ObjectDisposedException(this.GetType().Name);
 
                 RegionBinaryWriter writer = GetMemoryWriteStream(1);
+                Debug.Assert(writer.BaseStream.Length == 0);
+                Debug.Assert(writer.BaseStream.InnerStream.Length == 0);
 
                 SerializeItemToStream(item, writer);
 
@@ -529,6 +533,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 Debug.Assert(stream.Length == 0);
 
                 _serializer.Serialize(writer, item);
+                writer.Flush();
                 Debug.Assert(stream.Length >= 0);
 
                 int length = (int)stream.Length;
@@ -607,14 +612,18 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             var rawBuffer = targetStream.GetBuffer();
             int readCount = _readStream.Read(rawBuffer, (int)targetStream.Position, ItemHeaderSize);
             if (readCount != ItemHeaderSize)
+            {
+                _readStream.Position = readStreamPosition; // Rewind back the position
                 throw new IOException($"Expected to read {ItemHeaderSize} bytes but actually read {readCount} bytes");
+            }
 
             itemSize = BitConverter.ToInt32(rawBuffer, (int)targetStream.Position);
             
-            if (readStreamPosition + itemSize > _readStream.Length) // No space for item (write in progress)
+            if (readStreamPosition + ItemHeaderSize + itemSize > _readStream.Length) // No space for item (write in progress)
             {
                 // should rewind stream position
                 _readStream.Seek(-ItemHeaderSize, SeekOrigin.Current);
+                Debug.Assert(_readStream.Position == readStreamPosition);
                 return false;
             }
 
@@ -659,7 +668,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 return false;
             }
 
-            buffer.BaseStream.SetOriginLength(ItemHeaderSize, -itemSize);
+            buffer.BaseStream.SetOriginLength(ItemHeaderSize, itemSize);
             Debug.Assert(buffer.BaseStream.Length == itemSize);
 
             item = _serializer.Deserialize(buffer); // Deserialize
@@ -701,11 +710,14 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 // Read buffer is empty => should read from disk
                 RegionBinaryReader memoryBuffer = GetMemoryReadStream();
+                Debug.Assert(memoryBuffer.BaseStream.Length == 0);
+                Debug.Assert(memoryBuffer.BaseStream.InnerStream.Length == 0);
+
                 try
                 {
                     int itemTransfered = 0;
                     T tmpItem = default(T);
-                    while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, take))
+                    while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, take: true)) // take = true as we transfer items to buffer
                     {
                         if (itemTransfered == 0)
                             item = tmpItem;
@@ -722,7 +734,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                         lock (_writeLock)
                         {
                             // Retry read from disk
-                            while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, take))
+                            while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, take: true)) // take = true as we transfer items to buffer
                             {
                                 if (itemTransfered == 0)
                                     item = tmpItem;
@@ -736,7 +748,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                             // attempt to read from write buffer
                             if (itemTransfered < _maxReadBufferSize && _writeBuffer != null)
                             {
-                                while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekFromQueue(_writeBuffer, out tmpItem, take))
+                                while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekFromQueue(_writeBuffer, out tmpItem, take: true)) // take = true as we transfer items to buffer
                                 {
                                     if (itemTransfered == 0)
                                         item = tmpItem;
@@ -775,6 +787,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     throw new ObjectDisposedException(this.GetType().Name);
 
                 RegionBinaryReader memoryBuffer = GetMemoryReadStream();
+                Debug.Assert(memoryBuffer.BaseStream.Length == 0);
+                Debug.Assert(memoryBuffer.BaseStream.InnerStream.Length == 0);
+
                 try
                 {
                     if (TryTakeOrPeekItemFromDisk(out item, memoryBuffer, take))
