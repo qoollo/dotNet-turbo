@@ -609,8 +609,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             itemSize = 0;
 
             long readStreamPosition = _readStream.Position;
-            if (readStreamPosition + ItemHeaderSize > _readStream.Length) // No space for item header
-                return false;
 
             // Ensure capacity on MemoryStream
             targetStream.SetLength(targetStream.Position + ItemHeaderSize);
@@ -618,21 +616,15 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             // Read item header
             var rawBuffer = targetStream.GetBuffer();
             int readCount = _readStream.Read(rawBuffer, (int)targetStream.Position, ItemHeaderSize);
-            if (readCount != ItemHeaderSize)
+            if (readCount != ItemHeaderSize) // No space for item header
             {
-                _readStream.Position = readStreamPosition; // Rewind back the position
-                throw new IOException($"Expected to read {ItemHeaderSize} bytes but actually read {readCount} bytes");
-            }
-
-            itemSize = BitConverter.ToInt32(rawBuffer, (int)targetStream.Position);
-            
-            if (readStreamPosition + ItemHeaderSize + itemSize > _readStream.Length) // No space for item (write in progress)
-            {
-                // should rewind stream position
-                _readStream.Seek(-ItemHeaderSize, SeekOrigin.Current);
+                if (readCount != 0)
+                    _readStream.Seek(-readCount, SeekOrigin.Current); // Rewind back the position
                 Debug.Assert(_readStream.Position == readStreamPosition);
                 return false;
             }
+
+            itemSize = BitConverter.ToInt32(rawBuffer, (int)targetStream.Position);
 
             // Ensure capacity on MemoryStream
             targetStream.SetLength(targetStream.Position + ItemHeaderSize + itemSize);
@@ -642,8 +634,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             readCount = _readStream.Read(rawBuffer, (int)targetStream.Position + ItemHeaderSize, itemSize);
             if (readCount != itemSize)
             {
-                _readStream.Position = readStreamPosition; // Rewind back the position
-                throw new IOException($"Expected to read {itemSize} bytes but actually read {readCount} bytes");
+                _readStream.Seek(-ItemHeaderSize - readCount, SeekOrigin.Current); // Rewind back the position
+                Debug.Assert(_readStream.Position == readStreamPosition);
+                return false;
             }
 
             if (!take)
