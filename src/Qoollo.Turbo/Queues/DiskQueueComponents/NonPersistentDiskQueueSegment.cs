@@ -152,6 +152,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private const int InitialCacheSizePerItem = 4;
         private const int MaxChacheSizePerItem = 1024;
         private const int MaxCachedMemoryStreamSize = 32 * 1024;
+        private const int WriteBufferCountOvehead = 16;
 
         private readonly string _fileName;
         private readonly IDiskQueueItemSerializer<T> _serializer;
@@ -163,7 +164,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private readonly FileStream _readStream;
 
         private readonly ConcurrentQueue<T> _writeBuffer;
-        private volatile int _writeBufferMonotonicSize;
+        private volatile int _writeBufferMonotonicSize; // Not a presize number of items inside _writeBuffer. Can be desynced due to reading durectly from buffer
         private readonly int _maxWriteBufferSize;
 
         private volatile RegionBinaryWriter _cachedMemoryWriteStream;
@@ -446,8 +447,21 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
         // =================================
 
-
-
+        /// <summary>
+        /// Safely substract value from <see cref="_writeBufferMonotonicSize"/>
+        /// </summary>
+        private void SubstractFromWriteBufferMonotonicSize(int value)
+        {
+            SpinWait sw = new SpinWait();
+            int writeBufferMonotonicSize = _writeBufferMonotonicSize;
+            int newValue = Math.Max(0, writeBufferMonotonicSize - value);
+            while (writeBufferMonotonicSize > 0 && Interlocked.CompareExchange(ref _writeBufferMonotonicSize, newValue, writeBufferMonotonicSize) != writeBufferMonotonicSize)
+            {
+                sw.SpinOnce();
+                writeBufferMonotonicSize = _writeBufferMonotonicSize;
+                newValue = Math.Max(0, writeBufferMonotonicSize - value);
+            }
+        }
 
         /// <summary>
         /// Writes items from <see cref="_writeBuffer"/> to disk
@@ -461,8 +475,13 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             {
                 if (_isDisposed)
                     throw new ObjectDisposedException(this.GetType().Name);
+                int writeBufferMonotonicSize = _writeBufferMonotonicSize;
                 if (_writeBuffer.IsEmpty)
+                {
+                    // Reduce counter to zero safely
+                    SubstractFromWriteBufferMonotonicSize(writeBufferMonotonicSize);
                     return;
+                }
 
                 RegionBinaryWriter writer = GetMemoryWriteStream(_maxWriteBufferSize);
                 Debug.Assert(writer.BaseStream.Length == 0);
@@ -479,6 +498,12 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 if (itemCount > 0)
                 {
+                    // Reduce counter safely
+                    if (itemCount == _maxWriteBufferSize)
+                        SubstractFromWriteBufferMonotonicSize(itemCount);
+                    else
+                        SubstractFromWriteBufferMonotonicSize(Math.Max(itemCount, writeBufferMonotonicSize));
+
                     // Write all data to disk
                     writer.BaseStream.InnerStream.WriteTo(_writeStream);
                     _writeStream.Flush(flushToDisk: false);
@@ -556,7 +581,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
             _writeBuffer.Enqueue(item);
             int writeBufferSize = Interlocked.Increment(ref _writeBufferMonotonicSize);
-            return (writeBufferSize % _maxWriteBufferSize) == 0;
+            // Start dumping when 'writeBufferSize == _maxWriteBufferSize' and force waiting when 'writeBufferSize >= _maxWriteBufferSize + WriteBufferCountOvehead'
+            return (writeBufferSize % _maxWriteBufferSize) == 0 || writeBufferSize >= _maxWriteBufferSize + WriteBufferCountOvehead; 
         }
 
 
@@ -634,7 +660,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             rawBuffer = targetStream.GetBuffer();
             readCount = _readStream.Read(rawBuffer, (int)targetStream.Position + ItemHeaderSize, itemSize);
             if (readCount != itemSize)
+            {
+                _readStream.Position = readStreamPosition; // Rewind back the position
                 throw new IOException($"Expected to read {itemSize} bytes but actually read {readCount} bytes");
+            }
 
             if (!take)
             {
