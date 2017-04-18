@@ -9,6 +9,7 @@ using Qoollo.Turbo.Collections.Concurrent;
 using Qoollo.Turbo.Queues;
 using Qoollo.Turbo.Queues.DiskQueueComponents;
 using System.Collections.Concurrent;
+using System.IO;
 
 namespace Qoollo.Turbo.UnitTests.Queues
 {
@@ -223,6 +224,21 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
 
+        private class ItemSerializer : IDiskQueueItemSerializer<int>
+        {
+            public int ExpectedSizeInBytes { get { return 4; } }
+
+            public int Deserialize(BinaryReader reader)
+            {
+                return reader.ReadInt32();
+            }
+
+            public void Serialize(BinaryWriter writer, int item)
+            {
+                writer.Write(item);
+            }
+        }
+
 
         // ==============================
 
@@ -238,6 +254,20 @@ namespace Qoollo.Turbo.UnitTests.Queues
         private static DiskQueue<int> CreateOnMemDefault(int segmentCapacity, int segmentCount = -1, bool backComp = false)
         {
             return new DiskQueue<int>("dummy", new MemoryDiskQueueSegmentFactory<int>(segmentCapacity), segmentCount, backComp, 500);
+        }
+        private static DiskQueue<int> CreateNonPersistent(string dir, int segmentCapacity, int segmentCount = -1, bool backComp = false)
+        {
+            return new DiskQueue<int>(dir, new NonPersistentDiskQueueSegmentFactory<int>(segmentCapacity, "prefix", new ItemSerializer()), segmentCount, backComp, 500);
+        }
+
+        private static void DeleteDir(string dir)
+        {
+            try
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
+            catch { }
         }
 
 
@@ -269,6 +299,21 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             using (var q = CreateOnMemDefault(segmentCapacity, segmentCount, backComp))
                 testRunner(q);
+        }
+
+        private static void RunNonPersistent(int segmentCapacity, int segmentCount, bool backComp, Action<DiskQueue<int>> testRunner)
+        {
+            string dir = Guid.NewGuid().ToString().Replace('-', '_');
+            try
+            {
+                Directory.CreateDirectory(dir);
+                using (var q = CreateNonPersistent(dir, segmentCapacity, segmentCount, backComp))
+                    testRunner(q);
+            }
+            finally
+            {
+                DeleteDir(dir);
+            }
         }
 
         // ==============================
@@ -360,6 +405,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void TestSimpleAddTakePeekMemDefault() { RunMemDefaultTest(100, -1, false, q => TestSimpleAddTakePeek(q)); }
         [TestMethod]
         public void TestSimpleAddTakePeekMemDefaultStress() { RunMemDefaultTest(1, -1, true, q => TestSimpleAddTakePeek(q)); }
+        [TestMethod]
+        public void TestSimpleAddTakePeekNonPersistent() { RunNonPersistent(1000, -1, true, q => TestSimpleAddTakePeek(q)); }
 
         // =========================
 
@@ -832,6 +879,19 @@ namespace Qoollo.Turbo.UnitTests.Queues
             }
         }
 
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void PreserveOrderTestOnNonPersistent()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunNonPersistent(1000, 2, false, q => PreserveOrderTest(q, 5000));
+                RunNonPersistent(1000, 2, true, q => PreserveOrderTest(q, 5000));
+                RunNonPersistent(1000, -1, false, q => PreserveOrderTest(q, 70000));
+                RunNonPersistent(1000, -1, true, q => PreserveOrderTest(q, 70000));
+            }
+        }
+
         // ======================
 
         private void ValidateCountTest(DiskQueue<int> queue, CommonSegmentFactory<int> factory, int elemCount)
@@ -1095,6 +1155,13 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             RunMemDefaultTest(1, 1000, false, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2)));
             RunMemDefaultTest(1, -1, true, q => RunComplexTest(q, 15000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOnNonPersistent()
+        {
+            RunNonPersistent(10000, 1000, false, q => RunComplexTest(q, 500000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunNonPersistent(10000, -1, true, q => RunComplexTest(q, 1000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
         }
     }
 }
