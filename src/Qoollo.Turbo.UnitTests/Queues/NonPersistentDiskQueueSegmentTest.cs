@@ -19,12 +19,15 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             public int Deserialize(BinaryReader reader)
             {
+                if (reader.BaseStream.Length == 0)
+                    return 0;
                 return reader.ReadInt32();
             }
 
             public void Serialize(BinaryWriter writer, int item)
             {
-                writer.Write(item);
+                if (item != 0)
+                    writer.Write(item);
             }
         }
 
@@ -207,18 +210,18 @@ namespace Qoollo.Turbo.UnitTests.Queues
             Assert.AreEqual(0, segment.Count);
 
 
-            for (int i = 1; i <= 10; i++)
+            for (int i = 0; i <= 10; i++)
             {
                 if (i % 2 == 0)
                     segment.AddForced(i);
                 else
                     Assert.IsTrue(segment.TryAdd(i));
 
-                Assert.AreEqual(i, segment.Count);
+                Assert.AreEqual(i + 1, segment.Count);
             }
 
 
-            for (int i = 1; i <= 10; i++)
+            for (int i = 0; i <= 10; i++)
             {
                 item = 0;
                 Assert.IsTrue(segment.TryPeek(out item));

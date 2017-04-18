@@ -164,7 +164,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private readonly FileStream _readStream;
 
         private readonly ConcurrentQueue<T> _writeBuffer;
-        private volatile int _writeBufferMonotonicSize; // Not a presize number of items inside _writeBuffer. Can be desynced due to reading durectly from buffer
+        private volatile int _writeBufferSize;
         private readonly int _maxWriteBufferSize;
 
         private volatile RegionBinaryWriter _cachedMemoryWriteStream;
@@ -212,7 +212,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 _writeLock = new object();
                 _readLock = new object();
 
-                _writeBufferMonotonicSize = 0;
+                _writeBufferSize = 0;
                 _maxWriteBufferSize = writeBufferSize >= 0 ? writeBufferSize : DefaultWriteBufferSize;
                 if (_maxWriteBufferSize > 0)
                     _writeBuffer = new ConcurrentQueue<T>();
@@ -447,21 +447,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
         // =================================
 
-        /// <summary>
-        /// Safely substract value from <see cref="_writeBufferMonotonicSize"/>
-        /// </summary>
-        private void SubstractFromWriteBufferMonotonicSize(int value)
-        {
-            SpinWait sw = new SpinWait();
-            int writeBufferMonotonicSize = _writeBufferMonotonicSize;
-            int newValue = Math.Max(0, writeBufferMonotonicSize - value);
-            while (writeBufferMonotonicSize > 0 && Interlocked.CompareExchange(ref _writeBufferMonotonicSize, newValue, writeBufferMonotonicSize) != writeBufferMonotonicSize)
-            {
-                sw.SpinOnce();
-                writeBufferMonotonicSize = _writeBufferMonotonicSize;
-                newValue = Math.Max(0, writeBufferMonotonicSize - value);
-            }
-        }
 
         /// <summary>
         /// Writes items from <see cref="_writeBuffer"/> to disk
@@ -475,13 +460,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             {
                 if (_isDisposed)
                     throw new ObjectDisposedException(this.GetType().Name);
-                int writeBufferMonotonicSize = _writeBufferMonotonicSize;
-                if (_writeBuffer.IsEmpty)
-                {
-                    // Reduce counter to zero safely
-                    SubstractFromWriteBufferMonotonicSize(writeBufferMonotonicSize);
+
+                // Nothing to do check
+                if (_writeBuffer.IsEmpty || _writeBufferSize < _maxWriteBufferSize)
                     return;
-                }
 
                 RegionBinaryWriter writer = GetMemoryWriteStream(_maxWriteBufferSize);
                 Debug.Assert(writer.BaseStream.Length == 0);
@@ -499,10 +481,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 if (itemCount > 0)
                 {
                     // Reduce counter safely
-                    if (itemCount == _maxWriteBufferSize)
-                        SubstractFromWriteBufferMonotonicSize(itemCount);
-                    else
-                        SubstractFromWriteBufferMonotonicSize(Math.Max(itemCount, writeBufferMonotonicSize));
+                    int curWriteBufferSize = Interlocked.Add(ref _writeBufferSize, -itemCount);
+                    Debug.Assert(curWriteBufferSize >= 0);
+                    Debug.Assert(curWriteBufferSize <= _writeBuffer.Count);
 
                     // Write all data to disk
                     writer.BaseStream.InnerStream.WriteTo(_writeStream);
@@ -580,7 +561,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             Debug.Assert(_maxWriteBufferSize > 0);
 
             _writeBuffer.Enqueue(item);
-            int writeBufferSize = Interlocked.Increment(ref _writeBufferMonotonicSize);
+            int writeBufferSize = Interlocked.Increment(ref _writeBufferSize);
             // Start dumping when 'writeBufferSize == _maxWriteBufferSize' and force waiting when 'writeBufferSize >= _maxWriteBufferSize + WriteBufferCountOvehead'
             return (writeBufferSize % _maxWriteBufferSize) == 0 || writeBufferSize >= _maxWriteBufferSize + WriteBufferCountOvehead; 
         }
@@ -706,13 +687,35 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
 
         /// <summary>
-        /// Helper method to take or peek item from <see cref="ConcurrentQueue{T}"/>
+        /// Helper method to take or peek item from _writeBuffer
         /// </summary>
-        private static bool TryTakeOrPeekFromQueue(ConcurrentQueue<T> queue, out T item, bool take)
+        private bool TryTakeOrPeekFromWriteBuffer(out T item, bool take)
         {
+            Debug.Assert(_writeBuffer != null);
+            Debug.Assert(Monitor.IsEntered(_writeLock));
             if (take)
-                return queue.TryDequeue(out item);
-            return queue.TryPeek(out item);
+            {
+                if (_writeBuffer.TryDequeue(out item))
+                {
+                    Interlocked.Decrement(ref _writeBufferSize);
+                    return true;
+                }
+                return false;
+            }
+            else
+            {
+                return _writeBuffer.TryPeek(out item);
+            }
+        }
+        /// <summary>
+        /// Helper method to take or peek item from _readBuffer
+        /// </summary>
+        private bool TryTakeOrPeekFromReadBuffer(out T item, bool take)
+        {
+            Debug.Assert(_readBuffer != null);
+            if (take)
+                return _readBuffer.TryDequeue(out item);
+            return _readBuffer.TryPeek(out item);
         }
 
         /// <summary>
@@ -734,7 +737,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     throw new ObjectDisposedException(this.GetType().Name);
 
                 // retry read from buffer
-                if (TryTakeOrPeekFromQueue(_readBuffer, out item, take))
+                if (TryTakeOrPeekFromReadBuffer(out item, take))
                     return true;
 
                 // Read buffer is empty => should read from disk
@@ -777,7 +780,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                             // attempt to read from write buffer
                             if (itemTransfered < _maxReadBufferSize && _writeBuffer != null)
                             {
-                                while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekFromQueue(_writeBuffer, out tmpItem, take: true)) // take = true as we transfer items to buffer
+                                while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekFromWriteBuffer(out tmpItem, take: true)) // take = true as we transfer items to buffer
                                 {
                                     if (itemTransfered == 0)
                                         item = tmpItem;
@@ -832,7 +835,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                             return true;
 
                         // Now attempt to read from write buffer
-                        if (_writeBuffer != null && TryTakeOrPeekFromQueue(_writeBuffer, out item, take))
+                        if (_writeBuffer != null && TryTakeOrPeekFromWriteBuffer(out item, take))
                             return true;
                     }
                 }
