@@ -249,6 +249,7 @@
     <Compile Include="Common\EventTimingTracker.cs" />
     <Compile Include="Common\StringDistance.cs" />
     <Compile Include="Common\TypeUIDResolver.cs" />
+    <Compile Include="Exceptions\ItemCorruptedException.cs" />
     <Compile Include="Exceptions\TurboAssertionException.cs" />
     <Compile Include="Exceptions\InvalidTypeException.cs" />
     <Compile Include="Exceptions\TurboException.cs" />
@@ -283,6 +284,7 @@
     <Compile Include="Queues\DiskQueueComponents\DiskQueueSegment.cs" />
     <Compile Include="Queues\DiskQueueComponents\DiskQueueSegmentFactory.cs" />
     <Compile Include="Queues\DiskQueueComponents\IDiskQueueItemSerializer.cs" />
+    <Compile Include="Queues\DiskQueueComponents\PersistentDiskQueueSegment.cs" />
     <Compile Include="Queues\DiskQueueComponents\ServiceStuff\DiskQueueSegmentWrapper.cs" />
     <Compile Include="Queues\DiskQueueComponents\MemoryDiskQueueSegment.cs" />
     <Compile Include="Queues\DiskQueueComponents\NonPersistentDiskQueueSegment.cs" />

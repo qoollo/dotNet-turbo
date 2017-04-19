@@ -1,0 +1,934 @@
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Qoollo.Turbo.Queues.DiskQueueComponents
+{
+    /// <summary>
+    /// Persistent disk queue segment (preserve items between restarts)
+    /// </summary>
+    /// <typeparam name="T">The type of elements in segment</typeparam>
+    public class PersistentDiskQueueSegment<T> : CountingDiskQueueSegment<T>
+    {
+        /// <summary>
+        /// Item state on disk
+        /// </summary>
+        private enum ItemState : byte
+        {
+            /// <summary>
+            /// New item during write process (when writign completed the state will be changed to 'Written')
+            /// </summary>
+            New = 0,
+            /// <summary>
+            /// Item correctly written to disk (available for read)
+            /// </summary>
+            Written = 1,
+            /// <summary>
+            /// Item correctly read from disk
+            /// </summary>
+            Read = 2,
+            /// <summary>
+            /// Item was corrupted (should skip it)
+            /// </summary>
+            Corrupted = 3
+        }
+
+
+        /// <summary>
+        /// Item header structure
+        /// </summary>
+        private struct ItemHeader
+        {
+            public const int OffsetToStateByte = 4;
+            public const int Size = 8;
+
+            /// <summary>
+            /// Convert 4-byte checksum to 3-byte
+            /// </summary>
+            /// <param name="original">Original checksum value</param>
+            /// <returns></returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int CoreceChecksum(int original)
+            {
+                return (original & ((1 << 24) - 1));
+            }
+
+            /// <summary>
+            /// Creates ItemHeader by main paramteres
+            /// </summary>
+            /// <param name="length">Size of the item</param>
+            /// <param name="state">Item state</param>
+            /// <param name="checkSum">Item checksum</param>
+            /// <returns>Created ItemHeader</returns>
+            public static ItemHeader Init(int length, ItemState state, int checkSum)
+            {
+                return new ItemHeader(length, ((byte)state << 24) | CoreceChecksum(checkSum));
+            }
+            /// <summary>
+            /// Creates ItemHeader from byte array
+            /// </summary>
+            /// <param name="bytes">Array with data</param>
+            /// <param name="startIndex">Starting index inside array</param>
+            /// <returns>Created ItemHeader</returns>
+            public static ItemHeader Init(byte[] bytes, int startIndex)
+            {
+                Debug.Assert(bytes != null);
+                Debug.Assert(startIndex >= 0);
+                Debug.Assert(startIndex + Size <= bytes.Length);
+
+                return new ItemHeader(BitConverter.ToInt32(bytes, startIndex), BitConverter.ToInt32(bytes, startIndex + sizeof(int)));
+            }
+
+            private readonly int _length;
+            private readonly int _info;
+
+            /// <summary>
+            /// ItemHeader constructor
+            /// </summary>
+            /// <param name="length">Size of the item</param>
+            /// <param name="info">Item info (state + checksum)</param>
+            public ItemHeader(int length, int info)
+            {
+                _length = length;
+                _info = info;
+
+                Debug.Assert(Enum.IsDefined(typeof(ItemState), State));
+                Debug.Assert(Checksum <= (1 << 24));
+            }
+
+            /// <summary>
+            /// Size of the item in bytes
+            /// </summary>
+            public int Length { get { return _length; } }
+            /// <summary>
+            /// Item info (state + checksum)
+            /// </summary>
+            public int Info { get { return _info; } }
+            /// <summary>
+            /// Item state
+            /// </summary>
+            public ItemState State { get { return (ItemState)((_info >> 24) & 255); } }
+            /// <summary>
+            /// Item checksum
+            /// </summary>
+            public int Checksum { get { return (_info & ((1 << 24) - 1)); } }
+
+            /// <summary>
+            /// Writes header to stream
+            /// </summary>
+            /// <param name="writer">Writer for the stream</param>
+            public void WriteToStream(BinaryWriter writer)
+            {
+                writer.Write(_length);
+                writer.Write(_info);
+            }
+        }
+
+        /// <summary>
+        /// Item info (item + its position on disk)
+        /// </summary>
+        private struct ItemReadInfo
+        {
+            private readonly T _item;
+            private readonly long _position;
+
+            public ItemReadInfo(T item, long position)
+            {
+                Debug.Assert(position >= 0);
+                _item = item;
+                _position = position;
+            }
+
+            /// <summary>
+            /// Item
+            /// </summary>
+            public T Item { get { return _item; } }
+            /// <summary>
+            /// Item position whithin the file on disk
+            /// </summary>
+            public long Position { get { return _position; } }
+        }
+
+
+
+        // =================
+
+        private const int DefaultFlushToDiskOnItem = 16;
+        private const int DefaultReadBufferSize = 32;
+      
+        private const int InitialCacheSizePerItem = 4;
+        private const int MaxChacheSizePerItem = 1024;
+        private const int MaxCachedMemoryStreamSize = 32 * 1024;
+
+
+        private readonly string _fileName;
+        private readonly IDiskQueueItemSerializer<T> _serializer;
+
+        private readonly object _writeLock;
+        private readonly FileStream _writeStream;
+
+        private readonly object _readLock;
+        private readonly FileStream _readStream;
+
+        private readonly object _readMarkerLock;
+        private readonly FileStream _readMarkerStream;
+
+        private readonly int _flushToDiskOnItem;
+        private volatile int _writtenItemCount;
+        private volatile int _markedAsReadItemCount;
+
+        private volatile RegionBinaryWriter _cachedMemoryWriteStream;
+        private readonly int _maxCachedMemoryWriteStreamSize;
+
+        private readonly ConcurrentQueue<ItemReadInfo> _readBuffer;
+        private readonly int _maxReadBufferSize;
+
+        private volatile RegionBinaryReader _cachedMemoryReadStream;
+        private readonly int _maxCachedMemoryReadStreamSize;
+
+        private volatile bool _isDisposed;
+
+
+        /// <summary>
+        /// PersistentDiskQueueSegment constructor that creates a new segment on disk. Can't be used to open an existing segment.
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
+        /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        public PersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
+                                          int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
+            : base(segmentNumber, capacity, 0, 0)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                throw new ArgumentNullException(nameof(fileName));
+            if (serializer == null)
+                throw new ArgumentNullException(nameof(serializer));
+            if (File.Exists(fileName))
+                throw new ArgumentException($"Can't create PersistentDiskQueueSegment on existing file '{fileName}'. To open existed use another consturctor.", nameof(fileName));
+
+            _fileName = fileName;
+            _serializer = serializer;
+
+            try
+            {
+                _writeStream = new FileStream(_fileName, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
+                _readStream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                _readMarkerStream = new FileStream(_fileName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite, bufferSize: 4);
+
+                _writeLock = new object();
+                _readLock = new object();
+                _readMarkerLock = new object();
+
+                _flushToDiskOnItem = flushToDiskOnItem >= 0 ? flushToDiskOnItem : DefaultFlushToDiskOnItem;
+                _writtenItemCount = 0;
+                _markedAsReadItemCount = 0;
+
+                _cachedMemoryWriteStream = null;
+                _maxCachedMemoryWriteStreamSize = cachedMemoryWriteStreamSize;
+                if (cachedMemoryWriteStreamSize < 0)
+                {
+                    checked
+                    {
+                        int expectedItemSize = MaxChacheSizePerItem;
+                        if (serializer.ExpectedSizeInBytes > 0)
+                            expectedItemSize = Math.Min(serializer.ExpectedSizeInBytes + ItemHeader.Size, MaxChacheSizePerItem);
+                        _maxCachedMemoryWriteStreamSize = Math.Min(MaxCachedMemoryStreamSize, expectedItemSize);
+                    }
+                }
+
+
+                _maxReadBufferSize = readBufferSize >= 0 ? readBufferSize : DefaultReadBufferSize;
+                if (_maxReadBufferSize > 0)
+                    _readBuffer = new ConcurrentQueue<ItemReadInfo>();
+
+                _cachedMemoryReadStream = null;
+                _maxCachedMemoryReadStreamSize = cachedMemoryReadStreamSize;
+                if (cachedMemoryReadStreamSize < 0)
+                {
+                    checked
+                    {
+                        int expectedItemSize = MaxChacheSizePerItem;
+                        if (serializer.ExpectedSizeInBytes > 0)
+                            expectedItemSize = Math.Min(serializer.ExpectedSizeInBytes + ItemHeader.Size, MaxChacheSizePerItem);
+                        _maxCachedMemoryReadStreamSize = Math.Min(MaxCachedMemoryStreamSize, expectedItemSize);
+                    }
+                }
+
+
+                // Prepare file header
+                WriteSegmentHeader(_writeStream, Number, Capacity);
+                _readStream.Seek(0, SeekOrigin.End); // Offset readStream after the header
+
+                _isDisposed = false;
+
+                Debug.Assert(_flushToDiskOnItem >= 0);
+                Debug.Assert(_maxCachedMemoryWriteStreamSize >= 0);
+                Debug.Assert(_maxReadBufferSize >= 0);
+                Debug.Assert(_maxCachedMemoryReadStreamSize >= 0);
+                Debug.Assert(_writeStream.Position == _readStream.Position);
+            }
+            catch
+            {
+                // Should close streams to make created files available to delete
+                if (_writeStream != null)
+                    _writeStream.Dispose();
+                if (_readStream != null)
+                    _readStream.Dispose();
+                if (_readMarkerStream != null)
+                    _readMarkerStream.Dispose();
+
+                throw;
+            }
+        }
+        /// <summary>
+        /// PersistentDiskQueueSegment constructor that creates a new segment on disk. Can't be used to open an existing segment.
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        public PersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
+                                          int flushToDiskOnItem, int readBufferSize)
+            : this(segmentNumber, fileName, serializer, capacity, flushToDiskOnItem, -1, readBufferSize, -1)
+        {
+        }
+        /// <summary>
+        /// PersistentDiskQueueSegment constructor that creates a new segment on disk. Can't be used to open an existing segment.
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        public PersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity)
+            : this(segmentNumber, fileName, serializer, capacity, -1, -1, -1, -1)
+        {
+        }
+
+
+
+        /// <summary>
+        /// Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed)
+        /// </summary>
+        public int FlushToDiskOnItem { get { return _flushToDiskOnItem; } }
+        /// <summary>
+        /// Maximum size of the cached byte stream that used to serialize items in memory
+        /// </summary>
+        public int CachedMemoryWriteStreamSize { get { return _maxCachedMemoryWriteStreamSize; } }
+        /// <summary>
+        /// Size of the read buffer (determines the number of items, that are stored in memory for read purposes)
+        /// </summary>
+        public int ReadBufferSize { get { return _maxReadBufferSize; } }
+        /// <summary>
+        /// Maximum size of the cached byte stream that used to deserialize items in memory
+        /// </summary>
+        public int CachedMemoryReadStreamSize { get { return _maxCachedMemoryReadStreamSize; } }
+        /// <summary>
+        /// Full file name for the segment
+        /// </summary>
+        public string FileName { get { return _fileName; } }
+
+
+        /// <summary>
+        /// Writes segment header when file is created (should be called from constructor)
+        /// </summary>
+        private static void WriteSegmentHeader(FileStream stream, long number, int capacity)
+        {
+            BinaryWriter writer = new BinaryWriter(stream);
+
+            // Write 4-byte segment identifier
+            writer.Write((byte)'P');
+            writer.Write((byte)'D');
+            writer.Write((byte)'S');
+            writer.Write((byte)1);
+
+            // Write 8-byte segment number
+            writer.Write((long)number);
+
+            // Write 4-byte capacity
+            writer.Write((int)capacity);
+
+            writer.Flush();
+        }
+
+
+        /// <summary>
+        /// Calculates simple checksum
+        /// </summary>
+        /// <param name="data">Data array</param>
+        /// <param name="startIndex">Start index</param>
+        /// <param name="length">Length of the data</param>
+        /// <returns>Checksum (lower 3 bytes)</returns>
+        private static int CalculateChecksum(byte[] data, int startIndex, int length)
+        {
+            Debug.Assert(data != null);
+            Debug.Assert(startIndex >= 0 && startIndex < data.Length);
+            Debug.Assert(length >= 0);
+            Debug.Assert(startIndex + length <= data.Length);
+
+            if (length == 0)
+                return 0;
+
+            uint firstByte = data[startIndex];
+            uint middleByte = data[startIndex + length / 2];
+            uint lastByte = data[startIndex + length - 1];
+
+            return (int)((firstByte << 16) | (middleByte << 8) | (lastByte));
+        }
+
+
+        // ================= MemoryWriteStream ==================
+
+        /// <summary>
+        /// Gets cached memory stream to write
+        /// </summary>
+        /// <returns>BinaryWriter with stream for in-memory writing</returns>
+        private RegionBinaryWriter GetMemoryWriteStream(int itemCount)
+        {
+            Debug.Assert(Monitor.IsEntered(_writeLock));
+            Debug.Assert(itemCount > 0);
+
+            RegionBinaryWriter result = _cachedMemoryWriteStream;
+            _cachedMemoryWriteStream = null;
+            if (result == null)
+            {
+                int expectedItemSize = _serializer.ExpectedSizeInBytes;
+                if (expectedItemSize <= 0)
+                    expectedItemSize = InitialCacheSizePerItem;
+                result = new RegionBinaryWriter(Math.Min(MaxCachedMemoryStreamSize, Math.Max(0, itemCount * (expectedItemSize + ItemHeader.Size)))); // Max used to protect from overflow
+            }
+            else
+            {
+                result.BaseStream.SetOriginLength(0, -1);
+                result.BaseStream.SetLength(0);
+            }
+            return result;
+        }
+        /// <summary>
+        /// Release taken memory stream (set it back to <see cref="_cachedMemoryWriteStream"/>)
+        /// </summary>
+        /// <param name="bufferingWriteStream">Buffered stream to release</param>
+        private void ReleaseMemoryWriteStream(RegionBinaryWriter bufferingWriteStream)
+        {
+            Debug.Assert(bufferingWriteStream != null);
+            Debug.Assert(Monitor.IsEntered(_writeLock));
+            Debug.Assert(_cachedMemoryWriteStream == null);
+
+            if (bufferingWriteStream.BaseStream.InnerStream.Length <= _maxCachedMemoryWriteStreamSize)
+            {
+                if (bufferingWriteStream.BaseStream.InnerStream.Capacity > _maxCachedMemoryWriteStreamSize)
+                {
+                    bufferingWriteStream.BaseStream.SetOriginLength(0, -1);
+                    bufferingWriteStream.BaseStream.InnerStream.SetLength(0);
+                    bufferingWriteStream.BaseStream.InnerStream.Capacity = _maxCachedMemoryWriteStreamSize;
+                }
+
+                _cachedMemoryWriteStream = bufferingWriteStream;
+            }
+        }
+
+
+        // ============= MemoryReadStream =================
+
+        /// <summary>
+        /// Gets cached memory stream to read
+        /// </summary>
+        /// <returns>BinaryReader with stream for in-memory reading</returns>
+        private RegionBinaryReader GetMemoryReadStream(int itemCount = 1)
+        {
+            Debug.Assert(Monitor.IsEntered(_readLock));
+            Debug.Assert(itemCount > 0);
+
+            RegionBinaryReader result = _cachedMemoryReadStream;
+            _cachedMemoryReadStream = null;
+            if (result == null)
+            {
+                int expectedItemSize = _serializer.ExpectedSizeInBytes;
+                if (expectedItemSize <= 0)
+                    expectedItemSize = InitialCacheSizePerItem;
+                result = new RegionBinaryReader(Math.Min(MaxCachedMemoryStreamSize, Math.Max(0, itemCount * (expectedItemSize + ItemHeader.Size)))); // Max used to protect from overflow
+            }
+            else
+            {
+                result.BaseStream.SetOriginLength(0, -1);
+                result.BaseStream.SetLength(0);
+            }
+            return result;
+        }
+        /// <summary>
+        /// Release taken memory stream (set it back to <see cref="_cachedMemoryReadStream"/>)
+        /// </summary>
+        /// <param name="bufferingReadStream">Buffered stream to release</param>
+        private void ReleaseMemoryReadStream(RegionBinaryReader bufferingReadStream)
+        {
+            Debug.Assert(bufferingReadStream != null);
+            Debug.Assert(Monitor.IsEntered(_readLock));
+            Debug.Assert(_cachedMemoryReadStream == null);
+
+            if (bufferingReadStream.BaseStream.InnerStream.Length <= _maxCachedMemoryReadStreamSize)
+            {
+                if (bufferingReadStream.BaseStream.InnerStream.Capacity > _maxCachedMemoryReadStreamSize)
+                {
+                    bufferingReadStream.BaseStream.SetOriginLength(0, -1);
+                    bufferingReadStream.BaseStream.InnerStream.SetLength(0);
+                    bufferingReadStream.BaseStream.InnerStream.Capacity = _maxCachedMemoryReadStreamSize;
+                }
+
+                _cachedMemoryReadStream = bufferingReadStream;
+            }
+        }
+
+
+        // =================================
+
+
+        /// <summary>
+        /// Build segment record with specified item in memory stream.
+        /// (writes header + item bytes)
+        /// </summary>
+        /// <param name="item">Item</param>
+        /// <param name="writer">Writer that wraps memory stream</param>
+        private void SerializeItemToStream(T item, RegionBinaryWriter writer)
+        {
+            Debug.Assert(writer != null);
+            Debug.Assert(Monitor.IsEntered(_writeLock));
+
+            checked
+            {
+                var stream = writer.BaseStream;
+
+                int origin = stream.InnerStreamPosition;
+                stream.SetOriginLength(origin + ItemHeader.Size, -1); // Offset 4 to store length later
+                Debug.Assert(stream.Length == 0);
+
+                _serializer.Serialize(writer, item);
+                writer.Flush();
+                Debug.Assert(stream.Length >= 0);
+
+                int length = (int)stream.Length;
+                int checkSum = CalculateChecksum(stream.InnerStream.GetBuffer(), origin + ItemHeader.Size, length);
+                var header = ItemHeader.Init(length, ItemState.New, checkSum);
+
+                stream.SetOrigin(origin); // Offset back to the beggining
+                header.WriteToStream(writer); // Write header
+
+                stream.Seek(0, SeekOrigin.End); // Seek to the end of the stream
+            }
+        }
+
+
+        /// <summary>
+        /// Adds new item to the tail of the segment (core implementation)
+        /// </summary>
+        /// <param name="item">New item</param>
+        protected override void AddCore(T item)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+
+            lock (_writeLock)
+            {
+                if (_isDisposed)
+                    throw new ObjectDisposedException(this.GetType().Name);
+
+                RegionBinaryWriter writer = GetMemoryWriteStream(1);
+                Debug.Assert(writer.BaseStream.Length == 0);
+                Debug.Assert(writer.BaseStream.InnerStream.Length == 0);
+
+                SerializeItemToStream(item, writer);
+
+                // Write in two passes to prevent item corruption when app terminated unexpectadly
+
+                // Write item bytes to disk
+                long initialStreamPosition = _writeStream.Position;
+                writer.BaseStream.InnerStream.WriteTo(_writeStream);
+                _writeStream.Flush(flushToDisk: false);
+
+
+                // Mark record as written
+                long streamPositionAfterWriteCompleted = _writeStream.Position;
+                try
+                {
+                    _writeStream.Position = initialStreamPosition + ItemHeader.OffsetToStateByte;
+                    _writeStream.WriteByte((byte)ItemState.Written);
+
+                    int writtenItemCount = Interlocked.Increment(ref _writtenItemCount);
+                    _writeStream.Flush(flushToDisk: _flushToDiskOnItem > 0 && (writtenItemCount % _flushToDiskOnItem) == 0); // Flush to disk periodically
+                }
+                finally
+                {
+                    _writeStream.Position = streamPositionAfterWriteCompleted;
+                }
+
+                ReleaseMemoryWriteStream(writer);
+            }
+        }
+
+
+        // ======================
+
+        /// <summary>
+        /// Read single item bytes from disk to <paramref name="targetStream"/> incuding header. 
+        /// </summary>
+        /// <param name="targetStream">Target stream to read bytes (Position is not changed after read)</param>
+        /// <param name="itemHeader">Header of the readed item</param>
+        /// <param name="itemPosition">Item position inside <see cref="_readStream"/></param>
+        /// <param name="readNewState">True - item in state 'New' is also read</param>
+        /// <param name="take">Should move readStream position</param>
+        /// <returns>Is read</returns>
+        private bool TryTakeOrPeekSingleItemBytesFromDisk(MemoryStream targetStream, out ItemHeader itemHeader, out long itemPosition, bool readNewState, bool take)
+        {
+            Debug.Assert(targetStream != null);
+            Debug.Assert(Monitor.IsEntered(_readLock));
+
+            itemHeader = default(ItemHeader);
+
+            itemPosition = _readStream.Position;
+
+            // Ensure capacity on MemoryStream
+            targetStream.SetLength(targetStream.Position + ItemHeader.Size);
+
+            // Read item header
+            var rawBuffer = targetStream.GetBuffer();
+            int readCount = _readStream.Read(rawBuffer, (int)targetStream.Position, ItemHeader.Size);
+            if (readCount != ItemHeader.Size) // No space for item header
+            {
+                if (readCount != 0)
+                    _readStream.Seek(-readCount, SeekOrigin.Current); // Rewind back the position
+                Debug.Assert(_readStream.Position == itemPosition);
+                return false;
+            }
+
+            itemHeader = ItemHeader.Init(rawBuffer, (int)targetStream.Position);
+            if (itemHeader.State == ItemState.New && !readNewState) // Check: Should we read item in New state
+            {
+                _readStream.Seek(-ItemHeader.Size, SeekOrigin.Current); // Rewind back the position
+                Debug.Assert(_readStream.Position == itemPosition);
+                return false;
+            }
+
+            // Ensure capacity on MemoryStream
+            targetStream.SetLength(targetStream.Position + ItemHeader.Size + itemHeader.Length);
+
+            // Read item
+            rawBuffer = targetStream.GetBuffer();
+            readCount = _readStream.Read(rawBuffer, (int)targetStream.Position + ItemHeader.Size, itemHeader.Length);
+            if (readCount != itemHeader.Length)
+            {
+                _readStream.Seek(-ItemHeader.Size - readCount, SeekOrigin.Current); // Rewind back the position
+                Debug.Assert(_readStream.Position == itemPosition);
+                return false;
+            }
+
+            if (!take)
+            {
+                // For peek should rewind stream position
+                _readStream.Seek(-ItemHeader.Size - itemHeader.Length, SeekOrigin.Current);
+            }
+
+            Debug.Assert(targetStream.Position + ItemHeader.Size + itemHeader.Length == targetStream.Length);
+            Debug.Assert(take || _readStream.Position == itemPosition);
+            return true;
+        }
+
+
+        /// <summary>
+        /// Read signle item from disk and deserialize it
+        /// </summary>
+        /// <param name="itemInfo">Taken item</param>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="canNewStateBeObserved">Can we meet item in New state (True - stop read before that item, False - read it and throw exception)</param>
+        /// <param name="take">True = take, False = peek</param>
+        /// <returns>Success or not</returns>
+        private bool TryTakeOrPeekItemFromDisk(out ItemReadInfo itemInfo, RegionBinaryReader buffer, bool canNewStateBeObserved, bool take)
+        {
+            Debug.Assert(buffer != null);
+            Debug.Assert(Monitor.IsEntered(_readLock));
+
+            buffer.BaseStream.SetOriginLength(0, -1);
+
+            ItemHeader header = default(ItemHeader);
+            long itemPosition = 0;
+            while (true) // Traverse to the first valid item
+            {
+                if (!TryTakeOrPeekSingleItemBytesFromDisk(buffer.BaseStream.InnerStream, out header, out itemPosition, !canNewStateBeObserved, take)) // Read from disk
+                {
+                    itemInfo = default(ItemReadInfo);
+                    return false;
+                }
+                // Skip corrupted and already read items
+                if (header.State == ItemState.Corrupted || header.State == ItemState.Read)
+                    continue;
+
+                break;
+            }
+
+            if (header.State == ItemState.New)
+                throw new ItemCorruptedException($"Incorrect item state (New). That indicates that the file is corrupted ({_fileName})");
+            Debug.Assert(header.State == ItemState.Written);
+
+            int checkSum = ItemHeader.CoreceChecksum(CalculateChecksum(buffer.BaseStream.InnerStream.GetBuffer(), ItemHeader.Size, header.Length));
+            if (checkSum != header.Checksum)
+                throw new ItemCorruptedException($"Checksum mismatch on item read. That indicates that the file is corrupted ({_fileName})");
+
+            buffer.BaseStream.SetOriginLength(ItemHeader.Size, header.Length);
+            Debug.Assert(buffer.BaseStream.Length == header.Length);
+
+            var item = _serializer.Deserialize(buffer); // Deserialize
+            itemInfo = new ItemReadInfo(item, itemPosition);
+            return true;
+        }
+
+
+        /// <summary>
+        /// Marks item as 'Read' on disk
+        /// </summary>
+        private void MarkItemAsRead(ref ItemReadInfo itemInfo)
+        {
+            Debug.Assert(itemInfo.Position > 0);
+
+            lock (_readMarkerLock)
+            {
+                _readMarkerStream.Position = itemInfo.Position + ItemHeader.OffsetToStateByte;
+                _readMarkerStream.WriteByte((byte)ItemState.Read);
+
+                int markedAsReadItemCount = Interlocked.Increment(ref _markedAsReadItemCount);
+                _readMarkerStream.Flush(flushToDisk: _flushToDiskOnItem > 0 && (markedAsReadItemCount % _flushToDiskOnItem) == 0); // Flush to disk periodically
+            }
+        }
+
+
+        /// <summary>
+        /// Take or peek item inside readLock
+        /// Steps:
+        /// - Reads item from disk
+        /// - Reads item from disk in exclusive mode (lock on _writeLock)
+        /// </summary>
+        private bool TryTakeOrPeek(out ItemReadInfo itemInfo, bool take)
+        {
+            lock (_readLock)
+            {
+                if (_isDisposed)
+                    throw new ObjectDisposedException(this.GetType().Name);
+
+                RegionBinaryReader memoryBuffer = GetMemoryReadStream();
+                Debug.Assert(memoryBuffer.BaseStream.Length == 0);
+                Debug.Assert(memoryBuffer.BaseStream.InnerStream.Length == 0);
+
+                try
+                {
+                    if (TryTakeOrPeekItemFromDisk(out itemInfo, memoryBuffer, canNewStateBeObserved: true, take: take))
+                        return true;
+
+                    // Should enter write lock to observe fully saved items
+                    lock (_writeLock)
+                    {
+                        // Retry read from disk
+                        if (TryTakeOrPeekItemFromDisk(out itemInfo, memoryBuffer, canNewStateBeObserved: true, take: take))
+                            return true;
+                    }
+                }
+                finally
+                {
+                    ReleaseMemoryReadStream(memoryBuffer);
+                }
+
+                return false;
+            }
+        }
+
+
+
+        /// <summary>
+        /// Helper method to take or peek item from _readBuffer
+        /// </summary>
+        private bool TryTakeOrPeekFromReadBuffer(out ItemReadInfo itemInfo, bool take)
+        {
+            Debug.Assert(_readBuffer != null);
+            if (take)
+                return _readBuffer.TryDequeue(out itemInfo);
+            return _readBuffer.TryPeek(out itemInfo);
+        }
+
+
+        /// <summary>
+        /// Take or peek item inside readLock through read buffer. Also populate readBuffer with items
+        /// Steps:
+        /// - Reads item from readBuffer;
+        /// - Reads items from disk
+        /// - Reads items from disk in exclusive mode (lock on _writeLock)
+        /// </summary>
+        private bool TryTakeOrPeekThroughReadBuffer(out ItemReadInfo itemInfo, bool take)
+        {
+            Debug.Assert(_readBuffer != null);
+            Debug.Assert(_maxReadBufferSize > 0);
+
+            lock (_readLock)
+            {
+                if (_isDisposed)
+                    throw new ObjectDisposedException(this.GetType().Name);
+
+                // retry read from buffer
+                if (TryTakeOrPeekFromReadBuffer(out itemInfo, take))
+                    return true;
+
+                // Read buffer is empty => should read from disk
+                RegionBinaryReader memoryBuffer = GetMemoryReadStream();
+                Debug.Assert(memoryBuffer.BaseStream.Length == 0);
+                Debug.Assert(memoryBuffer.BaseStream.InnerStream.Length == 0);
+
+                try
+                {
+                    int itemTransfered = 0;
+                    ItemReadInfo tmpItem = default(ItemReadInfo);
+                    while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, canNewStateBeObserved: true, take: true)) // take = true as we transfer items to buffer
+                    {
+                        if (itemTransfered == 0)
+                            itemInfo = tmpItem;
+
+                        if (itemTransfered > 0 || !take) // First item should always be ours
+                            _readBuffer.Enqueue(tmpItem);
+
+                        itemTransfered++;
+                    }
+
+                    if (itemTransfered < _maxReadBufferSize)
+                    {
+                        // Should enter write lock to observe fully saved items
+                        lock (_writeLock)
+                        {
+                            // Retry read from disk
+                            while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, canNewStateBeObserved: false, take: true)) // take = true as we transfer items to buffer
+                            {
+                                if (itemTransfered == 0)
+                                    itemInfo = tmpItem;
+
+                                if (itemTransfered > 0 || !take) // First item should always be ours
+                                    _readBuffer.Enqueue(tmpItem);
+
+                                itemTransfered++;
+                            }
+                        }
+                    }
+
+                    return itemTransfered > 0;
+                }
+                finally
+                {
+                    ReleaseMemoryReadStream(memoryBuffer);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Removes item from the head of the segment (core implementation)
+        /// </summary>
+        /// <param name="item">The item removed from segment</param>
+        /// <returns>True if the item was removed</returns>
+        protected override bool TryTakeCore(out T item)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+
+            ItemReadInfo itemInfo = default(ItemReadInfo);
+            bool result = false;
+
+            if (_readBuffer != null)
+            {
+                // Read from buffer first
+                result = _readBuffer.TryDequeue(out itemInfo);
+                if (!result)
+                    result = TryTakeOrPeekThroughReadBuffer(out itemInfo, take: true);
+            }
+            else
+            {
+                result = TryTakeOrPeek(out itemInfo, take: true);
+            }
+
+            if (result)
+            {
+                item = itemInfo.Item;
+                MarkItemAsRead(ref itemInfo);
+                return true;
+            }
+
+            item = default(T);
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the item at the head of the segment without removing it (core implementation)
+        /// </summary>
+        /// <param name="item">The item at the head of the segment</param>
+        /// <returns>True if the item was read</returns>
+        protected override bool TryPeekCore(out T item)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+
+            ItemReadInfo itemInfo = default(ItemReadInfo);
+            bool result = false;
+
+            if (_readBuffer != null)
+            {
+                // Read from buffer first
+                result = _readBuffer.TryPeek(out itemInfo);
+                if (!result)
+                    result = TryTakeOrPeekThroughReadBuffer(out itemInfo, take: false);
+            }
+            else
+            {
+                result = TryTakeOrPeek(out itemInfo, take: false);
+            }
+
+            if (result)
+            {
+                item = itemInfo.Item;
+                return true;
+            }
+
+            item = default(T);
+            return false;
+        }
+
+
+        // ===============================
+
+        /// <summary>
+        /// Cleans-up resources
+        /// </summary>
+        /// <param name="disposeBehaviour">Flag indicating whether the segment can be removed from disk</param>
+        /// <param name="isUserCall">Was called explicitly by user</param>
+        protected override void Dispose(DiskQueueSegmentDisposeBehaviour disposeBehaviour, bool isUserCall)
+        {
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                _readStream.Dispose();
+                _readMarkerStream.Dispose();
+                _writeStream.Dispose();
+
+                if (disposeBehaviour == DiskQueueSegmentDisposeBehaviour.Delete)
+                {
+                    Debug.Assert(this.Count == 0);
+                    File.Delete(_fileName);
+                }
+            }
+        }
+    }
+}
