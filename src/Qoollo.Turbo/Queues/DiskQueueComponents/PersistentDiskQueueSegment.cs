@@ -55,7 +55,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             /// <param name="original">Original checksum value</param>
             /// <returns></returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int CoreceChecksum(int original)
+            public static int CoerceChecksum(int original)
             {
                 return (original & ((1 << 24) - 1));
             }
@@ -69,7 +69,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             /// <returns>Created ItemHeader</returns>
             public static ItemHeader Init(int length, ItemState state, int checkSum)
             {
-                return new ItemHeader(length, ((byte)state << 24) | CoreceChecksum(checkSum));
+                return new ItemHeader(length, ((byte)state << 24) | CoerceChecksum(checkSum));
             }
             /// <summary>
             /// Creates ItemHeader from byte array
@@ -160,6 +160,231 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
         // =================
 
+        /// <summary>
+        /// Creates PersistentDiskQueueSegment by opening existing segment on disk
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment</param>
+        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
+        /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
+        /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        /// <returns>Created segment</returns>
+        public static PersistentDiskQueueSegment<T> Open(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer,
+                                          bool fixSegmentDataErrors, bool skipCorruptedItems,
+                                          int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                throw new ArgumentNullException(nameof(fileName));
+            if (serializer == null)
+                throw new ArgumentNullException(nameof(serializer));
+            if (!File.Exists(fileName))
+                throw new ArgumentException($"PersistentDiskQueueSegment file is not found '{fileName}'. To create new use another method", nameof(fileName));
+
+            using (var exclusivityCheckStream = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+
+            int totalItemCount = 0;
+            int validItemCount = 0;
+            long initialPosition = 0;
+
+            using (var scanStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var fileUpdatingStream = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, bufferSize: 4))
+            {
+                long streamLength = scanStream.Length;
+
+                ReadAndValidateSegmentHeader(scanStream);
+
+                MemoryStream targetStream = new MemoryStream();
+                
+                while (true)
+                {
+                    ItemHeader itemHeader;
+                    long itemPosition = scanStream.Position;
+                    targetStream.Position = 0;
+
+                    // Read item header
+                    if (!TryReadItemHeaderFromDisk(scanStream, targetStream, out itemHeader))
+                    {
+                        if (scanStream.Position > itemPosition)
+                        {
+                            if (fixSegmentDataErrors)
+                                fileUpdatingStream.SetLength(itemPosition); // Trim incorrect end of the segment
+                        }
+                        break;
+                    }
+
+                    // Skip content
+                    if (fixSegmentDataErrors)
+                    {
+                        if (!TryReadItemBytesFromDisk(scanStream, targetStream, ref itemHeader))
+                        {
+                            if (scanStream.Position + itemHeader.Length > streamLength)
+                                fileUpdatingStream.SetLength(itemPosition); // Trim incorrect end of the segment
+
+                            break;
+                        }
+
+                        // Validate checksum
+                        int checkSum = ItemHeader.CoerceChecksum(CalculateChecksum(targetStream.GetBuffer(), ItemHeader.Size, itemHeader.Length));
+                        if (checkSum != itemHeader.Checksum)
+                        {
+                            // Mark item as Corrupted
+                            fileUpdatingStream.Seek(itemPosition + ItemHeader.OffsetToStateByte, SeekOrigin.Begin);
+                            fileUpdatingStream.WriteByte((byte)ItemState.Corrupted);
+                            fileUpdatingStream.Flush(true);
+                            itemHeader = ItemHeader.Init(itemHeader.Length, ItemState.Corrupted, itemHeader.Checksum);
+                        }
+                    }
+                    else
+                    {
+                        if (scanStream.Position + itemHeader.Length > streamLength)
+                            break;
+
+                        // Just skip the item
+                        scanStream.Seek(scanStream.Position + itemHeader.Length, SeekOrigin.Begin);
+                    }
+
+
+                    // Fix bad state
+                    if (itemHeader.State == ItemState.New && fixSegmentDataErrors)
+                    {
+                        fileUpdatingStream.Seek(itemPosition + ItemHeader.OffsetToStateByte, SeekOrigin.Begin);
+                        fileUpdatingStream.WriteByte((byte)ItemState.Corrupted);
+                        fileUpdatingStream.Flush(true);
+                        itemHeader = ItemHeader.Init(itemHeader.Length, ItemState.Corrupted, itemHeader.Checksum);
+                    }
+
+
+                    if (itemHeader.State == ItemState.Written)
+                    {
+                        if (initialPosition <= 0)
+                            initialPosition = itemPosition;
+                        validItemCount++;
+                    }
+                    totalItemCount++;
+                }
+            }
+
+
+            return new PersistentDiskQueueSegment<T>(segmentNumber, true, totalItemCount, validItemCount, totalItemCount, fileName, initialPosition, 
+                serializer, skipCorruptedItems, 
+                flushToDiskOnItem, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize);
+        }
+        /// <summary>
+        /// Creates PersistentDiskQueueSegment by opening existing segment on disk
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment</param>
+        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
+        /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        /// <returns>Created segment</returns>
+        public static PersistentDiskQueueSegment<T> Open(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer,
+                                          bool fixSegmentDataErrors, bool skipCorruptedItems,
+                                          int flushToDiskOnItem, int readBufferSize)
+        {
+            return Open(segmentNumber, fileName, serializer, fixSegmentDataErrors, skipCorruptedItems, flushToDiskOnItem, -1, readBufferSize, -1);
+        }
+        /// <summary>
+        /// Creates PersistentDiskQueueSegment by opening existing segment on disk
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment</param>
+        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
+        /// <returns>Created segment</returns>
+        public static PersistentDiskQueueSegment<T> Open(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer,
+                                          bool fixSegmentDataErrors, bool skipCorruptedItems)
+        {
+            return Open(segmentNumber, fileName, serializer, fixSegmentDataErrors, skipCorruptedItems, -1, -1, -1, -1);
+        }
+        /// <summary>
+        /// Creates PersistentDiskQueueSegment by opening existing segment on disk
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <returns>Created segment</returns>
+        public static PersistentDiskQueueSegment<T> Open(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer)
+        {
+            return Open(segmentNumber, fileName, serializer, false, false, -1, -1, -1, -1);
+        }
+
+
+
+        /// <summary>
+        /// Creates new PersistentDiskQueueSegment on disk. Can't be used to open an existing segment.
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
+        /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
+        /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
+        /// <returns>Created segment</returns>
+        public static PersistentDiskQueueSegment<T> CreateNew(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
+                                          bool skipCorruptedItems,
+                                          int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
+        {
+            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, skipCorruptedItems, 
+                flushToDiskOnItem, cachedMemoryReadStreamSize, readBufferSize, cachedMemoryReadStreamSize);
+        }
+        /// <summary>
+        /// Creates new PersistentDiskQueueSegment on disk. Can't be used to open an existing segment.
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
+        /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
+        /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        /// <returns>Created segment</returns>
+        public static PersistentDiskQueueSegment<T> CreateNew(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
+                                          bool skipCorruptedItems,
+                                          int flushToDiskOnItem, int readBufferSize)
+        {
+            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, skipCorruptedItems,
+                flushToDiskOnItem, -1, readBufferSize, -1);
+        }
+        /// <summary>
+        /// Creates new PersistentDiskQueueSegment on disk. Can't be used to open an existing segment.
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
+        /// <returns>Created segment</returns>
+        public static PersistentDiskQueueSegment<T> CreateNew(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity, bool skipCorruptedItems)
+        {
+            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, skipCorruptedItems, -1, -1, -1, -1);
+        }
+        /// <summary>
+        /// Creates new PersistentDiskQueueSegment on disk. Can't be used to open an existing segment.
+        /// </summary>
+        /// <param name="segmentNumber">Segment number</param>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="serializer">Items serializing/deserializing logic</param>
+        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <returns>Created segment</returns>
+        public static PersistentDiskQueueSegment<T> CreateNew(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity)
+        {
+            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, false, -1, -1, -1, -1);
+        }
+
+
+        // =================
+
         private const int DefaultFlushToDiskOnItem = 16;
         private const int DefaultReadBufferSize = 32;
       
@@ -170,6 +395,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
         private readonly string _fileName;
         private readonly IDiskQueueItemSerializer<T> _serializer;
+
+        private readonly bool _skipCorruptedItems;
 
         private readonly object _writeLock;
         private readonly FileStream _writeStream;
@@ -197,39 +424,55 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
 
         /// <summary>
-        /// PersistentDiskQueueSegment constructor that creates a new segment on disk. Can't be used to open an existing segment.
+        /// PersistentDiskQueueSegment constructor
         /// </summary>
         /// <param name="segmentNumber">Segment number</param>
+        /// <param name="openExisted">True - open existed segment, False - create new segment</param>
+        /// <param name="itemCount">Count of already presented items inside the segment (required when openExisted = true)</param>
+        /// <param name="fillCount">Number of items that was stored inside segment (number of filled slots for items) (required when openExisted = true)</param>
         /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="initialFilePosition">Initial file position to skip already read items (used when openExisted = true)</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
         /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
-        public PersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
+        protected PersistentDiskQueueSegment(long segmentNumber, bool openExisted, int capacity, int itemCount, int fillCount, 
+                                          string fileName, long initialFilePosition, 
+                                          IDiskQueueItemSerializer<T> serializer,
+                                          bool skipCorruptedItems,
                                           int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
-            : base(segmentNumber, capacity, 0, 0)
+            : base(segmentNumber, capacity, itemCount, fillCount)
         {
             if (string.IsNullOrEmpty(fileName))
                 throw new ArgumentNullException(nameof(fileName));
             if (serializer == null)
                 throw new ArgumentNullException(nameof(serializer));
-            if (File.Exists(fileName))
+            if (!openExisted && File.Exists(fileName))
                 throw new ArgumentException($"Can't create PersistentDiskQueueSegment on existing file '{fileName}'. To open existed use another consturctor.", nameof(fileName));
+            if (openExisted && !File.Exists(fileName))
+                throw new ArgumentException($"Can't create PersistentDiskQueueSegment on non existing file '{fileName}'. To create new segment use another consturctor.", nameof(fileName));
+            if (!openExisted && itemCount != 0)
+                throw new ArgumentException("ItemCount should be zero when new segment is created", nameof(itemCount));
+            if (!openExisted && fillCount != 0)
+                throw new ArgumentException("FillCount should be zero when new segment is created", nameof(itemCount));
 
             _fileName = fileName;
             _serializer = serializer;
 
             try
             {
-                _writeStream = new FileStream(_fileName, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
+                _writeStream = new FileStream(_fileName, FileMode.Open, openExisted ? FileAccess.Read : FileAccess.Write, FileShare.ReadWrite);
                 _readStream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 _readMarkerStream = new FileStream(_fileName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite, bufferSize: 4);
 
                 _writeLock = new object();
                 _readLock = new object();
                 _readMarkerLock = new object();
+
+                _skipCorruptedItems = skipCorruptedItems;
 
                 _flushToDiskOnItem = flushToDiskOnItem >= 0 ? flushToDiskOnItem : DefaultFlushToDiskOnItem;
                 _writtenItemCount = 0;
@@ -267,9 +510,20 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 }
 
 
-                // Prepare file header
-                WriteSegmentHeader(_writeStream, Number, Capacity);
-                _readStream.Seek(0, SeekOrigin.End); // Offset readStream after the header
+                if (openExisted)
+                {
+                    // Prepare file header
+                    WriteSegmentHeader(_writeStream, Number, Capacity);
+                    _readStream.Seek(0, SeekOrigin.End); // Offset readStream after the header
+                }
+                else
+                {
+                    // Read file header
+                    ReadAndValidateSegmentHeader(_readStream);
+                    _writeStream.Seek(0, SeekOrigin.End); // Offset write stream after the header
+                    if (initialFilePosition > _readStream.Position)
+                        _readStream.Seek(initialFilePosition, SeekOrigin.Begin); // Offset to expected position
+                }
 
                 _isDisposed = false;
 
@@ -277,7 +531,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 Debug.Assert(_maxCachedMemoryWriteStreamSize >= 0);
                 Debug.Assert(_maxReadBufferSize >= 0);
                 Debug.Assert(_maxCachedMemoryReadStreamSize >= 0);
-                Debug.Assert(_writeStream.Position == _readStream.Position);
+                Debug.Assert(openExisted || _writeStream.Position == _readStream.Position);
             }
             catch
             {
@@ -292,6 +546,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 throw;
             }
         }
+
+
         /// <summary>
         /// PersistentDiskQueueSegment constructor that creates a new segment on disk. Can't be used to open an existing segment.
         /// </summary>
@@ -299,27 +555,23 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileName">Full file name for the segment</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
+        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
+        /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
+        /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         public PersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
-                                          int flushToDiskOnItem, int readBufferSize)
-            : this(segmentNumber, fileName, serializer, capacity, flushToDiskOnItem, -1, readBufferSize, -1)
+                                          bool skipCorruptedItems,
+                                          int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
+            : this(segmentNumber, false, capacity, 0, 0, fileName, -1, serializer, skipCorruptedItems, flushToDiskOnItem, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize)
         {
         }
+
+
         /// <summary>
-        /// PersistentDiskQueueSegment constructor that creates a new segment on disk. Can't be used to open an existing segment.
+        /// Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)
         /// </summary>
-        /// <param name="segmentNumber">Segment number</param>
-        /// <param name="fileName">Full file name for the segment</param>
-        /// <param name="serializer">Items serializing/deserializing logic</param>
-        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
-        public PersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity)
-            : this(segmentNumber, fileName, serializer, capacity, -1, -1, -1, -1)
-        {
-        }
-
-
-
+        public bool SkipCorruptedItems { get { return _skipCorruptedItems; } }
         /// <summary>
         /// Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed)
         /// </summary>
@@ -340,6 +592,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// Full file name for the segment
         /// </summary>
         public string FileName { get { return _fileName; } }
+        /// <summary>
+        /// Is segment is in read-only mode
+        /// </summary>
+        public bool IsReadOnly { get { return _writeStream.CanWrite; } }
 
 
         /// <summary>
@@ -362,6 +618,30 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             writer.Write((int)capacity);
 
             writer.Flush();
+        }
+
+        /// <summary>
+        /// Reads segment header and validate signature
+        /// </summary>
+        /// <param name="stream">Stream to read</param>
+        private static void ReadAndValidateSegmentHeader(FileStream stream)
+        {
+            BinaryReader reader = new BinaryReader(stream);
+
+            // Read segment identifier
+            char b1 = (char)reader.ReadByte();
+            char b2 = (char)reader.ReadByte();
+            char b3 = (char)reader.ReadByte();
+            byte b4 = reader.ReadByte();
+
+            if (b1 != 'P' || b2 != 'D' || b3 != 'S' || b4 != 1)
+                throw new InvalidOperationException($"Incorrect segment header. Expected signature: 'PDS1'. Found: '{b1}{b2}{b3}{b4}'");
+
+            // Skip segment number
+            reader.ReadInt64();
+
+            // Skip segment capacity
+            reader.ReadInt32();
         }
 
 
@@ -581,62 +861,133 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         // ======================
 
         /// <summary>
-        /// Read single item bytes from disk to <paramref name="targetStream"/> incuding header. 
+        /// Reads item header from readStream to targetStream.
+        /// readStream position is always moves forward. 
+        /// targetStream position moves forward on success
         /// </summary>
-        /// <param name="targetStream">Target stream to read bytes (Position is not changed after read)</param>
-        /// <param name="itemHeader">Header of the readed item</param>
-        /// <param name="itemPosition">Item position inside <see cref="_readStream"/></param>
-        /// <param name="readNewState">True - item in state 'New' is also read</param>
-        /// <param name="take">Should move readStream position</param>
-        /// <returns>Is read</returns>
-        private bool TryTakeOrPeekSingleItemBytesFromDisk(MemoryStream targetStream, out ItemHeader itemHeader, out long itemPosition, bool readNewState, bool take)
+        private static bool TryReadItemHeaderFromDisk(FileStream readStream, MemoryStream targetStream, out ItemHeader itemHeader)
         {
+            Debug.Assert(readStream != null);
             Debug.Assert(targetStream != null);
-            Debug.Assert(Monitor.IsEntered(_readLock));
-
-            itemHeader = default(ItemHeader);
-
-            itemPosition = _readStream.Position;
 
             // Ensure capacity on MemoryStream
             targetStream.SetLength(targetStream.Position + ItemHeader.Size);
 
             // Read item header
             var rawBuffer = targetStream.GetBuffer();
-            int readCount = _readStream.Read(rawBuffer, (int)targetStream.Position, ItemHeader.Size);
+            int readCount = readStream.Read(rawBuffer, (int)targetStream.Position, ItemHeader.Size);
             if (readCount != ItemHeader.Size) // No space for item header
             {
-                if (readCount != 0)
-                    _readStream.Seek(-readCount, SeekOrigin.Current); // Rewind back the position
-                Debug.Assert(_readStream.Position == itemPosition);
+                itemHeader = default(ItemHeader);
                 return false;
             }
 
             itemHeader = ItemHeader.Init(rawBuffer, (int)targetStream.Position);
-            if (itemHeader.State == ItemState.New && !readNewState) // Check: Should we read item in New state
-            {
-                _readStream.Seek(-ItemHeader.Size, SeekOrigin.Current); // Rewind back the position
-                Debug.Assert(_readStream.Position == itemPosition);
-                return false;
-            }
+            targetStream.Position += ItemHeader.Size;
+            return true;
+        }
+        /// <summary>
+        /// Reads item bytes from readStream to targetStream according to itemHeader.
+        /// readStream position is always moves forward. 
+        /// targetStream position moves forward on success
+        /// </summary>
+        private static bool TryReadItemBytesFromDisk(FileStream readStream, MemoryStream targetStream, ref ItemHeader itemHeader)
+        {
+            Debug.Assert(readStream != null);
+            Debug.Assert(targetStream != null);
 
             // Ensure capacity on MemoryStream
-            targetStream.SetLength(targetStream.Position + ItemHeader.Size + itemHeader.Length);
+            targetStream.SetLength(targetStream.Position + itemHeader.Length);
 
             // Read item
-            rawBuffer = targetStream.GetBuffer();
-            readCount = _readStream.Read(rawBuffer, (int)targetStream.Position + ItemHeader.Size, itemHeader.Length);
+            var rawBuffer = targetStream.GetBuffer();
+            var readCount = readStream.Read(rawBuffer, (int)targetStream.Position + ItemHeader.Size, itemHeader.Length);
             if (readCount != itemHeader.Length)
-            {
-                _readStream.Seek(-ItemHeader.Size - readCount, SeekOrigin.Current); // Rewind back the position
-                Debug.Assert(_readStream.Position == itemPosition);
                 return false;
-            }
 
-            if (!take)
+            targetStream.Position += itemHeader.Length;
+            return true;
+        }
+
+        /// <summary>
+        /// Read single item bytes from disk to <paramref name="targetStream"/> incuding header. 
+        /// </summary>
+        /// <param name="targetStream">Target stream to read bytes (Position is not changed after read)</param>
+        /// <param name="itemHeader">Header of the readed item</param>
+        /// <param name="itemPosition">Item position inside <see cref="_readStream"/></param>
+        /// <param name="stopOnNewState">True - stop reading on item in 'New' state</param>
+        /// <param name="take">Should move readStream position</param>
+        /// <returns>Is read</returns>
+        private bool TryTakeOrPeekSingleItemBytesFromDisk(MemoryStream targetStream, out ItemHeader itemHeader, out long itemPosition, bool stopOnNewState, bool take)
+        {
+            Debug.Assert(targetStream != null);
+            Debug.Assert(Monitor.IsEntered(_readLock));
+
+            itemPosition = _readStream.Position;
+            long targetStreamPosition = targetStream.Position;
+
+            try
             {
-                // For peek should rewind stream position
-                _readStream.Seek(-ItemHeader.Size - itemHeader.Length, SeekOrigin.Current);
+                while (true)
+                {
+                    itemPosition = _readStream.Position;
+                    targetStream.Position = targetStreamPosition;
+
+                    // Read item header
+                    if (!TryReadItemHeaderFromDisk(_readStream, targetStream, out itemHeader))
+                    {
+                        if (_readStream.Position != itemPosition)
+                            _readStream.Seek(itemPosition, SeekOrigin.Begin);
+
+                        Debug.Assert(_readStream.Position == itemPosition);
+                        return false;
+                    }
+
+                    // Skip read/corrupted
+                    if (itemHeader.State == ItemState.Read || itemHeader.State == ItemState.Corrupted)
+                    {
+                        _readStream.Seek(itemHeader.Length, SeekOrigin.Current); // Skip position forward
+                        continue;
+                    }
+                    // Stop on new state
+                    if (itemHeader.State == ItemState.New && stopOnNewState) 
+                    {
+                        _readStream.Seek(itemPosition, SeekOrigin.Begin); // Rewind back the position
+                        Debug.Assert(_readStream.Position == itemPosition);
+                        return false;
+                    }
+                    // Skip or throw on New state when it is invalid
+                    if (itemHeader.State == ItemState.New && !stopOnNewState)
+                    {
+                        _readStream.Seek(itemHeader.Length, SeekOrigin.Current); // Move position forward
+                        if (_skipCorruptedItems) // Just skip corrupted item
+                            continue;
+
+                        throw new ItemCorruptedException($"Incorrect item state (New). That indicates that the file is corrupted ({_fileName})");
+                    }
+
+                    break;
+                }
+
+                // Read item
+                if (!TryReadItemBytesFromDisk(_readStream, targetStream, ref itemHeader))
+                {
+                    _readStream.Seek(itemPosition, SeekOrigin.Begin); // Rewind back the position
+                    Debug.Assert(_readStream.Position == itemPosition);
+                    return false;
+                }
+
+
+                if (!take)
+                {
+                    // For peek should rewind stream position
+                    _readStream.Seek(itemPosition, SeekOrigin.Begin); // Rewind back the position
+                }
+            }
+            catch
+            {
+                _readStream.Position = itemPosition; // Correct strem position in exceptional case
+                throw;
             }
 
             Debug.Assert(targetStream.Position + ItemHeader.Size + itemHeader.Length == targetStream.Length);
@@ -658,31 +1009,32 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             Debug.Assert(buffer != null);
             Debug.Assert(Monitor.IsEntered(_readLock));
 
-            buffer.BaseStream.SetOriginLength(0, -1);
-
             ItemHeader header = default(ItemHeader);
             long itemPosition = 0;
+
             while (true) // Traverse to the first valid item
             {
-                if (!TryTakeOrPeekSingleItemBytesFromDisk(buffer.BaseStream.InnerStream, out header, out itemPosition, !canNewStateBeObserved, take)) // Read from disk
+                buffer.BaseStream.SetOriginLength(0, -1);
+
+                if (!TryTakeOrPeekSingleItemBytesFromDisk(buffer.BaseStream.InnerStream, out header, out itemPosition, canNewStateBeObserved, take)) // Read from disk
                 {
                     itemInfo = default(ItemReadInfo);
                     return false;
                 }
-                // Skip corrupted and already read items
-                if (header.State == ItemState.Corrupted || header.State == ItemState.Read)
-                    continue;
+
+                Debug.Assert(header.State == ItemState.Written);
+
+                int checkSum = ItemHeader.CoerceChecksum(CalculateChecksum(buffer.BaseStream.InnerStream.GetBuffer(), ItemHeader.Size, header.Length));
+                if (checkSum != header.Checksum)
+                {
+                    if (_skipCorruptedItems) // Skip corrupted
+                        continue;
+
+                    throw new ItemCorruptedException($"Checksum mismatch on item read. That indicates that the file is corrupted ({_fileName})");
+                }
 
                 break;
             }
-
-            if (header.State == ItemState.New)
-                throw new ItemCorruptedException($"Incorrect item state (New). That indicates that the file is corrupted ({_fileName})");
-            Debug.Assert(header.State == ItemState.Written);
-
-            int checkSum = ItemHeader.CoreceChecksum(CalculateChecksum(buffer.BaseStream.InnerStream.GetBuffer(), ItemHeader.Size, header.Length));
-            if (checkSum != header.Checksum)
-                throw new ItemCorruptedException($"Checksum mismatch on item read. That indicates that the file is corrupted ({_fileName})");
 
             buffer.BaseStream.SetOriginLength(ItemHeader.Size, header.Length);
             Debug.Assert(buffer.BaseStream.Length == header.Length);
