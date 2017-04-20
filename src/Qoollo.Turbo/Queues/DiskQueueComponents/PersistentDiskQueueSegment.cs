@@ -181,7 +181,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         private struct ItemHeader
         {
-            public const int OffsetToStateByte = 4;
+            public const int OffsetToStateByte = 7;
             public const int Size = 8;
 
             /// <summary>
@@ -191,7 +191,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             /// <returns></returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int CoerceChecksum(int original)
-            {
+            {            
                 return (original & ((1 << 24) - 1));
             }
 
@@ -615,7 +615,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
             try
             {
-                _writeStream = new FileStream(_fileName, FileMode.Open, openExisted ? FileAccess.Read : FileAccess.Write, FileShare.ReadWrite);
+                if (openExisted)
+                    _writeStream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                else
+                    _writeStream = new FileStream(_fileName, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
                 _readStream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 _readMarkerStream = new FileStream(_fileName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite, bufferSize: 4);
 
@@ -661,7 +664,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 }
 
 
-                if (openExisted)
+                if (!openExisted)
                 {
                     // Prepare file header
                     WriteSegmentHeader(_writeStream, Number, Capacity);
@@ -1052,7 +1055,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
             // Read item
             var rawBuffer = targetStream.GetBuffer();
-            var readCount = readStream.Read(rawBuffer, (int)targetStream.Position + ItemHeader.Size, itemHeader.Length);
+            var readCount = readStream.Read(rawBuffer, (int)targetStream.Position, itemHeader.Length);
             if (readCount != itemHeader.Length)
                 return false;
 
@@ -1141,7 +1144,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 throw;
             }
 
-            Debug.Assert(targetStream.Position + ItemHeader.Size + itemHeader.Length == targetStream.Length);
+            Debug.Assert(targetStream.Position == targetStream.Length);
             Debug.Assert(take || _readStream.Position == itemPosition);
             return true;
         }
@@ -1213,6 +1216,15 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             }
         }
 
+        /// <summary>
+        /// Invalidate read buffer
+        /// </summary>
+        private void InvalidateReadBuffer()
+        {
+            Debug.Assert(Monitor.IsEntered(_readLock));
+            _readStream.Flush(false); // This invalidate read buffer
+        }
+
 
         /// <summary>
         /// Take or peek item inside readLock
@@ -1239,8 +1251,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     // Should enter write lock to observe fully saved items
                     lock (_writeLock)
                     {
+                        InvalidateReadBuffer(); // Should invalidate as states can be rewritten in parallel
                         // Retry read from disk
-                        if (TryTakeOrPeekItemFromDisk(out itemInfo, memoryBuffer, canNewStateBeObserved: true, take: take))
+                        if (TryTakeOrPeekItemFromDisk(out itemInfo, memoryBuffer, canNewStateBeObserved: false, take: take))
                             return true;
                     }
                 }
@@ -1313,6 +1326,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                         // Should enter write lock to observe fully saved items
                         lock (_writeLock)
                         {
+                            InvalidateReadBuffer(); // Should invalidate as states can be rewritten in parallel
+
                             // Retry read from disk
                             while (itemTransfered < _maxReadBufferSize && TryTakeOrPeekItemFromDisk(out tmpItem, memoryBuffer, canNewStateBeObserved: false, take: true)) // take = true as we transfer items to buffer
                             {
