@@ -107,15 +107,21 @@ namespace Qoollo.Turbo.Queues
                 _headSegment = _segments[0];
                 _tailSegment = _segments[_segments.Count - 1];
                 _lastSegmentNumber = _tailSegment.Number;
+
+                if (_tailSegment.IsFull)
+                {
+                    // Allocate new segment when tail is Full (prevent write modifications of segments from previous run)
+                    var newTailSegment = segmentFactory.CreateSegmentWrapped(path, ++_lastSegmentNumber);
+                    _tailSegment.NextSegment = newTailSegment;
+                    _tailSegment = newTailSegment;
+                    _segments.Add(newTailSegment);
+                }
             }
             else
             {
                 // Allocate new segment
-                lock (_segmentOperationsLock)
-                {
-                    _headSegment = _tailSegment = segmentFactory.CreateSegmentWrapped(path, ++_lastSegmentNumber);
-                    _segments.Add(_tailSegment);
-                }
+                _headSegment = _tailSegment = segmentFactory.CreateSegmentWrapped(path, ++_lastSegmentNumber);
+                _segments.Add(_tailSegment);
             }
 
             _compactionPeriod = compactionPeriod;
