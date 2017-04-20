@@ -536,7 +536,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
         // =================
 
-        private const int DefaultFlushToDiskOnItem = 16;
+        private const int DefaultFlushToDiskOnItem = 32;
         private const int DefaultReadBufferSize = 32;
       
         private const int InitialCacheSizePerItem = 4;
@@ -559,8 +559,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private readonly FileStream _readMarkerStream;
 
         private readonly int _flushToDiskOnItem;
-        private volatile int _writtenItemCount;
-        private volatile int _markedAsReadItemCount;
+        private volatile int _operationsToFlushCount;
 
         private volatile RegionBinaryWriter _cachedMemoryWriteStream;
         private readonly int _maxCachedMemoryWriteStreamSize;
@@ -628,9 +627,18 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 _skipCorruptedItems = skipCorruptedItems;
 
-                _flushToDiskOnItem = flushToDiskOnItem >= 0 ? flushToDiskOnItem : DefaultFlushToDiskOnItem;
-                _writtenItemCount = 0;
-                _markedAsReadItemCount = 0;
+                _flushToDiskOnItem = flushToDiskOnItem;
+                _operationsToFlushCount = 0;
+                if (flushToDiskOnItem < 0)
+                {
+                    checked
+                    {
+                        if (serializer.ExpectedSizeInBytes > 0)
+                            _flushToDiskOnItem = Math.Max(DefaultFlushToDiskOnItem, 8192 / (serializer.ExpectedSizeInBytes + ItemHeader.Size));
+                        else
+                            _flushToDiskOnItem = DefaultFlushToDiskOnItem;
+                    }
+                }
 
                 _cachedMemoryWriteStream = null;
                 _maxCachedMemoryWriteStreamSize = cachedMemoryWriteStreamSize;
@@ -988,22 +996,24 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 // Write item bytes to disk
                 long initialStreamPosition = _writeStream.Position;
-                writer.BaseStream.InnerStream.WriteTo(_writeStream);
-                _writeStream.Flush(flushToDisk: false);
-
-
-                // Mark record as written
-                long streamPositionAfterWriteCompleted = _writeStream.Position;
+                long streamPositionAfterWriteCompleted = initialStreamPosition + writer.BaseStream.InnerStream.Length;
                 try
                 {
+                    writer.BaseStream.InnerStream.WriteTo(_writeStream);
+                    _writeStream.Flush(flushToDisk: false);
+
+                    Debug.Assert(streamPositionAfterWriteCompleted == _writeStream.Position);
+
+                    // Mark record as written
                     _writeStream.Position = initialStreamPosition + ItemHeader.OffsetToStateByte;
                     _writeStream.WriteByte((byte)ItemState.Written);
 
-                    int writtenItemCount = Interlocked.Increment(ref _writtenItemCount);
+                    int writtenItemCount = Interlocked.Increment(ref _operationsToFlushCount);
                     _writeStream.Flush(flushToDisk: _flushToDiskOnItem > 0 && (writtenItemCount % _flushToDiskOnItem) == 0); // Flush to disk periodically
                 }
                 finally
                 {
+                    // Always move position to the end of the item
                     _writeStream.Position = streamPositionAfterWriteCompleted;
                 }
 
@@ -1211,7 +1221,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 _readMarkerStream.Position = itemInfo.Position + ItemHeader.OffsetToStateByte;
                 _readMarkerStream.WriteByte((byte)ItemState.Read);
 
-                int markedAsReadItemCount = Interlocked.Increment(ref _markedAsReadItemCount);
+                int markedAsReadItemCount = Interlocked.Increment(ref _operationsToFlushCount);
                 _readMarkerStream.Flush(flushToDisk: _flushToDiskOnItem > 0 && (markedAsReadItemCount % _flushToDiskOnItem) == 0); // Flush to disk periodically
             }
         }

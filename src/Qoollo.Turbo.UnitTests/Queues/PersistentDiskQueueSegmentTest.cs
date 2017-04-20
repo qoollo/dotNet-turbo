@@ -32,13 +32,13 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
 
-        private static PersistentDiskQueueSegment<int> Create(int capacity, int flushPeriod, int readBufferSize, int cachedMemoryWriteStreamSize = -1, int cachedMemoryReadStreamSize = -1)
+        private static PersistentDiskQueueSegment<int> Create(int capacity, int flushPeriod, int readBufferSize, bool skipCorruptedItems = false, int cachedMemoryWriteStreamSize = -1, int cachedMemoryReadStreamSize = -1)
         {
-            string fileName = Guid.NewGuid().ToString().Replace('-', '_') + NonPersistentDiskQueueSegmentFactory<int>.SegmentFileExtension;
+            string fileName = Guid.NewGuid().ToString().Replace('-', '_') + PersistentDiskQueueSegmentFactory<int>.SegmentFileExtension;
 
             try
             {
-                return new PersistentDiskQueueSegment<int>(1, fileName, new ItemSerializer(), capacity, false, flushPeriod, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize);
+                return new PersistentDiskQueueSegment<int>(1, fileName, new ItemSerializer(), capacity, skipCorruptedItems, flushPeriod, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize);
             }
             catch
             {
@@ -86,7 +86,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void SegmentCreationTest()
         {
             string fileName = null;
-            using (var segment = Create(1000, -1, -1, -1, -1))
+            using (var segment = Create(1000, -1, -1, false, -1, -1))
             {
                 fileName = segment.FileName;
 
@@ -106,7 +106,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             Assert.IsFalse(File.Exists(fileName));
 
-            using (var segment = Create(1000, 0, 0, 0, 0))
+            using (var segment = Create(1000, 0, 0, false, 0, 0))
             {
                 fileName = segment.FileName;
 
@@ -126,7 +126,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             Assert.IsFalse(File.Exists(fileName));
 
-            using (var segment = Create(1000, 10, 10, 1000, 1000))
+            using (var segment = Create(1000, 10, 10, false, 1000, 1000))
             {
                 fileName = segment.FileName;
 
@@ -147,6 +147,73 @@ namespace Qoollo.Turbo.UnitTests.Queues
             Assert.IsFalse(File.Exists(fileName));
         }
 
+
+        // =======================
+
+        private void SegmentFactoryTest(bool fix)
+        {
+            string prefix = Guid.NewGuid().ToString().Replace('-', '_');
+            var factory = new PersistentDiskQueueSegmentFactory<int>(100, prefix, new ItemSerializer(), fix, true, 1000, 10000, 10, 10000);
+
+            string fileName = null;
+            string fileName2 = null;
+            try
+            {
+                using (var segment = (PersistentDiskQueueSegment<int>)factory.CreateSegment(".", 100))
+                {
+                    fileName = segment.FileName;
+                    Assert.IsTrue(File.Exists(fileName));
+
+                    for (int i = 0; i < 100; i++)
+                        segment.TryAdd(i);
+                }
+                using (var segment = (PersistentDiskQueueSegment<int>)factory.CreateSegment(".", 101))
+                {
+                    fileName2 = segment.FileName;
+                    Assert.IsTrue(File.Exists(fileName2));
+
+                    for (int i = 0; i < 100; i++)
+                        segment.TryAdd(i);
+                }
+
+                Assert.IsTrue(File.Exists(fileName));
+                Assert.IsTrue(File.Exists(fileName2));
+
+                var discoveryResult = factory.DiscoverSegments(".");
+                Assert.AreEqual(2, discoveryResult.Length);
+
+                using (var segment = discoveryResult[0])
+                {
+                    for (int i = 0; i < 100; i++)
+                    {
+                        int item = 0;
+                        Assert.IsTrue(segment.TryTake(out item));
+                        Assert.AreEqual(i, item);
+                    }
+                }
+                using (var segment = discoveryResult[1])
+                {
+                    for (int i = 0; i < 100; i++)
+                    {
+                        int item = 0;
+                        Assert.IsTrue(segment.TryTake(out item));
+                        Assert.AreEqual(i, item);
+                    }
+                }
+            }
+            finally
+            {
+                if (fileName != null && File.Exists(fileName))
+                    File.Delete(fileName);
+                if (fileName2 != null && File.Exists(fileName2))
+                    File.Delete(fileName2);
+            }
+        }
+
+        [TestMethod]
+        public void SegmentFactoryTestWithFix() { SegmentFactoryTest(true); }
+        [TestMethod]
+        public void SegmentFactoryTestWithoutFix() { SegmentFactoryTest(false); }
 
         // =======================
 
@@ -265,6 +332,111 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
         // ===================
 
+        
+        private void RunWriteAbort(PersistentDiskQueueSegment<int> segment, Random rnd)
+        {
+            Barrier bar = new Barrier(2);
+            Exception observedEx = null;
+            int added = 0;
+            ThreadStart act = () =>
+            {
+                bar.SignalAndWait();
+                int item = 1;
+                try
+                {
+                    while (segment.TryAdd(item++)) { Interlocked.Increment(ref added); }
+                }
+                catch (Exception ex)
+                {
+                    if (!(ex is ThreadAbortException))
+                        Volatile.Write(ref observedEx, ex);
+                }
+                Interlocked.Increment(ref added);
+            };
+
+            Thread th = new Thread(act);
+            th.Start();
+            bar.SignalAndWait();
+
+            while (Volatile.Read(ref added) == 0)
+                Thread.SpinWait(100);
+            Thread.SpinWait(rnd.Next(150000));
+            th.Abort();
+
+            if (observedEx != null)
+                throw observedEx;
+        }
+        private void RunReadAbort(PersistentDiskQueueSegment<int> segment, Random rnd)
+        {
+            Barrier bar = new Barrier(2);
+            Exception observedEx = null;
+            int taken = 0;
+            ThreadStart act = () =>
+            {
+                bar.SignalAndWait();
+                int item = 1;
+                try
+                {
+                    while (segment.TryTake(out item)) { Interlocked.Increment(ref taken); }
+                }
+                catch (Exception ex)
+                {
+                    if (!(ex is ThreadAbortException))
+                        Volatile.Write(ref observedEx, ex);
+                }
+                Interlocked.Increment(ref taken);
+            };
+
+            Thread th = new Thread(act);
+            th.Start();
+            bar.SignalAndWait();
+
+            while (Volatile.Read(ref taken) == 0)
+                Thread.SpinWait(100);
+            Thread.SpinWait(rnd.Next(1600000));
+            th.Abort();
+
+            if (observedEx != null)
+                throw observedEx;
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        [Ignore]
+        public void WriteReadAbortTest()
+        {
+            string segmentFileName = null;
+            try
+            {
+                Random rnd = new Random();
+                using (var segment = Create(10000, 1000, 16, true))
+                {
+                    segmentFileName = segment.FileName;
+
+
+                    while (!segment.IsCompleted)
+                    {
+                        RunWriteAbort(segment, rnd);
+                        RunReadAbort(segment, rnd);
+                    }
+                }
+            }
+            finally
+            {
+                if (segmentFileName != null && File.Exists(segmentFileName))
+                {
+                    try
+                    {
+                        File.Delete(segmentFileName);
+                    }
+                    catch { }
+                }
+            }
+        }
+
+
+        // ===================
+
         private void PreserveOrderTest(PersistentDiskQueueSegment<int> segment, int elemCount)
         {
             Assert.IsTrue(elemCount <= segment.Capacity);
@@ -337,11 +509,132 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [TestMethod]
         public void PreserveOrderTestNoBuffer() { RunTest(100000, 0, 0, s => PreserveOrderTest(s, s.Capacity)); }
         [TestMethod]
-        public void PreserveOrderTestReadBuffer() { RunTest(100000, 64, 16, s => PreserveOrderTest(s, s.Capacity)); }
+        public void PreserveOrderTestReadBuffer() { RunTest(100000, 600, 16, s => PreserveOrderTest(s, s.Capacity)); }
         [TestMethod]
-        public void PreserveOrderTestSmallBuffer() { RunTest(100000, 64, 2, s => PreserveOrderTest(s, s.Capacity)); }
+        public void PreserveOrderTestSmallBuffer() { RunTest(100000, 600, 2, s => PreserveOrderTest(s, s.Capacity)); }
 
         // =========================
+
+        private void RunComplexTest(PersistentDiskQueueSegment<int> segment, int elemCount, int thCount)
+        {
+            Assert.IsTrue(elemCount <= segment.Capacity);
+
+            int atomicRandom = 0;
+
+            int trackElemCount = elemCount;
+            int addFinished = 0;
+
+            Thread[] threadsTake = new Thread[thCount];
+            Thread[] threadsAdd = new Thread[thCount];
+
+            CancellationTokenSource tokSrc = new CancellationTokenSource();
+
+            List<int> global = new List<int>(elemCount);
+
+            Action addAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Interlocked.Increment(ref atomicRandom) * thCount * 2);
+
+                while (true)
+                {
+                    int item = Interlocked.Decrement(ref trackElemCount);
+                    if (item < 0)
+                        break;
+
+                    if (rnd.Next(100) == 0)
+                        segment.AddForced(item);
+                    else
+                        Assert.IsTrue(segment.TryAdd(item));
+
+
+                    int sleepTime = rnd.Next(100);
+
+                    int tmpItem = 0;
+                    if (segment.TryPeek(out tmpItem) && tmpItem == item)
+                        sleepTime += 100;
+
+                    if (sleepTime > 0)
+                        Thread.SpinWait(sleepTime);
+                }
+
+                Interlocked.Increment(ref addFinished);
+            };
+
+
+            Action takeAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Interlocked.Increment(ref atomicRandom) * thCount * 2);
+
+                List<int> data = new List<int>();
+
+                try
+                {
+                    while (Volatile.Read(ref addFinished) < thCount)
+                    {
+                        int tmp = 0;
+                        if (segment.TryTake(out tmp))
+                            data.Add((int)tmp);
+
+                        int sleepTime = rnd.Next(100);
+                        if (sleepTime > 0)
+                            Thread.SpinWait(sleepTime);
+                    }
+                }
+                catch (OperationCanceledException) { }
+
+                int tmp2;
+                while (segment.TryTake(out tmp2))
+                    data.Add((int)tmp2);
+
+                lock (global)
+                    global.AddRange(data);
+            };
+
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i] = new Thread(new ThreadStart(takeAction));
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i] = new Thread(new ThreadStart(addAction));
+
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i].Start();
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i].Start();
+
+
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i].Join();
+            tokSrc.Cancel();
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i].Join();
+
+
+            Assert.AreEqual(elemCount, global.Count);
+            global.Sort();
+
+            for (int i = 0; i < elemCount; i++)
+                Assert.AreEqual(i, global[i]);
+        }
+
+        [TestMethod]
+        public void ComplexTestNoBuffer()
+        {
+            RunTest(100000, 0, 0, s => RunComplexTest(s, s.Capacity, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(100000, 0, 0, s => RunComplexTest(s, s.Capacity, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        public void ComplexTestReadBuffer()
+        {
+            RunTest(100000, 600, 16, s => RunComplexTest(s, s.Capacity, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(100000, 600, 16, s => RunComplexTest(s, s.Capacity, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        public void ComplexTestSmallBuffer()
+        {
+            RunTest(100000, 1200, 2, s => RunComplexTest(s, s.Capacity, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(100000, 1200, 2, s => RunComplexTest(s, s.Capacity, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
 
     }
 }
