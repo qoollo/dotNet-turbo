@@ -20,7 +20,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <summary>
         /// Segment file extension
         /// </summary>
-        public const string SegmentFileExtension = ".psdq";
+        public const string SegmentFileExtension = ".pdqs";
 
         private readonly int _capacity;
         private readonly string _fileNamePrefix;
@@ -292,6 +292,77 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         }
 
 
+        /// <summary>
+        /// Segment information
+        /// </summary>
+        public struct SegmentInformation
+        {
+            private readonly int _totalItemCount;
+            private readonly int _notTakenItemCount;
+            private readonly int _corruptedItemCount;
+            private readonly long _startPosition;
+
+            /// <summary>
+            /// SegmentInformation constructor
+            /// </summary>
+            /// <param name="totalItemCount">Total number of items stored inside segment</param>
+            /// <param name="notTakenItemCount">Number of active items</param>
+            /// <param name="corruptedItemCount">Number of corrupted items</param>
+            /// <param name="startPosition">Position of the first item to read</param>
+            internal SegmentInformation(int totalItemCount, int notTakenItemCount, int corruptedItemCount, long startPosition)
+            {
+                if (totalItemCount < 0)
+                    throw new ArgumentOutOfRangeException(nameof(totalItemCount));
+                if (notTakenItemCount < 0 || notTakenItemCount > totalItemCount)
+                    throw new ArgumentOutOfRangeException(nameof(notTakenItemCount));
+                if (corruptedItemCount < 0 || corruptedItemCount > totalItemCount)
+                    throw new ArgumentOutOfRangeException(nameof(corruptedItemCount));
+
+                _totalItemCount = totalItemCount;
+                _notTakenItemCount = notTakenItemCount;
+                _corruptedItemCount = corruptedItemCount;
+                _startPosition = startPosition;
+            }
+            /// <summary>
+            /// SegmentInformation constructor
+            /// </summary>
+            /// <param name="totalItemCount">Total number of items stored inside segment</param>
+            /// <param name="notTakenItemCount">Number of active items</param>
+            /// <param name="corruptedItemCount">Number of corrupted items</param>
+            public SegmentInformation(int totalItemCount, int notTakenItemCount, int corruptedItemCount)
+            {
+                if (totalItemCount < 0)
+                    throw new ArgumentOutOfRangeException(nameof(totalItemCount));
+                if (notTakenItemCount < 0 || notTakenItemCount > totalItemCount)
+                    throw new ArgumentOutOfRangeException(nameof(notTakenItemCount));
+                if (corruptedItemCount < 0 || corruptedItemCount > totalItemCount)
+                    throw new ArgumentOutOfRangeException(nameof(corruptedItemCount));
+
+                _totalItemCount = totalItemCount;
+                _notTakenItemCount = notTakenItemCount;
+                _corruptedItemCount = corruptedItemCount;
+                _startPosition = 0;
+            }
+
+            /// <summary>
+            /// Total number of items stored inside segment
+            /// </summary>
+            public int TotalItemCount { get { return _totalItemCount; } }
+            /// <summary>
+            /// Number of active item
+            /// </summary>
+            public int NotTakenItemCount { get { return _notTakenItemCount; } }
+            /// <summary>
+            /// Number of corrupted items
+            /// </summary>
+            public int CorruptedItemCount { get { return _corruptedItemCount; } }
+            /// <summary>
+            /// Position of the first item to read
+            /// </summary>
+            internal long StartPosition { get { return _startPosition; } }
+        }
+
+
 
         // =================
 
@@ -310,6 +381,118 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         }
 
         // =================
+
+
+        /// <summary>
+        /// Scans existed segment on disk and fix errors when <paramref name="fixSegmentDataErrors"/> is specified
+        /// </summary>
+        /// <param name="fileName">Full file name for the segment</param>
+        /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment</param>
+        /// <returns>Segment information</returns>
+        public static SegmentInformation ScanSegment(string fileName, bool fixSegmentDataErrors)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                throw new ArgumentNullException(nameof(fileName));
+            if (!File.Exists(fileName))
+                throw new ArgumentException($"PersistentDiskQueueSegment file is not found '{fileName}'", nameof(fileName));
+
+            using (var exclusivityCheckStream = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+
+            int totalItemCount = 0;
+            int validItemCount = 0;
+            int corruptedItemCount = 0;
+            long initialPosition = 0;
+
+            using (var scanStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var fileUpdatingStream = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, bufferSize: 4))
+            {
+                long streamLength = scanStream.Length;
+
+                ReadAndValidateSegmentHeader(scanStream);
+
+                MemoryStream targetStream = new MemoryStream();
+
+                while (true)
+                {
+                    ItemHeader itemHeader;
+                    long itemPosition = scanStream.Position;
+                    targetStream.Position = 0;
+
+                    // Read item header
+                    if (!TryReadItemHeaderFromDisk(scanStream, targetStream, out itemHeader))
+                    {
+                        if (scanStream.Position > itemPosition)
+                        {
+                            corruptedItemCount++;
+                            if (fixSegmentDataErrors)
+                                fileUpdatingStream.SetLength(itemPosition); // Trim incorrect end of the segment
+                        }
+                        break;
+                    }
+
+                    // Skip content
+                    if (fixSegmentDataErrors)
+                    {
+                        if (!TryReadItemBytesFromDisk(scanStream, targetStream, ref itemHeader))
+                        {
+                            if (scanStream.Position + itemHeader.Length > streamLength)
+                            {
+                                corruptedItemCount++;
+                                fileUpdatingStream.SetLength(itemPosition); // Trim incorrect end of the segment
+                            }
+
+                            break;
+                        }
+
+                        // Validate checksum
+                        int checkSum = ItemHeader.CoerceChecksum(CalculateChecksum(targetStream.GetBuffer(), ItemHeader.Size, itemHeader.Length));
+                        if (checkSum != itemHeader.Checksum)
+                        {
+                            // Mark item as Corrupted
+                            fileUpdatingStream.Seek(itemPosition + ItemHeader.OffsetToStateByte, SeekOrigin.Begin);
+                            fileUpdatingStream.WriteByte((byte)ItemState.Corrupted);
+                            fileUpdatingStream.Flush(true);
+                            itemHeader = ItemHeader.Init(itemHeader.Length, ItemState.Corrupted, itemHeader.Checksum);
+                            corruptedItemCount++;
+                        }
+                    }
+                    else
+                    {
+                        if (scanStream.Position + itemHeader.Length > streamLength)
+                        {
+                            corruptedItemCount++;
+                            break;
+                        }
+
+                        // Just skip the item
+                        scanStream.Seek(scanStream.Position + itemHeader.Length, SeekOrigin.Begin);
+                    }
+
+
+                    // Fix bad state
+                    if (itemHeader.State == ItemState.New && fixSegmentDataErrors)
+                    {
+                        fileUpdatingStream.Seek(itemPosition + ItemHeader.OffsetToStateByte, SeekOrigin.Begin);
+                        fileUpdatingStream.WriteByte((byte)ItemState.Corrupted);
+                        fileUpdatingStream.Flush(true);
+                        itemHeader = ItemHeader.Init(itemHeader.Length, ItemState.Corrupted, itemHeader.Checksum);
+                        corruptedItemCount++;
+                    }
+
+
+                    if (itemHeader.State == ItemState.Written)
+                    {
+                        if (initialPosition <= 0)
+                            initialPosition = itemPosition;
+                        validItemCount++;
+                    }
+                    totalItemCount++;
+                }
+            }
+
+            return new SegmentInformation(totalItemCount, validItemCount, corruptedItemCount, initialPosition);
+        }
+        
 
         /// <summary>
         /// Creates PersistentDiskQueueSegment by opening existing segment on disk
@@ -335,92 +518,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             if (!File.Exists(fileName))
                 throw new ArgumentException($"PersistentDiskQueueSegment file is not found '{fileName}'. To create new use another method", nameof(fileName));
 
-            using (var exclusivityCheckStream = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+            var segmentInfo = ScanSegment(fileName, fixSegmentDataErrors);
 
-            int totalItemCount = 0;
-            int validItemCount = 0;
-            long initialPosition = 0;
-
-            using (var scanStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var fileUpdatingStream = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, bufferSize: 4))
-            {
-                long streamLength = scanStream.Length;
-
-                ReadAndValidateSegmentHeader(scanStream);
-
-                MemoryStream targetStream = new MemoryStream();
-                
-                while (true)
-                {
-                    ItemHeader itemHeader;
-                    long itemPosition = scanStream.Position;
-                    targetStream.Position = 0;
-
-                    // Read item header
-                    if (!TryReadItemHeaderFromDisk(scanStream, targetStream, out itemHeader))
-                    {
-                        if (scanStream.Position > itemPosition)
-                        {
-                            if (fixSegmentDataErrors)
-                                fileUpdatingStream.SetLength(itemPosition); // Trim incorrect end of the segment
-                        }
-                        break;
-                    }
-
-                    // Skip content
-                    if (fixSegmentDataErrors)
-                    {
-                        if (!TryReadItemBytesFromDisk(scanStream, targetStream, ref itemHeader))
-                        {
-                            if (scanStream.Position + itemHeader.Length > streamLength)
-                                fileUpdatingStream.SetLength(itemPosition); // Trim incorrect end of the segment
-
-                            break;
-                        }
-
-                        // Validate checksum
-                        int checkSum = ItemHeader.CoerceChecksum(CalculateChecksum(targetStream.GetBuffer(), ItemHeader.Size, itemHeader.Length));
-                        if (checkSum != itemHeader.Checksum)
-                        {
-                            // Mark item as Corrupted
-                            fileUpdatingStream.Seek(itemPosition + ItemHeader.OffsetToStateByte, SeekOrigin.Begin);
-                            fileUpdatingStream.WriteByte((byte)ItemState.Corrupted);
-                            fileUpdatingStream.Flush(true);
-                            itemHeader = ItemHeader.Init(itemHeader.Length, ItemState.Corrupted, itemHeader.Checksum);
-                        }
-                    }
-                    else
-                    {
-                        if (scanStream.Position + itemHeader.Length > streamLength)
-                            break;
-
-                        // Just skip the item
-                        scanStream.Seek(scanStream.Position + itemHeader.Length, SeekOrigin.Begin);
-                    }
-
-
-                    // Fix bad state
-                    if (itemHeader.State == ItemState.New && fixSegmentDataErrors)
-                    {
-                        fileUpdatingStream.Seek(itemPosition + ItemHeader.OffsetToStateByte, SeekOrigin.Begin);
-                        fileUpdatingStream.WriteByte((byte)ItemState.Corrupted);
-                        fileUpdatingStream.Flush(true);
-                        itemHeader = ItemHeader.Init(itemHeader.Length, ItemState.Corrupted, itemHeader.Checksum);
-                    }
-
-
-                    if (itemHeader.State == ItemState.Written)
-                    {
-                        if (initialPosition <= 0)
-                            initialPosition = itemPosition;
-                        validItemCount++;
-                    }
-                    totalItemCount++;
-                }
-            }
-
-
-            return new PersistentDiskQueueSegment<T>(segmentNumber, true, totalItemCount, validItemCount, totalItemCount, fileName, initialPosition, 
+            return new PersistentDiskQueueSegment<T>(segmentNumber, true, 
+                segmentInfo.TotalItemCount, segmentInfo.NotTakenItemCount, segmentInfo.TotalItemCount, fileName, segmentInfo.StartPosition, 
                 serializer, skipCorruptedItems, 
                 flushToDiskOnItem, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize);
         }
@@ -980,6 +1081,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
+            if (IsReadOnly)
+                throw new InvalidOperationException($"Segment is in readonly mode ('{_fileName}')");
 
             lock (_writeLock)
             {

@@ -19,7 +19,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <summary>
         /// Segment file extension
         /// </summary>
-        public const string SegmentFileExtension = ".npsdq";
+        public const string SegmentFileExtension = ".npdqs";
 
         private readonly int _capacity;
         private readonly string _fileNamePrefix;
