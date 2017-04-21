@@ -723,12 +723,13 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             using (var queue = new DiskQueue<int>("dummy", segmentFactory, -1, false))
             {
-                Assert.AreEqual(2, queue.SegmentCount);
+                Assert.AreEqual(3, queue.SegmentCount);
+                Assert.AreEqual(3, segmentFactory.AllocatedSegments.Count);
 
                 for (int i = 0; i < segmentFactory.Capacity * 2; i++)
                     Assert.AreEqual(i, queue.Take());
 
-                Assert.AreEqual(1, queue.SegmentCount);
+                Assert.AreEqual(2, queue.SegmentCount);
             }
         }
 
