@@ -418,6 +418,10 @@ namespace Qoollo.Turbo.PerformanceTests
                 new NonPersistentDiskQueueSegmentFactory<int>(10000, "prefix", new ItemSerializer(), 256, 16),
                 10, true);
 
+            //DiskQueue<int> col = new DiskQueue<int>("dummy",
+            //    new PersistentDiskQueueSegmentFactory<int>(10000, "prefix", new ItemSerializer(), false, false, 1000, 64),
+            //    10, true);
+
             CancellationTokenSource srcCancel = new CancellationTokenSource();
 
             Thread[] addThreads = new Thread[addThCount];

@@ -259,6 +259,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             return new DiskQueue<int>(dir, new NonPersistentDiskQueueSegmentFactory<int>(segmentCapacity, "prefix", new ItemSerializer()), segmentCount, backComp, 500);
         }
+        private static DiskQueue<int> CreatePersistent(string dir, int segmentCapacity, int segmentCount = -1, bool backComp = false)
+        {
+            return new DiskQueue<int>(dir, new PersistentDiskQueueSegmentFactory<int>(segmentCapacity, "prefix", new ItemSerializer()), segmentCount, backComp, 500);
+        }
 
         private static void DeleteDir(string dir)
         {
@@ -308,6 +312,21 @@ namespace Qoollo.Turbo.UnitTests.Queues
             {
                 Directory.CreateDirectory(dir);
                 using (var q = CreateNonPersistent(dir, segmentCapacity, segmentCount, backComp))
+                    testRunner(q);
+            }
+            finally
+            {
+                DeleteDir(dir);
+            }
+        }
+
+        private static void RunPersistent(int segmentCapacity, int segmentCount, bool backComp, Action<DiskQueue<int>> testRunner)
+        {
+            string dir = Guid.NewGuid().ToString().Replace('-', '_');
+            try
+            {
+                Directory.CreateDirectory(dir);
+                using (var q = CreatePersistent(dir, segmentCapacity, segmentCount, backComp))
                     testRunner(q);
             }
             finally
@@ -407,6 +426,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void TestSimpleAddTakePeekMemDefaultStress() { RunMemDefaultTest(1, -1, true, q => TestSimpleAddTakePeek(q)); }
         [TestMethod]
         public void TestSimpleAddTakePeekNonPersistent() { RunNonPersistent(1000, -1, true, q => TestSimpleAddTakePeek(q)); }
+        [TestMethod]
+        public void TestSimpleAddTakePeekPersistent() { RunPersistent(1000, -1, true, q => TestSimpleAddTakePeek(q)); }
 
         // =========================
 
@@ -893,6 +914,19 @@ namespace Qoollo.Turbo.UnitTests.Queues
             }
         }
 
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void PreserveOrderTestOnPersistent()
+        {
+            //for (int i = 0; i < 30; i++)
+            {
+                RunPersistent(1000, 2, false, q => PreserveOrderTest(q, 5000));
+                RunPersistent(1000, 2, true, q => PreserveOrderTest(q, 5000));
+                RunPersistent(1000, -1, false, q => PreserveOrderTest(q, 70000));
+                RunPersistent(1000, -1, true, q => PreserveOrderTest(q, 70000));
+            }
+        }
+
         // ======================
 
         private void ValidateCountTest(DiskQueue<int> queue, CommonSegmentFactory<int> factory, int elemCount)
@@ -1163,6 +1197,13 @@ namespace Qoollo.Turbo.UnitTests.Queues
         {
             RunNonPersistent(10000, 1000, false, q => RunComplexTest(q, 500000, Math.Max(1, Environment.ProcessorCount / 2)));
             RunNonPersistent(10000, -1, true, q => RunComplexTest(q, 1000000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+        }
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOnPersistent()
+        {
+            RunPersistent(10000, 1000, false, q => RunComplexTest(q, 100000, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunPersistent(10000, -1, true, q => RunComplexTest(q, 200000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
         }
     }
 }
