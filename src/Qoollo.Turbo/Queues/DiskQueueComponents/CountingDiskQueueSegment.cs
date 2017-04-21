@@ -179,7 +179,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             {
                 itemTaken = TryTakeCore(out item);
                 if (!itemTaken)
-                    throw new InvalidOperationException("Disk queue segment is corrupted. Incorrect number of items");
+                    throw new SegmentCorruptedException("Disk queue segment is corrupted. Incorrect number of items");
             }
             finally
             {
