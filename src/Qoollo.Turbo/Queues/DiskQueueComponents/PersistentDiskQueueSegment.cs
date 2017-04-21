@@ -858,7 +858,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <summary>
         /// Is segment is in read-only mode
         /// </summary>
-        public bool IsReadOnly { get { return _writeStream.CanWrite; } }
+        public bool IsReadOnly { get { return !_writeStream.CanWrite; } }
 
 
         /// <summary>

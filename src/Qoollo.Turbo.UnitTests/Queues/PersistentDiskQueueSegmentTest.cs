@@ -333,7 +333,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         // ===================
 
         
-        private void RunWriteAbort(PersistentDiskQueueSegment<int> segment, Random rnd)
+        private void RunWriteAbort(PersistentDiskQueueSegment<int> segment, int count, Random rnd)
         {
             Barrier bar = new Barrier(2);
             Exception observedEx = null;
@@ -351,22 +351,24 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     if (!(ex is ThreadAbortException))
                         Volatile.Write(ref observedEx, ex);
                 }
-                Interlocked.Increment(ref added);
+                Interlocked.Add(ref added, count);
             };
 
             Thread th = new Thread(act);
             th.Start();
             bar.SignalAndWait();
 
-            while (Volatile.Read(ref added) == 0)
+            while (Volatile.Read(ref added) < count)
                 Thread.SpinWait(100);
-            Thread.SpinWait(rnd.Next(150000));
+
+            Thread.SpinWait(rnd.Next(20000));
             th.Abort();
+            th.Join();
 
             if (observedEx != null)
                 throw observedEx;
         }
-        private void RunReadAbort(PersistentDiskQueueSegment<int> segment, Random rnd)
+        private void RunReadAbort(PersistentDiskQueueSegment<int> segment, int count, Random rnd)
         {
             Barrier bar = new Barrier(2);
             Exception observedEx = null;
@@ -384,26 +386,25 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     if (!(ex is ThreadAbortException))
                         Volatile.Write(ref observedEx, ex);
                 }
-                Interlocked.Increment(ref taken);
+                Interlocked.Add(ref taken, count);
             };
 
             Thread th = new Thread(act);
             th.Start();
             bar.SignalAndWait();
 
-            while (Volatile.Read(ref taken) == 0)
+            while (Volatile.Read(ref taken) < count)
                 Thread.SpinWait(100);
-            Thread.SpinWait(rnd.Next(1600000));
+            Thread.SpinWait(rnd.Next(20000));
             th.Abort();
+            th.Join();
 
             if (observedEx != null)
                 throw observedEx;
         }
 
-        [TestMethod]
-        [Timeout(2 * 60 * 1000)]
-        [Ignore]
-        public void WriteReadAbortTest()
+
+        private void WriteAbortTestCore(int itemCount)
         {
             string segmentFileName = null;
             try
@@ -412,12 +413,67 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 using (var segment = Create(10000, 1000, 16, true))
                 {
                     segmentFileName = segment.FileName;
+                    RunWriteAbort(segment, itemCount, rnd);
+                }
 
+                int readCnt = 0;
 
-                    while (!segment.IsCompleted)
+                using (var segment = PersistentDiskQueueSegment<int>.Open(100, segmentFileName, new ItemSerializer(), true, false))
+                {
+                    Assert.IsTrue(segment.Count >= itemCount, "Item missed");
+
+                    int item = 0;
+                    while (segment.TryTake(out item))
+                        readCnt++;
+                }
+
+                Assert.IsTrue(readCnt >= itemCount, "Item missed");
+            }
+            finally
+            {
+                if (segmentFileName != null && File.Exists(segmentFileName))
+                {
+                    try
                     {
-                        RunWriteAbort(segment, rnd);
-                        RunReadAbort(segment, rnd);
+                        File.Delete(segmentFileName);
+                    }
+                    catch { }
+                }
+            }
+        }
+
+
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void WriteAbortTest()
+        {
+            for (int i = 0; i < 150; i++)
+                WriteAbortTestCore(100);
+        }
+
+
+        private void ReadAbortTestCore(int itemCount)
+        {
+            string segmentFileName = null;
+            try
+            {
+                Random rnd = new Random();
+                using (var segment = Create(10000, 1000, 16, true))
+                {
+                    segmentFileName = segment.FileName;
+                    for (int i = 0; i < itemCount; i++)
+                        Assert.IsTrue(segment.TryAdd(i));
+                }
+
+
+                while (true)
+                {
+                    using (var segment = PersistentDiskQueueSegment<int>.Open(100, segmentFileName, new ItemSerializer(), true, false))
+                    {
+                        if (segment.IsCompleted)
+                            break;
+                        RunReadAbort(segment, Math.Max(1, itemCount / 10), rnd);
                     }
                 }
             }
@@ -432,6 +488,16 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     catch { }
                 }
             }
+        }
+
+
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ReadAbortTest()
+        {
+            for (int i = 0; i < 150; i++)
+                ReadAbortTestCore(100);
         }
 
 
