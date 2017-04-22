@@ -84,6 +84,7 @@
     <Compile Include="Queues\MutuallyExclusivePrimitiveTest.cs" />
     <Compile Include="Queues\NonPersistentDiskQueueSegmentTest.cs" />
     <Compile Include="Queues\PersistentDiskQueueSegmentTest.cs" />
+    <Compile Include="Queues\QueueCombinationTest.cs" />
     <Compile Include="Queues\RegionMemoryStreamTest.cs" />
     <Compile Include="Queues\TransformationQueueTests.cs" />
     <Compile Include="TestLoggingHelper.cs" />
