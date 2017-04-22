@@ -754,6 +754,63 @@ namespace Qoollo.Turbo.UnitTests.Queues
             }
         }
 
+        [TestMethod]
+        public void SegmentDiscoveryOnDiskTest()
+        {
+            string dir = Guid.NewGuid().ToString().Replace('-', '_');
+            const int capacity = 1000;
+            try
+            {
+                Directory.CreateDirectory(dir);
+                using (var queue = CreatePersistent(dir, capacity, 10, false))
+                {
+                    Assert.AreEqual(1, queue.SegmentCount);
+
+                    for (int i = 0; i < capacity * 2; i++)
+                        queue.Add(i);
+
+                    Assert.AreEqual(2, queue.SegmentCount);
+                }
+
+                using (var queue = CreatePersistent(dir, capacity, 10, false))
+                {
+                    Assert.AreEqual(3, queue.SegmentCount);
+
+                    int item = 0;
+                    int expected = 0;
+                    while (queue.TryTake(out item))
+                    {
+                        Assert.AreEqual(expected, item);
+                        expected++;
+                    }
+                    Assert.AreEqual(capacity * 2, expected);
+
+                    Assert.AreEqual(1, queue.SegmentCount);
+                }
+
+                using (var queue = CreatePersistent(dir, capacity, 10, false))
+                {
+                    Assert.AreEqual(2, queue.SegmentCount);
+
+                    queue.AddForced(100);
+                    Assert.IsTrue(queue.TryAdd(200));
+
+                    int item = 0;
+                    Assert.IsTrue(queue.TryTake(out item));
+                    Assert.AreEqual(100, item);
+                    Assert.IsTrue(queue.TryTake(out item));
+                    Assert.AreEqual(200, item);
+                    Assert.IsFalse(queue.TryTake(out item));
+
+                    Assert.AreEqual(1, queue.SegmentCount);
+                }
+            }
+            finally
+            {
+                DeleteDir(dir);
+            }
+        }
+
         // ======================
 
 

@@ -297,19 +297,23 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         public struct SegmentInformation
         {
+            private readonly long _segmentNumber;
             private readonly int _totalItemCount;
             private readonly int _notTakenItemCount;
             private readonly int _corruptedItemCount;
+            private readonly int _capacity;
             private readonly long _startPosition;
 
             /// <summary>
             /// SegmentInformation constructor
             /// </summary>
+            /// <param name="segmentNumber">Number of the segment stored in header</param>
             /// <param name="totalItemCount">Total number of items stored inside segment</param>
             /// <param name="notTakenItemCount">Number of active items</param>
             /// <param name="corruptedItemCount">Number of corrupted items</param>
+            /// <param name="capacity">Capacity of the segment stored in header</param>
             /// <param name="startPosition">Position of the first item to read</param>
-            internal SegmentInformation(int totalItemCount, int notTakenItemCount, int corruptedItemCount, long startPosition)
+            internal SegmentInformation(long segmentNumber, int totalItemCount, int notTakenItemCount, int corruptedItemCount, int capacity, long startPosition)
             {
                 if (totalItemCount < 0)
                     throw new ArgumentOutOfRangeException(nameof(totalItemCount));
@@ -317,19 +321,25 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     throw new ArgumentOutOfRangeException(nameof(notTakenItemCount));
                 if (corruptedItemCount < 0 || corruptedItemCount > totalItemCount)
                     throw new ArgumentOutOfRangeException(nameof(corruptedItemCount));
+                if (capacity <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(capacity));
 
+                _segmentNumber = segmentNumber;
                 _totalItemCount = totalItemCount;
                 _notTakenItemCount = notTakenItemCount;
                 _corruptedItemCount = corruptedItemCount;
+                _capacity = capacity;
                 _startPosition = startPosition;
             }
             /// <summary>
             /// SegmentInformation constructor
             /// </summary>
+            /// <param name="segmentNumber">Number of the segment stored in header</param>
             /// <param name="totalItemCount">Total number of items stored inside segment</param>
             /// <param name="notTakenItemCount">Number of active items</param>
             /// <param name="corruptedItemCount">Number of corrupted items</param>
-            public SegmentInformation(int totalItemCount, int notTakenItemCount, int corruptedItemCount)
+            /// <param name="capacity">Capacity of the segment stored in header</param>
+            public SegmentInformation(long segmentNumber, int totalItemCount, int notTakenItemCount, int corruptedItemCount, int capacity)
             {
                 if (totalItemCount < 0)
                     throw new ArgumentOutOfRangeException(nameof(totalItemCount));
@@ -337,13 +347,21 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     throw new ArgumentOutOfRangeException(nameof(notTakenItemCount));
                 if (corruptedItemCount < 0 || corruptedItemCount > totalItemCount)
                     throw new ArgumentOutOfRangeException(nameof(corruptedItemCount));
+                if (capacity <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(capacity));
 
+                _segmentNumber = segmentNumber;
                 _totalItemCount = totalItemCount;
                 _notTakenItemCount = notTakenItemCount;
                 _corruptedItemCount = corruptedItemCount;
+                _capacity = capacity;
                 _startPosition = 0;
             }
 
+            /// <summary>
+            /// Number of the segment stored in header
+            /// </summary>
+            public long SegmentNumber { get { return _segmentNumber; } }
             /// <summary>
             /// Total number of items stored inside segment
             /// </summary>
@@ -356,6 +374,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             /// Number of corrupted items
             /// </summary>
             public int CorruptedItemCount { get { return _corruptedItemCount; } }
+            /// <summary>
+            /// Capacity of the segment stored in header
+            /// </summary>
+            public int Capacity { get { return _capacity; } }
             /// <summary>
             /// Position of the first item to read
             /// </summary>
@@ -403,12 +425,15 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             int corruptedItemCount = 0;
             long initialPosition = 0;
 
+            long segmentNumber = 0;
+            int segmentCapacity = 0;
+
             using (var scanStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (var fileUpdatingStream = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, bufferSize: 4))
             {
                 long streamLength = scanStream.Length;
 
-                ReadAndValidateSegmentHeader(scanStream);
+                ReadAndValidateSegmentHeader(scanStream, out segmentNumber, out segmentCapacity);
 
                 MemoryStream targetStream = new MemoryStream();
 
@@ -490,7 +515,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 }
             }
 
-            return new SegmentInformation(totalItemCount, validItemCount, corruptedItemCount, initialPosition);
+            return new SegmentInformation(segmentNumber, totalItemCount, validItemCount, corruptedItemCount, segmentCapacity, initialPosition);
         }
         
 
@@ -521,7 +546,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             var segmentInfo = ScanSegment(fileName, fixSegmentDataErrors);
 
             return new PersistentDiskQueueSegment<T>(segmentNumber, true, 
-                segmentInfo.TotalItemCount, segmentInfo.NotTakenItemCount, segmentInfo.TotalItemCount, fileName, segmentInfo.StartPosition, 
+                segmentInfo.Capacity, segmentInfo.NotTakenItemCount, segmentInfo.Capacity, fileName, segmentInfo.StartPosition, 
                 serializer, skipCorruptedItems, 
                 flushToDiskOnItem, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize);
         }
@@ -886,8 +911,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <summary>
         /// Reads segment header and validate signature
         /// </summary>
-        /// <param name="stream">Stream to read</param>
-        private static void ReadAndValidateSegmentHeader(FileStream stream)
+        private static void ReadAndValidateSegmentHeader(FileStream stream, out long number, out int capacity)
         {
             BinaryReader reader = new BinaryReader(stream);
 
@@ -900,11 +924,20 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             if (b1 != 'P' || b2 != 'D' || b3 != 'S' || b4 != 1)
                 throw new InvalidOperationException($"Incorrect segment header. Expected signature: 'PDS1'. Found: '{b1}{b2}{b3}{b4}'");
 
-            // Skip segment number
-            reader.ReadInt64();
+            // Read segment number
+            number = reader.ReadInt64();
 
-            // Skip segment capacity
-            reader.ReadInt32();
+            // Read segment capacity
+            capacity = reader.ReadInt32();
+        }
+        /// <summary>
+        /// Reads segment header and validate signature
+        /// </summary>
+        private static void ReadAndValidateSegmentHeader(FileStream stream)
+        {
+            long tmpNum = 0;
+            int tmpCapacity = 0;
+            ReadAndValidateSegmentHeader(stream, out tmpNum, out tmpCapacity);
         }
 
 
