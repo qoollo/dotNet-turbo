@@ -10,13 +10,13 @@ using System.Diagnostics;
 namespace Qoollo.Turbo.Threading.QueueProcessing
 {
     /// <summary>
-    /// Асинхронный обработчик данных в несколько потоков с очередью
+    /// Asynchronous items processor with queue
     /// </summary>
-    /// <typeparam name="T">Тип обрабатываемого элемента</typeparam>
+    /// <typeparam name="T">Type of the elements processed by this <see cref="QueueAsyncProcessor{T}"/></typeparam>
     public abstract class QueueAsyncProcessor<T> : QueueAsyncProcessorBase<T>, IQueueAsyncProcessorStartStopHelper
     {
         /// <summary>
-        /// Контракты
+        /// Code contracts invariants
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -47,7 +47,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         private volatile bool _letFinishProcess;
 
         /// <summary>
-        /// Конструктор QueueAsyncProcessor
+        /// QueueAsyncProcessor constructor
         /// </summary>
         /// <param name="threadCount">Число потоков обработки</param>
         /// <param name="maxQueueSize">Максимальный размер очереди</param>
@@ -55,7 +55,8 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <param name="isBackground">Будут ли потоки работать в фоновом режиме</param>
         public QueueAsyncProcessor(int threadCount, int maxQueueSize, string name, bool isBackground)
         {
-            Contract.Requires(threadCount > 0);
+            if (threadCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(threadCount), "Number of threads should be positive");
 
             _isBackground = isBackground;
             _name = name ?? this.GetType().GetCSName();

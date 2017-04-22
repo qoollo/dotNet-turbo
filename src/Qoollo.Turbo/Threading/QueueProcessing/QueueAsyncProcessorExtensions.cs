@@ -8,41 +8,42 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.QueueProcessing
 {
     /// <summary>
-    /// Интерфейс помошник для QueueAsyncProcessorExtension
+    /// Helper interface for <see cref="QueueAsyncProcessor{T}"/>
     /// </summary>
     public interface IQueueAsyncProcessorStartStopHelper: IDisposable
     {
         /// <summary>
-        /// Запустить QueueAsyncProcessor
+        /// Starts processing of items
         /// </summary>
         void Start();
         /// <summary>
-        /// Остановка и освобождение ресурсов
+        /// Stops processing of items
         /// </summary>
-        /// <param name="waitForStop">Ожидать остановки</param>
-        /// <param name="letFinishProcess">Позволить обработать всю очередь</param>
-        /// <param name="completeAdding">Запретить добавление новых элементов</param>
+        /// <param name="waitForStop">When True, waits until all processing threads are stopped</param>
+        /// <param name="letFinishProcess">True indicates that all items from inner queue should be processed before stopping</param>
+        /// <param name="completeAdding">When True, disallows adding new items to inner queue</param>
         void Stop(bool waitForStop, bool letFinishProcess, bool completeAdding);
         /// <summary>
-        /// Остановка и освобождение ресурсов
+        /// Stops processing of items
         /// </summary>
         void Stop();
     }
 
     /// <summary>
-    /// Расширения для QueueAsyncProcessor
+    /// <see cref="QueueAsyncProcessor{T}"/> extension methods
     /// </summary>
     public static class QueueAsyncProcessorExtensions
     {
         /// <summary>
         /// Fluent start
         /// </summary>
-        /// <typeparam name="TQueueProc">Тип QueueAsyncProcessor</typeparam>
-        /// <param name="proc">Сам обработчик</param>
-        /// <returns>Переданный обработчик</returns>
+        /// <typeparam name="TQueueProc">The type of <see cref="QueueAsyncProcessor{T}"/></typeparam>
+        /// <param name="proc"><see cref="QueueAsyncProcessor{T}"/> instance</param>
+        /// <returns>Same instance of the started <see cref="QueueAsyncProcessor{T}"/></returns>
         public static TQueueProc ThenStart<TQueueProc>(this TQueueProc proc) where TQueueProc : IQueueAsyncProcessorStartStopHelper
         {
-            Contract.Requires<ArgumentNullException>(proc != null);
+            if (proc == null)
+                throw new ArgumentNullException(nameof(proc));
 
             proc.Start();
             return proc;
