@@ -49,10 +49,10 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <summary>
         /// QueueAsyncProcessor constructor
         /// </summary>
-        /// <param name="threadCount">Число потоков обработки</param>
-        /// <param name="maxQueueSize">Максимальный размер очереди</param>
-        /// <param name="name">Имя, присваемое потокам</param>
-        /// <param name="isBackground">Будут ли потоки работать в фоновом режиме</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        /// <param name="isBackground">Whether or not processing threads are background threads</param>
         public QueueAsyncProcessor(int threadCount, int maxQueueSize, string name, bool isBackground)
         {
             if (threadCount <= 0)
@@ -78,63 +78,63 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             Profiling.Profiler.QueueAsyncProcessorCreated(this.Name);
         }
         /// <summary>
-        /// Конструктор QueueAsyncProcessor
+        /// QueueAsyncProcessor constructor
         /// </summary>
-        /// <param name="threadCount">Число потоков обработки</param>
-        /// <param name="maxQueueSize">Максимальный размер очереди</param>
-        /// <param name="name">Имя, присваемое потокам</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         public QueueAsyncProcessor(int threadCount, int maxQueueSize, string name)
             : this(threadCount, maxQueueSize, name, false)
         {
         }
         /// <summary>
-        /// Конструктор QueueAsyncProcessor. Размер очереди не ограничивается.
+        /// QueueAsyncProcessor constructor (for unlimited queue capacity)
         /// </summary>
-        /// <param name="threadCount">Число потоков обработки</param>
-        /// <param name="name">Имя, присваемое потокам</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         public QueueAsyncProcessor(int threadCount, string name)
             : this(threadCount, -1, name, false)
         {
         }
         /// <summary>
-        /// Конструктор QueueAsyncProcessor. Размер очереди не ограничивается.
+        /// QueueAsyncProcessor constructor (for unlimited queue capacity)
         /// </summary>
-        /// <param name="threadCount">Число потоков обработки</param>
+        /// <param name="threadCount">Number of processing threads</param>
         public QueueAsyncProcessor(int threadCount)
             : this(threadCount, -1, null, false)
         {
         }
 
         /// <summary>
-        /// Текущее состояние
+        /// Current state
         /// </summary>
         public QueueAsyncProcessorState State
         {
             get { return (QueueAsyncProcessorState)Volatile.Read(ref _state); }
         }
         /// <summary>
-        /// Запущен ли сейчас обработчик
+        /// Whether the <see cref="QueueAsyncProcessor{T}"/> is running and can process work items
         /// </summary>
         public bool IsWork
         {
             get { return State == QueueAsyncProcessorState.Running; }
         }
         /// <summary>
-        /// Запрошена ли остановка
+        /// Whether the stop was requested and the processor should complete item processing
         /// </summary>
         protected bool IsStopRequested
         {
             get { return State == QueueAsyncProcessorState.StopRequested; }
         }
         /// <summary>
-        /// Остановлен ли
+        /// Whether the <see cref="QueueAsyncProcessor{T}"/> was stopped
         /// </summary>
         protected bool IsStopped
         {
             get { return State == QueueAsyncProcessorState.Stopped; }
         }
         /// <summary>
-        /// Запрошена ли остановка или остановлен
+        /// Whether the stop was requested
         /// </summary>
         protected bool IsStopRequestedOrStopped
         {
