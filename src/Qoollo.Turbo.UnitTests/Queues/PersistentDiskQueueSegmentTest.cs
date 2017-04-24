@@ -32,13 +32,13 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
 
-        private static PersistentDiskQueueSegment<int> Create(int capacity, int flushPeriod, int readBufferSize, bool skipCorruptedItems = false, int cachedMemoryWriteStreamSize = -1, int cachedMemoryReadStreamSize = -1)
+        private static PersistentDiskQueueSegment<int> Create(int capacity, int flushPeriod, int readBufferSize, int cachedMemoryWriteStreamSize = -1, int cachedMemoryReadStreamSize = -1)
         {
             string fileName = Guid.NewGuid().ToString().Replace('-', '_') + PersistentDiskQueueSegmentFactory<int>.SegmentFileExtension;
 
             try
             {
-                return new PersistentDiskQueueSegment<int>(1, fileName, new ItemSerializer(), capacity, skipCorruptedItems, flushPeriod, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize);
+                return new PersistentDiskQueueSegment<int>(1, fileName, new ItemSerializer(), capacity, flushPeriod, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize);
             }
             catch
             {
@@ -86,7 +86,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         public void SegmentCreationTest()
         {
             string fileName = null;
-            using (var segment = Create(1000, -1, -1, false, -1, -1))
+            using (var segment = Create(1000, -1, -1, -1, -1))
             {
                 fileName = segment.FileName;
 
@@ -106,7 +106,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             Assert.IsFalse(File.Exists(fileName));
 
-            using (var segment = Create(1000, 0, 0, false, 0, 0))
+            using (var segment = Create(1000, 0, 0, 0, 0))
             {
                 fileName = segment.FileName;
 
@@ -126,7 +126,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             Assert.IsFalse(File.Exists(fileName));
 
-            using (var segment = Create(1000, 10, 10, false, 1000, 1000))
+            using (var segment = Create(1000, 10, 10, 1000, 1000))
             {
                 fileName = segment.FileName;
 
@@ -153,7 +153,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         private void SegmentFactoryTest(bool fix)
         {
             string prefix = Guid.NewGuid().ToString().Replace('-', '_');
-            var factory = new PersistentDiskQueueSegmentFactory<int>(100, prefix, new ItemSerializer(), fix, true, 1000, 10000, 10, 10000);
+            var factory = new PersistentDiskQueueSegmentFactory<int>(100, prefix, new ItemSerializer(), fix, 1000, 10000, 10, 10000);
 
             string fileName = null;
             string fileName2 = null;
@@ -410,7 +410,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
             try
             {
                 Random rnd = new Random();
-                using (var segment = Create(10000, 1000, 16, true))
+                using (var segment = Create(10000, 1000, 16))
                 {
                     segmentFileName = segment.FileName;
                     RunWriteAbort(segment, itemCount, rnd);
@@ -418,7 +418,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                 int readCnt = 0;
 
-                using (var segment = PersistentDiskQueueSegment<int>.Open(100, segmentFileName, new ItemSerializer(), true, false))
+                using (var segment = PersistentDiskQueueSegment<int>.Open(100, segmentFileName, new ItemSerializer(), true))
                 {
                     Assert.IsTrue(segment.Count >= itemCount, "Item missed");
 
@@ -459,7 +459,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
             try
             {
                 Random rnd = new Random();
-                using (var segment = Create(10000, 1000, 16, true))
+                using (var segment = Create(10000, 1000, 16))
                 {
                     segmentFileName = segment.FileName;
                     for (int i = 0; i < itemCount; i++)
@@ -469,7 +469,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                 while (true)
                 {
-                    using (var segment = PersistentDiskQueueSegment<int>.Open(100, segmentFileName, new ItemSerializer(), true, false))
+                    using (var segment = PersistentDiskQueueSegment<int>.Open(100, segmentFileName, new ItemSerializer(), true))
                     {
                         if (segment.IsCompleted)
                             break;

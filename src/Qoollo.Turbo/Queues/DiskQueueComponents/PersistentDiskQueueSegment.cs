@@ -26,7 +26,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         private readonly string _fileNamePrefix;
         private readonly IDiskQueueItemSerializer<T> _serializer;
         private readonly bool _fixSegmentDataErrors;
-        private readonly bool _skipCorruptedItems;
         private readonly int _flushToDiskOnItem;
         private readonly int _cachedMemoryWriteStreamSize;
         private readonly int _readBufferSize;
@@ -39,13 +38,12 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileNamePrefix">Prefix for the segment file name</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment when scanning it before open</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
         /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         public PersistentDiskQueueSegmentFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer,
-            bool fixSegmentDataErrors, bool skipCorruptedItems, int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
+            bool fixSegmentDataErrors, int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
         {
             if (capacity <= 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity should be positive");
@@ -59,7 +57,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             _serializer = serializer;
 
             _fixSegmentDataErrors = fixSegmentDataErrors;
-            _skipCorruptedItems = skipCorruptedItems;
 
             _flushToDiskOnItem = flushToDiskOnItem;
             _cachedMemoryWriteStreamSize = cachedMemoryWriteStreamSize;
@@ -73,12 +70,11 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileNamePrefix">Prefix for the segment file name</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment when scanning it before open</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
         public PersistentDiskQueueSegmentFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer,
-            bool fixSegmentDataErrors, bool skipCorruptedItems, int flushToDiskOnItem, int readBufferSize)
-            : this(capacity, fileNamePrefix, serializer, fixSegmentDataErrors, skipCorruptedItems, flushToDiskOnItem, -1, readBufferSize, -1)
+            bool fixSegmentDataErrors, int flushToDiskOnItem, int readBufferSize)
+            : this(capacity, fileNamePrefix, serializer, fixSegmentDataErrors, flushToDiskOnItem, -1, readBufferSize, -1)
         {
         }
         /// <summary>
@@ -88,9 +84,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileNamePrefix">Prefix for the segment file name</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment when scanning it before open</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
-        public PersistentDiskQueueSegmentFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer, bool fixSegmentDataErrors, bool skipCorruptedItems)
-            : this(capacity, fileNamePrefix, serializer, fixSegmentDataErrors, skipCorruptedItems, -1, -1, -1, -1)
+        public PersistentDiskQueueSegmentFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer, bool fixSegmentDataErrors)
+            : this(capacity, fileNamePrefix, serializer, fixSegmentDataErrors, -1, -1, -1, -1)
         {
         }
         /// <summary>
@@ -100,7 +95,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileNamePrefix">Prefix for the segment file name</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         public PersistentDiskQueueSegmentFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer)
-            : this(capacity, fileNamePrefix, serializer, false, false, -1, -1, -1, -1)
+            : this(capacity, fileNamePrefix, serializer, false, -1, -1, -1, -1)
         {
         }
 
@@ -121,7 +116,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 throw new ArgumentNullException(nameof(path));
 
             string fileName = Path.Combine(path, GenerateFileName(_fileNamePrefix, number, SegmentFileExtension));
-            return PersistentDiskQueueSegment<T>.CreateNew(number, fileName, _serializer, _capacity, _skipCorruptedItems, _flushToDiskOnItem,
+            return PersistentDiskQueueSegment<T>.CreateNew(number, fileName, _serializer, _capacity, _flushToDiskOnItem,
                 _cachedMemoryWriteStreamSize, _readBufferSize, _cachedMemoryReadStreamSize);
         }
 
@@ -139,7 +134,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             DiskQueueSegment<T>[] result = new DiskQueueSegment<T>[files.Length];
             for (int i = 0; i < files.Length; i++)
                 result[i] = PersistentDiskQueueSegment<T>.Open(files[i].SegmentNumber, files[i].FileName, 
-                    _serializer, _fixSegmentDataErrors, _skipCorruptedItems, _flushToDiskOnItem, _cachedMemoryWriteStreamSize, _readBufferSize, _cachedMemoryReadStreamSize);
+                    _serializer, _fixSegmentDataErrors, _flushToDiskOnItem, _cachedMemoryWriteStreamSize, _readBufferSize, _cachedMemoryReadStreamSize);
 
             return result;
         }
@@ -395,11 +390,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileNamePrefix">Prefix for the segment file name</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment when scanning it before open</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <returns>Created <see cref="PersistentDiskQueueSegmentFactory{T}"/></returns>
-        public static PersistentDiskQueueSegmentFactory<T> CreateFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer, bool fixSegmentDataErrors, bool skipCorruptedItems)
+        public static PersistentDiskQueueSegmentFactory<T> CreateFactory(int capacity, string fileNamePrefix, IDiskQueueItemSerializer<T> serializer, bool fixSegmentDataErrors)
         {
-            return new PersistentDiskQueueSegmentFactory<T>(capacity, fileNamePrefix, serializer, fixSegmentDataErrors, skipCorruptedItems);
+            return new PersistentDiskQueueSegmentFactory<T>(capacity, fileNamePrefix, serializer, fixSegmentDataErrors);
         }
 
         // =================
@@ -526,14 +520,13 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileName">Full file name for the segment</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
         /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <returns>Created segment</returns>
         public static PersistentDiskQueueSegment<T> Open(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer,
-                                          bool fixSegmentDataErrors, bool skipCorruptedItems,
+                                          bool fixSegmentDataErrors,
                                           int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -547,7 +540,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
             return new PersistentDiskQueueSegment<T>(segmentNumber, true, 
                 segmentInfo.Capacity, segmentInfo.NotTakenItemCount, segmentInfo.Capacity, fileName, segmentInfo.StartPosition, 
-                serializer, skipCorruptedItems, 
+                serializer, 
                 flushToDiskOnItem, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize);
         }
         /// <summary>
@@ -557,15 +550,14 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileName">Full file name for the segment</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
         /// <returns>Created segment</returns>
         public static PersistentDiskQueueSegment<T> Open(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer,
-                                          bool fixSegmentDataErrors, bool skipCorruptedItems,
+                                          bool fixSegmentDataErrors,
                                           int flushToDiskOnItem, int readBufferSize)
         {
-            return Open(segmentNumber, fileName, serializer, fixSegmentDataErrors, skipCorruptedItems, flushToDiskOnItem, -1, readBufferSize, -1);
+            return Open(segmentNumber, fileName, serializer, fixSegmentDataErrors, flushToDiskOnItem, -1, readBufferSize, -1);
         }
         /// <summary>
         /// Creates PersistentDiskQueueSegment by opening existing segment on disk
@@ -574,12 +566,11 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileName">Full file name for the segment</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="fixSegmentDataErrors">Allows fixing errors inside segment</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <returns>Created segment</returns>
         public static PersistentDiskQueueSegment<T> Open(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer,
-                                          bool fixSegmentDataErrors, bool skipCorruptedItems)
+                                          bool fixSegmentDataErrors)
         {
-            return Open(segmentNumber, fileName, serializer, fixSegmentDataErrors, skipCorruptedItems, -1, -1, -1, -1);
+            return Open(segmentNumber, fileName, serializer, fixSegmentDataErrors, -1, -1, -1, -1);
         }
         /// <summary>
         /// Creates PersistentDiskQueueSegment by opening existing segment on disk
@@ -590,7 +581,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>Created segment</returns>
         public static PersistentDiskQueueSegment<T> Open(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer)
         {
-            return Open(segmentNumber, fileName, serializer, false, false, -1, -1, -1, -1);
+            return Open(segmentNumber, fileName, serializer, false, -1, -1, -1, -1);
         }
 
 
@@ -602,17 +593,15 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileName">Full file name for the segment</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
         /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <returns>Created segment</returns>
         public static PersistentDiskQueueSegment<T> CreateNew(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
-                                          bool skipCorruptedItems,
                                           int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
         {
-            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, skipCorruptedItems, 
+            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, 
                 flushToDiskOnItem, cachedMemoryReadStreamSize, readBufferSize, cachedMemoryReadStreamSize);
         }
         /// <summary>
@@ -622,29 +611,14 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileName">Full file name for the segment</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
         /// <returns>Created segment</returns>
         public static PersistentDiskQueueSegment<T> CreateNew(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
-                                          bool skipCorruptedItems,
                                           int flushToDiskOnItem, int readBufferSize)
         {
-            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, skipCorruptedItems,
+            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity,
                 flushToDiskOnItem, -1, readBufferSize, -1);
-        }
-        /// <summary>
-        /// Creates new PersistentDiskQueueSegment on disk. Can't be used to open an existing segment.
-        /// </summary>
-        /// <param name="segmentNumber">Segment number</param>
-        /// <param name="fileName">Full file name for the segment</param>
-        /// <param name="serializer">Items serializing/deserializing logic</param>
-        /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
-        /// <returns>Created segment</returns>
-        public static PersistentDiskQueueSegment<T> CreateNew(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity, bool skipCorruptedItems)
-        {
-            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, skipCorruptedItems, -1, -1, -1, -1);
         }
         /// <summary>
         /// Creates new PersistentDiskQueueSegment on disk. Can't be used to open an existing segment.
@@ -656,7 +630,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>Created segment</returns>
         public static PersistentDiskQueueSegment<T> CreateNew(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity)
         {
-            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, false, -1, -1, -1, -1);
+            return new PersistentDiskQueueSegment<T>(segmentNumber, fileName, serializer, capacity, -1, -1, -1, -1);
         }
 
 
@@ -672,8 +646,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
         private readonly string _fileName;
         private readonly IDiskQueueItemSerializer<T> _serializer;
-
-        private readonly bool _skipCorruptedItems;
 
         private readonly object _writeLock;
         private readonly FileStream _writeStream;
@@ -710,7 +682,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="initialFilePosition">Initial file position to skip already read items (used when openExisted = true)</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
@@ -718,7 +689,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         protected PersistentDiskQueueSegment(long segmentNumber, bool openExisted, int capacity, int itemCount, int fillCount, 
                                           string fileName, long initialFilePosition, 
                                           IDiskQueueItemSerializer<T> serializer,
-                                          bool skipCorruptedItems,
                                           int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
             : base(segmentNumber, capacity, itemCount, fillCount)
         {
@@ -750,8 +720,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 _writeLock = new object();
                 _readLock = new object();
                 _readMarkerLock = new object();
-
-                _skipCorruptedItems = skipCorruptedItems;
 
                 _flushToDiskOnItem = flushToDiskOnItem;
                 _operationsToFlushCount = 0;
@@ -843,23 +811,17 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="fileName">Full file name for the segment</param>
         /// <param name="serializer">Items serializing/deserializing logic</param>
         /// <param name="capacity">Maximum number of stored items inside the segement (overall capacity)</param>
-        /// <param name="skipCorruptedItems">Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)</param>
         /// <param name="flushToDiskOnItem">Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed) (-1 - set to default value, 0 - never flush to disk, 1 - flush on every item)</param>
         /// <param name="cachedMemoryWriteStreamSize">Maximum size of the cached byte stream that used to serialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         /// <param name="readBufferSize">Determines the number of items, that are stored in memory for read purposes (-1 - set to default value, 0 - disable read buffer)</param>
         /// <param name="cachedMemoryReadStreamSize">Maximum size of the cached byte stream that used to deserialize items in memory (-1 - set to default value, 0 - disable byte stream caching)</param>
         public PersistentDiskQueueSegment(long segmentNumber, string fileName, IDiskQueueItemSerializer<T> serializer, int capacity,
-                                          bool skipCorruptedItems,
                                           int flushToDiskOnItem, int cachedMemoryWriteStreamSize, int readBufferSize, int cachedMemoryReadStreamSize)
-            : this(segmentNumber, false, capacity, 0, 0, fileName, -1, serializer, skipCorruptedItems, flushToDiskOnItem, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize)
+            : this(segmentNumber, false, capacity, 0, 0, fileName, -1, serializer, flushToDiskOnItem, cachedMemoryWriteStreamSize, readBufferSize, cachedMemoryReadStreamSize)
         {
         }
 
 
-        /// <summary>
-        /// Determines the action when corrupted item is met (True - skips corrupted items, false - throws exception on corrupted item)
-        /// </summary>
-        public bool SkipCorruptedItems { get { return _skipCorruptedItems; } }
         /// <summary>
         /// Determines the number of processed items, after that the flushing to disk should be performed (flushing to OS is always performed)
         /// </summary>
@@ -1260,10 +1222,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     if (itemHeader.State == ItemState.New && !stopOnNewState)
                     {
                         _readStream.Seek(itemHeader.Length, SeekOrigin.Current); // Move position forward
-                        if (_skipCorruptedItems) // Just skip corrupted item
-                            continue;
-
-                        throw new ItemCorruptedException($"Incorrect item state (New). That indicates that the file is corrupted ({_fileName})");
+                        throw new ItemCorruptedException($"Incorrect item state (New). That indicates that the file is corrupted ({_fileName}). To fix the problem you can use '{nameof(ScanSegment)}' method.");
                     }
 
                     break;
@@ -1312,29 +1271,19 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             ItemHeader header = default(ItemHeader);
             long itemPosition = 0;
 
-            while (true) // Traverse to the first valid item
+            buffer.BaseStream.SetOriginLength(0, -1);
+
+            if (!TryTakeOrPeekSingleItemBytesFromDisk(buffer.BaseStream.InnerStream, out header, out itemPosition, canNewStateBeObserved, take)) // Read from disk
             {
-                buffer.BaseStream.SetOriginLength(0, -1);
-
-                if (!TryTakeOrPeekSingleItemBytesFromDisk(buffer.BaseStream.InnerStream, out header, out itemPosition, canNewStateBeObserved, take)) // Read from disk
-                {
-                    itemInfo = default(ItemReadInfo);
-                    return false;
-                }
-
-                Debug.Assert(header.State == ItemState.Written);
-
-                int checkSum = ItemHeader.CoerceChecksum(CalculateChecksum(buffer.BaseStream.InnerStream.GetBuffer(), ItemHeader.Size, header.Length));
-                if (checkSum != header.Checksum)
-                {
-                    if (_skipCorruptedItems) // Skip corrupted
-                        continue;
-
-                    throw new ItemCorruptedException($"Checksum mismatch on item read. That indicates that the file is corrupted ({_fileName})");
-                }
-
-                break;
+                itemInfo = default(ItemReadInfo);
+                return false;
             }
+
+            Debug.Assert(header.State == ItemState.Written);
+
+            int checkSum = ItemHeader.CoerceChecksum(CalculateChecksum(buffer.BaseStream.InnerStream.GetBuffer(), ItemHeader.Size, header.Length));
+            if (checkSum != header.Checksum)
+                throw new ItemCorruptedException($"Checksum mismatch on item read. That indicates that the file is corrupted ({_fileName}). To fix the problem you can use '{nameof(ScanSegment)}' method.");
 
             buffer.BaseStream.SetOriginLength(ItemHeader.Size, header.Length);
             Debug.Assert(buffer.BaseStream.Length == header.Length);
