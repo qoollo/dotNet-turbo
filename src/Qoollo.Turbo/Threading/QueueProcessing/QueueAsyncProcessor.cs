@@ -6,6 +6,8 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using Qoollo.Turbo.Queues;
 
 namespace Qoollo.Turbo.Threading.QueueProcessing
 {
@@ -35,8 +37,8 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         private readonly Thread[] _procThreads;
         private volatile int _activeThreadCount;
 
-        private readonly Collections.Concurrent.BlockingQueue<T> _queue;
-        private readonly int _maxQueueSize;
+        private readonly Queues.IQueue<T> _queue;
+        private readonly Collections.Concurrent.BlockingQueue<T> _blockingQueue;
 
         private readonly ManualResetEventSlim _stoppedEvent;
         private CancellationTokenSource _stopRequestedCancelation;
@@ -45,6 +47,51 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         private int _state;
         private volatile bool _completeAdding;
         private volatile bool _letFinishProcess;
+
+
+        /// <summary>
+        /// QueueAsyncProcessor constructor
+        /// </summary>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="queue">Processing queue (current instances of <see cref="QueueAsyncProcessor{T}"/> becomes the owner)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        /// <param name="isBackground">Whether or not processing threads are background threads</param>
+        public QueueAsyncProcessor(int threadCount, IQueue<T> queue, string name, bool isBackground)
+        {
+            if (threadCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(threadCount), "Number of threads should be positive");
+            if (queue == null)
+                throw new ArgumentNullException(nameof(queue));
+
+            _isBackground = isBackground;
+            _name = name ?? this.GetType().GetCSName();
+
+            _procThreads = new Thread[threadCount];
+            _activeThreadCount = 0;
+
+            _queue = queue;
+            _blockingQueue = null; // Should work through interface only
+
+            _stoppedEvent = new ManualResetEventSlim(false);
+            _stopRequestedCancelation = null;
+            _stoppedCancelation = null;
+
+            _state = (int)QueueAsyncProcessorState.Created;
+            _completeAdding = false;
+            _letFinishProcess = false;
+
+            Profiling.Profiler.QueueAsyncProcessorCreated(this.Name);
+        }
+        /// <summary>
+        /// QueueAsyncProcessor constructor
+        /// </summary>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="queue">Processing queue (current instances of <see cref="QueueAsyncProcessor{T}"/> becomes the owner)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        public QueueAsyncProcessor(int threadCount, IQueue<T> queue, string name)
+            : this(threadCount, queue, name, false)
+        {
+        }
 
         /// <summary>
         /// QueueAsyncProcessor constructor
@@ -64,8 +111,8 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             _procThreads = new Thread[threadCount];
             _activeThreadCount = 0;
 
-            _maxQueueSize = maxQueueSize > 0 ? maxQueueSize : -1;
-            _queue = new Collections.Concurrent.BlockingQueue<T>(_maxQueueSize);
+            _queue = new MemoryQueue<T>(maxQueueSize > 0 ? maxQueueSize : -1);
+            _blockingQueue = _queue as Collections.Concurrent.BlockingQueue<T>;
 
             _stoppedEvent = new ManualResetEventSlim(false);
             _stopRequestedCancelation = null;
@@ -194,6 +241,25 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// </summary>
         public int ElementCount
         {
+            get
+            {
+                if (_blockingQueue != null)
+                    return _blockingQueue.Count;
+
+                long longCount = _queue.Count;
+                if (longCount > int.MaxValue)
+                    return int.MaxValue;
+                else if (longCount < 0)
+                    return -1;
+
+                return (int)longCount;
+            }
+        }
+        /// <summary>
+        /// Number of items inside processing queue
+        /// </summary>
+        public long ElementCountLong
+        {
             get { return _queue.Count; }
         }
 
@@ -202,7 +268,19 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// </summary>
         public int QueueCapacity
         {
-            get { return _queue.BoundedCapacity; }
+            get
+            {
+                if (_blockingQueue != null)
+                    return _blockingQueue.BoundedCapacity;
+
+                long longCapacity = _queue.BoundedCapacity;
+                if (longCapacity > int.MaxValue)
+                    return int.MaxValue;
+                else if (longCapacity < 0)
+                    return -1;
+
+                return (int)longCapacity;
+            }
         }
 
 
@@ -283,7 +361,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         {
             _queue.AddForced(element);
             if (Profiling.Profiler.IsProfilingEnabled)
-                Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
+                Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, QueueCapacity);
         }
 
         /// <summary>
@@ -305,7 +383,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             if (Profiling.Profiler.IsProfilingEnabled)
             {
                 if (result)
-                    Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
+                    Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, QueueCapacity);
                 else
                     Profiling.Profiler.QueueAsyncProcessorElementRejectedInTryAdd(this.Name, ElementCount);
             }
@@ -389,6 +467,28 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
         /// <summary>
+        /// Attempts to take item from inner queue
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryTakeFromQueue(out T item)
+        {
+            return _queue.TryTake(out item, 0, default(CancellationToken));
+        }
+        /// <summary>
+        /// Attempts to take item from inner queue
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryTakeFromQueue(out T item, int timeout, CancellationToken token)
+        {
+            var blockQ = _blockingQueue;
+            if (blockQ != null)
+                return blockQ.TryTake(out item, timeout, token, false);
+
+            return _queue.TryTake(out item, timeout, token);
+        }
+
+
+        /// <summary>
         /// Main thread procedure
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
@@ -417,10 +517,10 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         while (!stopRequestedToken.IsCancellationRequested)
                         {
                             elem = default(T);
-                            if (_queue.TryTake(out elem, Timeout.Infinite, stopRequestedToken, false))
+                            if (TryTakeFromQueue(out elem, Timeout.Infinite, stopRequestedToken))
                             {
                                 if (Profiling.Profiler.IsProfilingEnabled)
-                                    Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
+                                    Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, QueueCapacity);
 
                                 timer.RestartTime();
 
@@ -459,10 +559,10 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         try
                         {
                             T elem = default(T);
-                            while (!stoppedToken.IsCancellationRequested && _queue.TryTake(out elem))
+                            while (!stoppedToken.IsCancellationRequested && TryTakeFromQueue(out elem))
                             {
                                 if (Profiling.Profiler.IsProfilingEnabled)
-                                    Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
+                                    Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, QueueCapacity);
 
                                 timer.RestartTime();
                                 this.Process(elem, state, stoppedToken);
@@ -508,6 +608,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         {
                             Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
                             _stoppedEvent.Set();
+                            this.DisposeQueue();
                             Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                         }
                     }
@@ -674,6 +775,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                 {
                     Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
                     _stoppedEvent.Set();
+                    this.DisposeQueue();
                     Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                 }
             }
@@ -705,6 +807,15 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
+        /// Cleans-up inner queue when it was passed by user
+        /// </summary>
+        private void DisposeQueue()
+        {
+            if (_blockingQueue == null && _queue != null)
+                _queue.Dispose();
+        }
+
+        /// <summary>
         /// Cleans-up resources
         /// </summary>
         /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
@@ -725,6 +836,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                     _stopRequestedCancelation.Cancel();
                 if (_stoppedCancelation != null)
                     _stoppedCancelation.Cancel();
+                this.DisposeQueue();
 
                 if (!isUserCall)
                     Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, true);

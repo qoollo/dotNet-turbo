@@ -5,6 +5,7 @@ using System.Text;
 using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Collections.Concurrent;
+using Qoollo.Turbo.Queues;
 
 namespace Qoollo.Turbo.Threading.QueueProcessing
 {
@@ -24,6 +25,39 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         private readonly IQueueAsyncProcessorLogic<T> _logic;
+
+
+        /// <summary>
+        /// InterfaceQueueAsyncProcessor constructor
+        /// </summary>
+        /// <param name="logic">Implementation of the item processing logic</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="queue">Processing queue (current instances of <see cref="QueueAsyncProcessor{T}"/> becomes the owner)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        /// <param name="isBackground">Whether or not processing threads are background threads</param>
+        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, IQueue<T> queue, string name, bool isBackground)
+            : base(threadCount, queue, name, isBackground)
+        {
+            if (logic == null)
+                throw new ArgumentNullException(nameof(logic));
+
+            _logic = logic;
+        }
+        /// <summary>
+        /// InterfaceQueueAsyncProcessor constructor
+        /// </summary>
+        /// <param name="logic">Implementation of the item processing logic</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="queue">Processing queue (current instances of <see cref="QueueAsyncProcessor{T}"/> becomes the owner)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, IQueue<T> queue, string name)
+            : base(threadCount, queue, name, false)
+        {
+            if (logic == null)
+                throw new ArgumentNullException(nameof(logic));
+
+            _logic = logic;
+        }
 
         /// <summary>
         /// InterfaceQueueAsyncProcessor constructor
