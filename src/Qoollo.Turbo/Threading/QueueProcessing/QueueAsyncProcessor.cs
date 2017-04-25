@@ -282,7 +282,8 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         protected void AddForced(T element)
         {
             _queue.AddForced(element);
-            Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
+            if (Profiling.Profiler.IsProfilingEnabled)
+                Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
         }
 
         /// <summary>
@@ -301,10 +302,13 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                 throw new InvalidOperationException("Adding was completed for QueueAsyncProcessor: " + this.Name);
 
             var result = _queue.TryAdd(element, timeout, token);
-            if (result)
-                Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
-            else
-                Profiling.Profiler.QueueAsyncProcessorElementRejectedInTryAdd(this.Name, ElementCount);
+            if (Profiling.Profiler.IsProfilingEnabled)
+            {
+                if (result)
+                    Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
+                else
+                    Profiling.Profiler.QueueAsyncProcessorElementRejectedInTryAdd(this.Name, ElementCount);
+            }
             return result;
         }
 
@@ -415,11 +419,15 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                             elem = default(T);
                             if (_queue.TryTake(out elem, Timeout.Infinite, stopRequestedToken, false))
                             {
-                                Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
+                                if (Profiling.Profiler.IsProfilingEnabled)
+                                    Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
 
                                 timer.RestartTime();
+
                                 this.Process(elem, state, stoppedToken);
-                                Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
+
+                                if (Profiling.Profiler.IsProfilingEnabled)
+                                    Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
                             }
                             else
                             {
@@ -453,11 +461,13 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                             T elem = default(T);
                             while (!stoppedToken.IsCancellationRequested && _queue.TryTake(out elem))
                             {
-                                Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
+                                if (Profiling.Profiler.IsProfilingEnabled)
+                                    Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
 
                                 timer.RestartTime();
                                 this.Process(elem, state, stoppedToken);
-                                Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
+                                if (Profiling.Profiler.IsProfilingEnabled)
+                                    Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
                             }
 
                             if (_queue.Count == 0)
