@@ -692,16 +692,13 @@ namespace Qoollo.Turbo.Queues
                         }
                     }
 
-                    if (itemTaken && (token.IsCancellationRequested || gateGuard.IsCancellationRequested))
-                    {
-                        _highLevelQueue.AddForced(item); // Prevent item lost
-                        itemTaken = false;
-                        continue;
-                    }
-
                     if (!needSlowPath || token.IsCancellationRequested || gateGuard.IsCancellationRequested)
                     {
-                        Debug.Assert(!itemTaken);
+                        if (itemTaken)
+                        {
+                            _highLevelQueue.AddForced(item); // Prevent item lost
+                            itemTaken = false;
+                        }
                         continue;
                     }
 

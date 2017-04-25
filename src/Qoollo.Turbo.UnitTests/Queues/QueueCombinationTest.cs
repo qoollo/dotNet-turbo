@@ -157,7 +157,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [Timeout(2 * 60 * 1000)]
         public void PreserveOrederTest1()
         {
-            RunTest(CreateQueue1, q => PreserveOrderTest(q, 1000000));
+            for (int i = 0; i < 10; i++)
+                RunTest(CreateQueue1, q => PreserveOrderTest(q, 1000000));
         }
 
         // ============================
