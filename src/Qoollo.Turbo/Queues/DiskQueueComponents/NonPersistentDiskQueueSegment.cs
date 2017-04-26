@@ -214,6 +214,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 _writeBufferSize = 0;
                 _maxWriteBufferSize = writeBufferSize >= 0 ? writeBufferSize : DefaultWriteBufferSize;
+                if (writeBufferSize < 0 && serializer.ExpectedSizeInBytes > 0)
+                    _maxWriteBufferSize = checked(Math.Max(DefaultWriteBufferSize, 4096 / Math.Min(serializer.ExpectedSizeInBytes + ItemHeaderSize, MaxChacheSizePerItem)));
+
                 if (_maxWriteBufferSize > 0)
                     _writeBuffer = new ConcurrentQueue<T>();
 
