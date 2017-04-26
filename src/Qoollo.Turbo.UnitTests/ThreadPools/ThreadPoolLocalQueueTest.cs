@@ -207,7 +207,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         public void TestAddTakeManyElements()
         {
             ThreadPoolLocalQueue q = new ThreadPoolLocalQueue();
-            RunLocalThreadQueueAddTakeTest(q, int.MaxValue / 20 + 13, 32);
+            RunLocalThreadQueueAddTakeTest(q, int.MaxValue / 200 + 13, 32);
         }
 
         [TestMethod]
@@ -273,7 +273,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         public void TestAddStealManyElements()
         {
             ThreadPoolLocalQueue q = new ThreadPoolLocalQueue();
-            RunLocalThreadQueueAddStealTest(q, int.MaxValue / 20 + 13, 32);
+            RunLocalThreadQueueAddStealTest(q, int.MaxValue / 200 + 13, 32);
         }
 
         [TestMethod]
@@ -405,7 +405,8 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         {
             ThreadPoolLocalQueue q = new ThreadPoolLocalQueue();
 
-            RunLocalThreadQueuePrimaryScenario(q, int.MaxValue / 40 + 13, Environment.ProcessorCount, 32);
+            RunLocalThreadQueuePrimaryScenario(q, int.MaxValue / 400 + 13, Environment.ProcessorCount, 32);
+            RunLocalThreadQueuePrimaryScenario(q, int.MaxValue / 400 + 13, Environment.ProcessorCount, 32);
         }
 
         [TestMethod]

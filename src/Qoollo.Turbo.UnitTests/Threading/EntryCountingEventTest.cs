@@ -34,87 +34,161 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void TestEnterExit()
         {
-            EntryCountingEvent inst = new EntryCountingEvent();
-
-            inst.EnterClient();
-            Assert.AreEqual(1, inst.CurrentCount);
-
-            inst.ExitClient();
-            Assert.AreEqual(0, inst.CurrentCount);
+            using (EntryCountingEvent inst = new EntryCountingEvent())
+            {
+                using (var guard = inst.Enter())
+                {
+                    Assert.AreEqual(1, inst.CurrentCount);
+                }
+                Assert.AreEqual(0, inst.CurrentCount);
+            }
         }
 
 
         [TestMethod]
-        [ExpectedException(typeof(Exception), AllowDerivedTypes = true)]
+        [ExpectedException(typeof(InvalidOperationException), AllowDerivedTypes = true)]
         public void TestExitMoreTimesError()
         {
-            EntryCountingEvent inst = new EntryCountingEvent();
-
-            inst.ExitClient();
+            using (EntryCountingEvent inst = new EntryCountingEvent())
+            {
+                inst.ExitClientCore();
+            }
         }
 
         [TestMethod]
         public void TestTerminateWaiting()
         {
-            EntryCountingEvent inst = new EntryCountingEvent();
-            inst.EnterClient();
-
-            bool finished = false;
-            Task.Run(() =>
+            using (EntryCountingEvent inst = new EntryCountingEvent())
+            {
+                bool finished = false;
+                Task task = null;
+                using (inst.Enter())
                 {
-                    inst.TerminateAndWait();
-                    finished = true;
-                });
+                    task = Task.Run(() =>
+                        {
+                            inst.TerminateAndWait();
+                            finished = true;
+                        });
 
-            TimingAssert.IsFalse(5000, () => finished);
+                    TimingAssert.IsFalse(5000, () => finished);
+                }
+                TimingAssert.IsTrue(5000, () => finished);
 
-            inst.ExitClient();
-            TimingAssert.IsTrue(5000, () => finished);
+                task.Wait();
+            }
         }
 
+        [TestMethod]
+        public void TestResest()
+        {
+            using (EntryCountingEvent inst = new EntryCountingEvent())
+            {
+                inst.TerminateAndWait(100);
+                Assert.IsTrue(inst.IsTerminated);
+
+                inst.Reset();
+                Assert.IsFalse(inst.IsTerminateRequested);
+                Assert.IsFalse(inst.IsTerminated);
+
+                using (var guard = inst.TryEnter())
+                {
+                    Assert.IsTrue(guard.IsAcquired);
+                    Assert.AreEqual(1, inst.CurrentCount);
+                }
+                Assert.AreEqual(0, inst.CurrentCount);
+            }
+        }
+
+
+        private void EnterTerminateConcurrently()
+        {
+            EntryCountingEvent inst = new EntryCountingEvent();
+            Barrier enterBar = new Barrier(2);
+
+            List<Task> tasks = new List<Task>();
+
+            tasks.Add(Task.Run(() =>
+            {
+                enterBar.SignalAndWait();
+                using (var guard = inst.TryEnter())
+                {
+                }
+            }));
+            tasks.Add(Task.Run(() =>
+            {
+                enterBar.SignalAndWait();
+                inst.Terminate();
+            }));
+
+
+            Task.WaitAll(tasks.ToArray());
+            Assert.IsTrue(inst.Wait(0));
+        }
+        [TestMethod]
+        public void EnterTerminateConcurrentlyTest()
+        {
+            for (int i = 0; i < 5000; i++)
+                EnterTerminateConcurrently();
+        }
+
+
+
+        private void RunComplexTest()
+        {
+            using (EntryCountingEvent inst = new EntryCountingEvent())
+            {
+                Barrier bar = new Barrier(7);
+                int threadFinished = 0;
+                int entryCount = 0;
+                bool isTestDispose = false;
+                List<Task> taskList = new List<Task>();
+
+                for (int i = 0; i < 6; i++)
+                {
+                    int a = i;
+                    var task = Task.Run(() =>
+                    {
+                        Random rnd = new Random(a);
+                        bar.SignalAndWait();
+                        for (int j = 0; j < 1000; j++)
+                        {
+                            using (var eee = inst.TryEnter())
+                            {
+                                if (!eee.IsAcquired)
+                                    break;
+
+                                Interlocked.Increment(ref entryCount);
+
+                                if (isTestDispose)
+                                    throw new Exception();
+
+                                Thread.Sleep(rnd.Next(10, 100));
+                                if (isTestDispose)
+                                    throw new Exception();
+                            }
+                        }
+
+                        Interlocked.Increment(ref threadFinished);
+                    });
+                    taskList.Add(task);
+                }
+
+                bar.SignalAndWait();
+                TimingAssert.IsTrue(5000, () => Volatile.Read(ref entryCount) > 12);
+                inst.TerminateAndWait();
+                isTestDispose = true;
+                inst.Dispose();
+                TimingAssert.AreEqual(5000, 6, () => Volatile.Read(ref threadFinished));
+
+                Task.WhenAll(taskList);
+            }
+        }
 
         [TestMethod]
         public void ComplexTest()
         {
-            EntryCountingEvent inst = new EntryCountingEvent();
-            int threadFinished = 0;
-            int entryCount = 0;
-            bool isTestDispose = false;
-
-            for (int i = 0; i < 6; i++)
-            {
-                int a = i;
-                Task.Run(() =>
-                {
-                    Random rnd = new Random(a);
-                    for (int j = 0; j < 1000; j++)
-                    {
-                        using (var eee = inst.TryEnterClientGuarded())
-                        {
-                            if (!eee.IsAcquired)
-                                break;
-
-                            Interlocked.Increment(ref entryCount);
-
-                            if (isTestDispose)
-                                throw new Exception();
-
-                            Thread.Sleep(rnd.Next(100, 300));
-                            if (isTestDispose)
-                                throw new Exception();
-                        }           
-                    }
-
-                    Interlocked.Increment(ref threadFinished);
-                });
-            }
-
-
-            TimingAssert.IsTrue(5000, () => Volatile.Read(ref entryCount) > 12);
-            inst.TerminateAndWait();
-            isTestDispose = true;
-            inst.Dispose();
-            TimingAssert.AreEqual(5000, 6, () => Volatile.Read(ref threadFinished));
+            for (int i = 0; i < 20; i++)
+                RunComplexTest();
         }
     }
 }

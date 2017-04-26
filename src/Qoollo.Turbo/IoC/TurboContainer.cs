@@ -2,6 +2,7 @@
 using Qoollo.Turbo.IoC.ServiceStuff;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -89,7 +90,7 @@ namespace Qoollo.Turbo.IoC
             if (!this.TryGetAssociation(key, out life))
                 ThrowObjectCannotBeResolvedException(key);
 
-            Contract.Assume(life != null);
+            Debug.Assert(life != null);
             return life.GetInstance(this);
         }
         /// <summary>
@@ -104,7 +105,7 @@ namespace Qoollo.Turbo.IoC
             if (!this.TryGetAssociation(typeof(T), out life))
                 ThrowObjectCannotBeResolvedException(typeof(T));
 
-            Contract.Assume(life != null);
+            Debug.Assert(life != null);
             return (T)life.GetInstance(this);
         }
 
@@ -125,7 +126,7 @@ namespace Qoollo.Turbo.IoC
 
             if (this.TryGetAssociation(key, out life))
             {
-                Contract.Assume(life != null);
+                Debug.Assert(life != null);
                 val = life.GetInstance(this);
                 return true;
             }
@@ -146,7 +147,7 @@ namespace Qoollo.Turbo.IoC
 
             if (this.TryGetAssociation(typeof(T), out life))
             {
-                Contract.Assume(life != null);
+                Debug.Assert(life != null);
                 val = (T)life.GetInstance(this);
                 return true;
             }
@@ -217,7 +218,7 @@ namespace Qoollo.Turbo.IoC
             if (!this.TryGetAssociation(reqObjectType, out life))
                 throw new ObjectCannotBeResolvedException(string.Format("Object of type {0} cannot be resolved by IoC container. That object is required as the parameter ({2}) to create another object of type {1}.", reqObjectType, forType, paramName));
 
-            Contract.Assume(life != null);
+            Debug.Assert(life != null);
             return life.GetInstance(this);
         }
         /// <summary>

@@ -8,6 +8,9 @@ using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime;
 using Qoollo.Turbo.Threading.OldThreadPools.ServiceStuff;
+using System.Diagnostics;
+using Qoollo.Turbo.Threading.ServiceStuff;
+using Qoollo.Turbo.Threading.ThreadPools;
 
 namespace Qoollo.Turbo.Threading.OldThreadPools
 {
@@ -692,7 +695,7 @@ namespace Qoollo.Turbo.Threading.OldThreadPools
         {
             if (!_isDisposed)
             {
-                Contract.Assume(isUserCall, "DynamicThreadPool destructor: Better to dispose by user. Закомментируй, если не нравится.");
+                Debug.Assert(isUserCall, "DynamicThreadPool destructor: Better to dispose by user. Закомментируй, если не нравится.");
 
                 if (isUserCall)
                 {

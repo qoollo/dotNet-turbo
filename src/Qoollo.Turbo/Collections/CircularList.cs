@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -444,7 +445,7 @@ namespace Qoollo.Turbo.Collections
             {
                 for (int curIndex = index; curIndex > start; curIndex--)
                 {
-                    Contract.Assert(curIndex >= 0);
+                    Debug.Assert(curIndex >= 0);
 
                     if (this._elemArray[curPos] == null)
                         return curIndex;
@@ -459,7 +460,7 @@ namespace Qoollo.Turbo.Collections
             EqualityComparer<T> comparer = EqualityComparer<T>.Default;
             for (int curIndex = index; curIndex > start; curIndex--)
             {
-                Contract.Assert(curIndex >= 0);
+                Debug.Assert(curIndex >= 0);
 
                 if (this._elemArray[curPos] != null && comparer.Equals(this._elemArray[curPos], item))
                     return curIndex;
@@ -596,7 +597,7 @@ namespace Qoollo.Turbo.Collections
                         }
                         else
                         {
-                            Contract.Assert(_head == 0);
+                            Debug.Assert(_head == 0);
                             _elemArray[_elemArray.Length - 1] = _elemArray[0];
                             Array.Copy(_elemArray, 1, _elemArray, 0, insertPos);
                         }
@@ -894,7 +895,7 @@ namespace Qoollo.Turbo.Collections
             _elemArray = array;
             _head = headOffset;
             _tail = _elemArray.Length > 0 ? ((_head + _size) % _elemArray.Length) : 0;
-            Contract.Assert(_tail == ((_size == capacity) ? 0 : this._size + headOffset));
+            Debug.Assert(_tail == ((_size == capacity) ? 0 : this._size + headOffset));
 
             _version++;
         }

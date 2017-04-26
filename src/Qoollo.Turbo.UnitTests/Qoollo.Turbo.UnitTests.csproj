@@ -50,6 +50,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="Atomic.cs" />
     <Compile Include="Collections\BlockingQueueTest.cs" />
     <Compile Include="Collections\CircularListTest.cs" />
     <Compile Include="Collections\IndexedContainerTests.cs" />
@@ -77,14 +78,27 @@
     <Compile Include="ObjectPools\UsedElementTrackerTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueueProcessing\QueueAsyncProcessorTest.cs" />
+    <Compile Include="Queues\DiskQueueTest.cs" />
+    <Compile Include="Queues\LevelingQueueTest.cs" />
+    <Compile Include="Queues\MemoryQueueTests.cs" />
+    <Compile Include="Queues\MutuallyExclusivePrimitiveTest.cs" />
+    <Compile Include="Queues\NonPersistentDiskQueueSegmentTest.cs" />
+    <Compile Include="Queues\PersistentDiskQueueSegmentTest.cs" />
+    <Compile Include="Queues\QueueCombinationTest.cs" />
+    <Compile Include="Queues\RegionMemoryStreamTest.cs" />
+    <Compile Include="Queues\TransformationQueueTests.cs" />
     <Compile Include="TestLoggingHelper.cs" />
+    <Compile Include="Threading\ConditionVariableAltTest.cs" />
+    <Compile Include="Threading\ConditionVariableTest.cs" />
+    <Compile Include="Threading\ConditionVariableOldTest.cs" />
     <Compile Include="Threading\EntryCountingEventTest.cs" />
     <Compile Include="ExecutionQuantizers\ExecutionQuantizerTest.cs" />
     <Compile Include="Threading\LinearSpinWaitTest.cs" />
     <Compile Include="Threading\ManagementThreadControllerTest.cs" />
+    <Compile Include="Threading\MonitorObjectTest.cs" />
     <Compile Include="Threading\PartialThreadBlockerTest.cs" />
     <Compile Include="Threading\SemaphoreLightTest.cs" />
-    <Compile Include="Threading\SemaphoreSlimETest.cs" />
+    <Compile Include="Threading\SignalEventSignalWaiterTest.cs" />
     <Compile Include="ThreadManagement\ThreadSetManagerTest.cs" />
     <Compile Include="ThreadPools\DynamicThreadPoolNewTest.cs" />
     <Compile Include="ThreadPools\DynamicThreadPoolOldTest.cs" />

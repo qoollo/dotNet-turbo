@@ -154,6 +154,55 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
 
 
+        [TestMethod]
+        public void TestProducerConsumer()
+        {
+            const int NumIters = 500;
+            SemaphoreLight inst = new SemaphoreLight(0);
+
+            var task1 = Task.Factory.StartNew(() =>
+            {
+                for (int i = 0; i < NumIters; i++)
+                    Assert.IsTrue(inst.Wait(30000));
+                Assert.IsFalse(inst.Wait(0));
+            }, TaskCreationOptions.LongRunning);
+
+            var task2 = Task.Factory.StartNew(() =>
+            {
+                for (int i = 0; i < NumIters; i++)
+                    inst.Release();
+            }, TaskCreationOptions.LongRunning);
+
+
+            Task.WaitAll(task1, task2);
+        }
+
+        [TestMethod]
+        public void OverflowTest()
+        {
+            SemaphoreLight inst = new SemaphoreLight(0);
+
+            inst.Release(int.MaxValue - 100);
+            Assert.AreEqual(int.MaxValue - 100, inst.CurrentCount);
+
+            inst.Release(100);
+            Assert.AreEqual(int.MaxValue, inst.CurrentCount);
+
+            try
+            {
+                inst.Release();
+                Assert.Fail("SemaphoreFullException expected");
+            }
+            catch (SemaphoreFullException)
+            {
+            }
+
+            bool waitResult = inst.Wait(0);
+            Assert.IsTrue(waitResult);
+        }
+
+
+
         private void RunComplexTest(SemaphoreLight sem, int elemCount, int thCount)
         {
             int atomicRandom = 0;

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -102,7 +103,7 @@ namespace Qoollo.Turbo.OldPool
 
             _name = name ?? this.GetType().GetCSFullName();
 
-            Contract.Assume(!Contract.Exists(_elementList, v => v == null));
+            Debug.Assert(!Contract.Exists(_elementList, v => v == null));
         }
 
         /// <summary>
@@ -734,7 +735,7 @@ namespace Qoollo.Turbo.OldPool
                 if (timeout >= 0)
                     throw new TimeoutException(string.Format("Pool 'Rent' operation has timeouted. Pool: {0}. Timeout value: {1}ms", PoolName, timeout));
 
-                Contract.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
+                Debug.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
                 throw new CantRetrieveElementException("Rent from pool failed");
             }
 

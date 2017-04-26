@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Diagnostics.Contracts;
 using Qoollo.Turbo;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo.OldPool
 {
@@ -97,7 +98,7 @@ namespace Qoollo.Turbo.OldPool
 
             _name = name ?? this.GetType().GetCSFullName();
 
-            Contract.Assume(!Contract.Exists(_elementList, v => v == null));
+            Debug.Assert(!Contract.Exists(_elementList, v => v == null));
         }
 
         /// <summary>
@@ -335,7 +336,7 @@ namespace Qoollo.Turbo.OldPool
         /// <param name="elem">Элемент</param>
         private void RemoveElement(T elem)
         {
-            Contract.Assume(!_freeElements.Contains(elem));
+            Debug.Assert(!_freeElements.Contains(elem));
 
             lock (_elementList)
             {
@@ -561,7 +562,7 @@ namespace Qoollo.Turbo.OldPool
                 if (timeout >= 0)
                     throw new TimeoutException(string.Format("Pool 'Rent' operation has timeouted. Pool: {0}. Timeout value: {1}ms", PoolName, timeout));
 
-                Contract.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
+                Debug.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
                 throw new CantRetrieveElementException("Rent from pool failed");
             }
 

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Queues;
 
 namespace Qoollo.Turbo.UnitTests.QueueProcessing
 {
@@ -325,6 +326,81 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
             this.TestContext.WriteLine("QAP.ComplexTest: stage 3 completed");
             RunComplexTest(Environment.ProcessorCount, 100, 20000, Environment.ProcessorCount, 100, 1);
             this.TestContext.WriteLine("QAP.ComplexTest: stage 4 completed");
+        }
+
+
+        private void RunComplexTestOnCustom(int threadCount, int queueSize, int testElemCount, int addThreadCount, int procSpinWaitCount, int addSleepMs)
+        {
+            List<int> processedItems = new List<int>(testElemCount + 1);
+            int currentItem = 0;
+            Random rnd = new Random();
+
+            MemoryQueue<int> mem1 = new MemoryQueue<int>(100);
+            MemoryQueue<int> mem2 = new MemoryQueue<int>(queueSize);
+            LevelingQueue<int> lvl = new LevelingQueue<int>(mem1, mem2);
+
+            using (DelegateQueueAsyncProcessor<int> proc = new DelegateQueueAsyncProcessor<int>(threadCount, lvl, "name", (elem, token) =>
+            {
+                int curSpinCount = 0;
+                lock (rnd)
+                    curSpinCount = rnd.Next(procSpinWaitCount);
+
+                Thread.SpinWait(curSpinCount);
+
+                lock (processedItems)
+                    processedItems.Add(elem);
+            }))
+            {
+                Action addAction = () =>
+                {
+                    while (true)
+                    {
+                        int curVal = Interlocked.Increment(ref currentItem);
+                        if (curVal > testElemCount)
+                            break;
+
+                        proc.Add(curVal - 1);
+
+                        if (addSleepMs > 0)
+                            SmartSleep(addSleepMs);
+                    }
+                };
+
+
+                Thread[] addThreads = new Thread[addThreadCount];
+
+                for (int i = 0; i < addThreads.Length; i++)
+                    addThreads[i] = new Thread(new ThreadStart(addAction));
+
+                for (int i = 0; i < addThreads.Length; i++)
+                    addThreads[i].Start();
+
+                proc.Start();
+
+                Assert.IsTrue(proc.IsWork);
+
+                for (int i = 0; i < addThreads.Length; i++)
+                    addThreads[i].Join();
+
+
+                proc.Stop(true, true, true);
+
+                Assert.AreEqual(testElemCount, processedItems.Count);
+
+                processedItems.Sort();
+                for (int i = 0; i < processedItems.Count; i++)
+                    Assert.AreEqual(i, processedItems[i]);
+            }
+        }
+
+        [TestMethod]
+        [Timeout(2 * 60 * 1000)]
+        public void ComplexTestOnCustomQueue()
+        {
+            RunComplexTestOnCustom(Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 0, 0);
+            RunComplexTestOnCustom(1, -1, 10000, Environment.ProcessorCount, 0, 1);
+            RunComplexTestOnCustom(2 * Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 100, 0);
+            RunComplexTestOnCustom(Environment.ProcessorCount, 100, 20000, Environment.ProcessorCount, 100, 1);
         }
     }
 }

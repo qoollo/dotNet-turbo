@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Qoollo.Turbo
+namespace Qoollo.Turbo.IoC
 {
     /// <summary>
     /// The exception that is thrown when some error with IoC container occured

@@ -1,6 +1,7 @@
 ﻿using Qoollo.Turbo.Threading.ThreadPools.Common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -35,11 +36,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <summary>
         /// Стандартное значения для параметра использования своего шедуллера задач
         /// </summary>
-        public const bool DefaultUseOwnTaskScheduler = true;
+        public const bool DefaultUseOwnTaskScheduler = false;
         /// <summary>
         /// Стандартное значения для параметра использования своего контекста синхронизации
         /// </summary>
-        public const bool DefaultUseOwnSyncContext = true;
+        public const bool DefaultUseOwnSyncContext = false;
         /// <summary>
         /// Стандартное значения для параметра протаскивания контекст исполнения
         /// </summary>
@@ -371,7 +372,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                     }
                     else
                     {
-                        Contract.Assert(token.IsCancellationRequested);
+                        Debug.Assert(token.IsCancellationRequested);
                     }
                 }
             }

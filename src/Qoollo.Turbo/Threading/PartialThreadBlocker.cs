@@ -29,39 +29,13 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             PartialThreadBlocker blocker = obj as PartialThreadBlocker;
-            Contract.Assert(blocker != null);
+            Debug.Assert(blocker != null);
             lock (blocker._lockObj)
             {
                 Monitor.PulseAll(blocker._lockObj);
             }
         }
 
-        /// <summary>
-        /// Получить временной маркер в миллисекундах
-        /// </summary>
-        /// <returns>Временной маркер</returns>
-        private static uint GetTimestamp()
-        {
-            return (uint)Environment.TickCount;
-        }
-        /// <summary>
-        /// Обновить таймаут
-        /// </summary>
-        /// <param name="startTime">Время начала</param>
-        /// <param name="originalTimeout">Величина таймаута</param>
-        /// <returns>Сколько осталось времени</returns>
-        private static int UpdateTimeout(uint startTime, int originalTimeout)
-        {
-            uint elapsed = GetTimestamp() - startTime;
-            if (elapsed > (uint)int.MaxValue)
-                return 0;
-
-            int rest = originalTimeout - (int)elapsed;
-            if (rest <= 0)
-                return 0;
-
-            return rest;
-        }
 
         // ======================
 
@@ -140,13 +114,13 @@ namespace Qoollo.Turbo.Threading
         {
             SpinWait sw = new SpinWait();
             int expectedWaiterCount = _expectedWaiterCount;
-            Contract.Assert(expectedWaiterCount + addValue >= 0, "Negative ExpectedWaiterCount. Can be commented");
+            Debug.Assert(expectedWaiterCount + addValue >= 0, "Negative ExpectedWaiterCount. Can be commented");
             int newExpectedWaiterCount = Math.Max(0, expectedWaiterCount + addValue);
             while (Interlocked.CompareExchange(ref _expectedWaiterCount, newExpectedWaiterCount, expectedWaiterCount) != expectedWaiterCount)
             {
                 sw.SpinOnce();
                 expectedWaiterCount = _expectedWaiterCount;
-                Contract.Assert(expectedWaiterCount + addValue >= 0, "Negative ExpectedWaiterCount. Can be commented");
+                Debug.Assert(expectedWaiterCount + addValue >= 0, "Negative ExpectedWaiterCount. Can be commented");
                 newExpectedWaiterCount = Math.Max(0, expectedWaiterCount + addValue);
             }
 
@@ -188,7 +162,7 @@ namespace Qoollo.Turbo.Threading
             uint startTime = 0;
             int currentTime = Timeout.Infinite;
             if (timeout != Timeout.Infinite)
-                startTime = GetTimestamp();
+                startTime = TimeoutHelper.GetTimestamp();
 
             for (int i = 0; i < 10; i++)
             {
@@ -218,7 +192,7 @@ namespace Qoollo.Turbo.Threading
 
                                 if (timeout != Timeout.Infinite)
                                 {
-                                    currentTime = UpdateTimeout(startTime, timeout);
+                                    currentTime = TimeoutHelper.UpdateTimeout(startTime, timeout);
                                     if (currentTime <= 0)
                                         return false;
                                 }
@@ -246,7 +220,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait()
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, new CancellationToken());
-            Contract.Assert(semaphoreSlotTaken);
+            Debug.Assert(semaphoreSlotTaken);
         }
         /// <summary>
         /// Заблокироваться, если требуется
@@ -256,7 +230,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait(CancellationToken token)
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, token);
-            Contract.Assert(semaphoreSlotTaken);
+            Debug.Assert(semaphoreSlotTaken);
         }
         /// <summary>
         /// Заблокироваться, если требуется

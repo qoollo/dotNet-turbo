@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Qoollo.Turbo
+namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
     /// Indicates error during a thread initialization in ThreadPool

@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>$id$</id>
-    <version>2.2.0</version>
+    <version>2.3.0-alpha</version>
     <title>Qoollo.Turbo</title>
     <authors>Qoollo</authors>
     <owners>Qoollo</owners>
@@ -12,26 +12,22 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>
       Collection of useful classes for your .NET application: 
-         Object Pool, Thread Pool, Queue Async Processor, BlockingQueue, ThreadSetManager, Throttling, Semaphore, EntryCounteringEvent, Collections, ReadOnlyCollections, IoC, WeakEvent and other.
+         Object Pool, Thread Pool, Queue Async Processor, BlockingQueue, DiskQueue, ThreadSetManager, Throttling, Semaphore, EntryCounteringEvent, Collections, ReadOnlyCollections, IoC, WeakEvent and other.
     </description>
     <releaseNotes>
-      v2.2.0 (15.01.2016)
+      v2.3.0 Alpha (26.04.2017)
+      - Queues infrastructure added (DiskQueue, MemoryQueue, TransformationQueue, LevelingQueue)
+      - QueueAsynProcessor now supported newly added Queues
+      - MonitorObject added
+      - StaticThreadPool and DynamicThreadPool does not use own SynchrnizationContext and TaskScheduler by default since now
+      - Specific exceptions moved to their specific namespaces
+      - EntryCountingEvent method names simplified
       - Public surface comments partially translated to English
-      - CircularList added
-      - TypeUIDResolver added
-      - MinBy, MaxBy extension methods added
-      - String distance algorithms added (Levenshtein, Hamming)
-      - New exception types added
-      - Generic Throw method added to TurboException
-      - WaitForElementsReleased added to ObjectPools
-      - RunAsTask added to ThreadPools
-      - TurboContainer added as the main IoC container (old containers are marked as Obsolete)
-      - Enqueue, Dequeue methods of BlockingQueue renamed to Add, Take (same as in BlockingCollection)
       - Code refactoring
       - Bug fixes
     </releaseNotes>
     <copyright>Copyright 2015</copyright>
-    <tags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance CircularList</tags>
+    <tags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance CircularList Disk DiskQueue MemoryQueue</tags>
     <references>
       <reference file="$id$.dll" />
     </references>

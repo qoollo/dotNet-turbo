@@ -8,6 +8,7 @@ using System.Diagnostics.Contracts;
 using Qoollo.Turbo.IoC.Injections;
 using Qoollo.Turbo.IoC.ServiceStuff;
 using System.Reflection.Emit;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo.IoC.Helpers
 {
@@ -82,12 +83,12 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             for (int i = 0; i < cparam.Length; i++)
             {
-                Contract.Assume(cparam[i] != null);
+                Debug.Assert(cparam[i] != null);
                 args[i] = injection.Resolve(cparam[i].ParameterType, cparam[i].Name, objType, extData);
             }
 
             var res = constructor.Invoke(args);
-            Contract.Assume(res != null);
+            Debug.Assert(res != null);
             return res;
         }
 
@@ -112,7 +113,7 @@ namespace Qoollo.Turbo.IoC.Helpers
                 throw new CommonIoCException("Only constructor without parameters can be used here");
 
             var res = constructor.Invoke(new object[] { });
-            Contract.Assume(res != null);
+            Debug.Assert(res != null);
             return res;
         }
 
@@ -145,7 +146,7 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             object res = ObjectInstantiationHelper.CreateObject(objType, ci, injection, extData);
 
-            Contract.Assume(res != null);
+            Debug.Assert(res != null);
             return res;
         }
 
@@ -168,7 +169,7 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             object res = ObjectInstantiationHelper.CreateObject(objType, ci);
 
-            Contract.Assume(res != null);
+            Debug.Assert(res != null);
             return res;
         }
 
@@ -193,7 +194,7 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             Contract.Ensures(Contract.Result<Func<IInjectionResolver, object>>() != null);
 
-            Contract.Assert(constructor.DeclaringType == objType);
+            Debug.Assert(constructor.DeclaringType == objType);
 
             return (injection) => CreateObject(objType, constructor, injection, extData);
         }
@@ -307,7 +308,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Expression>() != null);
 
             var methodInfo = ExtractMethodInfo<IInjectionResolver>(a => a.Resolve(typeof(int), "", typeof(int), null));
-            Contract.Assume(methodInfo != null);
+            Debug.Assert(methodInfo != null);
 
             return Expression.Convert(
                             Expression.Call(
@@ -337,10 +338,10 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             Contract.Ensures(Contract.Result<Expression>() != null);
 
-            Contract.Assume(param.Type == typeof(IInjectionResolver));
+            Debug.Assert(param.Type == typeof(IInjectionResolver));
 
             var methodInfo = ExtractMethodInfo<IInjectionResolver>(a => a.Resolve(typeof(int), "", typeof(int), null));
-            Contract.Assume(methodInfo != null);
+            Debug.Assert(methodInfo != null);
 
             return Expression.Convert(
                             Expression.Call(
@@ -369,10 +370,10 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             Contract.Ensures(Contract.Result<Expression>() != null);
 
-            Contract.Assume(param.Type == typeof(IInjectionResolver));
+            Debug.Assert(param.Type == typeof(IInjectionResolver));
 
             var methodInfo = ExtractMethodInfo<IInjectionResolver>(a => a.Resolve(typeof(int), "", typeof(int), null));
-            Contract.Assume(methodInfo != null);
+            Debug.Assert(methodInfo != null);
 
             return Expression.Convert(
                             Expression.Call(
@@ -410,23 +411,23 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Expression<Func<IInjectionResolver, object>>>() != null);
 
             var injectionParam = Expression.Parameter(typeof(IInjectionResolver), "injection");
-            Contract.Assume(injectionParam != null);
+            Debug.Assert(injectionParam != null);
 
             var cparam = constructor.GetParameters();
-            Contract.Assume(cparam != null);
+            Debug.Assert(cparam != null);
 
             Expression[] args = new Expression[cparam.Length];
 
             for (int i = 0; i < cparam.Length; i++)
             {
-                Contract.Assume(cparam[i] != null);
+                Debug.Assert(cparam[i] != null);
                 args[i] = CreateInjectionExtractionExpr(cparam[i].ParameterType, injectionParam, Expression.Constant(cparam[i].Name), Expression.Constant(objType, typeof(Type)), extData);
             }
 
             var finalExpr = Expression.New(constructor, args);
             var linqExpr = Expression.Lambda<Func<IInjectionResolver, object>>(finalExpr, injectionParam);
 
-            Contract.Assume(linqExpr != null);
+            Debug.Assert(linqExpr != null);
             return linqExpr;
         }
 
@@ -453,12 +454,12 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<object>>() != null);
 
             var cparam = constructor.GetParameters();
-            Contract.Assume(cparam != null);
+            Debug.Assert(cparam != null);
             Expression[] args = new Expression[cparam.Length];
 
             for (int i = 0; i < cparam.Length; i++)
             {
-                Contract.Assume(cparam[i] != null);
+                Debug.Assert(cparam[i] != null);
                 args[i] = CreateInjectionExtractionExpr(cparam[i].ParameterType, injection, cparam[i].Name, objType, extData);
             }
 
@@ -466,7 +467,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             var linqExpr = Expression.Lambda<Func<object>>(finalExpr);
 
             var res = linqExpr.Compile();
-            Contract.Assume(res != null);
+            Debug.Assert(res != null);
             return res;
         }
 
@@ -491,10 +492,10 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<IInjectionResolver, object>>() != null);
 
             var linqExpr = GetObjectCreationExpression(objType, constructor, extData);
-            Contract.Assume(linqExpr != null);
+            Debug.Assert(linqExpr != null);
 
             var res = linqExpr.Compile();
-            Contract.Assume(res != null);
+            Debug.Assert(res != null);
             return res;
         }
 
@@ -516,10 +517,10 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<IInjectionResolver, object>>() != null);
 
             var constructor = FindConstructor(objType);
-            Contract.Assert(constructor != null);
+            Debug.Assert(constructor != null);
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
-            Contract.Assume(constructor.DeclaringType == objType);
+            Debug.Assert(constructor.DeclaringType == objType);
 
             return GetCompiledCreationFunction(objType, constructor, extData);
         }
@@ -539,10 +540,10 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<IInjectionResolver, object>>() != null);
 
             var constructor = FindConstructor(objType);
-            Contract.Assert(constructor != null);
+            Debug.Assert(constructor != null);
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
-            Contract.Assume(constructor.DeclaringType == objType);
+            Debug.Assert(constructor.DeclaringType == objType);
 
             return GetCompiledCreationFunction(objType, constructor, Expression.Constant(extData, typeof(object)));
         }
@@ -575,12 +576,12 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<object>>() != null);
 
             var cparam = constructor.GetParameters();
-            Contract.Assume(cparam != null);
+            Debug.Assert(cparam != null);
             Expression[] args = new Expression[cparam.Length];
 
             for (int i = 0; i < cparam.Length; i++)
             {
-                Contract.Assume(cparam[i] != null);
+                Debug.Assert(cparam[i] != null);
                 object locArgVal = injection.Resolve(cparam[i].ParameterType, cparam[i].Name, objType, extData);
                 args[i] = Expression.Constant(locArgVal);
             }
@@ -589,7 +590,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             var linqExpr = Expression.Lambda<Func<object>>(finalExpr);
 
             var res = linqExpr.Compile();
-            Contract.Assume(res != null);
+            Debug.Assert(res != null);
             return res;
         }
 
@@ -608,10 +609,10 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Requires(injection != null);
 
             var constructor = FindConstructor(objType);
-            Contract.Assert(constructor != null);
+            Debug.Assert(constructor != null);
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
-            Contract.Assume(constructor.DeclaringType == objType);
+            Debug.Assert(constructor.DeclaringType == objType);
 
             return GetCompiledArgsInlinedCreationFunction(objType, constructor, injection, extData);
         }
@@ -679,7 +680,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             {
                 for (int i = 0; i < storageFields.Length; i++)
                 {
-                    Contract.Assume(storageFields[i] != null);
+                    Debug.Assert(storageFields[i] != null);
                     constr.DefineParameter(i, ParameterAttributes.None, "c_" + storageFields[i].Name);
                 }
             }
@@ -734,9 +735,9 @@ namespace Qoollo.Turbo.IoC.Helpers
             method.DefineParameter(0, ParameterAttributes.None, "resolver");
 
             var GetTypeFromHandle = ExtractMethodInfo(() => Type.GetTypeFromHandle(new RuntimeTypeHandle()));
-            Contract.Assume(GetTypeFromHandle != null);
+            Debug.Assert(GetTypeFromHandle != null);
             var Resolve = ExtractMethodInfo<IInjectionResolver>(a => a.Resolve(typeof(int), "", typeof(int), null));
-            Contract.Assume(Resolve != null);
+            Debug.Assert(Resolve != null);
 
             var methodILGen = method.GetILGenerator();
 
@@ -783,17 +784,17 @@ namespace Qoollo.Turbo.IoC.Helpers
             method.DefineParameter(0, ParameterAttributes.None, "resolver");
 
             var GetTypeFromHandle = ExtractMethodInfo(() => Type.GetTypeFromHandle(new RuntimeTypeHandle()));
-            Contract.Assume(GetTypeFromHandle != null);
+            Debug.Assert(GetTypeFromHandle != null);
 
             var methodILGen = method.GetILGenerator();
 
             var cparams = constructor.GetParameters();
 
-            Contract.Assert(cparams.Length == allFields.Length);
+            Debug.Assert(cparams.Length == allFields.Length);
 
             for (int i = 0; i < cparams.Length; i++)
             {
-                Contract.Assert(cparams[i].ParameterType == allFields[i].FieldType);
+                Debug.Assert(cparams[i].ParameterType == allFields[i].FieldType);
                 methodILGen.Emit(OpCodes.Ldarg_0);
                 methodILGen.Emit(OpCodes.Ldfld, allFields[i]);
             }
@@ -818,7 +819,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Type>() != null);
 
             var methodToImplement = ExtractMethodInfo<IInstanceCreator>(a => a.CreateInstance(null));
-            Contract.Assume(methodToImplement != null);
+            Debug.Assert(methodToImplement != null);
 
             lock (_singleThreadAccessToDynModule)
             {
@@ -830,18 +831,18 @@ namespace Qoollo.Turbo.IoC.Helpers
                 var extInfoField = typeBuilder.DefineField("extInfo", typeof(object), FieldAttributes.Private | FieldAttributes.InitOnly);
 
                 var constr = typeBuilder.DefineConstructor(MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis, new Type[] { typeof(object) });
-                Contract.Assume(constr != null);
+                Debug.Assert(constr != null);
                 EmitConstructor(constr, extInfoField);
 
                 var method = typeBuilder.DefineMethod(methodToImplement.Name, MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis,
                     typeof(object), new Type[] { typeof(IInjectionResolver) });
-                Contract.Assume(method != null);
+                Debug.Assert(method != null);
                 EmitMethodWithResolver(method, objType, constructor, extInfoField);
 
                 var interfMethod = typeBuilder.DefineMethod(methodToImplement.Name, MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                     CallingConventions.HasThis, typeof(object), new Type[] { typeof(IInjectionResolver) });
                 typeBuilder.DefineMethodOverride(interfMethod, methodToImplement);
-                Contract.Assume(interfMethod != null);
+                Debug.Assert(interfMethod != null);
                 EmitMethodWithResolver(interfMethod, objType, constructor, extInfoField);
 
 
@@ -865,7 +866,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Type>() != null);
 
             var methodToImplement = ExtractMethodInfo<IInstanceCreatorNoParam>(a => a.CreateInstance());
-            Contract.Assume(methodToImplement != null);
+            Debug.Assert(methodToImplement != null);
 
             lock (_singleThreadAccessToDynModule)
             {
@@ -882,18 +883,18 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
                 var constr = typeBuilder.DefineConstructor(MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis, allFields.Select(o => o.FieldType).ToArray());
-                Contract.Assume(constr != null);
+                Debug.Assert(constr != null);
                 EmitConstructor(constr, allFields);
 
                 var method = typeBuilder.DefineMethod(methodToImplement.Name, MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis,
                     typeof(object), Type.EmptyTypes);
-                Contract.Assume(method != null);
+                Debug.Assert(method != null);
                 EmitMethodWithInlinedParams(method, objType, constructor, allFields);
 
                 var intefMethod = typeBuilder.DefineMethod(methodToImplement.Name, MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                     CallingConventions.HasThis, typeof(object), Type.EmptyTypes);
                 typeBuilder.DefineMethodOverride(intefMethod, methodToImplement);
-                Contract.Assume(intefMethod != null);
+                Debug.Assert(intefMethod != null);
                 EmitMethodWithInlinedParams(intefMethod, objType, constructor, allFields);
 
 
@@ -927,7 +928,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<object>() is IInstanceCreator);
 
             var type = BuildTypeOfInstanceCreator(objType, constructor);
-            Contract.Assume(type != null);
+            Debug.Assert(type != null);
 
             return Activator.CreateInstance(type, extData);
         }
@@ -952,7 +953,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<object>() is IInstanceCreatorNoParam);
 
             var type = BuildTypeOfInstanceCreatorNoParam(objType, constructor);
-            Contract.Assume(type != null);
+            Debug.Assert(type != null);
 
             return CreateObject(type, injection, extData);
         }
@@ -1017,12 +1018,12 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<IInjectionResolver, object>>() != null);
 
             var inst = GetInstanceCreatorObject(objType, constructor, extData);
-            Contract.Assume(inst != null);
+            Debug.Assert(inst != null);
 
             var instType = inst.GetType();
             var methodName = ExtractMethodInfo<IInstanceCreator>(a => a.CreateInstance(null)).Name;
             var method = instType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
-            Contract.Assume(method != null);
+            Debug.Assert(method != null);
 
             var deleg = Delegate.CreateDelegate(typeof(Func<IInjectionResolver, object>), inst, method);
 
@@ -1049,12 +1050,12 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<object>>() != null);
 
             var inst = GetInstanceCreatorNoParamObject(objType, constructor, injection, extData);
-            Contract.Assume(inst != null);
+            Debug.Assert(inst != null);
 
             var instType = inst.GetType();
             var methodName = ExtractMethodInfo<IInstanceCreatorNoParam>(a => a.CreateInstance()).Name;
             var method = instType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
-            Contract.Assume(method != null);
+            Debug.Assert(method != null);
 
             var deleg = Delegate.CreateDelegate(typeof(Func<object>), inst, method);
 
@@ -1076,7 +1077,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<IInstanceCreator>() != null);
 
             var constructor = FindConstructor(objType);
-            Contract.Assert(constructor != null);
+            Debug.Assert(constructor != null);
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 
@@ -1101,7 +1102,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<IInstanceCreatorNoParam>() != null);
 
             var constructor = FindConstructor(objType);
-            Contract.Assert(constructor != null);
+            Debug.Assert(constructor != null);
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 
@@ -1123,7 +1124,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<IInjectionResolver, object>>() != null);
 
             var constructor = FindConstructor(objType);
-            Contract.Assert(constructor != null);
+            Debug.Assert(constructor != null);
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 
@@ -1148,7 +1149,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             Contract.Ensures(Contract.Result<Func<object>>() != null);
 
             var constructor = FindConstructor(objType);
-            Contract.Assert(constructor != null);
+            Debug.Assert(constructor != null);
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -59,7 +60,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
                     return;
                 curIndex = (curIndex + 1) % _bunches.Length;
 
-                Contract.Assert(iterationCount++ < 1024);
+                Debug.Assert(iterationCount++ < 1024);
             }
         }
     }

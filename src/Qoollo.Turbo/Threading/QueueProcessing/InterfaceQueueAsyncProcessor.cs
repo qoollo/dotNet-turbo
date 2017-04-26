@@ -5,17 +5,18 @@ using System.Text;
 using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Collections.Concurrent;
+using Qoollo.Turbo.Queues;
 
 namespace Qoollo.Turbo.Threading.QueueProcessing
 {
     /// <summary>
-    /// Асинхронная обработка на интерфейсе.
+    /// Asynchronous items processor with queue. Concrete processing action passed by interface <see cref="IQueueAsyncProcessorLogic{T}"/>.
     /// </summary>
-    /// <typeparam name="T">Тип обрабатываемого элемента</typeparam>
+    /// <typeparam name="T">Type of the elements processed by this <see cref="InterfaceQueueAsyncProcessor{T}"/></typeparam>
     public class InterfaceQueueAsyncProcessor<T> : QueueAsyncProcessor<T>
     {
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -25,57 +26,90 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
         private readonly IQueueAsyncProcessorLogic<T> _logic;
 
+
         /// <summary>
-        /// Конструктор InterfaceQueueAsyncProcessor
+        /// InterfaceQueueAsyncProcessor constructor
         /// </summary>
-        /// <param name="logic">Интерфейс с логикой обработки данных</param>
-        /// <param name="processorCount">Число потоков обработки</param>
-        /// <param name="maxQueueSize">Максимальный размер очереди</param>
-        /// <param name="name">Имя, присваемое потокам</param>
-        /// <param name="isBackground">Будут ли потоки работать в фоновом режиме</param>
-        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int processorCount, int maxQueueSize, string name, bool isBackground)
-            : base(processorCount, maxQueueSize, name, isBackground)
+        /// <param name="logic">Implementation of the item processing logic</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="queue">Processing queue (current instances of <see cref="QueueAsyncProcessor{T}"/> becomes the owner)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        /// <param name="isBackground">Whether or not processing threads are background threads</param>
+        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, IQueue<T> queue, string name, bool isBackground)
+            : base(threadCount, queue, name, isBackground)
         {
-            Contract.Requires<ArgumentNullException>(logic != null, "logic");
+            if (logic == null)
+                throw new ArgumentNullException(nameof(logic));
 
             _logic = logic;
         }
         /// <summary>
-        /// Конструктор InterfaceQueueAsyncProcessor
+        /// InterfaceQueueAsyncProcessor constructor
         /// </summary>
-        /// <param name="logic">Интерфейс с логикой обработки данных</param>
-        /// <param name="processorCount">Число потоков обработки</param>
-        /// <param name="maxQueueSize">Максимальный размер очереди</param>
-        /// <param name="name">Имя, присваемое потокам</param>
-        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int processorCount, int maxQueueSize, string name)
-            : this(logic, processorCount, maxQueueSize, name, false)
+        /// <param name="logic">Implementation of the item processing logic</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="queue">Processing queue (current instances of <see cref="QueueAsyncProcessor{T}"/> becomes the owner)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, IQueue<T> queue, string name)
+            : base(threadCount, queue, name, false)
+        {
+            if (logic == null)
+                throw new ArgumentNullException(nameof(logic));
+
+            _logic = logic;
+        }
+
+        /// <summary>
+        /// InterfaceQueueAsyncProcessor constructor
+        /// </summary>
+        /// <param name="logic">Implementation of the item processing logic</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        /// <param name="isBackground">Whether or not processing threads are background threads</param>
+        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, int maxQueueSize, string name, bool isBackground)
+            : base(threadCount, maxQueueSize, name, isBackground)
+        {
+            if (logic == null)
+                throw new ArgumentNullException(nameof(logic));
+
+            _logic = logic;
+        }
+        /// <summary>
+        /// InterfaceQueueAsyncProcessor constructor
+        /// </summary>
+        /// <param name="logic">Implementation of the item processing logic</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, int maxQueueSize, string name)
+            : this(logic, threadCount, maxQueueSize, name, false)
         {
         }
         /// <summary>
-        /// Конструктор InterfaceQueueAsyncProcessor
+        /// InterfaceQueueAsyncProcessor constructor
         /// </summary>
-        /// <param name="logic">Интерфейс с логикой обработки данных</param>
-        /// <param name="processorCount">Число потоков обработки</param>
-        /// <param name="name">Имя, присваемое потокам</param>
-        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int processorCount, string name)
-            : this(logic, processorCount, -1, name, false)
+        /// <param name="logic">Implementation of the item processing logic</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, string name)
+            : this(logic, threadCount, -1, name, false)
         {
         }
         /// <summary>
-        /// Конструктор InterfaceQueueAsyncProcessor
+        /// InterfaceQueueAsyncProcessor constructor
         /// </summary>
-        /// <param name="logic">Интерфейс с логикой обработки данных</param>
-        /// <param name="processorCount">Число потоков обработки</param>
-        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int processorCount)
-            : this(logic, processorCount, -1, null, false)
+        /// <param name="logic">Implementation of the item processing logic</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount)
+            : this(logic, threadCount, -1, null, false)
         {
         }
 
         /// <summary>
-        /// Создание объекта состояния на поток.
-        /// Вызывается при старте для каждого потока
+        /// Creates the state that is specific for every processing thread. Executes once for every thread during start-up.
         /// </summary>
-        /// <returns>Объект состояния</returns>
+        /// <returns>Created thread-specific state object</returns>
         protected override object Prepare()
         {
             if (_logic is IQueueAsyncProcessorLogicExt<T>)
@@ -85,9 +119,9 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Освобождение объекта состояния потока
+        /// Release the thread specific state object when the thread is about to exit
         /// </summary>
-        /// <param name="state">Объект состояния</param>
+        /// <param name="state">Thread-specific state object</param>
         protected override void Finalize(object state)
         {
             if (_logic is IQueueAsyncProcessorLogicExt<T>)
@@ -97,22 +131,22 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Основной метод обработки элементов
+        /// Processes a single item taken from the processing queue.
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="state">Объект состояния, инициализированный в методе Prepare()</param>
-        /// <param name="token">Токен для отмены обработки</param>
+        /// <param name="element">Item to be processed</param>
+        /// <param name="state">Thread specific state object</param>
+        /// <param name="token">Cancellation token that will be cancelled when the immediate stop is requested</param>
         protected override void Process(T element, object state, CancellationToken token)
         {
             _logic.Process(element, state, token);
         }
 
         /// <summary>
-        /// Обработка исключений. 
-        /// Чтобы исключение было проброшено наверх, нужно выбросить новое исключение внутри метода.
+        /// Method that allows to process unhandled exceptions (e.g. logging).
+        /// Default behaviour - throws <see cref="QueueAsyncProcessorException"/>.
         /// </summary>
-        /// <param name="ex">Исключение</param>
-        /// <returns>Игнорировать ли исключение (false - поток завершает работу)</returns>
+        /// <param name="ex">Catched exception</param>
+        /// <returns>Whether the current exception can be safely skipped (false - the thread will retrow the exception)</returns>
         protected override bool ProcessThreadException(Exception ex)
         {
             if (!_logic.ProcessThreadException(ex))
@@ -124,48 +158,47 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
     /// <summary>
-    /// Интерфейс с логикой асинхронной обработки данных
+    /// Specifies methods required to process the items
     /// </summary>
-    /// <typeparam name="T">Тип обрабатываемого элемента</typeparam>
+    /// <typeparam name="T">Type of the items</typeparam>
     [ContractClass(typeof(IQueueAsyncProcessorLogicCodeContractCheck<>))]
     public interface IQueueAsyncProcessorLogic<T>
     {
         /// <summary>
-        /// Основной метод обработки элементов
+        /// Processes a single item taken from the processing queue.
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="state">Объект состояния, инициализированный в методе Prepare()</param>
-        /// <param name="token">Токен для отмены обработки</param>
+        /// <param name="element">Item to be processed</param>
+        /// <param name="state">Thread specific state object</param>
+        /// <param name="token">Cancellation token that will be cancelled when the immediate stop is requested</param>
         void Process(T element, object state, CancellationToken token);
 
         /// <summary>
-        /// Обработка исключений. 
-        /// Чтобы исключение было проброшено наверх, нужно вернуть false, либо самостоятельно выбросить новое исключение внутри метода.
+        /// Method that allows to process unhandled exceptions (e.g. logging).
+        /// Default behaviour - throws <see cref="QueueAsyncProcessorException"/>.
         /// </summary>
-        /// <param name="ex">Исключение</param>
-        /// <returns>Игнорировать ли исключение (false - поток завершает работу)</returns>
+        /// <param name="ex">Catched exception</param>
+        /// <returns>Whether the current exception can be safely skipped (false - the thread will retrow the exception)</returns>
         bool ProcessThreadException(Exception ex);
     }
 
 
 
     /// <summary>
-    /// Интерфейс с расширенной логикой асинхронной обработки данных
+    /// Extended methods to process the items by <see cref="InterfaceQueueAsyncProcessor{T}"/>
     /// </summary>
-    /// <typeparam name="T">Тип обрабатываемого элемента</typeparam>
+    /// <typeparam name="T">Type of the items</typeparam>
     [ContractClass(typeof(IQueueAsyncProcessorLogicExtCodeContractCheck<>))]
     public interface IQueueAsyncProcessorLogicExt<T> : IQueueAsyncProcessorLogic<T>
     {
         /// <summary>
-        /// Создание объекта состояния на поток.
-        /// Вызывается при старте для каждого потока
+        /// Creates the state that is specific for every processing thread. Executes once for every thread during start-up.
         /// </summary>
-        /// <returns>Объект состояния</returns>
+        /// <returns>Created thread-specific state object</returns>
         object Prepare();
         /// <summary>
-        /// Освобождение объекта состояния потока
+        /// Release the thread specific state object when the thread is about to exit
         /// </summary>
-        /// <param name="state">Объект состояния</param>
+        /// <param name="state">Thread-specific state object</param>
         void Finalize(object state);
     }
 
@@ -175,22 +208,22 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(IQueueAsyncProcessorLogic<>))]
     abstract class IQueueAsyncProcessorLogicCodeContractCheck<T> : IQueueAsyncProcessorLogic<T>
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private IQueueAsyncProcessorLogicCodeContractCheck() { }
 
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public bool ProcessThreadException(Exception ex)
         {
             Contract.Requires(ex != null);
 
             throw new NotImplementedException();
         }
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public void Process(T element, object state, CancellationToken token)
         {
             throw new NotImplementedException();
@@ -201,31 +234,31 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(IQueueAsyncProcessorLogicExt<>))]
     abstract class IQueueAsyncProcessorLogicExtCodeContractCheck<T> : IQueueAsyncProcessorLogicExt<T>
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private IQueueAsyncProcessorLogicExtCodeContractCheck() { }
 
 
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public object Prepare()
         {
             throw new NotImplementedException();
         }
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public void Finalize(object state)
         {
             throw new NotImplementedException();
         }
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public void Process(T element, object state, CancellationToken token)
         {
             throw new NotImplementedException();
         }
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public bool ProcessThreadException(Exception ex)
         {
             throw new NotImplementedException();

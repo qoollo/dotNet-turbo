@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime;
@@ -94,7 +95,7 @@ namespace Qoollo.Turbo.Threading.OldThreadPools.ServiceStuff
             if (syncContext != null && SynchronizationContext.Current != syncContext)
                 SynchronizationContext.SetSynchronizationContext(syncContext);
 
-            Contract.Assume(Act != null);
+            Debug.Assert(Act != null);
 
             Act();
         }
@@ -109,7 +110,7 @@ namespace Qoollo.Turbo.Threading.OldThreadPools.ServiceStuff
             if (syncContext != null && SynchronizationContext.Current != syncContext)
                 SynchronizationContext.SetSynchronizationContext(syncContext);
 
-            Contract.Assume(Act != null);
+            Debug.Assert(Act != null);
 
             Act();
         }

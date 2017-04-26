@@ -5,17 +5,20 @@ using System.Text;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using Qoollo.Turbo.Queues;
 
 namespace Qoollo.Turbo.Threading.QueueProcessing
 {
     /// <summary>
-    /// Асинхронный обработчик данных в несколько потоков с очередью
+    /// Asynchronous items processor with queue
     /// </summary>
-    /// <typeparam name="T">Тип обрабатываемого элемента</typeparam>
+    /// <typeparam name="T">Type of the elements processed by this <see cref="QueueAsyncProcessor{T}"/></typeparam>
     public abstract class QueueAsyncProcessor<T> : QueueAsyncProcessorBase<T>, IQueueAsyncProcessorStartStopHelper
     {
         /// <summary>
-        /// Контракты
+        /// Code contracts invariants
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -32,10 +35,10 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         private readonly bool _isBackground;
 
         private readonly Thread[] _procThreads;
-        private int _activeThreadCount;
+        private volatile int _activeThreadCount;
 
-        private readonly Collections.Concurrent.BlockingQueue<T> _queue;
-        private readonly int _maxQueueSize;
+        private readonly Queues.IQueue<T> _queue;
+        private readonly Collections.Concurrent.BlockingQueue<T> _blockingQueue;
 
         private readonly ManualResetEventSlim _stoppedEvent;
         private CancellationTokenSource _stopRequestedCancelation;
@@ -45,16 +48,20 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         private volatile bool _completeAdding;
         private volatile bool _letFinishProcess;
 
+
         /// <summary>
-        /// Конструктор QueueAsyncProcessor
+        /// QueueAsyncProcessor constructor
         /// </summary>
-        /// <param name="threadCount">Число потоков обработки</param>
-        /// <param name="maxQueueSize">Максимальный размер очереди</param>
-        /// <param name="name">Имя, присваемое потокам</param>
-        /// <param name="isBackground">Будут ли потоки работать в фоновом режиме</param>
-        public QueueAsyncProcessor(int threadCount, int maxQueueSize, string name, bool isBackground)
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="queue">Processing queue (current instances of <see cref="QueueAsyncProcessor{T}"/> becomes the owner)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        /// <param name="isBackground">Whether or not processing threads are background threads</param>
+        public QueueAsyncProcessor(int threadCount, IQueue<T> queue, string name, bool isBackground)
         {
-            Contract.Requires(threadCount > 0);
+            if (threadCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(threadCount), "Number of threads should be positive");
+            if (queue == null)
+                throw new ArgumentNullException(nameof(queue));
 
             _isBackground = isBackground;
             _name = name ?? this.GetType().GetCSName();
@@ -62,8 +69,8 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             _procThreads = new Thread[threadCount];
             _activeThreadCount = 0;
 
-            _maxQueueSize = maxQueueSize > 0 ? maxQueueSize : -1;
-            _queue = new Collections.Concurrent.BlockingQueue<T>(_maxQueueSize);
+            _queue = queue;
+            _blockingQueue = null; // Should work through interface only
 
             _stoppedEvent = new ManualResetEventSlim(false);
             _stopRequestedCancelation = null;
@@ -76,63 +83,105 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             Profiling.Profiler.QueueAsyncProcessorCreated(this.Name);
         }
         /// <summary>
-        /// Конструктор QueueAsyncProcessor
+        /// QueueAsyncProcessor constructor
         /// </summary>
-        /// <param name="threadCount">Число потоков обработки</param>
-        /// <param name="maxQueueSize">Максимальный размер очереди</param>
-        /// <param name="name">Имя, присваемое потокам</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="queue">Processing queue (current instances of <see cref="QueueAsyncProcessor{T}"/> becomes the owner)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        public QueueAsyncProcessor(int threadCount, IQueue<T> queue, string name)
+            : this(threadCount, queue, name, false)
+        {
+        }
+
+        /// <summary>
+        /// QueueAsyncProcessor constructor
+        /// </summary>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
+        /// <param name="isBackground">Whether or not processing threads are background threads</param>
+        public QueueAsyncProcessor(int threadCount, int maxQueueSize, string name, bool isBackground)
+        {
+            if (threadCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(threadCount), "Number of threads should be positive");
+
+            _isBackground = isBackground;
+            _name = name ?? this.GetType().GetCSName();
+
+            _procThreads = new Thread[threadCount];
+            _activeThreadCount = 0;
+
+            _queue = new MemoryQueue<T>(maxQueueSize > 0 ? maxQueueSize : -1);
+            _blockingQueue = _queue as Collections.Concurrent.BlockingQueue<T>;
+
+            _stoppedEvent = new ManualResetEventSlim(false);
+            _stopRequestedCancelation = null;
+            _stoppedCancelation = null;
+
+            _state = (int)QueueAsyncProcessorState.Created;
+            _completeAdding = false;
+            _letFinishProcess = false;
+
+            Profiling.Profiler.QueueAsyncProcessorCreated(this.Name);
+        }
+        /// <summary>
+        /// QueueAsyncProcessor constructor
+        /// </summary>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         public QueueAsyncProcessor(int threadCount, int maxQueueSize, string name)
             : this(threadCount, maxQueueSize, name, false)
         {
         }
         /// <summary>
-        /// Конструктор QueueAsyncProcessor. Размер очереди не ограничивается.
+        /// QueueAsyncProcessor constructor (for unlimited queue capacity)
         /// </summary>
-        /// <param name="threadCount">Число потоков обработки</param>
-        /// <param name="name">Имя, присваемое потокам</param>
+        /// <param name="threadCount">Number of processing threads</param>
+        /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         public QueueAsyncProcessor(int threadCount, string name)
             : this(threadCount, -1, name, false)
         {
         }
         /// <summary>
-        /// Конструктор QueueAsyncProcessor. Размер очереди не ограничивается.
+        /// QueueAsyncProcessor constructor (for unlimited queue capacity)
         /// </summary>
-        /// <param name="threadCount">Число потоков обработки</param>
+        /// <param name="threadCount">Number of processing threads</param>
         public QueueAsyncProcessor(int threadCount)
             : this(threadCount, -1, null, false)
         {
         }
 
         /// <summary>
-        /// Текущее состояние
+        /// Current state
         /// </summary>
         public QueueAsyncProcessorState State
         {
             get { return (QueueAsyncProcessorState)Volatile.Read(ref _state); }
         }
         /// <summary>
-        /// Запущен ли сейчас обработчик
+        /// Whether the <see cref="QueueAsyncProcessor{T}"/> is running and can process work items
         /// </summary>
         public bool IsWork
         {
             get { return State == QueueAsyncProcessorState.Running; }
         }
         /// <summary>
-        /// Запрошена ли остановка
+        /// Whether the stop was requested and the processor should complete item processing
         /// </summary>
         protected bool IsStopRequested
         {
             get { return State == QueueAsyncProcessorState.StopRequested; }
         }
         /// <summary>
-        /// Остановлен ли
+        /// Whether the <see cref="QueueAsyncProcessor{T}"/> was stopped
         /// </summary>
         protected bool IsStopped
         {
             get { return State == QueueAsyncProcessorState.Stopped; }
         }
         /// <summary>
-        /// Запрошена ли остановка или остановлен
+        /// Whether the stop was requested or already stopped
         /// </summary>
         protected bool IsStopRequestedOrStopped
         {
@@ -143,14 +192,14 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             }
         }
         /// <summary>
-        /// Запрещено ли добавление новых задач в пул
+        /// Is items queue marked as Completed for Adding (no new item can be added)
         /// </summary>
         public bool IsAddingCompleted
         {
             get { return _completeAdding; }
         }
         /// <summary>
-        /// Можно ли закончить обработку существующих задач
+        /// Whether the user specified that all existed items should be processed before stop
         /// </summary>
         protected bool LetFinishedProcess
         {
@@ -158,7 +207,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Имя обработчика
+        /// The name for this instance of <see cref="QueueAsyncProcessor{T}"/>
         /// </summary>
         public string Name
         {
@@ -166,21 +215,21 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Работают ли потоки в фоновом режиме
+        /// Whether or not processing threads are background threads
         /// </summary>
         public bool IsBackground
         {
             get { return _isBackground; }
         }
         /// <summary>
-        /// Число работающих потоков
+        /// Number of processing threads running right now
         /// </summary>
         protected internal int ActiveThreadCount
         {
-            get { return Volatile.Read(ref _activeThreadCount); }
+            get { return _activeThreadCount; }
         }
         /// <summary>
-        /// Число потоков обработки
+        /// Number of processing threads
         /// </summary>
         public int ThreadCount
         {
@@ -188,30 +237,61 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Число элементов в очереди
+        /// Number of items inside processing queue
         /// </summary>
         public int ElementCount
+        {
+            get
+            {
+                if (_blockingQueue != null)
+                    return _blockingQueue.Count;
+
+                long longCount = _queue.Count;
+                if (longCount > int.MaxValue)
+                    return int.MaxValue;
+                else if (longCount < 0)
+                    return -1;
+
+                return (int)longCount;
+            }
+        }
+        /// <summary>
+        /// Number of items inside processing queue
+        /// </summary>
+        public long ElementCountLong
         {
             get { return _queue.Count; }
         }
 
         /// <summary>
-        /// Ограничения на размер очереди
+        /// The bounded size of the queue (if less or equeal to 0 then no limitation)
         /// </summary>
         public int QueueCapacity
         {
-            get { return _queue.BoundedCapacity; }
+            get
+            {
+                if (_blockingQueue != null)
+                    return _blockingQueue.BoundedCapacity;
+
+                long longCapacity = _queue.BoundedCapacity;
+                if (longCapacity > int.MaxValue)
+                    return int.MaxValue;
+                else if (longCapacity < 0)
+                    return -1;
+
+                return (int)longCapacity;
+            }
         }
 
 
 
 
         /// <summary>
-        /// Допустима ли смена состояния
+        /// Verifies that state transition is possible
         /// </summary>
-        /// <param name="oldState">Старое состояние</param>
-        /// <param name="newState">Новое состояние</param>
-        /// <returns>Допустим ли переход</returns>
+        /// <param name="oldState">Current state</param>
+        /// <param name="newState">New state</param>
+        /// <returns>True when state transition can be performed</returns>
         private bool IsValidStateTransition(QueueAsyncProcessorState oldState, QueueAsyncProcessorState newState)
         {
             switch (oldState)
@@ -231,11 +311,11 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             }
         }
         /// <summary>
-        /// Безопасно сменить состояние
+        /// Safely changes the current state
         /// </summary>
-        /// <param name="newState">Новое состояние</param>
-        /// <param name="prevState">Состояние, которое было до смены</param>
-        /// <returns>Произошла ли смена</returns>
+        /// <param name="newState">New state</param>
+        /// <param name="prevState">Previously observed state</param>
+        /// <returns>Was state changed (false means that the state transition is not valid)</returns>
         private bool ChangeStateSafe(QueueAsyncProcessorState newState, out QueueAsyncProcessorState prevState)
         {
             prevState = (QueueAsyncProcessorState)Volatile.Read(ref _state);
@@ -256,7 +336,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Проверить, освобождён ли объект и если да, то вызвать исключение ObjectDisposedException
+        /// Checks whether the current instance is in Stopped state and throws ObjectDisposedException when it is
         /// </summary>
         protected void CheckDisposed()
         {
@@ -264,7 +344,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                 throw new ObjectDisposedException(this.GetType().Name, "QueueAsyncProcessor is Stopped");
         }
         /// <summary>
-        /// Проверить, освобождён ли объект и если да, то вызвать исключение ObjectDisposedException
+        /// Checks whether the current instance is in Stopped or StopRequested state and throws ObjectDisposedException when it is
         /// </summary>
         protected void CheckPendingDisposeOrDisposed()
         {
@@ -274,22 +354,25 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Форсированно добавить элемент в очередь (игнорирует ограничения вместимости и текущее состояние)
+        /// Adds new item to the processing queue, even when the bounded capacity reached
         /// </summary>
-        /// <param name="element">Элемент</param>
+        /// <param name="element">New item</param>
         protected void AddForced(T element)
         {
             _queue.AddForced(element);
-            Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
+            if (Profiling.Profiler.IsProfilingEnabled)
+                Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, QueueCapacity);
         }
 
         /// <summary>
-        /// Добавить элемент на обработку
+        /// Attempts to add new item to processing queue
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="timeout">Таймаут добавления в миллисекундах</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Успешность (удалось ли добавить до истечения таймаута)</returns>
+        /// <param name="element">New item</param>
+        /// <param name="timeout">Adding timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
         public override bool Add(T element, int timeout, CancellationToken token)
         {
             CheckDisposed();
@@ -297,18 +380,23 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                 throw new InvalidOperationException("Adding was completed for QueueAsyncProcessor: " + this.Name);
 
             var result = _queue.TryAdd(element, timeout, token);
-            if (result)
-                Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, _maxQueueSize);
-            else
-                Profiling.Profiler.QueueAsyncProcessorElementRejectedInTryAdd(this.Name, ElementCount);
+            if (Profiling.Profiler.IsProfilingEnabled)
+            {
+                if (result)
+                    Profiling.Profiler.QueueAsyncProcessorElementCountIncreased(this.Name, ElementCount, QueueCapacity);
+                else
+                    Profiling.Profiler.QueueAsyncProcessorElementRejectedInTryAdd(this.Name, ElementCount);
+            }
             return result;
         }
 
 
 
         /// <summary>
-        /// Запуск обработчиков
+        /// Starts all processing threads and changes state to <see cref="QueueAsyncProcessorState.Running"/>
         /// </summary>
+        /// <exception cref="ObjectDisposedException">Object was disposed</exception>
+        /// <exception cref="WrongStateException">Can't start processor because it is not in <see cref="QueueAsyncProcessorState.Created"/> state</exception>
         public virtual void Start()
         {
             QueueAsyncProcessorState prevState;
@@ -339,7 +427,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                     _procThreads[i].Start();
 
                 bool changeStateToRunningSuccess = ChangeStateSafe(QueueAsyncProcessorState.Running, out prevState);
-                Contract.Assert(changeStateToRunningSuccess && prevState == QueueAsyncProcessorState.StartRequested);
+                Debug.Assert(changeStateToRunningSuccess && prevState == QueueAsyncProcessorState.StartRequested);
             }
             catch
             {
@@ -355,9 +443,9 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Получить токен отмены, срабатывающий при запросе остановки (в том числе и отложенной)
+        /// Gets the CancellationToken that will be cancelled when a stop is requested 
         /// </summary>
-        /// <returns>Токен отмены</returns>
+        /// <returns>Cancellation token</returns>
         protected CancellationToken GetStopRequestedCancellationToken()
         {
             var tokenSrc = this._stopRequestedCancelation;
@@ -366,9 +454,9 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             return new CancellationToken(true);
         }
         /// <summary>
-        /// Получить токен отмены, срабатывающий при запросе немеделнной остановки
+        /// Gets the CancellationToken that will be cancelled when a stop should be completed immediately (without <see cref="LetFinishedProcess"/> flag)
         /// </summary>
-        /// <returns>Токен отмены</returns>
+        /// <returns>Cancellation token</returns>
         protected CancellationToken GetStoppedCancellationToken()
         {
             var tokenSrc = this._stoppedCancelation;
@@ -379,7 +467,29 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
         /// <summary>
-        /// Основная функция, выполняемая потоками
+        /// Attempts to take item from inner queue
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryTakeFromQueue(out T item)
+        {
+            return _queue.TryTake(out item, 0, default(CancellationToken));
+        }
+        /// <summary>
+        /// Attempts to take item from inner queue
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryTakeFromQueue(out T item, int timeout, CancellationToken token)
+        {
+            var blockQ = _blockingQueue;
+            if (blockQ != null)
+                return blockQ.TryTake(out item, timeout, token, false);
+
+            return _queue.TryTake(out item, timeout, token);
+        }
+
+
+        /// <summary>
+        /// Main thread procedure
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadProcFunc()
@@ -407,17 +517,21 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         while (!stopRequestedToken.IsCancellationRequested)
                         {
                             elem = default(T);
-                            if (_queue.TryTake(out elem, Timeout.Infinite, stopRequestedToken, false))
+                            if (TryTakeFromQueue(out elem, Timeout.Infinite, stopRequestedToken))
                             {
-                                Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
+                                if (Profiling.Profiler.IsProfilingEnabled)
+                                    Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, QueueCapacity);
 
                                 timer.RestartTime();
+
                                 this.Process(elem, state, stoppedToken);
-                                Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
+
+                                if (Profiling.Profiler.IsProfilingEnabled)
+                                    Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
                             }
                             else
                             {
-                                Contract.Assert(stopRequestedToken.IsCancellationRequested);
+                                Debug.Assert(stopRequestedToken.IsCancellationRequested);
                             }
                         }
                     }
@@ -445,13 +559,15 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         try
                         {
                             T elem = default(T);
-                            while (!stoppedToken.IsCancellationRequested && _queue.TryTake(out elem))
+                            while (!stoppedToken.IsCancellationRequested && TryTakeFromQueue(out elem))
                             {
-                                Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, _maxQueueSize);
+                                if (Profiling.Profiler.IsProfilingEnabled)
+                                    Profiling.Profiler.QueueAsyncProcessorElementCountDecreased(this.Name, ElementCount, QueueCapacity);
 
                                 timer.RestartTime();
                                 this.Process(elem, state, stoppedToken);
-                                Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
+                                if (Profiling.Profiler.IsProfilingEnabled)
+                                    Profiling.Profiler.QueueAsyncProcessorElementProcessed(this.Name, timer.GetTime());
                             }
 
                             if (_queue.Count == 0)
@@ -490,8 +606,9 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         QueueAsyncProcessorState prevState;
                         if (ChangeStateSafe(QueueAsyncProcessorState.Stopped, out prevState))
                         {
-                            Contract.Assert(prevState == QueueAsyncProcessorState.StopRequested);
+                            Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
                             _stoppedEvent.Set();
+                            this.DisposeQueue();
                             Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                         }
                     }
@@ -503,11 +620,11 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
         /// <summary>
-        /// Обработка исключений. 
-        /// Чтобы исключение было проброшено наверх, нужно выбросить новое исключение внутри метода.
+        /// Method that allows to process unhandled exceptions (e.g. logging).
+        /// Default behaviour - throws <see cref="QueueAsyncProcessorException"/>.
         /// </summary>
-        /// <param name="ex">Исключение</param>
-        /// <returns>Игнорировать ли исключение (false - поток завершает работу)</returns>
+        /// <param name="ex">Catched exception</param>
+        /// <returns>Whether the current exception can be safely skipped (false - the thread will retrow the exception)</returns>
         protected virtual bool ProcessThreadException(Exception ex)
         {
             Contract.Requires(ex != null);
@@ -516,35 +633,36 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Создание объекта состояния на поток.
-        /// Вызывается при старте для каждого потока
+        /// Creates the state that is specific for every processing thread. Executes once for every thread during start-up.
         /// </summary>
-        /// <returns>Объект состояния</returns>
+        /// <returns>Created thread-specific state object</returns>
         protected virtual object Prepare()
         {
             return null;
         }
         /// <summary>
-        /// Основной метод обработки элементов.
-        /// Токен отменяется только при запросе немедленной остановки. 
-        /// Остановка может быть отложенной, тогда нужно проверять текущее состояние.
+        /// Processes a single item taken from the processing queue.
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="state">Объект состояния, инициализированный в методе Prepare()</param>
-        /// <param name="token">Токен для отмены обработки при вызове Stop</param>
+        /// <remarks>
+        /// Cancellation token is cancelled only when immediate stop is requested (LetFinishProcess is false).
+        /// For that case it is improtant to manually check for <see cref="QueueAsyncProcessorState.StartRequested"/> state or use token from <see cref="GetStopRequestedCancellationToken"/>.
+        /// </remarks>
+        /// <param name="element">Item to be processed</param>
+        /// <param name="state">Thread specific state object initialized by <see cref="Prepare"/> method</param>
+        /// <param name="token">Cancellation token that will be cancelled when the immediate stop is requested (see <see cref="GetStoppedCancellationToken"/>)</param>
         protected abstract void Process(T element, object state, CancellationToken token);
 
         /// <summary>
-        /// Освобождение объекта состояния потока
+        /// Release the thread specific state object when the thread is about to exit
         /// </summary>
-        /// <param name="state">Объект состояния</param>
+        /// <param name="state">Thread-specific state object</param>
         protected virtual void Finalize(object state)
         {
         }
 
 
         /// <summary>
-        /// Запретить добавление элементов
+        /// Marks that new items cannot be added to processing queue
         /// </summary>
         public void CompleteAdding()
         {
@@ -552,7 +670,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Ожидание полной остановки
+        /// Blocks the current thread and waits for all processing threads to complete
         /// </summary>
         public void WaitUntilStop()
         {
@@ -563,10 +681,10 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Ожидание полной остановки с таймаутом
+        /// Blocks the current thread and waits for all processing threads to complete
         /// </summary>
-        /// <param name="timeout">Таймаут ожидания в миллисекундах</param>
-        /// <returns>true - дождались, false - вышли по таймауту</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <returns>True when all threads completed in time</returns>
         public bool WaitUntilStop(int timeout)
         {
             if (State == QueueAsyncProcessorState.Stopped)
@@ -577,12 +695,12 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
         /// <summary>
-        /// Остановка работы асинхронного обработчика
+        /// Stops processing of items and changes state to <see cref="QueueAsyncProcessorState.StopRequested"/>
         /// </summary>
-        /// <param name="waitForStop">Ждать ли завершения всех потоков</param>
-        /// <param name="letFinishProcess">Позволить закончить обработку того, что есть в очереди</param>
-        /// <param name="completeAdding">Заблокировать добавление новых элементов</param>
-        /// <returns>Запущен ли процесс остановки</returns>
+        /// <param name="waitForStop">Whether the current thread should be blocked until all processing threads are be completed</param>
+        /// <param name="letFinishProcess">Whether all items that have already been added must be processed before stopping</param>
+        /// <param name="completeAdding">Marks that new items cannot be added to processing queue</param>
+        /// <returns>Is stopping process triggered</returns>
         private bool StopProcessor(bool waitForStop, bool letFinishProcess, bool completeAdding)
         {
             if (this.IsStopRequestedOrStopped)
@@ -631,8 +749,8 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             _completeAdding = completeAdding;
             _letFinishProcess = letFinishProcess;
 
-            Contract.Assert(_stopRequestedCancelation != null || prevState == QueueAsyncProcessorState.Created);
-            Contract.Assert(_stoppedCancelation != null || prevState == QueueAsyncProcessorState.Created);
+            Debug.Assert(_stopRequestedCancelation != null || prevState == QueueAsyncProcessorState.Created);
+            Debug.Assert(_stoppedCancelation != null || prevState == QueueAsyncProcessorState.Created);
 
             if (_stopRequestedCancelation != null)
                 _stopRequestedCancelation.Cancel();
@@ -655,24 +773,25 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             {
                 if (ChangeStateSafe(QueueAsyncProcessorState.Stopped, out prevState))
                 {
-                    Contract.Assert(prevState == QueueAsyncProcessorState.StopRequested);
+                    Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
                     _stoppedEvent.Set();
+                    this.DisposeQueue();
                     Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                 }
             }
 
-            Contract.Assert(State == QueueAsyncProcessorState.StopRequested || State == QueueAsyncProcessorState.Stopped);
-            Contract.Assume(!waitForStop || State == QueueAsyncProcessorState.Stopped);
+            Debug.Assert(State == QueueAsyncProcessorState.StopRequested || State == QueueAsyncProcessorState.Stopped);
+            Debug.Assert(!waitForStop || State == QueueAsyncProcessorState.Stopped);
             return true;
         }
 
 
         /// <summary>
-        /// Остановка и освобождение ресурсов
+        /// Stops processing of items and changes state to <see cref="QueueAsyncProcessorState.StopRequested"/>
         /// </summary>
-        /// <param name="waitForStop">Ожидать остановки</param>
-        /// <param name="letFinishProcess">Позволить обработать всю очередь</param>
-        /// <param name="completeAdding">Запретить добавление новых элементов</param>
+        /// <param name="waitForStop">Whether the current thread should be blocked until all processing threads are be completed</param>
+        /// <param name="letFinishProcess">Whether all items that have already been added must be processed before stopping</param>
+        /// <param name="completeAdding">Marks that new items cannot be added to processing queue</param>
         public virtual void Stop(bool waitForStop, bool letFinishProcess, bool completeAdding)
         {
             StopProcessor(waitForStop, letFinishProcess, completeAdding);
@@ -680,7 +799,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Остановка и освобождение ресурсов
+        /// Stops processing of items and changes state to <see cref="QueueAsyncProcessorState.StopRequested"/>
         /// </summary>
         public void Stop()
         {
@@ -688,14 +807,23 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// Основной код освобождения ресурсов
+        /// Cleans-up inner queue when it was passed by user
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
+        private void DisposeQueue()
+        {
+            if (_blockingQueue == null && _queue != null)
+                _queue.Dispose();
+        }
+
+        /// <summary>
+        /// Cleans-up resources
+        /// </summary>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected override void Dispose(bool isUserCall)
         {
             if (!this.IsStopRequestedOrStopped)
             {
-                Contract.Assume(isUserCall, "QueueAsyncProcessor destructor: Better to dispose by user. Закомментируй, если не нравится.");
+                Debug.Assert(isUserCall, "QueueAsyncProcessor destructor: Better to dispose by user");
 
                 if (isUserCall)
                     StopProcessor(true, false, true);
@@ -708,6 +836,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                     _stopRequestedCancelation.Cancel();
                 if (_stoppedCancelation != null)
                     _stoppedCancelation.Cancel();
+                this.DisposeQueue();
 
                 if (!isUserCall)
                     Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, true);
@@ -715,12 +844,14 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             base.Dispose(isUserCall);
         }
 
+#if DEBUG
         /// <summary>
-        /// Финализатор
+        /// Finalizer
         /// </summary>
         ~QueueAsyncProcessor()
         {
             Dispose(false);
         }
+#endif
     }
 }

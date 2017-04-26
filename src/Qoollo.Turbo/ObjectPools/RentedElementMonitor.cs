@@ -2,6 +2,7 @@
 using Qoollo.Turbo.ObjectPools.ServiceStuff;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -181,7 +182,7 @@ namespace Qoollo.Turbo.ObjectPools
             _elementWrapper = null;
             _sourcePool = null;
 
-            Contract.Assert((wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null));
+            Debug.Assert((wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null));
 
             if (wrapperCopy != null && sourcePool != null)
             {
@@ -223,7 +224,7 @@ namespace Qoollo.Turbo.ObjectPools
             if (rentedAt == "")
                 rentedAt = ". RentedAt: <unknown>";
 
-            Contract.Assert(false, "Rented element should be disposed by user call. Finalizer is not allowed. PoolName: " + poolName + rentedAt);
+            Debug.Assert(false, "Rented element should be disposed by user call. Finalizer is not allowed. PoolName: " + poolName + rentedAt);
 
             if (_elementWrapper != null && _sourcePool != null)
                 _sourcePool.ReleaseElement(_elementWrapper);

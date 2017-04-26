@@ -1,6 +1,7 @@
 ﻿using Qoollo.Turbo.Threading.ThreadPools.Common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime;
@@ -28,7 +29,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             public static void Run(object closure)
             {
                 var unwrapClosure = (ParameterizedClosure<TState>)closure;
-                Contract.Assert(unwrapClosure != null);
+                Debug.Assert(unwrapClosure != null);
                 unwrapClosure.Action(unwrapClosure.State);
             }
 
@@ -51,7 +52,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             public static TRes Run(object closure)
             {
                 var unwrapClosure = (ParameterizedClosure<TState, TRes>)closure;
-                Contract.Assert(unwrapClosure != null);
+                Debug.Assert(unwrapClosure != null);
                 return unwrapClosure.Action(unwrapClosure.State);
             }
 

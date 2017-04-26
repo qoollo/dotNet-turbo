@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -58,7 +59,7 @@ namespace Qoollo.Turbo
             else
                 _maxHitPerMeasure = int.MaxValue;
 
-            Contract.Assert(_maxHitPerMeasure > 0);
+            Debug.Assert(_maxHitPerMeasure > 0);
         }
         /// <summary>
         /// ThrottleBehavior constructor

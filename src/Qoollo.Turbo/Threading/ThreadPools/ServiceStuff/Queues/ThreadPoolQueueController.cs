@@ -1,6 +1,7 @@
 ﻿using Qoollo.Turbo.Threading.ThreadPools.Common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -75,16 +76,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             Contract.Requires(localQueue != null);
             Contract.Ensures(Contract.Exists(_localQueues, o => o == localQueue));
 
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             lock (_syncObj)
             {
                 var arrayCopy = _localQueues;
-                Contract.Assert(arrayCopy != null);
+                Debug.Assert(arrayCopy != null);
 
                 for (int i = 0; i < arrayCopy.Length; i++)
                 {
-                    Contract.Assert(Volatile.Read(ref arrayCopy[i]) != localQueue);
+                    Debug.Assert(Volatile.Read(ref arrayCopy[i]) != localQueue);
 
                     if (Volatile.Read(ref arrayCopy[i]) == null)
                     {
@@ -109,12 +110,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             Contract.Requires(localQueue != null);
             Contract.Ensures(!Contract.Exists(_localQueues, o => o == localQueue));
 
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             lock (_syncObj)
             {
                 var arrayCopy = _localQueues;
-                Contract.Assert(arrayCopy != null);
+                Debug.Assert(arrayCopy != null);
 
                 for (int i = 0; i < arrayCopy.Length; i++)
                 {
@@ -144,7 +145,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         public bool TryAdd(ThreadPoolWorkItem item, ThreadPoolLocalQueue localQueue, bool forceGlobal, int timeout, CancellationToken token)
         {
             Contract.Requires(item != null);
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             if (localQueue != null && !forceGlobal)
             {
@@ -170,7 +171,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         public bool TryAdd(ThreadPoolWorkItem item, ThreadPoolLocalQueue localQueue, bool forceGlobal)
         {
             Contract.Requires(item != null);
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             bool result = false;
             try { }
@@ -204,7 +205,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         public void Add(ThreadPoolWorkItem item, ThreadPoolLocalQueue localQueue, bool forceGlobal)
         {
             Contract.Requires(item != null);
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             try { }
             finally
@@ -212,7 +213,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 if (forceGlobal || localQueue == null || !localQueue.TryAddLocal(item))
                 {
                     bool addToMainRes = _globalQueue.TryAdd(item, -1);
-                    Contract.Assert(addToMainRes);
+                    Debug.Assert(addToMainRes);
                 }
             }
         }
@@ -285,7 +286,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         public bool TryTake(ThreadPoolLocalQueue localQueue, bool doLocalSearch, bool doWorkSteal, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             // Пробуем выбрать из локальной очереди
             if (doLocalSearch && localQueue != null)
@@ -397,7 +398,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         {
             ThreadPoolWorkItem item = null;
             bool result = TryTake(localQueue, true, true, out item, -1, token, true);
-            Contract.Assert(result, "Something went wrong. Take not return any result.");
+            Debug.Assert(result, "Something went wrong. Take not return any result.");
             return item;
         }
         /// <summary>
@@ -410,7 +411,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         {
             ThreadPoolWorkItem item = null;
             bool result = TryTake(localQueue, true, true, out item, -1, new CancellationToken(), true);
-            Contract.Assert(result, "Something went wrong. Take not return any result.");
+            Debug.Assert(result, "Something went wrong. Take not return any result.");
             return item;
         }
 
@@ -435,7 +436,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         public void MoveItemsFromLocalQueueToGlobal(ThreadPoolLocalQueue localQueue)
         {
             Contract.Requires(localQueue != null);
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             try { }
             finally
@@ -454,7 +455,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         public void ExtendGlobalQueueCapacity(int extensionVal)
         {
             Contract.Requires(extensionVal >= 0);
-            Contract.Assert(!_isDisposed);
+            Debug.Assert(!_isDisposed);
 
             _globalQueue.RequestCapacityExtension(extensionVal);
         }
@@ -474,7 +475,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
 
                 if (isUserCall)
                 {
-                    Contract.Assert(Contract.ForAll(_localQueues, o => o == null), "LocalQueues is not empty on dispose of ThreadPoolQueueController");
+                    Debug.Assert(Contract.ForAll(_localQueues, o => o == null), "LocalQueues is not empty on dispose of ThreadPoolQueueController");
                     if (_localQueues.Any(o => o != null))
                         throw new InvalidOperationException("LocalQueues is not empty on dispose of ThreadPoolQueueController");
                 }
