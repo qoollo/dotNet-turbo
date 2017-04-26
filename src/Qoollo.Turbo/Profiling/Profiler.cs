@@ -11,20 +11,31 @@ namespace Qoollo.Turbo.Profiling
     /// </summary>
     public class Profiler
     {
-        private static IProfilingProvider _profiler = new DefaultProfilingProvider();
+        private static readonly object _syncObject = new object();
+        private static IProfilingProvider _profiler = DefaultProfilingProvider.Instance;
+        private static bool _isProfilingEnabled = false;
 
         /// <summary>
-        /// Задать профилировщик
+        /// Whether the concrete profiler setted by user
         /// </summary>
-        /// <param name="profiler">Профилировщик</param>
+        public static bool IsProfilingEnabled { get { return _isProfilingEnabled; } }
+
+        /// <summary>
+        /// Sets the profiling data handler
+        /// </summary>
+        /// <param name="profiler">Profiler that collects profiling events</param>
         public static void SetProfiler(IProfilingProvider profiler)
         {
-            if (profiler == null)
-                profiler = new DefaultProfilingProvider();
-            else if (profiler.GetType() != typeof(ProfilingProviderWrapper) && !profiler.GetType().IsSubclassOf(typeof(ProfilingProviderWrapper)))
-                profiler = new ProfilingProviderWrapper(profiler);
+            lock (_syncObject)
+            {
+                if (profiler == null)
+                    profiler = DefaultProfilingProvider.Instance;
+                else if (profiler.GetType() != typeof(ProfilingProviderWrapper) && !profiler.GetType().IsSubclassOf(typeof(ProfilingProviderWrapper)))
+                    profiler = new ProfilingProviderWrapper(profiler);
 
-            System.Threading.Interlocked.Exchange(ref _profiler, profiler);
+                System.Threading.Interlocked.Exchange(ref _profiler, profiler);
+                _isProfilingEnabled = !object.ReferenceEquals(profiler, DefaultProfilingProvider.Instance);
+            }
         }
 
 

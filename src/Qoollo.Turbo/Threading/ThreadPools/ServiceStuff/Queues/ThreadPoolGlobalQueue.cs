@@ -1,6 +1,7 @@
 ﻿using Qoollo.Turbo.Threading.ThreadPools.Common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -79,7 +80,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         private void UpdateExtendedCapacityRequestField(int extensionVal)
         {
             Contract.Requires(extensionVal >= 0);
-            Contract.Assert(_boundedCapacity > 0);
+            Debug.Assert(_boundedCapacity > 0);
 
             int maxExtensionValue = Math.Max(0, int.MaxValue - 1 - _boundedCapacity);
 
@@ -211,7 +212,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             Contract.Requires(item != null);
 
             bool result = TryAdd(item, Timeout.Infinite);
-            Contract.Assert(result, "Element was not added to ThreadPoolGlobalQueue due to unknown reason");
+            Debug.Assert(result, "Element was not added to ThreadPoolGlobalQueue due to unknown reason");
         }
 
 
@@ -261,7 +262,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                     }
                     wasElementTaken = _mainQueue.TryTake(out item);
                     takePerformed = false;
-                    Contract.Assert(wasElementTaken, "Incorrect collection state. Can't take items from collection when they should be there");
+                    Debug.Assert(wasElementTaken, "Incorrect collection state. Can't take items from collection when they should be there");
                 }
                 finally
                 {
@@ -293,7 +294,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
 
             ThreadPoolWorkItem result = null;
             bool success = TryTake(out result, Timeout.Infinite, new CancellationToken(), true);
-            Contract.Assert(success, "Element was not taken from ThreadPoolGlobalQueue due to unknown reason");
+            Debug.Assert(success, "Element was not taken from ThreadPoolGlobalQueue due to unknown reason");
             return result;
         }
     }

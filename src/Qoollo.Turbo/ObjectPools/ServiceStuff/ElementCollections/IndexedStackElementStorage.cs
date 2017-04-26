@@ -2,6 +2,7 @@
 using Qoollo.Turbo.Threading;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -115,7 +116,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
             Contract.Requires(element.ThisIndex < (1 << 16));
             Contract.Requires(element.NextIndex < 0);
 
-            Contract.Assert(element.ThisIndex == DataArray.IndexOf(element));
+            Debug.Assert(element.ThisIndex == DataArray.IndexOf(element));
 
             var headIndexOp = _headIndexOp;
             element.NextIndex = GetHeadIndex(headIndexOp);

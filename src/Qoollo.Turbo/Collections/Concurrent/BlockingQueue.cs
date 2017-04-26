@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -102,7 +101,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             CheckDisposed();
             if (increaseValue < 0)
-                throw new ArgumentException("increaseValue", "increaseValue should be positive");
+                throw new ArgumentException(nameof(increaseValue), "increaseValue should be positive");
 
             if (_freeNodes == null)
                 return;
@@ -124,7 +123,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="decreaseValue">The number of items by which the bounded capacity should be decreased</param>
         private void UpdateDelayedBoundedCapacityDecreaseField(int decreaseValue)
         {
-            Contract.Requires(decreaseValue >= 0);
+            Debug.Assert(decreaseValue >= 0);
 
             SpinWait sw = new SpinWait();
             int delayedBoundedCapacityDecrease = _delayedBoundedCapacityDecrease;
@@ -142,7 +141,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             CheckDisposed();
             if (decreaseValue < 0)
-                throw new ArgumentException("decreaseValue", "decreaseValue should be positive");
+                throw new ArgumentException(nameof(decreaseValue), "decreaseValue should be positive");
 
             if (_freeNodes == null)
                 return;
@@ -185,7 +184,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             CheckDisposed();
             if (newBoundedCapacity < 0)
-                throw new ArgumentException("newBoundedCapacity", "newBoundedCapacity should be positive");
+                throw new ArgumentException(nameof(newBoundedCapacity), "newBoundedCapacity should be positive");
 
             if (_freeNodes == null)
                 return;
@@ -219,7 +218,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             finally
             {
                 _innerQueue.Enqueue(item);
-                if (_freeNodes != null)
+                if (_freeNodes != null && !_freeNodes.Wait(0)) // Attempt to fill _freeNodes
                     UpdateDelayedBoundedCapacityDecreaseField(1);
                 _occupiedNodes.Release();
             }
@@ -249,22 +248,15 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (IsAddingCompleted)
                 throw new InvalidOperationException("Adding was completed for BlockingQueue");
 
-
-            if (_freeNodes != null && (_freeNodes.CurrentCount == 0 || !_freeNodes.Wait(0)))
+            if (_freeNodes != null && !_freeNodes.Wait(0))
                 return false;
 
-            try
+            try { }
+            finally
             {
                 _innerQueue.Enqueue(item);
+                _occupiedNodes.Release();
             }
-            catch
-            {
-                if (_freeNodes != null)
-                    _freeNodes.Release();
-                throw;
-            }
-            _occupiedNodes.Release();
-
             return true;
         }
 
@@ -307,7 +299,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                         }
                         else
                         {
-                            waitForSemaphoreWasSuccessful = _freeNodes.Wait(timeout, _consumersCancellationTokenSource.Token);
+                            waitForSemaphoreWasSuccessful = _freeNodes.Wait(timeout, _producersCancellationTokenSource.Token);
                         }
                     }
                 }
@@ -371,7 +363,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
                 if (currentAddersUpdated)
                 {
-                    Contract.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0);
+                    Debug.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0);
                     Interlocked.Decrement(ref _currentAdders);
                 }
             }
@@ -391,7 +383,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Enqueue(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
-            Contract.Assert(addResult);
+            Debug.Assert(addResult);
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -406,7 +398,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Enqueue(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
-            Contract.Assert(addResult);
+            Debug.Assert(addResult);
         }
 
         /// <summary>
@@ -486,7 +478,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Add(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
-            Contract.Assert(addResult);
+            Debug.Assert(addResult);
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -500,7 +492,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Add(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
-            Contract.Assert(addResult);
+            Debug.Assert(addResult);
         }
 
         /// <summary>
@@ -578,9 +570,6 @@ namespace Qoollo.Turbo.Collections.Concurrent
             CheckDisposed();
             item = default(T);
 
-            if (_occupiedNodes.CurrentCount == 0)
-                return false;
-
             if (!_occupiedNodes.Wait(0))
                 return false;
 
@@ -589,7 +578,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             try
             {
                 removeSucceeded = _innerQueue.TryDequeue(out item);
-                Contract.Assert(removeSucceeded, "Take from underlying collection return false");
+                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally
@@ -673,7 +662,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                     throw new OperationCanceledException(token);
                 }
                 removeSucceeded = _innerQueue.TryDequeue(out item);
-                Contract.Assert(removeSucceeded, "Take from underlying collection return false");
+                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally
@@ -711,7 +700,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             T result;
             bool takeResult = TryTakeInner(out result, Timeout.Infinite, new CancellationToken(), true);
-            Contract.Assert(takeResult);
+            Debug.Assert(takeResult);
  
             return result;
         }
@@ -727,7 +716,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             T result;
             bool takeResult = TryTakeInner(out result, Timeout.Infinite, token, true);
-            Contract.Assert(takeResult);
+            Debug.Assert(takeResult);
 
             return result;
         }
@@ -819,7 +808,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             T result;
             bool takeResult = TryTakeInner(out result, Timeout.Infinite, new CancellationToken(), true);
-            Contract.Assert(takeResult);
+            Debug.Assert(takeResult);
 
             return result;
         }
@@ -834,7 +823,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             T result;
             bool takeResult = TryTakeInner(out result, Timeout.Infinite, token, true);
-            Contract.Assert(takeResult);
+            Debug.Assert(takeResult);
 
             return result;
         }
@@ -934,6 +923,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
             if (_innerQueue.TryPeek(out item))
                 return true;
+            else if (timeout == 0)
+                return false;
 
 
             bool waitForSemaphoreWasSuccessful = false;
@@ -994,7 +985,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             T result;
             bool takeResult = TryPeekInner(out result, Timeout.Infinite, new CancellationToken());
-            Contract.Assert(takeResult);
+            Debug.Assert(takeResult);
 
             return result;
         }
@@ -1009,7 +1000,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             T result;
             bool takeResult = TryPeekInner(out result, Timeout.Infinite, token);
-            Contract.Assert(takeResult);
+            Debug.Assert(takeResult);
 
             return result;
         }
@@ -1143,8 +1134,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="index">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int index)
         {
-            Contract.Requires(array != null);
-            Contract.Requires(index >= 0 && index < array.Length);
+            Debug.Assert(array != null);
+            Debug.Assert(index >= 0 && index < array.Length);
 
             _innerQueue.CopyTo(array, index);
         }
@@ -1192,14 +1183,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
  
             T[] localArray = _innerQueue.ToArray();

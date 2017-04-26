@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Diagnostics.Contracts;
 using Qoollo.Turbo;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo.OldPool
 {
@@ -206,7 +207,7 @@ namespace Qoollo.Turbo.OldPool
         public bool RemoveElement(PoolElement<T> elemWrapper, bool disposeIfValid)
         {
             Contract.Requires<ArgumentNullException>(elemWrapper != null, "elemWrapper");
-            Contract.Assert(object.ReferenceEquals(this, elemWrapper.Pool));
+            Debug.Assert(object.ReferenceEquals(this, elemWrapper.Pool));
 
             var elem = elemWrapper.Element;
             if (elem == null)
@@ -301,7 +302,7 @@ namespace Qoollo.Turbo.OldPool
                 if (timeout >= 0)
                     throw new TimeoutException(string.Format("Pool 'Rent' operation has timeouted. Pool: {0}. Timeout value: {1}ms", PoolName, timeout));
 
-                Contract.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
+                Debug.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
                 throw new CantRetrieveElementException("Rent from pool failed");
             }
 

@@ -286,6 +286,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 TimingAssert.AreEqual(5000, i, () => inst.RealWaiterCount, "UP. RealWaiterCount != i");
                 TimingAssert.AreEqual(5000, i, () => inst.ExpectedWaiterCount, "UP. ExpectedWaiterCount != i");
                 inst.AddExpectedWaiterCount(1);
+                Thread.Sleep(10);
             }
 
             TimingAssert.AreEqual(5000, threads.Length, sleepThCount);
@@ -299,6 +300,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 TimingAssert.AreEqual(5000, i, () => inst.RealWaiterCount);
                 TimingAssert.AreEqual(5000, i, () => inst.ExpectedWaiterCount);
                 inst.SubstractExpectedWaiterCount(1);
+                Thread.Sleep(10);
             }
 
             TimingAssert.AreEqual(5000, 0, sleepThCount, "Sleeping thread count != 0");

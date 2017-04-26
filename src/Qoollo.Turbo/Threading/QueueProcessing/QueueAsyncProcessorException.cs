@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Qoollo.Turbo
+namespace Qoollo.Turbo.Threading.QueueProcessing
 {
     /// <summary>
     /// The exception that is thrown on any unhandled error during element processing by QueueAsyncProcessor

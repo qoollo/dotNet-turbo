@@ -5,25 +5,26 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Qoollo.Turbo.Threading
+namespace Qoollo.Turbo.Threading.ServiceStuff
 {
     /// <summary>
-    /// Объект контроля запуска потока
+    /// Controls the thread starting procedure
     /// </summary>
-    public class ThreadStartControllingToken
+    internal class ThreadStartControllingToken
     {
         /// <summary>
-        /// Время когда можно считать, что возникла ошибка инициализации и состояние не будет установлено.
+        /// Initialization timeout value
         /// </summary>
+        /// <remarks>Время когда можно считать, что возникла ошибка инициализации и состояние не будет установлено.</remarks>
         public const int MaxTimeToFailMs = 15000;
         private const int STATE_NOT_INITIALIZED = 0;
         private const int STATE_INITIALIZED_OK = 1;
         private const int STATE_INITIALIZED_FAIL = -1;
 
         /// <summary>
-        /// Получить отсчёт времени в миллисекундах
+        /// Get the current timestamp in milliseconds
         /// </summary>
-        /// <returns>Текущее значение</returns>
+        /// <returns>Timestamp value</returns>
         private static uint GetTimestamp()
         {
             return (uint)Environment.TickCount;
@@ -33,7 +34,7 @@ namespace Qoollo.Turbo.Threading
         private int _state = STATE_NOT_INITIALIZED;
 
         /// <summary>
-        /// Задано ли значение результата инициализации
+        /// Validate that initialization completed with any result
         /// </summary>
         public bool IsInitialized
         {
@@ -52,19 +53,19 @@ namespace Qoollo.Turbo.Threading
             }
         }
         /// <summary>
-        /// Прошла ли инициализация успешно
+        /// Is initialization completed succesfully
         /// </summary>
         public bool IsOk { get { return Volatile.Read(ref _state) == STATE_INITIALIZED_OK; } }
 
         /// <summary>
-        /// Установить, что инциализация прошла успешно
+        /// Notifies that initialization completed successfully
         /// </summary>
         public void SetOk()
         {
             Interlocked.CompareExchange(ref _state, STATE_INITIALIZED_OK, STATE_NOT_INITIALIZED);
         }
         /// <summary>
-        /// Установить, что возникла ошибка инициализации
+        /// Notifies that initialization is failed
         /// </summary>
         public void SetFail()
         {

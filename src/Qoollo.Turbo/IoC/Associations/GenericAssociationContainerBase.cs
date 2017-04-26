@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Qoollo.Turbo.IoC.Helpers;
 using Qoollo.Turbo.IoC.Lifetime;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo.IoC.Associations
 {
@@ -138,7 +139,7 @@ namespace Qoollo.Turbo.IoC.Associations
                 case OverrideObjectInstantiationMode.None:
                     return src;
             }
-            Contract.Assert(false, "Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
+            Debug.Assert(false, "Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
             throw new AssociationIoCException("Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
         }
 
@@ -306,7 +307,7 @@ namespace Qoollo.Turbo.IoC.Associations
             object[] attr = null;
             foreach (var curTp in typeSource)
             {
-                Contract.Assume(curTp != null);
+                Debug.Assert(curTp != null);
 
                 attr = curTp.GetCustomAttributes(false);
                 if (attr == null || attr.Length == 0)
@@ -314,7 +315,7 @@ namespace Qoollo.Turbo.IoC.Associations
 
                 foreach (var curAttr in attr.OfType<TAttr>())
                 {
-                    Contract.Assume(curAttr != null);
+                    Debug.Assert(curAttr != null);
 
                     if (attrCmpPredicate == null || attrCmpPredicate(curAttr))
                     {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -526,7 +527,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 _optimalStateAverageThroughout = -1;
                 _decresingAverageThoughoutBaseline = -1;
 
-                Contract.Assert(_isPerfMeasureThreadWork == false);
+                Debug.Assert(_isPerfMeasureThreadWork == false);
             }
         }
         /// <summary>
@@ -677,7 +678,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 return ReturnSuggestion("Upper bound reached", 0);
             }
 
-            Contract.Assert(curMeasure.ThreadCount > prevMeasure.ThreadCount);
+            Debug.Assert(curMeasure.ThreadCount > prevMeasure.ThreadCount);
 
             double throughoutDiffCoef = EstimateThroughoutDiffCoef(prevMeasure.ThreadCount, prevMeasure.Throughout, curMeasure.ThreadCount, curMeasure.Throughout);
             double avgThroughoutDiffCoef = EstimateThroughoutDiffCoef(prevMeasure.ThreadCount, prevMeasure.AverageThroughout, curMeasure.ThreadCount, curMeasure.AverageThroughout);
@@ -757,7 +758,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 return ReturnSuggestion("Decrease when prev thread count == cur thread count", -1);
             }
 
-            Contract.Assert(curMeasure.ThreadCount < prevMeasure.ThreadCount);
+            Debug.Assert(curMeasure.ThreadCount < prevMeasure.ThreadCount);
 
             //Console.WriteLine("Baseline avgThroughout = " + _decresingAverageThoughoutBaseline.ToString());
             //Console.WriteLine(string.Format("Th == {0}: {1}; {2}: {3}", prevMeasure.ThreadCount, prevMeasure.Throughout, curMeasure.ThreadCount, curMeasure.Throughout));

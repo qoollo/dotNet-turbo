@@ -98,6 +98,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
             {
                 if (ex.IsCodeContractException())
                     throw new ArgumentOutOfRangeException();
+                throw;
             }
         }
 
@@ -114,6 +115,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
             {
                 if (ex.IsCodeContractException())
                     throw new ArgumentOutOfRangeException();
+                throw;
             }
         }
 

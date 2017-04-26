@@ -2,6 +2,7 @@
 using Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -292,7 +293,7 @@ namespace Qoollo.Turbo.ObjectPools
                 if (timeout >= 0)
                     throw new TimeoutException(string.Format("Pool 'Rent' operation has timeouted. Pool: {0}. Timeout value: {1}ms", this.Name, timeout));
 
-                Contract.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
+                Debug.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
                 throw new CantRetrieveElementException("Rent from pool failed");
             }
 
@@ -389,7 +390,7 @@ namespace Qoollo.Turbo.ObjectPools
                 {
                     int count = _elementsContainer.Count;
                     while (TakeDestroyAndRemoveElement())
-                        Contract.Assert(--count >= 0);
+                        Debug.Assert(--count >= 0);
 
                     if (_elementsContainer.Count == 0)
                         _stoppedEvent.Set();
@@ -433,7 +434,7 @@ namespace Qoollo.Turbo.ObjectPools
 #if DEBUG
                 var elementsContainer = _elementsContainer;
                 if (elementsContainer == null)
-                    Contract.Assert(false, "StaticPoolManager should be Disposed by user! PoolName: " + this.Name);
+                    Debug.Assert(false, "StaticPoolManager should be Disposed by user! PoolName: " + this.Name);
 
                 elementsContainer.ProcessFreeElements(o => o.MarkElementDestroyed());
 #endif

@@ -11,7 +11,7 @@ namespace Qoollo.Turbo.PerformanceTests
     {
         static void Main(string[] args)
         {
-            SemaphorePerfTest.RunTest();
+            //SemaphorePerfTest.RunTest();
             //ObjectPoolTest.RunTest();
             //ThreadPoolTests.RunOptimization();
             //ThreadPoolTests.FuncForOptimization();
@@ -26,6 +26,8 @@ namespace Qoollo.Turbo.PerformanceTests
             //LocalThreadQueueTest.RunTest();
             //ThreadPoolTests.RunCompareTest();
             //ThreadPoolTests.RunAllTests();
+            LevelingQueueTest.RunTest();
+            //EntryCountingEventPerfTest.RunTest();
             Console.ReadLine();
         }
     }

@@ -69,7 +69,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         {
             Contract.Requires(ownerThread != null);
 
-            Contract.Assert(this.IsUnowned);
+            System.Diagnostics.Debug.Assert(this.IsUnowned);
             _ownerThread = ownerThread;
         }
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Debug = System.Diagnostics.Debug;
 
 namespace Qoollo.Turbo.Threading.ThreadManagement
 {
@@ -351,7 +352,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
                     _procThreads[i].Start();
 
                 bool changeStateToRunningSuccess = ChangeStateSafe(ThreadSetManagerState.Running, out prevState);
-                Contract.Assert(changeStateToRunningSuccess && prevState == ThreadSetManagerState.StartRequested);
+                Debug.Assert(changeStateToRunningSuccess && prevState == ThreadSetManagerState.StartRequested);
             }
             catch
             {
@@ -420,8 +421,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
                 int activeThreadCount = Interlocked.Decrement(ref _activeThreadCount);
                 int exitedThreadCount = Interlocked.Increment(ref _exitedThreadCount);
-                Contract.Assert(activeThreadCount >= 0);
-                Contract.Assert(exitedThreadCount <= this.ThreadCount);
+                Debug.Assert(activeThreadCount >= 0);
+                Debug.Assert(exitedThreadCount <= this.ThreadCount);
 
                 if (exitedThreadCount >= this.ThreadCount || (activeThreadCount == 0 && IsStopRequested))
                 {
@@ -433,12 +434,12 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
                     ThreadSetManagerState prevState;
                     if (ChangeStateSafe(ThreadSetManagerState.AllThreadsExited, out prevState))
                     {
-                        Contract.Assert(prevState == ThreadSetManagerState.Running);
+                        Debug.Assert(prevState == ThreadSetManagerState.Running);
                         _threadExitedEvent.Set();
                     }
                     else if (ChangeStateSafe(ThreadSetManagerState.Stopped, out prevState))
                     {
-                        Contract.Assert(prevState == ThreadSetManagerState.StopRequested);
+                        Debug.Assert(prevState == ThreadSetManagerState.StopRequested);
                         _threadExitedEvent.Set();
                         Profiling.Profiler.ThreadSetManagerDisposed(this.Name, false);
                     }
@@ -567,8 +568,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
                 }
             }
 
-            Contract.Assert(State == ThreadSetManagerState.StopRequested || State == ThreadSetManagerState.Stopped);
-            Contract.Assume(!waitForStop || State == ThreadSetManagerState.Stopped);
+            Debug.Assert(State == ThreadSetManagerState.StopRequested || State == ThreadSetManagerState.Stopped);
+            Debug.Assert(!waitForStop || State == ThreadSetManagerState.Stopped);
         }
 
 
@@ -598,7 +599,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         {
             if (!this.IsStopRequestedOrStopped)
             {
-                Contract.Assume(isUserCall, "ThreadSetManager finalizer called. You should dispose ThreadSetManager explicitly. ThreadSetManagerName: " + this.Name);
+                Debug.Assert(isUserCall, "ThreadSetManager finalizer called. You should dispose ThreadSetManager explicitly. ThreadSetManagerName: " + this.Name);
 
                 if (isUserCall)
                     StopThreadManager(true);

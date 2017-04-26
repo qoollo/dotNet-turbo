@@ -8,6 +8,10 @@ namespace Qoollo.Turbo.Profiling
 {
     internal class DefaultProfilingProvider: IProfilingProvider
     {
+        public static readonly DefaultProfilingProvider Instance = new DefaultProfilingProvider();
+
+        private DefaultProfilingProvider() { }
+
         public void ObjectPoolCreated(string poolName) { }
         public void ObjectPoolDisposed(string poolName, bool fromFinalizer) { }
         public void ObjectPoolElementRented(string poolName, int currentRentedCount) { }

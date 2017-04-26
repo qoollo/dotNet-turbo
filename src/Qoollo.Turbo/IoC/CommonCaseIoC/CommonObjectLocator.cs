@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Qoollo.Turbo.IoC.Associations;
 using Qoollo.Turbo.IoC.Injections;
 using Qoollo.Turbo.IoC.ServiceStuff;
+using System.Diagnostics;
 
 namespace Qoollo.Turbo.IoC
 {
@@ -140,7 +141,7 @@ namespace Qoollo.Turbo.IoC
         public T Resolve<T>()
         {
             var life = _association.GetAssociation(typeof(T));
-            Contract.Assume(life != null);
+            Debug.Assert(life != null);
             return (T)life.GetInstance(_resolver);
         }
 
@@ -157,7 +158,7 @@ namespace Qoollo.Turbo.IoC
 
             if (_association.TryGetAssociation(typeof(T), out life))
             {
-                Contract.Assume(life != null);
+                Debug.Assert(life != null);
                 object tmp = null;
                 if (life.TryGetInstance(_resolver, out tmp))
                 {
@@ -226,7 +227,7 @@ namespace Qoollo.Turbo.IoC
             Contract.Requires(key != null);
 
             var life = _association.GetAssociation(key);
-            Contract.Assume(life != null);
+            Debug.Assert(life != null);
             return life.GetInstance(_resolver);
         }
 
@@ -245,7 +246,7 @@ namespace Qoollo.Turbo.IoC
 
             if (_association.TryGetAssociation(key, out life))
             {
-                Contract.Assume(life != null);
+                Debug.Assert(life != null);
                 if (life.TryGetInstance(_resolver, out val))
                     return true;
             }

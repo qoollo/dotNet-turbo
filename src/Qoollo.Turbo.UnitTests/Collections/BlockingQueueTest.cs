@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Qoollo.Turbo.UnitTests.Collections
 {
@@ -193,6 +194,172 @@ namespace Qoollo.Turbo.UnitTests.Collections
                 Assert.AreEqual(i, col.Take());
         }
 
+        [TestMethod]
+        public void PeekWakesUpTest()
+        {
+            var queue = new BlockingQueue<int>();
+
+            Barrier bar = new Barrier(3);
+            AtomicNullableBool peekResult = new AtomicNullableBool();
+            AtomicNullableBool peekResult2 = new AtomicNullableBool();
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                peekResult.Value = queue.TryPeek(out item, 60000);
+                Assert.AreEqual(100, item);
+            });
+
+            Task task2 = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                peekResult2.Value = queue.TryPeek(out item, 60000);
+                Assert.AreEqual(100, item);
+            });
+
+            bar.SignalAndWait();
+            Thread.Sleep(20);
+            Assert.IsFalse(peekResult.HasValue);
+            Assert.IsFalse(peekResult2.HasValue);
+
+            queue.Add(100);
+            TimingAssert.AreEqual(10000, true, () => peekResult.Value);
+            TimingAssert.AreEqual(10000, true, () => peekResult2.Value);
+
+            Task.WaitAll(task, task2);
+        }
+
+
+
+        [TestMethod]
+        public void AddTakeMultithreadTest()
+        {
+            const int ItemsCount = 10000;
+
+            using (var queue = new BlockingQueue<int>())
+            using (var barrier = new Barrier(2))
+            {
+                ConcurrentBag<int> bag = new ConcurrentBag<int>();
+
+                var task1 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    Parallel.For(0, ItemsCount, val =>
+                    {
+                        queue.Add(val);
+                        Thread.SpinWait(val % 100);
+                    });
+                });
+
+                var task2 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    Parallel.For(0, 10000, val =>
+                    {
+                        int res = 0;
+                        if (!queue.TryTake(out res, 10000))
+                            Assert.Fail("Value was expected in MemoryQueue");
+                        bag.Add(res);
+                        Thread.SpinWait((val + 37) % 100);
+                    });
+                });
+
+                Task.WaitAll(task1, task2);
+
+                Assert.AreEqual(0, queue.Count);
+                Assert.AreEqual(ItemsCount, bag.Count);
+
+                var array = bag.ToArray();
+                Array.Sort(array);
+                for (int i = 0; i < array.Length; i++)
+                    Assert.AreEqual(i, array[i], "i != array[i]");
+            }
+        }
+
+        [TestMethod]
+        public void AddTakeSequentialTest()
+        {
+            const int ItemsCount = 10000;
+
+            using (var queue = new BlockingQueue<int>())
+            using (var barrier = new Barrier(2))
+            {
+                List<int> bag = new List<int>();
+
+                var task1 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    for (int val = 0; val < ItemsCount; val++)
+                    {
+                        queue.Add(val);
+                        Thread.SpinWait(val % 100);
+                    }
+                });
+
+                var task2 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    for (int val = 0; val < ItemsCount; val++)
+                    {
+                        int res = 0;
+                        if (!queue.TryTake(out res, 10000))
+                            Assert.Fail("Value was expected in MemoryQueue");
+                        bag.Add(res);
+                        Thread.SpinWait((val + 37) % 100);
+                    }
+                });
+
+                Task.WaitAll(task1, task2);
+
+                Assert.AreEqual(0, queue.Count);
+                Assert.AreEqual(ItemsCount, bag.Count);
+
+                for (int i = 0; i < bag.Count; i++)
+                    Assert.AreEqual(i, bag[i], "i != bag[i]");
+            }
+        }
+
+        [TestMethod]
+        public void TestTimeoutWorks()
+        {
+            BlockingQueue<int> queue = new BlockingQueue<int>(100);
+            Barrier bar = new Barrier(2);
+            int takeResult = 0;
+            int addResult = 0;
+            Task task = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                int item = 0;
+                if (queue.TryTake(out item, 100))
+                    Interlocked.Exchange(ref takeResult, 1);
+                else
+                    Interlocked.Exchange(ref takeResult, 2);
+
+                while (queue.TryAdd(-1)) ;
+
+                if (queue.TryAdd(100, 100))
+                    Interlocked.Exchange(ref addResult, 1);
+                else
+                    Interlocked.Exchange(ref addResult, 2);
+            });
+
+            bar.SignalAndWait();
+
+            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref takeResult), "take");
+            TimingAssert.AreEqual(10000, 2, () => Volatile.Read(ref addResult), "Add");
+
+            task.Wait();
+        }
+
+        [TestMethod]
+        public void TestNotAddAfterEnd()
+        {
+            BlockingQueue<int> queue = new BlockingQueue<int>(2);
+            queue.AddForced(1);
+            Assert.IsTrue(queue.TryAdd(2));
+            Assert.IsFalse(queue.TryAdd(3));
+        }
 
 
         private void RunComplexTest(BlockingQueue<int> q, int elemCount, int thCount)

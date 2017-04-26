@@ -25,6 +25,8 @@ namespace Qoollo.Turbo.UnitTests
             {
                 while (!func())
                     Thread.Sleep(1);
+
+                return func();
             }
 
             uint startTime = GetTimestamp();

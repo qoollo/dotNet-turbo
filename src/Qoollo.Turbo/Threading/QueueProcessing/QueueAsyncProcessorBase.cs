@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -8,53 +9,53 @@ using System.Threading;
 namespace Qoollo.Turbo.Threading.QueueProcessing
 {
     /// <summary>
-    /// Базовый класс для асинхронных обработчиков
+    /// Asynchronous items processor with queue (base methods)
     /// </summary>
-    /// <typeparam name="T">Тип обрабатываемого элемента</typeparam>
+    /// <typeparam name="T">Type of the elements processed by this <see cref="QueueAsyncProcessorBase{T}"/></typeparam>
     public abstract class QueueAsyncProcessorBase<T>: IConsumer<T>, IDisposable
     {
         /// <summary>
-        /// Добавить элемент на обработку
+        /// Attempts to add new item to processing queue
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="timeout">Таймаут добавления в миллисекундах</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Успешность (удалось ли добавить до истечения таймаута)</returns>
+        /// <param name="element">New item</param>
+        /// <param name="timeout">Adding timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if item was added, otherwise false</returns>
         public abstract bool Add(T element, int timeout, CancellationToken token);
         /// <summary>
-        /// Добавить элемент на обработку
+        /// Adds new item to processing queue (waits for space in processing queue)
         /// </summary>
-        /// <param name="element">Элемент</param>
+        /// <param name="element">New item</param>
         public void Add(T element)
         {
             bool result = Add(element, Timeout.Infinite, new CancellationToken());
-            Contract.Assert(result);
+            Debug.Assert(result);
         }
         /// <summary>
-        /// Добавить элемент на обработку
+        /// Adds new item to processing queue
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="token">Токен отмены</param>
+        /// <param name="element">New item</param>
+        /// <param name="token">Cancellation token</param>
         public void Add(T element, CancellationToken token)
         {
             bool result = Add(element, Timeout.Infinite, token);
-            Contract.Assert(result);
+            Debug.Assert(result);
         }
         /// <summary>
-        /// Добавить элемент на обработку
+        /// Attempts to add new item to processing queue
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="timeout">Таймаут добавления в миллисекундах</param>
-        /// <returns>Успешность (удалось ли добавить до истечения таймаута)</returns>
+        /// <param name="element">New item</param>
+        /// <param name="timeout">Adding timeout in milliseconds</param>
+        /// <returns>True if item was added, otherwise false</returns>
         public bool Add(T element, int timeout)
         {
             return Add(element, timeout, new CancellationToken());
         }
         /// <summary>
-        /// Попытаться добавить элемент на обработку
+        /// Attempts to add new item to processing queue
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="element">New item</param>
+        /// <returns>True if item was added, otherwise false</returns>
         public bool TryAdd(T element)
         {
             return Add(element, 0, new CancellationToken());
@@ -63,33 +64,33 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
 
 
         /// <summary>
-        /// Добавить элемент
+        /// Pushes new element to the consumer
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">Element</param>
         void IConsumer<T>.Add(T item)
         {
             this.Add(item);
         }
         /// <summary>
-        /// Попытаться добавить элемент
+        /// Attempts to push new element to the consumer
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">Element</param>
+        /// <returns>True if the element was consumed successfully</returns>
         bool IConsumer<T>.TryAdd(T item)
         {
             return this.TryAdd(item);
         }
 
         /// <summary>
-        /// Основной код освобождения ресурсов
+        /// Cleans-up resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected virtual void Dispose(bool isUserCall)
         { 
         }
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Cleans-up resources
         /// </summary>
         public void Dispose()
         {
