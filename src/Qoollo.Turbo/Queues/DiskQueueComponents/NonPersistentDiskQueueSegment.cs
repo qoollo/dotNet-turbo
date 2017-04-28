@@ -234,7 +234,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 }
 
 
-                _maxReadBufferSize = readBufferSize >= 0 ? readBufferSize : DefaultReadBufferSize;
+                _maxReadBufferSize = readBufferSize >= 0 ? readBufferSize : Math.Max(_writeBufferSize / 2, DefaultReadBufferSize);
                 if (_maxReadBufferSize > 0)
                     _readBuffer = new ConcurrentQueue<T>();
 
