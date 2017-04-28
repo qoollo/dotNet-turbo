@@ -608,7 +608,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         {
                             Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
                             _stoppedEvent.Set();
-                            this.DisposeQueue();
+                            this.DisposeQueue(); // Can throw exception
                             Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                         }
                     }
@@ -775,7 +775,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                 {
                     Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
                     _stoppedEvent.Set();
-                    this.DisposeQueue();
+                    this.DisposeQueue(); // Can throw exception
                     Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                 }
             }
