@@ -465,10 +465,10 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Timeout</param>
         /// <returns>True if all clients leaved the protected section in specified timeout</returns>
-        public void TerminateAndWait(TimeSpan timeout)
+        public bool TerminateAndWait(TimeSpan timeout)
         {
             Terminate();
-            Wait(timeout);
+            return Wait(timeout);
         }
         /// <summary>
         /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
@@ -476,20 +476,20 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Timeout</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>True if all clients leaved the protected section in specified timeout</returns>
-        public void TerminateAndWait(TimeSpan timeout, CancellationToken cancellationToken)
+        public bool TerminateAndWait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             Terminate();
-            Wait(timeout, cancellationToken);
+            return Wait(timeout, cancellationToken);
         }
         /// <summary>
         /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
         /// </summary>
         /// <param name="millisecondsTimeout">Timeout</param>
         /// <returns>True if all clients leaved the protected section in specified timeout</returns>
-        public void TerminateAndWait(int millisecondsTimeout)
+        public bool TerminateAndWait(int millisecondsTimeout)
         {
             Terminate();
-            Wait(millisecondsTimeout);
+            return Wait(millisecondsTimeout);
         }
         /// <summary>
         /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
@@ -497,10 +497,10 @@ namespace Qoollo.Turbo.Threading
         /// <param name="millisecondsTimeout">Timeout</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>True if all clients leaved the protected section in specified timeout</returns>
-        public void TerminateAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
+        public bool TerminateAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Terminate();
-            Wait(millisecondsTimeout, cancellationToken);
+            return Wait(millisecondsTimeout, cancellationToken);
         }
 
 
