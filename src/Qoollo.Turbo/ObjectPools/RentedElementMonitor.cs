@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.ObjectPools
 {
     /// <summary>
-    /// Контроллер арендованных элементов пула
+    /// Controlls the life-time of the element rented from ObjectPool. Can be used within 'using' statement
     /// </summary>
-    /// <typeparam name="TElem">Тип элемента</typeparam>
+    /// <typeparam name="TElem">The type of the element controlled by the monitor</typeparam>
 #if DEBUG
     public class RentedElementMonitor<TElem>: IDisposable
 #else
@@ -58,10 +58,10 @@ namespace Qoollo.Turbo.ObjectPools
 #endif
 
         /// <summary>
-        /// Конструктор RentedElementMonitor
+        /// RentedElementMonitor consturctor
         /// </summary>
-        /// <param name="element">Обёртка над элементом</param>
-        /// <param name="sourcePool">Пул-источник</param>
+        /// <param name="element">Wrapper for pool element</param>
+        /// <param name="sourcePool">Source object pool</param>
         internal RentedElementMonitor(PoolElementWrapper<TElem> element, ObjectPoolManager<TElem> sourcePool)
         {
             Contract.Requires(element == null || (element != null && sourcePool != null));
@@ -82,13 +82,13 @@ namespace Qoollo.Turbo.ObjectPools
 
 #if DEBUG
         /// <summary>
-        /// Конструктор RentedElementMonitor
+        /// RentedElementMonitor constructor
         /// </summary>
-        /// <param name="element">Обёртка над элементом</param>
-        /// <param name="sourcePool">Пул-источник</param>
-        /// <param name="memberName">Иия метода, в котором произошло получение элемента пула</param>
-        /// <param name="filePath">Путь до файла, в котором произошло получение элемента пула</param>
-        /// <param name="lineNumber">Строка файла, в которой произошло получение элемента пула</param>
+        /// <param name="element">Wrapper for pool element</param>
+        /// <param name="sourcePool">Source object pool</param>
+        /// <param name="memberName">Method name in which the element is rented (for debug purposes)</param>
+        /// <param name="filePath">Source code file path in which the element is rented (for debug purposes)</param>
+        /// <param name="lineNumber">Source code line number in which the element is rented (for debug purposes)</param>
         internal RentedElementMonitor(PoolElementWrapper<TElem> element, ObjectPoolManager<TElem> sourcePool, string memberName, string filePath, int lineNumber)
             : this(element, sourcePool)
         {
@@ -104,39 +104,39 @@ namespace Qoollo.Turbo.ObjectPools
 
 #if DEBUG
         /// <summary>
-        /// Иия метода, в котором произошло получение элемента пула
+        /// Method name in which the element is rented
         /// </summary>
         internal string MemberName { get { return _memberName; } }
         /// <summary>
-        /// Путь до файла, в котором произошло получение элемента пула
+        /// Source code file path in which the element is rented
         /// </summary>
         internal string FilePath { get { return _filePath; } }
         /// <summary>
-        /// Строка файла, в которой произошло получение элемента пула
+        /// Source code line number in which the element is rented
         /// </summary>
         internal int LineNumber { get { return _lineNumber; } }
         /// <summary>
-        /// Время аренды
+        /// The time when element was rented (RentedElementModitor was created)
         /// </summary>
         internal DateTime RentTime { get { return _rentTime; } }
 #endif
 
         /// <summary>
-        /// Исходный пул
+        /// Source pool
         /// </summary>
         internal ObjectPoolManager<TElem> SourcePool { get { return _sourcePool; } }
         /// <summary>
-        /// Обёртка над элементом
+        /// Element wrapper
         /// </summary>
         internal PoolElementWrapper<TElem> ElementWrapper { get { return _elementWrapper; } }
         /// <summary>
-        /// Освобождён ли RentedElementMonitor
+        /// Indicates whether the RentedElementMonitor is in disposed state
         /// </summary>
         internal bool IsDisposed { get { return _elementWrapper == null; } }
 
 
         /// <summary>
-        /// Является ли элемент валидным
+        /// Indicates whether the <see cref="Element"/> is valid and can be used for operations
         /// </summary>
         public bool IsValid
         {
@@ -148,7 +148,7 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Выбросить исключение, что элемент освобождён
+        /// Throws excpetion that the <see cref="RentedElementMonitor{TElem}"/> is in disposed state
         /// </summary>
         private void ThrowElementDisposedException()
         {
@@ -156,7 +156,7 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Элемент пула
+        /// Rented element
         /// </summary>
         public TElem Element
         {
@@ -172,7 +172,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Возврат элемента в пул
+        /// Returns rented element back to the object pool
         /// </summary>
         public void Dispose()
         {
@@ -201,7 +201,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 #if DEBUG
         /// <summary>
-        /// Финализатор
+        /// Finalizer
         /// </summary>
         ~RentedElementMonitor()
         {

@@ -19,7 +19,7 @@ namespace Qoollo.Turbo.ObjectPools
     public abstract class ObjectPoolManager<TElem>: IDisposable
     {
         /// <summary>
-        /// Number of elements stored in Pool
+        /// Number of elements stored in ObjectPool
         /// </summary>
         public abstract int ElementCount
         {
