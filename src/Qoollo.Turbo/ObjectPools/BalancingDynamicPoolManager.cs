@@ -14,22 +14,23 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.ObjectPools
 {
     /// <summary>
-    /// Объектный пул с автоматической регулировкой числа элементов и балансировкой
+    /// Base class for object pool with balancing in which the number of elements is balanced according to the load.
+    /// Returns the best element according to the comparison method.
     /// </summary>
-    /// <typeparam name="TElem">Тип элемента</typeparam>
+    /// <typeparam name="TElem">The type of elements stored in Pool</typeparam>
     public abstract class BalancingDynamicPoolManager<TElem> : ObjectPoolManager<TElem>, IPoolElementOperationSource<TElem>
     {
         /// <summary>
-        /// Сравниватель элементов
+        /// Element comparer for the current pool instance
         /// </summary>
-        private class ElementComparer: PoolElementComparer<TElem>
+        private sealed class ElementComparer: PoolElementComparer<TElem>
         {
             private readonly BalancingDynamicPoolManager<TElem> _objectPool;
 
             /// <summary>
-            /// Конструктор ElementComparer
+            /// ElementComparer constructor
             /// </summary>
-            /// <param name="objectPool">Родительский пул</param>
+            /// <param name="objectPool">Parent object pool</param>
             public ElementComparer(BalancingDynamicPoolManager<TElem> objectPool)
             {
                 Contract.Requires(objectPool != null);
@@ -38,12 +39,12 @@ namespace Qoollo.Turbo.ObjectPools
             }
 
             /// <summary>
-            /// Сравнить. (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
+            /// Compares two elements to choose the best one (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
             /// </summary>
-            /// <param name="a">A</param>
-            /// <param name="b">B</param>
-            /// <param name="stopHere">Можно остановить поиск лучшего на текущем элементе</param>
-            /// <returns>Результат сравнения</returns>
+            /// <param name="a">First element to compare</param>
+            /// <param name="b">Second element to compare</param>
+            /// <param name="stopHere">Flag that indicates that the element '<paramref name="a"/>' is sufficient and scanning can be stopped</param>
+            /// <returns>Comparison result</returns>
             public override int Compare(PoolElementWrapper<TElem> a, PoolElementWrapper<TElem> b, out bool stopHere)
             {
                 return _objectPool.CompareElements(a.Element, b.Element, out stopHere);
@@ -55,19 +56,19 @@ namespace Qoollo.Turbo.ObjectPools
         // ============================
 
         /// <summary>
-        /// Получить временной маркер в миллисекундах
+        /// Returns the current timestamp in milliseconds
         /// </summary>
-        /// <returns>Временной маркер</returns>
+        /// <returns>Timestamp</returns>
         private static uint GetTimestamp()
         {
             return (uint)Environment.TickCount;
         }
         /// <summary>
-        /// Обновить таймаут
+        /// Updates the timeout value based on elapsed time
         /// </summary>
-        /// <param name="startTime">Время начала</param>
-        /// <param name="originalTimeout">Величина таймаута</param>
-        /// <returns>Сколько осталось времени</returns>
+        /// <param name="startTime">Timestamp for the moment when processing started</param>
+        /// <param name="originalTimeout">Original timeout value</param>
+        /// <returns>Rest time in milliseconds</returns>
         private static int UpdateTimeout(uint startTime, int originalTimeout)
         {
             if (originalTimeout < 0)
@@ -104,20 +105,23 @@ namespace Qoollo.Turbo.ObjectPools
         private int _reservedCount;
 
         /// <summary>
-        /// Конструктор BalancingDynamicPoolManager
+        /// <see cref="BalancingDynamicPoolManager{TElem}"/> constructor
         /// </summary>
-        /// <param name="minElementCount">Минимальное число элементов в пуле</param>
-        /// <param name="maxElementCount">Максимальное число элементов в пуле</param>
-        /// <param name="name">Имя пула</param>
-        /// <param name="trimPeriod">Время до уменьшения числа элементов (когда используются не все)</param>
-        /// <param name="getRetryTimeout">Время повтора между попытками получить новый элемент</param>
+        /// <param name="minElementCount">Minimum number of elements that should always be in pool</param>
+        /// <param name="maxElementCount">Maximum number of elements in pool</param>
+        /// <param name="name">Name for the current <see cref="DynamicPoolManager{TElem}"/> instance</param>
+        /// <param name="trimPeriod">Period in milliseconds to estimate the load level and to reduce the number of elements in accordance with it (-1 - do not preform contraction)</param>
+        /// <param name="getRetryTimeout">Interval in milliseconds between attempts to create a new element (used when a new element fails to create)</param>
         public BalancingDynamicPoolManager(int minElementCount, int maxElementCount, string name, int trimPeriod, int getRetryTimeout)
         {
-            Contract.Requires<ArgumentException>(minElementCount >= 0);
-            Contract.Requires<ArgumentException>(maxElementCount > 0);
-            Contract.Requires<ArgumentException>(maxElementCount >= minElementCount);
-            Contract.Requires<ArgumentException>(getRetryTimeout > 0);
-
+            if (minElementCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(minElementCount));
+            if (maxElementCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(maxElementCount));
+            if (maxElementCount < minElementCount)
+                throw new ArgumentException($"{nameof(maxElementCount)} cannot be less than minElementCount", nameof(maxElementCount));
+            if (getRetryTimeout <= 0)
+                throw new ArgumentException($"{nameof(getRetryTimeout)} should be positive", nameof(getRetryTimeout));
 
             _name = name ?? this.GetType().GetCSFullName();
             _minElementCount = minElementCount;
@@ -135,39 +139,39 @@ namespace Qoollo.Turbo.ObjectPools
             Profiling.Profiler.ObjectPoolCreated(this.Name);
         }
         /// <summary>
-        /// Конструктор BalancingDynamicPoolManager
+        /// <see cref="BalancingDynamicPoolManager{TElem}"/> constructor
         /// </summary>
-        /// <param name="minElementCount">Минимальное число элементов в пуле</param>
-        /// <param name="maxElementCount">Максимальное число элементов в пуле</param>
-        /// <param name="name">Имя пула</param>
-        /// <param name="trimPeriod">Время до уменьшения числа элементов (когда используются не все)</param>
+        /// <param name="minElementCount">Minimum number of elements that should always be in pool</param>
+        /// <param name="maxElementCount">Maximum number of elements in pool</param>
+        /// <param name="name">Name for the current <see cref="BalancingDynamicPoolManager{TElem}"/> instance</param>
+        /// <param name="trimPeriod">Period in milliseconds to estimate the load level and to reduce the number of elements in accordance with it (-1 - do not preform contraction)</param>
         public BalancingDynamicPoolManager(int minElementCount, int maxElementCount, string name, int trimPeriod)
             : this(minElementCount, maxElementCount, name, trimPeriod, DefaultGetRetryTimeout)
         {
         }
         /// <summary>
-        /// Конструктор BalancingDynamicPoolManager
+        /// <see cref="BalancingDynamicPoolManager{TElem}"/> constructor
         /// </summary>
-        /// <param name="minElementCount">Минимальное число элементов в пуле</param>
-        /// <param name="maxElementCount">Максимальное число элементов в пуле</param>
-        /// <param name="name">Имя пула</param>
+        /// <param name="minElementCount">Minimum number of elements that should always be in pool</param>
+        /// <param name="maxElementCount">Maximum number of elements in pool</param>
+        /// <param name="name">Name for the current <see cref="BalancingDynamicPoolManager{TElem}"/> instance</param>
         public BalancingDynamicPoolManager(int minElementCount, int maxElementCount, string name)
             : this(minElementCount, maxElementCount, name, DefaultTrimPeriod, DefaultGetRetryTimeout)
         {
         }
         /// <summary>
-        /// Конструктор BalancingDynamicPoolManager
+        /// <see cref="BalancingDynamicPoolManager{TElem}"/> constructor
         /// </summary>
-        /// <param name="maxElementCount">Максимальное число элементов в пуле</param>
-        /// <param name="name">Имя пула</param>
+        /// <param name="maxElementCount">Maximum number of elements in pool</param>
+        /// <param name="name">Name for the current <see cref="BalancingDynamicPoolManager{TElem}"/> instance</param>
         public BalancingDynamicPoolManager(int maxElementCount, string name)
             : this(0, maxElementCount, name, DefaultTrimPeriod, DefaultGetRetryTimeout)
         {
         }
         /// <summary>
-        /// Конструктор BalancingDynamicPoolManager
+        /// <see cref="BalancingDynamicPoolManager{TElem}"/> constructor
         /// </summary>
-        /// <param name="maxElementCount">Максимальное число элементов в пуле</param>
+        /// <param name="maxElementCount">Maximum number of elements in pool</param>
         public BalancingDynamicPoolManager(int maxElementCount)
             : this(0, maxElementCount, null, DefaultTrimPeriod, DefaultGetRetryTimeout)
         {
@@ -175,7 +179,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Имя пула
+        /// The name of the current ObjectPool instance
         /// </summary>
         public string Name
         {
@@ -183,21 +187,21 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Минимальное число элементов
+        /// Minimum number of elements that should always be in pool
         /// </summary>
         public int MinElementCount
         {
             get { return _minElementCount; }
         }
         /// <summary>
-        /// Максимальное число элементов
+        /// Maximum number of elements in pool
         /// </summary>
         public int MaxElementCount
         {
             get { return _maxElementCount; }
         }
         /// <summary>
-        /// Общее число элементов
+        /// Current number of elements stored in ObjectPool
         /// </summary>
         public override int ElementCount
         {
@@ -205,14 +209,14 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Число свободных в данный момент элементов
+        /// Number of elements available for rent
         /// </summary>
         public int FreeElementCount
         {
             get { return _elementsContainer.AvailableCount; }
         }
         /// <summary>
-        /// Число арендованных элементов
+        /// Number of rented elements
         /// </summary>
         private int RentedElementCount
         {
@@ -222,38 +226,38 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Создание элемента. Ожидание крайне не желательно. 
-        /// Не должен кидать исключения, если только не надо прибить всю систему.
+        /// Creates a new element for the object pool.
+        /// When creation is not possible it should return 'false'.
         /// </summary>
-        /// <param name="elem">Созданный элемент, если удалось создать</param>
-        /// <param name="timeout">Таймаут создания</param>
-        /// <param name="token">Токен отмены создания элемента</param>
-        /// <returns>Удалось ли создать элемент</returns>
+        /// <param name="elem">Created element in case of success</param>
+        /// <param name="timeout">Creation timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Whether the creation was successful</returns>
         protected abstract bool CreateElement(out TElem elem, int timeout, CancellationToken token);
         /// <summary>
-        /// Проверка, пригоден ли элемент для дальнейшего использования
+        /// Checks whether the element is valid and can be used for operations
         /// </summary>
-        /// <param name="elem">Элемент</param>
-        /// <returns>Пригоден ли для дальнейшего использования</returns>
+        /// <param name="elem">Element to check</param>
+        /// <returns>Whether the element is valid</returns>
         protected abstract bool IsValidElement(TElem elem);
         /// <summary>
-        /// Уничтожить элемент
+        /// Destoroys element when it is removed from pool
         /// </summary>
-        /// <param name="elem">Элемент</param>
+        /// <param name="elem">Element to be destroyed</param>
         protected abstract void DestroyElement(TElem elem);
         /// <summary>
-        /// Сравнить. (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
+        /// Compares two elements to choose the best one (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
         /// </summary>
-        /// <param name="a">A</param>
-        /// <param name="b">B</param>
-        /// <param name="stopHere">Можно остановить поиск лучшего на текущем элементе</param>
-        /// <returns>Результат сравнения</returns>
+        /// <param name="a">First element to compare</param>
+        /// <param name="b">Second element to compare</param>
+        /// <param name="stopHere">Flag that indicates that the element '<paramref name="a"/>' is sufficient and scanning can be stopped</param>
+        /// <returns>Comparison result</returns>
         protected abstract int CompareElements(TElem a, TElem b, out bool stopHere);
         /// <summary>
-        /// Проверяет, не лучше ли выделить новый элемент в пуле вместо использования указанного
+        /// Checks whether it is better to create a new element instead of an element found inside the pool
         /// </summary>
-        /// <param name="elem">Элемент</param>
-        /// <returns>Лучше ли выделить новый</returns>
+        /// <param name="elem">Element found inside pool</param>
+        /// <returns>True when it is better to create a new element, otherwise false</returns>
         protected virtual bool IsBetterAllocateNew(TElem elem)
         {
             return false;
@@ -262,13 +266,13 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Наполнить пул до count элементов
+        /// Warms-up pool by adding new elements up to the specified '<paramref name="count"/>'
         /// </summary>
-        /// <param name="count">Число элементов, до которого наполняется пул</param>
+        /// <param name="count">The number of elements that must be present in the pool after the call</param>
         public void FillPoolUpTo(int count)
         {
-            Contract.Requires<ArgumentException>(count >= 0);
-
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
             if (_disposeCancellation.IsCancellationRequested)
                 throw new ObjectDisposedException(this.GetType().Name);
 
@@ -295,9 +299,9 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Уничтожить и удалить элемент
+        /// Destroys element and removes it from the Pool
         /// </summary>
-        /// <param name="element">Элемент</param>
+        /// <param name="element">Element</param>
         private void DestroyAndRemoveElement(PoolElementWrapper<TElem> element)
         {
             Contract.Requires(element != null);
@@ -321,9 +325,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Забрать свободный элемент, уничтожить и удалить
+        /// Takes element from the <see cref="_elementsContainer"/> then destroys it and removes from the Pool
         /// </summary>
-        /// <returns>Был ли свободный элемент</returns>
+        /// <returns>Whether the element was presented in <see cref="_elementsContainer"/></returns>
         private bool TakeDestroyAndRemoveElement()
         {
             PoolElementWrapper<TElem> element = null;
@@ -338,11 +342,12 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Инициализация нового элемента в пуле
+        /// Attempts to create a new element and registers it in pool.
+        /// Returns 'null' in case of failure.
         /// </summary>
-        /// <param name="timeout">Таймаут инициализации</param>
-        /// <param name="token">Токен отмены инициализации</param>
-        /// <returns>Созданный и инициализированный элемент в случае успеха. Иначе null</returns>
+        /// <param name="timeout">Creation timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Created element in case of success, otherwise null</returns>
         private PoolElementWrapper<TElem> TryCreateNewElement(int timeout, CancellationToken token)
         {
             if (_disposeCancellation.IsCancellationRequested || token.IsCancellationRequested)
@@ -385,10 +390,10 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Обработать элемент, полученный из основного контейнера
+        /// Processes taken element (checks whether it is valid)
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <returns>Можно ли использовать выбранный элемент</returns>
+        /// <param name="element">Element</param>
+        /// <returns>Can the element be used in operations</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool ProcessTakenElement(ref PoolElementWrapper<TElem> element)
         {
@@ -405,11 +410,11 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Создать новый элемент, если необходимо
+        /// Creates a new element instead of the one found in the pool when it is necessary (see <see cref="IsBetterAllocateNew(TElem)"/>)
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
+        /// <param name="element">Element found in pool</param>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="token">Cancellation token</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CreateNewInsteadOfTakenIfRequired(ref PoolElementWrapper<TElem> element, int timeout, CancellationToken token)
         {
@@ -427,12 +432,11 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Внутренний метод получения нового элемента.
-        /// Он достаётся из конетйнера свободных, либо создаётся новый.
+        /// Gets an existing element from pool or creates a new element if required.
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Полученный элемент (если удалось)</returns>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Element in case of success. Otherwise null.</returns>
         private PoolElementWrapper<TElem> TryGetElement(int timeout, CancellationToken token)
         {
             if (_disposeCancellation.IsCancellationRequested || token.IsCancellationRequested)
@@ -484,12 +488,12 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Арендовать элемент
+        /// Rents element from pool
         /// </summary>
-        /// <param name="timeout">Таймаут (-1 - бесконечно, 0 - быстрая проверка, > 0 - полная проверка)</param>
-        /// <param name="token">Токен для отмены</param>
-        /// <param name="throwOnUnavail">Выбрасывать исключение при недоступности элемента</param>
-        /// <returns>Обёртка над элементом пула</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds (-1 - infinity)</param>
+        /// <param name="token">Token to cancel waiting for element availability</param>
+        /// <param name="throwOnUnavail">True - throws <see cref="CantRetrieveElementException"/> when element can't be rented, otherwise returns null</param>
+        /// <returns>Wrapper for rented element</returns>
         protected sealed override PoolElementWrapper<TElem> RentElement(int timeout, System.Threading.CancellationToken token, bool throwOnUnavail)
         {
             if (_disposeCancellation.IsCancellationRequested)
@@ -575,9 +579,9 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Вернуть элемент в пул
+        /// Releases element back to the pool. Normally should be called from <see cref="RentedElementMonitor{TElem}"/>
         /// </summary>
-        /// <param name="element">Элемент</param>
+        /// <param name="element">Element wrapper to be released</param>
         protected internal sealed override void ReleaseElement(PoolElementWrapper<TElem> element)
         {
             if (!element.IsBusy)
@@ -612,10 +616,10 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Является ли элемент валидным
+        /// Checks whether the element is valid and can be used for operations (redirects call to <see cref="IsValidElement(TElem)"/>)
         /// </summary>
-        /// <param name="container">Контейнер элемента</param>
-        /// <returns>Является ли валидным</returns>
+        /// <param name="container">Element wrapper</param>
+        /// <returns>Whether the element is valid</returns>
         bool IPoolElementOperationSource<TElem>.IsValid(PoolElementWrapper<TElem> container)
         {
             return this.IsValidElement(container.Element);
@@ -624,7 +628,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Ожидание полной остановки и освобождения всех элементов
+        /// Blocks the current thread and waits for full completion (all elements should be returned back to the pool)
         /// </summary>
         public void WaitUntilStop()
         {
@@ -635,10 +639,10 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Ожидание полной остановки и освобождения всех элементов с таймаутом
+        /// Blocks the current thread and waits for full completion (all elements should be returned back to the pool)
         /// </summary>
-        /// <param name="timeout">Таймаут ожидания в миллисекундах</param>
-        /// <returns>true - дождались, false - вышли по таймауту</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <returns>True when pool was disposed and all its elements was destroyed in time</returns>
         public bool WaitUntilStop(int timeout)
         {
             if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
@@ -650,9 +654,9 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Уничтожить пул объектов
+        /// Pool clean-up (core method)
         /// </summary>
-        /// <param name="waitForRelease">Дожидаться ли возвращения всех элементов</param>
+        /// <param name="waitForRelease">Should it wait for full completion</param>
         private void DisposePool(bool waitForRelease)
         {
             if (!_disposeCancellation.IsCancellationRequested)
@@ -687,9 +691,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Освобождения ресурсов пула
+        /// Cleans-up ObjectPool resources
         /// </summary>
-        /// <param name="flags">Флаги остановки</param>
+        /// <param name="flags">Flags that controls disposing behaviour</param>
         public virtual void Dispose(DisposeFlags flags)
         {
             bool waitForRelease = (flags & DisposeFlags.WaitForElementsRelease) != DisposeFlags.None;
@@ -699,9 +703,9 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Основной код освобождения ресурсов
+        /// Cleans-up ObjectPool resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected override void Dispose(bool isUserCall)
         {
             if (isUserCall)
@@ -724,7 +728,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 #if DEBUG
         /// <summary>
-        /// Финализатор
+        /// Finalizer
         /// </summary>
         ~BalancingDynamicPoolManager()
         {

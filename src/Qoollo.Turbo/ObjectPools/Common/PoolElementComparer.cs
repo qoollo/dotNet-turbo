@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.ObjectPools.Common
 {
     /// <summary>
-    /// Базовый класс для сравнения элементов
+    /// Base class for all pool element comparers
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">The type of elements in ObjectPool</typeparam>
     [ContractClass(typeof(PoolElementComparerCodeContract<>))]
     public abstract class PoolElementComparer<T>
     {
         /// <summary>
-        /// Обернуть интерфейс IComparer
+        /// Wraps the specified <see cref="IComparer{T}"/>
         /// </summary>
-        /// <param name="comparer">Компаратор IComparer</param>
-        /// <returns>Компаратор</returns>
+        /// <param name="comparer">Comparison logic implementation</param>
+        /// <returns>Created comparer</returns>
         public static PoolElementComparer<T> Wrap(IComparer<T> comparer)
         {
             if (object.ReferenceEquals(comparer, null) || object.ReferenceEquals(comparer, Comparer<T>.Default))
@@ -27,9 +27,9 @@ namespace Qoollo.Turbo.ObjectPools.Common
             return new WrappingPoolElementComparer<T>(comparer);
         }
         /// <summary>
-        /// Создать компаратор по умолчанию
+        /// Creates a default comparer (based on <see cref="Comparer{T}.Default"/>)
         /// </summary>
-        /// <returns>Компаратор</returns>
+        /// <returns>Created comparer</returns>
         public static PoolElementComparer<T> CreateDefault()
         {
             return new DefaultPoolElementComparer<T>(); 
@@ -37,12 +37,12 @@ namespace Qoollo.Turbo.ObjectPools.Common
 
 
         /// <summary>
-        /// Сравнить. (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
+        /// Compares two elements to choose the best one (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
         /// </summary>
-        /// <param name="a">A</param>
-        /// <param name="b">B</param>
-        /// <param name="stopHere">Можно остановить поиск лучшего на текущем элементе</param>
-        /// <returns>Результат сравнения</returns>
+        /// <param name="a">First element to compare</param>
+        /// <param name="b">Second element to compare</param>
+        /// <param name="stopHere">Flag that indicates that the element '<paramref name="a"/>' is sufficient and scanning can be stopped</param>
+        /// <returns>Comparison result</returns>
         public abstract int Compare(PoolElementWrapper<T> a, PoolElementWrapper<T> b, out bool stopHere);
     }
 

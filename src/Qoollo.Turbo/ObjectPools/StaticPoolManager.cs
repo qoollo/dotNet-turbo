@@ -151,7 +151,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Destoroy element when it was removed from pool
+        /// Destoroys element when it is removed from pool
         /// </summary>
         /// <param name="elem">Element to be destroyed</param>
         protected virtual void DestroyElement(TElem elem)
@@ -350,7 +350,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Blocks the current thread and waits for full clean-up (all elements should be returened back to the pool)
+        /// Blocks the current thread and waits for full completion (all elements should be returned back to the pool)
         /// </summary>
         public void WaitUntilStop()
         {
@@ -361,7 +361,7 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Blocks the current thread and waits for full clean-up (all elements should be returened back to the pool)
+        /// Blocks the current thread and waits for full completion (all elements should be returned back to the pool)
         /// </summary>
         /// <param name="timeout">Waiting timeout in milliseconds</param>
         /// <returns>True when pool was disposed and all its elements was destroyed in time</returns>
@@ -375,9 +375,9 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Уничтожить пул объектов
+        /// Pool clean-up (core method)
         /// </summary>
-        /// <param name="waitForRelease">Дожидаться ли возвращения всех элементов</param>
+        /// <param name="waitForRelease">Should it wait for full completion</param>
         private void DisposePool(bool waitForRelease)
         {
             if (!_disposeCancellation.IsCancellationRequested)
@@ -412,9 +412,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Освобождения ресурсов пула
+        /// Cleans-up ObjectPool resources
         /// </summary>
-        /// <param name="flags">Флаги остановки</param>
+        /// <param name="flags">Flags that controls disposing behaviour</param>
         public virtual void Dispose(DisposeFlags flags)
         {
             bool waitForRelease = (flags & DisposeFlags.WaitForElementsRelease) != DisposeFlags.None;
@@ -423,9 +423,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Основной код освобождения ресурсов
+        /// Cleans-up ObjectPool resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected override void Dispose(bool isUserCall)
         {
             if (isUserCall)
@@ -448,7 +448,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 #if DEBUG
         /// <summary>
-        /// Финализатор
+        /// Finalizer
         /// </summary>
         ~StaticPoolManager()
         {

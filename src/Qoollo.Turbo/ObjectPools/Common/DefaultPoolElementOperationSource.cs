@@ -7,16 +7,17 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.ObjectPools.Common
 {
     /// <summary>
-    /// Стандартный объект для поддержки операций в пуле
+    /// Default implemenation of <see cref="IPoolElementOperationSource{T}"/>.
+    /// Always returns 'true' in <see cref="IPoolElementOperationSource{T}.IsValid(PoolElementWrapper{T})"/> method.
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">The type of the ObjectPool element</typeparam>
     public class DefaultPoolElementOperationSource<T> : IPoolElementOperationSource<T>
     {
         /// <summary>
-        /// Является ли элемент валидным
+        /// Checks whether the element is valid and can be used for operations (always return true)
         /// </summary>
-        /// <param name="container">Контейнер элемента</param>
-        /// <returns>Является ли валидным</returns>
+        /// <param name="container">Element wrapper</param>
+        /// <returns>Whether the element is valid</returns>
         bool IPoolElementOperationSource<T>.IsValid(PoolElementWrapper<T> container)
         {
             return true;
