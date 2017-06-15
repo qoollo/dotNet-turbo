@@ -10,7 +10,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
     /// <summary>
     /// Base class for all pool element comparers
     /// </summary>
-    /// <typeparam name="T">The type of elements in ObjectPool</typeparam>
+    /// <typeparam name="T">The type of objects to compare</typeparam>
     [ContractClass(typeof(PoolElementComparerCodeContract<>))]
     public abstract class PoolElementComparer<T>
     {

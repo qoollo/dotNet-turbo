@@ -7,15 +7,15 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.ObjectPools.Common
 {
     /// <summary>
-    /// Стандартный сравниватель элементов пула
+    /// Default implementation of the comparer for the specified generic type (uses <see cref="Comparer{T}.Default"/> under the hood)
     /// </summary>
-    /// <typeparam name="T">Тип элементов</typeparam>
+    /// <typeparam name="T">The type of objects to compare</typeparam>
     public class DefaultPoolElementComparer<T> : PoolElementComparer<T>
     {
         private readonly Comparer<T> _comparer;
 
         /// <summary>
-        /// Конструктор DefaultPoolElementComparer
+        /// DefaultPoolElementComparer constructor
         /// </summary>
         public DefaultPoolElementComparer()
         {
@@ -23,12 +23,12 @@ namespace Qoollo.Turbo.ObjectPools.Common
         }
 
         /// <summary>
-        /// Сравнить. (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
+        /// Compares two elements to choose the best one (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
         /// </summary>
-        /// <param name="a">A</param>
-        /// <param name="b">B</param>
-        /// <param name="stopHere">Можно остановить поиск лучшего на текущем элементе</param>
-        /// <returns>Результат сравнения</returns>
+        /// <param name="a">First element to compare</param>
+        /// <param name="b">Second element to compare</param>
+        /// <param name="stopHere">Flag that indicates that the element '<paramref name="a"/>' is sufficient and scanning can be stopped</param>
+        /// <returns>Comparison result</returns>
         public override int Compare(PoolElementWrapper<T> a, PoolElementWrapper<T> b, out bool stopHere)
         {
             stopHere = false;
@@ -38,23 +38,23 @@ namespace Qoollo.Turbo.ObjectPools.Common
 
 
     /// <summary>
-    /// Обёртывающи компаратор
+    /// <see cref="PoolElementComparer{T}"/> that wraps specified <see cref="IComparer{T}"/> implementation
     /// </summary>
-    /// <typeparam name="T">Тип элементов</typeparam>
+    /// <typeparam name="T">The type of objects to compare</typeparam>
     public class WrappingPoolElementComparer<T> : PoolElementComparer<T>
     {
         private readonly IComparer<T> _comparer;
 
         /// <summary>
-        /// Конструктор WrappingPoolElementComparer
+        /// WrappingPoolElementComparer constructor
         /// </summary>
-        /// <param name="comparer">Внутренний компаратор</param>
+        /// <param name="comparer">Inner comparer</param>
         public WrappingPoolElementComparer(IComparer<T> comparer)
         {
             _comparer = comparer ?? Comparer<T>.Default;
         }
         /// <summary>
-        /// Конструктор WrappingPoolElementComparer
+        /// WrappingPoolElementComparer constructor
         /// </summary>
         public WrappingPoolElementComparer()
         {
@@ -62,12 +62,12 @@ namespace Qoollo.Turbo.ObjectPools.Common
         }
 
         /// <summary>
-        /// Сравнить. (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
+        /// Compares two elements to choose the best one (a &gt; b =&gt; result &gt; 0; a == b =&gt; result == 0; a &lt; b =&gt; result &lt; 0)
         /// </summary>
-        /// <param name="a">A</param>
-        /// <param name="b">B</param>
-        /// <param name="stopHere">Можно остановить поиск лучшего на текущем элементе</param>
-        /// <returns>Результат сравнения</returns>
+        /// <param name="a">First element to compare</param>
+        /// <param name="b">Second element to compare</param>
+        /// <param name="stopHere">Flag that indicates that the element '<paramref name="a"/>' is sufficient and scanning can be stopped</param>
+        /// <returns>Comparison result</returns>
         public override int Compare(PoolElementWrapper<T> a, PoolElementWrapper<T> b, out bool stopHere)
         {
             stopHere = false;
