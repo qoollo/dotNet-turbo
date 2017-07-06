@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Profiling
 {
     /// <summary>
-    /// Класс профилировщика
+    /// Turbo profiler
     /// </summary>
     public class Profiler
     {
