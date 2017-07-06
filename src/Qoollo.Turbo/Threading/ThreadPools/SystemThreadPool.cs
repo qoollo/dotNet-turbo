@@ -11,21 +11,21 @@ using System.Text;
 namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
-    /// Системный пул потоков
+    /// Wrapper for <see cref="System.Threading.ThreadPool"/>
     /// </summary>
     public sealed class SystemThreadPool: ThreadPoolBase, IContextSwitchSupplier
     {
         /// <summary>
-        /// Прамаетризованный объект замыкания
+        /// Parametrized closure object
         /// </summary>
-        /// <typeparam name="TState">Тип состояния</typeparam>
+        /// <typeparam name="TState">Type of the state object</typeparam>
         private class ParameterizedClosure<TState>
         {
             public static readonly Action<object> RunAction = new Action<object>(Run);
             /// <summary>
-            /// Запуск замыкания
+            /// Runs the action inside closure
             /// </summary>
-            /// <param name="closure">Объект замыкания</param>
+            /// <param name="closure">Closure object</param>
             public static void Run(object closure)
             {
                 var unwrapClosure = (ParameterizedClosure<TState>)closure;
@@ -37,18 +37,18 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             public TState State;
         }
         /// <summary>
-        /// Прамаетризованный объект замыкания
+        /// Parametrized closure object
         /// </summary>
-        /// <typeparam name="TState">Тип состояния</typeparam>
-        /// <typeparam name="TRes">Тип результата</typeparam>
+        /// <typeparam name="TState">Type of the state object</typeparam>
+        /// <typeparam name="TRes">Type of the result</typeparam>
         private class ParameterizedClosure<TState, TRes>
         {
             public static readonly Func<object, TRes> RunAction = new Func<object, TRes>(Run);
             /// <summary>
-            /// Запуск замыкания
+            /// Runs the action inside closure
             /// </summary>
-            /// <param name="closure">Объект замыкания</param>
-            /// <returns>Результат</returns>
+            /// <param name="closure">Closure object</param>
+            /// <returns>Result</returns>
             public static TRes Run(object closure)
             {
                 var unwrapClosure = (ParameterizedClosure<TState, TRes>)closure;
@@ -59,11 +59,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             public Func<TState, TRes> Action;
             public TState State;
         }
-        
+
         // =========
 
         /// <summary>
-        /// Максимальное количество потоков в пуле
+        /// Gets or sets the maximum number of threads in system ThreadPool
         /// </summary>
         public static int MaxThreadCount
         {
@@ -84,7 +84,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Минимальное количество потоков в пуле
+        /// Gets or sets the minimum number of threads in system ThreadPool
         /// </summary>
         public static int MinThreadCount
         {
@@ -107,9 +107,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         private static readonly System.Threading.WaitCallback RunActionWaitCallback = new System.Threading.WaitCallback(RunAction);
 
         /// <summary>
-        /// Выполнение действия переданного как состояние
+        /// Executes passed action
         /// </summary>
-        /// <param name="act">Действие</param>
+        /// <param name="act">Action to execute</param>
         private static void RunAction(object act)
         {
             Contract.Requires(act != null);
@@ -121,19 +121,19 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         // ====================================
 
         /// <summary>
-        /// Добавление задачи для пула потоков
+        /// Places a new task to the thread pool queue
         /// </summary>
-        /// <param name="item">Задача</param>
+        /// <param name="item">Thread pool work item</param>
         protected sealed override void AddWorkItem(ThreadPoolWorkItem item)
         {
             System.Threading.ThreadPool.QueueUserWorkItem(ThreadPoolWorkItem.RunWaitCallback, item);
         }
 
         /// <summary>
-        /// Попытаться добавить задачу в пул потоков
+        /// Attemts to place a new task to the thread pool queue
         /// </summary>
-        /// <param name="item">Задача</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">Thread pool work item</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
         protected sealed override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
             return System.Threading.ThreadPool.QueueUserWorkItem(ThreadPoolWorkItem.RunWaitCallback, item);
@@ -141,37 +141,38 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Исполнение метода в пуле потоков
+        /// Queues a method for exection inside the current ThreadPool
         /// </summary>
-        /// <param name="action">Делегат на выполняемый метод</param>
+        /// <param name="action">Representing the method to execute</param>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public new void Run(Action action)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             System.Threading.ThreadPool.QueueUserWorkItem(RunActionWaitCallback, action);
         }
         /// <summary>
-        /// Попытаться исполнить метод в пуле потоков
+        /// Attempts to queue a method for exection inside the current ThreadPool
         /// </summary>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <returns>Успшеность постановки в очередь (не гарантирует успешность запуска)</returns>
+        /// <param name="action">Representing the method to execute</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public new bool TryRun(Action action)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             return System.Threading.ThreadPool.QueueUserWorkItem(RunActionWaitCallback, action);
         }
 
 
         /// <summary>
-        /// Исполнение метода с пользовательским параметром в пуле потоков
+        /// Queues a method for exection inside the current ThreadPool
         /// </summary>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <param name="state">Пользовательский параметр</param>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public void Run(System.Threading.WaitCallback action, object state)
         {
             Contract.Requires(action != null);
@@ -179,11 +180,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Попытаться исполнить метод с пользовательским параметром в пуле потоков
+        /// Attempts to queue a method for exection inside the current ThreadPool
         /// </summary>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <param name="state">Пользовательский параметр</param>
-        /// <returns>Успшеность постановки в очередь (не гарантирует успешность запуска)</returns>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public bool TryRun(System.Threading.WaitCallback action, object state)
         {
             Contract.Requires(action != null);
@@ -193,10 +195,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs the action within ThreadPool
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Action to run</param>
+        /// <param name="flowContext">Whether or not the exectuion context should be flowed</param>
         void IContextSwitchSupplier.Run(Action act, bool flowContext)
         {
             if (flowContext)
@@ -206,11 +208,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs the action within ThreadPool
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Action to run</param>
+        /// <param name="state">State object</param>
+        /// <param name="flowContext">Whether or not the exectuion context should be flowed</param>
         void IContextSwitchSupplier.RunWithState(Action<object> act, object state, bool flowContext)
         {
             if (flowContext)
@@ -220,9 +222,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Переход на выполнение в пуле посредством await
+        /// Creates an awaitable that asynchronously switch to the current ThreadPool when awaited
         /// </summary>
-        /// <returns>Объект смены контекста выполнения</returns>
+        /// <returns>Context switch awaitable object</returns>
         public sealed override ContextSwitchAwaitable SwitchToPool()
         {
             if (System.Threading.Thread.CurrentThread.IsThreadPoolThread)
@@ -233,51 +235,55 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Запуск действия с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="System.Threading.Tasks.Task"/> that represents queued operation
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <returns>Task</returns>
+        /// <param name="action">Representing the method to execute</param>
+        /// <returns>Create Task</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public sealed override System.Threading.Tasks.Task RunAsTask(Action action)
         {
             return System.Threading.Tasks.Task.Run(action);
         }
         /// <summary>
-        /// Запуск действия с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="System.Threading.Tasks.Task"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TState">Тип параметра состояния</typeparam>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TState">Type of the user state object</typeparam>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public sealed override System.Threading.Tasks.Task RunAsTask<TState>(Action<TState> action, TState state)
         {
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
             var workItem = new ParameterizedClosure<TState>() { Action = action, State = state };
             return System.Threading.Tasks.Task.Factory.StartNew(ParameterizedClosure<TState>.RunAction, workItem);
         }
 
         /// <summary>
-        /// Запуск функции с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="System.Threading.Tasks.Task{TRes}"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TRes">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TRes">The type of the operation result</typeparam>
+        /// <param name="func">Representing the method to execute</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Func is null</exception>
         public sealed override System.Threading.Tasks.Task<TRes> RunAsTask<TRes>(Func<TRes> func)
         {
             return System.Threading.Tasks.Task.Run(func);
         }
         /// <summary>
-        /// Запуск функции с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="System.Threading.Tasks.Task{TRes}"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TState">Тип параметра состояния</typeparam>
-        /// <typeparam name="TRes">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TState">Type of the user state object</typeparam>
+        /// <typeparam name="TRes">The type of the operation result</typeparam>
+        /// <param name="func">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Func is null</exception>
         public sealed override System.Threading.Tasks.Task<TRes> RunAsTask<TState, TRes>(Func<TState, TRes> func, TState state)
         {
             if (func == null)
-                throw new ArgumentNullException("func");
+                throw new ArgumentNullException(nameof(func));
             var workItem = new ParameterizedClosure<TState, TRes>() { Action = func, State = state };
             return System.Threading.Tasks.Task.Factory.StartNew(ParameterizedClosure<TState, TRes>.RunAction, workItem);
         }

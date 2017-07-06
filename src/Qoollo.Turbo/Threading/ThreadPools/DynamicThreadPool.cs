@@ -18,41 +18,41 @@ namespace Qoollo.Turbo.Threading.ThreadPools
     public class DynamicThreadPoolOptions
     {
         /// <summary>
-        /// Стандартные опции
+        /// Default parameters
         /// </summary>
         internal static readonly DynamicThreadPoolOptions Default = new DynamicThreadPoolOptions();
 
         /// <summary>
-        /// Стандартный период уменьшения числа потоков при их неиспользовании в миллисекундах
+        /// Default period in milliseconds when unused threads will be removed from ThreadPool
         /// </summary>
         public const int DefaultNoWorkItemTrimPeriod = 5 * 60 * 1000;
         /// <summary>
-        /// Стандартный период сна между проверкой возможности похитить элемент из соседних локальных очередей
+        /// Default period of sleep in milliseconds between checking for the possibility to steal a work item from local queues
         /// </summary>
         public const int DefaultQueueStealAwakePeriod = 2000;
         /// <summary>
-        /// Максимальная величина расширения очереди по-умолчанию
+        /// Default maximum queue capacity extension
         /// </summary>
         public const int DefaultMaxQueueCapacityExtension = 256;
         /// <summary>
-        /// Стандартный период работы обслуживающего потока
+        /// Default priod in milliseconds when the management thread is checks the state of the pool and changes the number of threads
         /// </summary>
         public const int DefaultManagementProcessPeriod = 500;
         /// <summary>
-        /// Стандартное значения для параметра использования своего шедуллера задач
+        /// Default value indicating whether or not set ThreadPool TaskScheduler as a default for all ThreadPool threads
         /// </summary>
         public const bool DefaultUseOwnTaskScheduler = false;
         /// <summary>
-        /// Стандартное значения для параметра использования своего контекста синхронизации
+        /// Default value indicating whether or not set ThreadPool SynchronizationContext as a default for all ThreadPool threads
         /// </summary>
         public const bool DefaultUseOwnSyncContext = false;
         /// <summary>
-        /// Стандартное значения для параметра протаскивания контекст исполнения
+        /// Default value indicating whether or not to flow ExecutionContext to the ThreadPool thread
         /// </summary>
         public const bool DefaultFlowExecutionContext = false;
 
         /// <summary>
-        /// Конструктор DynamicThreadPoolOptions
+        /// <see cref="DynamicThreadPoolOptions"/> constructor
         /// </summary>
         public DynamicThreadPoolOptions()
         {
@@ -66,37 +66,37 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Периоды уменьшения числа потоков при их неиспользовании в миллисекундах (-1 - бесконечность)
+        /// Gets or sets the period in milliseconds when unused threads will be removed from ThreadPool (if less than zero then threads are never removed)
         /// </summary>
-        public int NoWorkItemTrimPeriod { get; set; } 
+        public int NoWorkItemTrimPeriod { get; set; }
         /// <summary>
-        /// Периоды сна между проверкой возможности похитить элемент из соседних локальных очередей
+        /// Gets or sets period of sleep in milliseconds between checking for the possibility to steal a work item from local queues
         /// </summary>
         public int QueueStealAwakePeriod { get; set; }
         /// <summary>
-        /// Максимальная величина расширения очереди
+        /// Gets or sets the maximum queue capacity extension
         /// </summary>
         public int MaxQueueCapacityExtension { get; set; }
         /// <summary>
-        /// Период работы обслуживающего потока
+        /// Gets or sets the priod in milliseconds when the management thread is checks the state of the pool and changes the number of threads
         /// </summary>
         public int ManagementProcessPeriod { get; set; }
         /// <summary>
-        /// Использовать ли свой шедуллер задач
+        /// Gets or sets value indicating whether or not set ThreadPool TaskScheduler as a default for all ThreadPool threads
         /// </summary>
         public bool UseOwnTaskScheduler { get; set; }
         /// <summary>
-        /// Использовать ли свой контекст синхронизации
+        /// Gets or sets value indicating whether or not set ThreadPool SynchronizationContext as a default for all ThreadPool threads
         /// </summary>
         public bool UseOwnSyncContext { get; set; }
         /// <summary>
-        /// Протаскивать ли контекст исполнения
+        /// Gets or sets value indicating whether or not to flow ExecutionContext to the ThreadPool thread
         /// </summary>
         public bool FlowExecutionContext { get; set; }      
     }
 
     /// <summary>
-    /// Пул потоков с динамическим изменением числа задействованных потоков
+    /// ThreadPool that automatically changes the number of running threads in accordance with the workload
     /// </summary>
     public class DynamicThreadPool: Common.CommonThreadPool
     {
@@ -136,24 +136,29 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Конструктор DynamicThreadPool
+        /// <see cref="DynamicThreadPool"/> constructor
         /// </summary>
-        /// <param name="minThreadCount">Минимальное число потоков</param>
-        /// <param name="maxThreadCount">Максимальное число потоков</param>
-        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
-        /// <param name="name">Имена потоков</param>
-        /// <param name="isBackground">Использовать ли фоновые потоки</param>
-        /// <param name="options">Расширенные настройки пула потоков</param>
+        /// <param name="minThreadCount">Minimum number of threads that should always be in pool</param>
+        /// <param name="maxThreadCount">Maximum number of threads in pool</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
+        /// <param name="isBackground">Whether or not threads are a background threads</param>
+        /// <param name="options">Additional thread pool creation parameters</param>
         private DynamicThreadPool(DynamicThreadPoolOptions options, int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name, bool isBackground)
             : base(queueBoundedCapacity, options.QueueStealAwakePeriod, isBackground, name, options.UseOwnTaskScheduler, options.UseOwnSyncContext, options.FlowExecutionContext)
         {
-            Contract.Requires<ArgumentNullException>(options != null);
-            Contract.Requires<ArgumentException>(minThreadCount >= 0);
-            Contract.Requires<ArgumentException>(maxThreadCount > 0);
-            Contract.Requires<ArgumentException>(maxThreadCount >= minThreadCount);
-            Contract.Requires<ArgumentException>(maxThreadCount < 4096);
-            Contract.Requires<ArgumentException>(options.MaxQueueCapacityExtension >= 0);
-            Contract.Requires<ArgumentException>(options.ManagementProcessPeriod > 0);
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+            if (minThreadCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(minThreadCount));
+            if (maxThreadCount <= 0 || maxThreadCount >= 4096)
+                throw new ArgumentOutOfRangeException(nameof(maxThreadCount), "maxThreadCount should be in range [0, 4096)");
+            if (maxThreadCount < minThreadCount)
+                throw new ArgumentOutOfRangeException(nameof(maxThreadCount), "maxThreadCount should be greater than minThreadCount");
+            if (options.MaxQueueCapacityExtension < 0)
+                throw new ArgumentOutOfRangeException(nameof(options.MaxQueueCapacityExtension));
+            if (options.ManagementProcessPeriod <= 0)
+                throw new ArgumentOutOfRangeException(nameof(options.ManagementProcessPeriod));
 
             _minThreadCount = minThreadCount;
             _maxThreadCount = maxThreadCount;
@@ -177,92 +182,92 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             FillPoolUpTo(minThreadCount);
         }
         /// <summary>
-        /// Конструктор DynamicThreadPool
+        /// <see cref="DynamicThreadPool"/> constructor
         /// </summary>
-        /// <param name="minThreadCount">Минимальное число потоков</param>
-        /// <param name="maxThreadCount">Максимальное число потоков</param>
-        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
-        /// <param name="name">Имена потоков</param>
-        /// <param name="isBackground">Использовать ли фоновые потоки</param>
-        /// <param name="options">Расширенные настройки пула потоков</param>
+        /// <param name="minThreadCount">Minimum number of threads that should always be in pool</param>
+        /// <param name="maxThreadCount">Maximum number of threads in pool</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
+        /// <param name="isBackground">Whether or not threads are a background threads</param>
+        /// <param name="options">Additional thread pool creation parameters</param>
         public DynamicThreadPool(int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name, bool isBackground, DynamicThreadPoolOptions options)
             : this(options ?? DynamicThreadPoolOptions.Default, minThreadCount, maxThreadCount, queueBoundedCapacity, name, isBackground)
         {
         }
         /// <summary>
-        /// Конструктор DynamicThreadPool
+        /// <see cref="DynamicThreadPool"/> constructor
         /// </summary>
-        /// <param name="minThreadCount">Минимальное число потоков</param>
-        /// <param name="maxThreadCount">Максимальное число потоков</param>
-        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
-        /// <param name="name">Имена потоков</param>
-        /// <param name="isBackground">Использовать ли фоновые потоки</param>
+        /// <param name="minThreadCount">Minimum number of threads that should always be in pool</param>
+        /// <param name="maxThreadCount">Maximum number of threads in pool</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
+        /// <param name="isBackground">Whether or not threads are a background threads</param>
         public DynamicThreadPool(int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name, bool isBackground)
             : this(DynamicThreadPoolOptions.Default, minThreadCount, maxThreadCount, queueBoundedCapacity, name, isBackground)
         {
         }
         /// <summary>
-        /// Конструктор DynamicThreadPool
+        /// <see cref="DynamicThreadPool"/> constructor
         /// </summary>
-        /// <param name="minThreadCount">Минимальное число потоков</param>
-        /// <param name="maxThreadCount">Максимальное число потоков</param>
-        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
-        /// <param name="name">Имена потоков</param>
+        /// <param name="minThreadCount">Minimum number of threads that should always be in pool</param>
+        /// <param name="maxThreadCount">Maximum number of threads in pool</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
         public DynamicThreadPool(int minThreadCount, int maxThreadCount, int queueBoundedCapacity, string name)
             : this(DynamicThreadPoolOptions.Default, minThreadCount, maxThreadCount, queueBoundedCapacity, name, false)
         {
         }
         /// <summary>
-        /// Конструктор DynamicThreadPool
+        /// <see cref="DynamicThreadPool"/> constructor
         /// </summary>
-        /// <param name="minThreadCount">Минимальное число потоков</param>
-        /// <param name="maxThreadCount">Максимальное число потоков</param>
-        /// <param name="name">Имена потоков</param>
+        /// <param name="minThreadCount">Minimum number of threads that should always be in pool</param>
+        /// <param name="maxThreadCount">Maximum number of threads in pool</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
         public DynamicThreadPool(int minThreadCount, int maxThreadCount, string name)
             : this(DynamicThreadPoolOptions.Default, minThreadCount, maxThreadCount, -1, name, false)
         {
         }
         /// <summary>
-        /// Конструктор DynamicThreadPool
+        /// <see cref="DynamicThreadPool"/> constructor
         /// </summary>
-        /// <param name="maxThreadCount">Максимальное число потоков</param>
-        /// <param name="name">Имена потоков</param>
+        /// <param name="maxThreadCount">Maximum number of threads in pool</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
         public DynamicThreadPool(int maxThreadCount, string name)
             : this(DynamicThreadPoolOptions.Default, 0, maxThreadCount, -1, name, false)
         {
         }
         /// <summary>
-        /// Конструктор DynamicThreadPool
+        /// <see cref="DynamicThreadPool"/> constructor
         /// </summary>
-        /// <param name="name">Имена потоков</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
         public DynamicThreadPool(string name)
             : this(DynamicThreadPoolOptions.Default, 0, 2 * Environment.ProcessorCount + 1, -1, name, false)
         {
         }
 
         /// <summary>
-        /// Минимально допустимое число потоков
+        /// Minimum number of threads that should always be in pool
         /// </summary>
         public int MinThreadCount
         {
             get { return _minThreadCount; }
         }
         /// <summary>
-        /// Максимальное допустимое число потоков
+        /// Maximum number of threads in pool
         /// </summary>
         public int MaxThreadCount
         {
             get { return _maxThreadCount; }
         }
         /// <summary>
-        /// Число потоков, занимающихся исполнением задач
+        /// Number of threads tracked by the current DynamicThreadPool
         /// </summary>
         protected int PrimaryThreadCount
         {
             get { return GetThreadCountFromCombination(Volatile.Read(ref _dieSlotActiveFullThreadCountCombination)); }
         }
         /// <summary>
-        /// Число активных потоков
+        /// Number of active threads
         /// </summary>
         public int ActiveThreadCount
         {
@@ -271,12 +276,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Наполнить пул до count потоков
+        /// Warms-up pool by adding new threads up to the specified '<paramref name="count"/>'
         /// </summary>
-        /// <param name="count">Число потоков, до которого наполняем</param>
+        /// <param name="count">The number of threads that must be present in the pool after the call</param>
         public void FillPoolUpTo(int count)
         {
-            Contract.Requires<ArgumentException>(count >= 0);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
+
             CheckPendingDisposeOrDisposed();         
 
             count = Math.Min(count, _maxThreadCount);
@@ -926,9 +933,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Добавление задачи для пула потоков
+        /// Places a new task to the thread pool queue
         /// </summary>
-        /// <param name="item">Задача</param>
+        /// <param name="item">Thread pool work item</param>
         protected sealed override void AddWorkItem(ThreadPoolWorkItem item)
         {
             CheckDisposed();
@@ -941,10 +948,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             TryRequestNewThreadOnAdd();
         }
         /// <summary>
-        /// Попытаться добавить задачу в пул потоков
+        /// Attemts to place a new task to the thread pool queue
         /// </summary>
-        /// <param name="item">Задача</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">Thread pool work item</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
         protected sealed override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
             if (State == ThreadPoolState.Stopped || IsAddingCompleted)
@@ -965,7 +972,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Деструктор
+        /// Finalizer
         /// </summary>
         ~DynamicThreadPool()
         {

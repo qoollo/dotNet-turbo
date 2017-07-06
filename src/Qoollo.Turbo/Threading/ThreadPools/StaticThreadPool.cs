@@ -12,42 +12,42 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
-    /// Параметры для StaticThreadPool
+    /// Configuration parameters for <see cref="StaticThreadPool"/>
     /// </summary>
     public class StaticThreadPoolOptions
     {
         /// <summary>
-        /// Стандартные опции
+        /// Default parameters
         /// </summary>
         internal static readonly StaticThreadPoolOptions Default = new StaticThreadPoolOptions();
 
         /// <summary>
-        /// Стандартный период сна между проверкой возможности похитить элемент из соседних локальных очередей
+        /// Default period of sleep in milliseconds between checking for the possibility to steal a work item from local queues
         /// </summary>
         public const int DefaultQueueStealAwakePeriod = 1000;
         /// <summary>
-        /// Стандартный период проверки переполненности очереди
+        /// Default period in milliseconds when a decision is made to extend the queue capacity
         /// </summary>
         public const int DefaultQueueBlockedCheckPeriod = 2000;
         /// <summary>
-        /// Максимальная величина расширения очереди по-умолчанию
+        /// Default maximum queue capacity extension
         /// </summary>
         public const int DefaultMaxQueueCapacityExtension = 256;
         /// <summary>
-        /// Стандартное значения для параметра использования своего шедуллера задач
+        /// Default value indicating whether or not set ThreadPool TaskScheduler as a default for all ThreadPool threads
         /// </summary>
         public const bool DefaultUseOwnTaskScheduler = false;
         /// <summary>
-        /// Стандартное значения для параметра использования своего контекста синхронизации
+        /// Default value indicating whether or not set ThreadPool SynchronizationContext as a default for all ThreadPool threads
         /// </summary>
         public const bool DefaultUseOwnSyncContext = false;
         /// <summary>
-        /// Стандартное значения для параметра протаскивания контекст исполнения
+        /// Default value indicating whether or not to flow ExecutionContext to the ThreadPool thread
         /// </summary>
         public const bool DefaultFlowExecutionContext = false;
 
         /// <summary>
-        /// Конструктор StaticThreadPoolOptions
+        /// <see cref="StaticThreadPoolOptions"/> constructor
         /// </summary>
         public StaticThreadPoolOptions()
         {
@@ -60,34 +60,33 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Периоды сна между проверкой возможности похитить элемент из соседних локальных очередей
+        /// Gets or sets period of sleep in milliseconds between checking for the possibility to steal a work item from local queues
         /// </summary>
         public int QueueStealAwakePeriod { get; set; }
         /// <summary>
-        /// Период проверки переполненности очереди
+        /// Gets or sets the period in milliseconds when a decision is made to extend the queue capacity
         /// </summary>
         public int QueueBlockedCheckPeriod { get; set; }
         /// <summary>
-        /// Максимальная величина расширения очереди
+        /// Gets or sets the maximum queue capacity extension
         /// </summary>
         public int MaxQueueCapacityExtension { get; set; }
         /// <summary>
-        /// Использовать ли свой шедуллер задач
+        /// Gets or sets value indicating whether or not set ThreadPool TaskScheduler as a default for all ThreadPool threads
         /// </summary>
         public bool UseOwnTaskScheduler { get; set; }
         /// <summary>
-        /// Использовать ли свой контекст синхронизации
+        /// Gets or sets value indicating whether or not set ThreadPool SynchronizationContext as a default for all ThreadPool threads
         /// </summary>
         public bool UseOwnSyncContext { get; set; }
         /// <summary>
-        /// Протаскивать ли контекст исполнения
+        /// Gets or sets value indicating whether or not to flow ExecutionContext to the ThreadPool thread
         /// </summary>
         public bool FlowExecutionContext { get; set; }
     }
 
     /// <summary>
-    /// Пул потоков с фиксированным числом потоков.
-    /// Тем не менее изменение числа потоков возможно путём явного вызова соостветствующих методов класса.
+    /// ThreadPool in which the number of threads is selected by user
     /// </summary>
     public class StaticThreadPool: Common.CommonThreadPool
     {
@@ -102,19 +101,22 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         private readonly object _syncObject = new object();
 
         /// <summary>
-        /// Конструктор StaticThreadPool
+        /// <see cref="StaticThreadPool"/> constructor
         /// </summary>
-        /// <param name="initialThreadCount">Начальное число потоков в пуле</param>
-        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
-        /// <param name="name">Имена потоков</param>
-        /// <param name="isBackground">Использовать ли фоновые потоки</param>
-        /// <param name="options">Расширенные настройки пула потоков</param>
+        /// <param name="initialThreadCount">Initial number of threads in ThreadPool</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
+        /// <param name="isBackground">Whether or not threads are a background threads</param>
+        /// <param name="options">Additional thread pool creation parameters</param>
         private StaticThreadPool(StaticThreadPoolOptions options, int initialThreadCount, int queueBoundedCapacity, string name, bool isBackground)
             : base(queueBoundedCapacity, options.QueueStealAwakePeriod, isBackground, name, options.UseOwnTaskScheduler, options.UseOwnSyncContext, options.FlowExecutionContext)
         {
-            Contract.Requires<ArgumentNullException>(options != null);
-            Contract.Requires<ArgumentException>(initialThreadCount >= 0);
-            Contract.Requires<ArgumentException>(options.MaxQueueCapacityExtension >= 0);
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+            if (initialThreadCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(initialThreadCount));
+            if (options.MaxQueueCapacityExtension < 0)
+                throw new ArgumentOutOfRangeException(nameof(options.MaxQueueCapacityExtension));
 
             _maxQueueCapacityExtension = options.MaxQueueCapacityExtension > 0 ? options.MaxQueueCapacityExtension : 0;
             _queueBlockedCheckPeriod = options.QueueBlockedCheckPeriod > 0 ? options.QueueBlockedCheckPeriod : 0;
@@ -127,44 +129,44 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             AddThreads(initialThreadCount);
         }
         /// <summary>
-        /// Конструктор StaticThreadPool
+        /// <see cref="StaticThreadPool"/> constructor
         /// </summary>
-        /// <param name="initialThreadCount">Начальное число потоков в пуле</param>
-        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
-        /// <param name="name">Имена потоков</param>
-        /// <param name="isBackground">Использовать ли фоновые потоки</param>
-        /// <param name="options">Расширенные настройки пула потоков</param>
+        /// <param name="initialThreadCount">Initial number of threads in ThreadPool</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
+        /// <param name="isBackground">Whether or not threads are a background threads</param>
+        /// <param name="options">Additional thread pool creation parameters</param>
         public StaticThreadPool(int initialThreadCount, int queueBoundedCapacity, string name, bool isBackground, StaticThreadPoolOptions options)
             : this(options ?? StaticThreadPoolOptions.Default, initialThreadCount, queueBoundedCapacity, name, isBackground)
         {
 
         }
         /// <summary>
-        /// Конструктор StaticThreadPool
+        /// <see cref="StaticThreadPool"/> constructor
         /// </summary>
-        /// <param name="initialThreadCount">Начальное число потоков в пуле</param>
-        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
-        /// <param name="name">Имена потоков</param>
-        /// <param name="isBackground">Использовать ли фоновые потоки</param>
+        /// <param name="initialThreadCount">Initial number of threads in ThreadPool</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
+        /// <param name="isBackground">Whether or not threads are a background threads</param>
         public StaticThreadPool(int initialThreadCount, int queueBoundedCapacity, string name, bool isBackground)
             : this(StaticThreadPoolOptions.Default, initialThreadCount, queueBoundedCapacity, name, isBackground)
         {
         }
         /// <summary>
-        /// Конструктор StaticThreadPool
+        /// <see cref="StaticThreadPool"/> constructor
         /// </summary>
-        /// <param name="initialThreadCount">Начальное число потоков в пуле</param>
-        /// <param name="queueBoundedCapacity">Максимальный размер очереди задач (-1 - не ограничен)</param>
-        /// <param name="name">Имена потоков</param>
+        /// <param name="initialThreadCount">Initial number of threads in ThreadPool</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
         public StaticThreadPool(int initialThreadCount, int queueBoundedCapacity, string name)
             : this(StaticThreadPoolOptions.Default, initialThreadCount, queueBoundedCapacity, name, false)
         {
         }
         /// <summary>
-        /// Конструктор StaticThreadPool
+        /// <see cref="StaticThreadPool"/> constructor
         /// </summary>
-        /// <param name="initialThreadCount">Начальное число потоков в пуле</param>
-        /// <param name="name">Имена потоков</param>
+        /// <param name="initialThreadCount">Initial number of threads in ThreadPool</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
         public StaticThreadPool(int initialThreadCount, string name)
             : this(StaticThreadPoolOptions.Default, initialThreadCount, -1, name, false)
         {
@@ -172,12 +174,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Увеличить число потоков в пуле
+        /// Adds the specified number of threads to the ThreadPool
         /// </summary>
-        /// <param name="count">Число потоков, на которое увеличиваем</param>
+        /// <param name="count">Number of threads that should be added to ThreadPool</param>
         public void AddThreads(int count = 1)
         {
-            Contract.Requires<ArgumentException>(count >= 0);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
             CheckPendingDisposeOrDisposed();
             
 
@@ -188,12 +191,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Уменьшить число потоков в пуле
+        /// Removes the specified number of threads to the ThreadPool
         /// </summary>
-        /// <param name="count">Число потоков, на которое уменьшаем</param>
+        /// <param name="count">Number of threads that should be removed from ThreadPool</param>
         public void RemoveThreads(int count = 1)
         {
-            Contract.Requires<ArgumentException>(count >= 0);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
             CheckPendingDisposeOrDisposed();
 
             if (count > this.ThreadCount)
@@ -210,12 +214,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Установить count потоков в пуле
+        /// Sets the number of threads in ThreadPool to the specified value
         /// </summary>
-        /// <param name="count">Число потоков, до которого наполняем</param>
+        /// <param name="count">The number of threads that must be present in the pool after the call</param>
         public void SetThreadCount(int count)
         {
-            Contract.Requires<ArgumentException>(count >= 0);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
             CheckPendingDisposeOrDisposed();
 
             Interlocked.Exchange(ref _expectedThreadCount, count);
@@ -225,12 +230,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Заполнить число потоков в пуле до count
+        /// Warms-up pool by adding new threads up to the specified '<paramref name="count"/>'
         /// </summary>
-        /// <param name="count">Число потоков, до которого наполняем</param>
+        /// <param name="count">The number of threads that must be present in the pool after the call</param>
         public void FullPoolUpTo(int count)
         {
-            Contract.Requires<ArgumentException>(count >= 0);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
             CheckPendingDisposeOrDisposed();
 
             if (this.ThreadCount >= count)
@@ -345,10 +351,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Главный метод обработки задач
+        /// Main processing method
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="token">Токен отмены (при остановке пула)</param>
+        /// <param name="privateData">Thread local data</param>
+        /// <param name="token">Cancellation token to stop the thread</param>
         [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadProc(ThreadPrivateData privateData, CancellationToken token)
         {
@@ -427,9 +433,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Добавление задачи для пула потоков
+        /// Places a new task to the thread pool queue
         /// </summary>
-        /// <param name="item">Задача</param>
+        /// <param name="item">Thread pool work item</param>
         protected sealed override void AddWorkItem(ThreadPoolWorkItem item)
         {
             CheckDisposed();
@@ -440,10 +446,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             this.AddWorkItemToQueue(item);       
         }
         /// <summary>
-        /// Попытаться добавить задачу в пул потоков
+        /// Attemts to place a new task to the thread pool queue
         /// </summary>
-        /// <param name="item">Задача</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">Thread pool work item</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
         protected sealed override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
             if (State == ThreadPoolState.Stopped || IsAddingCompleted)
@@ -458,7 +464,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Деструктор
+        /// Finalizer
         /// </summary>
         ~StaticThreadPool()
         {

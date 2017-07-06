@@ -208,7 +208,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
         /// <param name="queueStealAwakePeriod">Periods of sleep between checking for the possibility to steal a work item from other local queues</param>
         /// <param name="isBackground">Whether or not threads are a background threads</param>
-        /// <param name="name">The name for this instance of ThreadPool</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
         /// <param name="useOwnTaskScheduler">Whether or not set ThreadPool TaskScheduler as a default for all ThreadPool threads</param>
         /// <param name="useOwnSyncContext">Whether or not set ThreadPool SynchronizationContext as a default for all ThreadPool threads</param>
         /// <param name="flowExecutionContext">Whether or not to flow ExecutionContext to the ThreadPool thread</param>
