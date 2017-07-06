@@ -64,7 +64,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// </summary>
         /// <param name="logic">Implementation of the item processing logic</param>
         /// <param name="threadCount">Number of processing threads</param>
-        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         /// <param name="isBackground">Whether or not processing threads are background threads</param>
         public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, int maxQueueSize, string name, bool isBackground)
@@ -80,7 +80,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// </summary>
         /// <param name="logic">Implementation of the item processing logic</param>
         /// <param name="threadCount">Number of processing threads</param>
-        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         public InterfaceQueueAsyncProcessor(IQueueAsyncProcessorLogic<T> logic, int threadCount, int maxQueueSize, string name)
             : this(logic, threadCount, maxQueueSize, name, false)

@@ -7,24 +7,24 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
-    /// Состояние пула потоков
+    /// Defines possible states of the ThreadPool
     /// </summary>
     public enum ThreadPoolState: int
     {
         /// <summary>
-        /// Пул создан
+        /// Indicates that ThreadPool was created
         /// </summary>
         Created = 0,
         /// <summary>
-        /// В пуле работают потоки
+        /// Indicates that threads are running inside ThreadPool
         /// </summary>
         Running = 1,
         /// <summary>
-        /// Запрошена остановка
+        /// Indicates that stop was requested by user
         /// </summary>
         StopRequested = 2,
         /// <summary>
-        /// Полностью остановлен
+        /// Indicates that ThreadPool is fully stopped
         /// </summary>
         Stopped = 3
     }

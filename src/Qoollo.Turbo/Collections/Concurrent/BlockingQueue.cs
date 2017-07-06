@@ -42,7 +42,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <summary>
         /// BlockingQueue constructor
         /// </summary>
-        /// <param name="boundedCapacity">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="boundedCapacity">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         public BlockingQueue(int boundedCapacity)
         {
             _innerQueue = new ConcurrentQueue<T>();

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
-    /// Параметры для StaticThreadPool
+    /// Configuration parameters for <see cref="DynamicThreadPool"/>
     /// </summary>
     public class DynamicThreadPoolOptions
     {
@@ -100,35 +100,6 @@ namespace Qoollo.Turbo.Threading.ThreadPools
     /// </summary>
     public class DynamicThreadPool: Common.CommonThreadPool
     {
-        /// <summary>
-        /// Получить временной маркер в миллисекундах
-        /// </summary>
-        /// <returns>Временной маркер</returns>
-        private static uint GetTimestamp()
-        {
-            return (uint)Environment.TickCount;
-        }
-        /// <summary>
-        /// Обновить таймаут
-        /// </summary>
-        /// <param name="startTime">Время начала</param>
-        /// <param name="originalTimeout">Величина таймаута</param>
-        /// <returns>Сколько осталось времени</returns>
-        private static int UpdateTimeout(uint startTime, int originalTimeout)
-        {
-            uint elapsed = GetTimestamp() - startTime;
-            if (elapsed > (uint)int.MaxValue)
-                return 0;
-
-            int rest = originalTimeout - (int)elapsed;
-            if (rest <= 0)
-                return 0;
-
-            return rest;
-        }
-
-        // =============
-
         internal static bool DisableCritical = false;
 
         private const int WorkItemPerThreadLimit = 32;

@@ -97,7 +97,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// QueueAsyncProcessor constructor
         /// </summary>
         /// <param name="threadCount">Number of processing threads</param>
-        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         /// <param name="isBackground">Whether or not processing threads are background threads</param>
         public QueueAsyncProcessor(int threadCount, int maxQueueSize, string name, bool isBackground)
@@ -128,7 +128,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// QueueAsyncProcessor constructor
         /// </summary>
         /// <param name="threadCount">Number of processing threads</param>
-        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         public QueueAsyncProcessor(int threadCount, int maxQueueSize, string name)
             : this(threadCount, maxQueueSize, name, false)
@@ -264,7 +264,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         }
 
         /// <summary>
-        /// The bounded size of the queue (if less or equeal to 0 then no limitation)
+        /// The bounded size of the queue (if less or equal to 0 then no limitation)
         /// </summary>
         public int QueueCapacity
         {

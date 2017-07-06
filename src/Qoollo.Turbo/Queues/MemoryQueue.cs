@@ -19,7 +19,7 @@ namespace Qoollo.Turbo.Queues
         /// <summary>
         /// MemoryQueue constructor
         /// </summary>
-        /// <param name="boundedCapacity">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="boundedCapacity">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         public MemoryQueue(int boundedCapacity) : base(boundedCapacity) { }
         /// <summary>
         /// MemoryQueue constructor
