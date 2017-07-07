@@ -66,7 +66,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Gets or sets the period in milliseconds when unused threads will be removed from ThreadPool (if less than zero then threads are never removed)
+        /// Gets or sets the period in milliseconds when unused and suspended threads will be removed from ThreadPool (if less than zero then threads are never removed)
         /// </summary>
         public int NoWorkItemTrimPeriod { get; set; }
         /// <summary>
@@ -78,19 +78,19 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// </summary>
         public int MaxQueueCapacityExtension { get; set; }
         /// <summary>
-        /// Gets or sets the priod in milliseconds when the management thread is checks the state of the pool and changes the number of threads
+        /// Gets or sets the period in milliseconds when the management procedure checks the state of the ThreadPool and changes the number of active threads
         /// </summary>
         public int ManagementProcessPeriod { get; set; }
         /// <summary>
-        /// Gets or sets value indicating whether or not set ThreadPool TaskScheduler as a default for all ThreadPool threads
+        /// Gets or sets a value indicating whether or not to set ThreadPool TaskScheduler as a default for all ThreadPool threads
         /// </summary>
         public bool UseOwnTaskScheduler { get; set; }
         /// <summary>
-        /// Gets or sets value indicating whether or not set ThreadPool SynchronizationContext as a default for all ThreadPool threads
+        /// Gets or sets a value indicating whether or not to set ThreadPool SynchronizationContext as a default for all ThreadPool threads
         /// </summary>
         public bool UseOwnSyncContext { get; set; }
         /// <summary>
-        /// Gets or sets value indicating whether or not to flow ExecutionContext to the ThreadPool thread
+        /// Gets or sets a value indicating whether or not to flow ExecutionContext to the ThreadPool thread
         /// </summary>
         public bool FlowExecutionContext { get; set; }      
     }

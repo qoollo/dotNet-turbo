@@ -72,15 +72,15 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// </summary>
         public int MaxQueueCapacityExtension { get; set; }
         /// <summary>
-        /// Gets or sets value indicating whether or not set ThreadPool TaskScheduler as a default for all ThreadPool threads
+        /// Gets or sets a value indicating whether or not to set ThreadPool TaskScheduler as a default for all ThreadPool threads
         /// </summary>
         public bool UseOwnTaskScheduler { get; set; }
         /// <summary>
-        /// Gets or sets value indicating whether or not set ThreadPool SynchronizationContext as a default for all ThreadPool threads
+        /// Gets or sets a value indicating whether or not to set ThreadPool SynchronizationContext as a default for all ThreadPool threads
         /// </summary>
         public bool UseOwnSyncContext { get; set; }
         /// <summary>
-        /// Gets or sets value indicating whether or not to flow ExecutionContext to the ThreadPool thread
+        /// Gets or sets a value indicating whether or not to flow ExecutionContext to the ThreadPool thread
         /// </summary>
         public bool FlowExecutionContext { get; set; }
     }
@@ -258,9 +258,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Вспомогательный метод добавления нового потока в статический пул
+        /// Adds new thread to the ThreadPool (helper method)
         /// </summary>
-        /// <returns>Инициирован ли поток</returns>
+        /// <returns>Ture when thread added successfully</returns>
         private bool AddNewThreadInner()
         {
             if (IsStopRequestedOrStopped || ThreadCount >= Volatile.Read(ref _expectedThreadCount))
