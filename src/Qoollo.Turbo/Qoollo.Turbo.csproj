@@ -392,17 +392,6 @@
     <Compile Include="IoC\LocatorTargetObjectAttribute.cs" />
     <Compile Include="IoC\ServiceStuff\IInstanceCreator.cs" />
     <Compile Include="IoC\ServiceStuff\InstantiationService.cs" />
-    <Compile Include="OldPool\BalancingDynamicSizePoolManager.cs" />
-    <Compile Include="OldPool\BalancingStaticPoolManager.cs" />
-    <Compile Include="OldPool\DynamicSizePoolManager.cs" />
-    <Compile Include="OldPool\InterfaceBasedDynamicSizePoolManager.cs" />
-    <Compile Include="OldPool\Elements\IPoolElementReleaser.cs" />
-    <Compile Include="OldPool\Elements\PoolElement.cs" />
-    <Compile Include="OldPool\PoolManager.cs" />
-    <Compile Include="OldPool\StaticPoolManager.cs" />
-    <Compile Include="OldPool\UnifiedDynamicSizePoolManager.cs" />
-    <Compile Include="OldPool\Elements\UnifiedPoolElement.cs" />
-    <Compile Include="OldPool\UnifiedBalancingDynamicSizePoolManager.cs" />
     <Compile Include="Profiling\DefaultProfilingProvider.cs" />
     <Compile Include="Profiling\IProfilingProvider.cs" />
     <Compile Include="Profiling\ProfilingTimer.cs" />
@@ -436,12 +425,6 @@
     <Compile Include="Threading\ThreadPools\SystemThreadPool.cs" />
     <Compile Include="Threading\ThreadPools\ThreadPoolBase.cs" />
     <Compile Include="Threading\ThreadPools\ThreadPoolState.cs" />
-    <Compile Include="Threading\OldThreadPools\ServiceStuff\CommonThreadPool.cs" />
-    <Compile Include="Threading\OldThreadPools\DynamicThreadPool.cs" />
-    <Compile Include="Threading\OldThreadPools\ServiceStuff\ThreadPoolWorkItem.cs" />
-    <Compile Include="Threading\OldThreadPools\StaticThreadPool.cs" />
-    <Compile Include="Threading\OldThreadPools\SystemThreadPool.cs" />
-    <Compile Include="Threading\OldThreadPools\ThreadPoolBase.cs" />
     <Compile Include="Common\Extensions\TurboTypeExtensions.cs" />
     <Compile Include="Common\Throttling\CPUThrottleBehavior.cs" />
     <Compile Include="Common\Throttling\ThrottleBehavior.cs" />
@@ -456,7 +439,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Caching\" />
-    <Folder Include="OldPool\ServiceStuff\" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />

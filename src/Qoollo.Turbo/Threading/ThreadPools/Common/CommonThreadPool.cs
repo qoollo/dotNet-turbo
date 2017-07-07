@@ -13,7 +13,7 @@ using Debug = System.Diagnostics.Debug;
 namespace Qoollo.Turbo.Threading.ThreadPools.Common
 {
     /// <summary>
-    /// Общий код для пулов потоков
+    /// Shared logic for ThreadPools
     /// </summary>
     public abstract class CommonThreadPool : ThreadPoolBase, ICustomSynchronizationContextSupplier, IContextSwitchSupplier
     {
@@ -122,7 +122,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         // =====================
 
         /// <summary>
-        /// Внутренние данные для каждого потока пула
+        /// Local data for every ThreadPool thread
         /// </summary>
         protected class ThreadPrivateData
         {
@@ -200,18 +200,18 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private readonly ManualResetEventSlim _stopWaiter;
         private volatile bool _letFinishProcess;
         private volatile bool _completeAdding;
-        
+
 
         /// <summary>
-        /// Конструктор CommonThreadPool
+        /// <see cref="CommonThreadPool"/> constructor
         /// </summary>
-        /// <param name="queueBoundedCapacity">Ограничение на размер очереди</param>
-        /// <param name="queueStealAwakePeriod">Периоды сна между проверкой возможности похитить элемент из соседних локальных очередей</param>
-        /// <param name="isBackground">Фоновые ли потоки</param>
-        /// <param name="name">Имя пула</param>
-        /// <param name="useOwnTaskScheduler">Использовать ли свой шедулер Task'ов</param>
-        /// <param name="useOwnSyncContext">Устанавливать ли собственный контекст синхронизации</param>
-        /// <param name="flowExecutionContext">Протаскивать ли контекст исполнения</param>
+        /// <param name="queueBoundedCapacity">The bounded size of the work items queue (if less or equal to 0 then no limitation)</param>
+        /// <param name="queueStealAwakePeriod">Periods of sleep between checking for the possibility to steal a work item from other local queues</param>
+        /// <param name="isBackground">Whether or not threads are a background threads</param>
+        /// <param name="name">The name for this instance of ThreadPool and for its threads</param>
+        /// <param name="useOwnTaskScheduler">Whether or not set ThreadPool TaskScheduler as a default for all ThreadPool threads</param>
+        /// <param name="useOwnSyncContext">Whether or not set ThreadPool SynchronizationContext as a default for all ThreadPool threads</param>
+        /// <param name="flowExecutionContext">Whether or not to flow ExecutionContext to the ThreadPool thread</param>
         public CommonThreadPool(int queueBoundedCapacity, int queueStealAwakePeriod, bool isBackground, string name, bool useOwnTaskScheduler, bool useOwnSyncContext, bool flowExecutionContext)
         {
             _isBackgroundThreads = isBackground;
@@ -238,63 +238,63 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Имя пула потоков
+        /// The name for this instance of ThreadPool
         /// </summary>
         public string Name
         {
             get { return _name; }
         }
         /// <summary>
-        /// Работают ли потоке в фоновом режиме
+        /// Gets value indicating whether or not thread pool threads are a background threads
         /// </summary>
         public bool IsBackgroundThreads
         {
             get { return _isBackgroundThreads; }
         }
         /// <summary>
-        /// Число активных потоков
+        /// Number of active threads
         /// </summary>
         public int ThreadCount
         {
             get { return Volatile.Read(ref _activeThreadCount); }
         }
         /// <summary>
-        /// Ограничение на максимальный размер очереди задач (-1 - нет ограничения)
+        /// The bounded size of the work items queue (if less or equal to 0 then no limitation)
         /// </summary>
         public int QueueCapacity
         {
             get { return _threadPoolGlobals.GlobalQueue.BoundedCapacity; }
         }
         /// <summary>
-        /// Расширенная вместимость очереди задач
+        /// Extended capacity of the work items queue
         /// </summary>
         protected int ExtendedQueueCapacity
         {
             get { return _threadPoolGlobals.GlobalQueue.ExtendedCapacity; }
         }
         /// <summary>
-        /// Число элементов в общей очереди
+        /// Number of items in global work items queue
         /// </summary>
         public int GlobalQueueWorkItemCount
         {
             get { return _threadPoolGlobals.GlobalQueue.OccupiedNodesCount; }
         }
         /// <summary>
-        /// Запрещено ли добавление новых задач в пул
+        /// Is ThreadPool marked as Completed for Adding
         /// </summary>
         public bool IsAddingCompleted
         {
             get { return _completeAdding; }
         }
         /// <summary>
-        /// Можно ли закончить обработку существующих задач
+        /// Whether the user specified that all existed work items should be processed before stop
         /// </summary>
         protected bool LetFinishedProcess
         {
             get { return _letFinishProcess; }
         }
         /// <summary>
-        /// Находимся ли в процессе остановки
+        /// Whether the stop was requested or already stopped
         /// </summary>
         protected bool IsStopRequestedOrStopped
         {
@@ -305,7 +305,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             }
         }
         /// <summary>
-        /// Находится ли пул потоков в рабочем состоянии
+        /// Whether the ThreadPool is running and can process work items
         /// </summary>
         public bool IsWork
         {
@@ -316,21 +316,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             }
         }
         /// <summary>
-        /// Принадлежит ли текущий поток пулу
+        /// Gets a value indicating whether or not a thread belongs to the current thread pool
         /// </summary>
         public bool IsThreadPoolThread
         {
             get { return _threadPoolGlobals.IsThreadPoolThread; }
         }
         /// <summary>
-        /// Контекст синхронизации
+        /// Synchronization context for the current ThreadPool
         /// </summary>
         protected SynchronizationContext SynchronizationContext
         {
             get { return _synchroContext; }
         }
         /// <summary>
-        /// Шедуллер задач
+        /// Task scheduler associated with the current ThreadPool
         /// </summary>
         public TaskScheduler TaskScheduler
         {
@@ -338,18 +338,18 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Состояние пула потоков
+        /// Current state
         /// </summary>
         public ThreadPoolState State
         {
             get { return (ThreadPoolState)Volatile.Read(ref _threadPoolState); }
         }
         /// <summary>
-        /// Допустима ли смена состояния
+        /// Verifies that state transition is possible
         /// </summary>
-        /// <param name="oldState">Старое состояние</param>
-        /// <param name="newState">Новое состояние</param>
-        /// <returns>Допустим ли переход</returns>
+        /// <param name="oldState">Current state</param>
+        /// <param name="newState">New state</param>
+        /// <returns>True when state transition can be performed</returns>
         private bool IsValidStateTransition(ThreadPoolState oldState, ThreadPoolState newState)
         {
             switch (oldState)
@@ -367,11 +367,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             }
         }
         /// <summary>
-        /// Безопасно сменить состояние
+        /// Safely changes the current state
         /// </summary>
-        /// <param name="newState">Новое состояние</param>
-        /// <param name="prevState">Состояние, которое было до смены</param>
-        /// <returns>Произошла ли смена</returns>
+        /// <param name="newState">New state</param>
+        /// <param name="prevState">Previously observed state</param>
+        /// <returns>Was state changed (false means that the state transition is not valid)</returns>
         private bool ChangeStateSafe(ThreadPoolState newState, out ThreadPoolState prevState)
         {
             prevState = (ThreadPoolState)Volatile.Read(ref _threadPoolState);
@@ -391,7 +391,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return true;
         }
         /// <summary>
-        /// Обработчик перехода в состояние Stopped
+        /// Handles state chaning to <see cref="ThreadPoolState.Stopped"/>
         /// </summary>
         private void OnGoToStoppedState()
         {
@@ -405,86 +405,88 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Исполнение метода в пуле потоков
+        /// Queues a method for exection inside the current ThreadPool
         /// </summary>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <param name="preferFairness">Требование постановки в основную очередь</param>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="preferFairness">When true places work item directly to the global queue, otherwise can place work item to the thread local queue</param>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public void Run(Action action, bool preferFairness)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             AddWorkItem(new ActionThreadPoolWorkItem(action, true, preferFairness));
         }
         /// <summary>
-        /// Попытаться исполнить метод в пуле потоков
+        /// Attempts to queue a method for exection inside the current ThreadPool
         /// </summary>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <param name="preferFairness">Требование постановки в основную очередь</param>
-        /// <returns>Успшеность постановки в очередь (не гарантирует успешность запуска)</returns>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="preferFairness">When true places work item directly to the global queue, otherwise can place work item to the thread local queue</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public bool TryRun(Action action, bool preferFairness)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             return TryAddWorkItem(new ActionThreadPoolWorkItem(action, true, preferFairness));
         }
 
         /// <summary>
-        /// Исполнение метода с пользовательским параметром в пуле потоков
+        /// Queues a method for exection inside the current ThreadPool
         /// </summary>
-        /// <typeparam name="T">Тип пользовательского параметра</typeparam>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <param name="state">Пользовательский параметр</param>
-        /// <param name="preferFairness">Требование постановки в основную очередь</param>
+        /// <typeparam name="T">Type of the user state object</typeparam>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <param name="preferFairness">When true places work item directly to the global queue, otherwise can place work item to the thread local queue</param>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public void Run<T>(Action<T> action, T state, bool preferFairness)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             AddWorkItem(new ActionThreadPoolWorkItem<T>(action, state, true, preferFairness));
         }
 
         /// <summary>
-        /// Попытаться исполнить метод с пользовательским параметром в пуле потоков
+        /// Attempts to queue a method for exection inside the current ThreadPool
         /// </summary>
-        /// <typeparam name="T">Тип пользовательского параметра</typeparam>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <param name="state">Пользовательский параметр</param>
-        /// <param name="preferFairness">Требование постановки в основную очередь</param>
-        /// <returns>Успшеность постановки в очередь (не гарантирует успешность запуска)</returns>
+        /// <typeparam name="T">Type of the user state object</typeparam>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <param name="preferFairness">When true places work item directly to the global queue, otherwise can place work item to the thread local queue</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public bool TryRun<T>(Action<T> action, T state, bool preferFairness)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             return TryAddWorkItem(new ActionThreadPoolWorkItem<T>(action, state, true, preferFairness));
         }
 
 
         /// <summary>
-        /// Запуск действия с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <returns>Task</returns>
+        /// <param name="action">Representing the method to execute</param>
+        /// <returns>Create Task</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public sealed override Task RunAsTask(Action action)
         {
             return this.RunAsTask(action, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Запуск действия с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
-        /// <returns>Task</returns>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="creationOptions">Task creation options</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public Task RunAsTask(Action action, TaskCreationOptions creationOptions)
         {
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             if (_useOwnTaskScheduler)
             {
@@ -501,28 +503,30 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Запуск действия с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TState">Тип параметра состояния</typeparam>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TState">Type of the user state object</typeparam>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public sealed override Task RunAsTask<TState>(Action<TState> action, TState state)
         {
             return this.RunAsTask(action, state, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Запуск действия с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TState">Тип параметра состояния</typeparam>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TState">Type of the user state object</typeparam>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <param name="creationOptions">Task creation options</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public Task RunAsTask<TState>(Action<TState> action, TState state, TaskCreationOptions creationOptions)
         {
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             if (_useOwnTaskScheduler)
             {
@@ -542,26 +546,28 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Запуск функции с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TRes">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TRes">The type of the operation result</typeparam>
+        /// <param name="func">Representing the method to execute</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Func is null</exception>
         public sealed override Task<TRes> RunAsTask<TRes>(Func<TRes> func)
         {
             return this.RunAsTask<TRes>(func, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Запуск функции с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TRes">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TRes">The type of the operation result</typeparam>
+        /// <param name="func">Representing the method to execute</param>
+        /// <param name="creationOptions">Task creation options</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Func is null</exception>
         public Task<TRes> RunAsTask<TRes>(Func<TRes> func, TaskCreationOptions creationOptions)
         {
             if (func == null)
-                throw new ArgumentNullException("func");
+                throw new ArgumentNullException(nameof(func));
 
             if (_useOwnTaskScheduler)
             {
@@ -578,30 +584,32 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Запуск функции с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TState">Тип параметра состояния</typeparam>
-        /// <typeparam name="TRes">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TState">Type of the user state object</typeparam>
+        /// <typeparam name="TRes">The type of the operation result</typeparam>
+        /// <param name="func">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Func is null</exception>
         public sealed override Task<TRes> RunAsTask<TState, TRes>(Func<TState, TRes> func, TState state)
         {
             return this.RunAsTask<TState, TRes>(func, state, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Запуск функции с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TState">Тип параметра состояния</typeparam>
-        /// <typeparam name="TRes">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TState">Type of the user state object</typeparam>
+        /// <typeparam name="TRes">The type of the operation result</typeparam>
+        /// <param name="func">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <param name="creationOptions">Task creation options</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Func is null</exception>
         public Task<TRes> RunAsTask<TState, TRes>(Func<TState, TRes> func, TState state, TaskCreationOptions creationOptions)
         {
             if (func == null)
-                throw new ArgumentNullException("func");
+                throw new ArgumentNullException(nameof(func));
 
             if (_useOwnTaskScheduler)
             {
@@ -620,9 +628,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Переход на выполнение в пуле посредством await
+        /// Creates an awaitable that asynchronously switch to the current ThreadPool when awaited
         /// </summary>
-        /// <returns>Объект смены контекста выполнения</returns>
+        /// <returns>Context switch awaitable object</returns>
         public sealed override ContextSwitchAwaitable SwitchToPool()
         {
             if (IsThreadPoolThread)
@@ -633,7 +641,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Ожидание полной остановки
+        /// Blocks the current thread and waits for all processing threads to complete
         /// </summary>
         public void WaitUntilStop()
         {
@@ -644,10 +652,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Ожидание полной остановки с таймаутом
+        /// Blocks the current thread and waits for all processing threads to complete
         /// </summary>
-        /// <param name="timeout">Таймаут ожидания в миллисекундах</param>
-        /// <returns>true - дождались, false - вышли по таймауту</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <returns>True when all threads completed in time</returns>
         public bool WaitUntilStop(int timeout)
         {
             if (State == ThreadPoolState.Stopped)
@@ -656,7 +664,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Проверить, освобождён ли объект и если да, то вызвать исключение ObjectDisposedException
+        /// Checks whether the current instance is in Stopped state and throws ObjectDisposedException when it is
         /// </summary>
         protected void CheckDisposed()
         {
@@ -664,7 +672,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                 throw new ObjectDisposedException(this.GetType().Name, "ThreadPool is Stopped");
         }
         /// <summary>
-        /// Проверить, освобождён ли объект и если да, то вызвать исключение ObjectDisposedException
+        /// Checks whether the current instance is in Stopped or StopRequested state and throws ObjectDisposedException when it is
         /// </summary>
         protected void CheckPendingDisposeOrDisposed()
         {
@@ -672,14 +680,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (state == ThreadPoolState.Stopped || state == ThreadPoolState.StopRequested)
                 throw new ObjectDisposedException(this.GetType().Name, "ThreadPool has Stopped or StopRequested state");
         }
-        
+
 
         /// <summary>
-        /// Просканировать все потоки и получить информацию об их состояниях
+        /// Scans all threads and gets the information about their states
         /// </summary>
-        /// <param name="totalThreadCount">Общее число зарегистрированных потоков</param>
-        /// <param name="runningCount">Число исполняющихся в данный момент потоков</param>
-        /// <param name="waitingCount">Число заблокированных потоков</param>
+        /// <param name="totalThreadCount">Total number of threads</param>
+        /// <param name="runningCount">Number of running threads (in <see cref="ThreadState.Running"/> state)</param>
+        /// <param name="waitingCount">Number of threads in <see cref="ThreadState.WaitSleepJoin"/> state</param>
         protected void ScanThreadStates(out int totalThreadCount, out int runningCount, out int waitingCount)
         {
             totalThreadCount = 0;
@@ -701,9 +709,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Получить токен отмены для остановки пула
+        /// Gets the CancellationToken that will be cancelled when a stop is requested 
         /// </summary>
-        /// <returns>Токен отмены</returns>
+        /// <returns>Cancellation token</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected CancellationToken GetThreadRunningCancellationToken()
         {
@@ -955,7 +963,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Завершить добавление для всех последующих задач
+        /// Marks that new items cannot be added to work items queue
         /// </summary>
         public void CompleteAdding()
         {
@@ -1299,11 +1307,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Остановка и освобождение ресурсов
+        /// Stops ThreadPool and changes state to <see cref="ThreadPoolState.StopRequested"/>
         /// </summary>
-        /// <param name="waitForStop">Ожидать остановки</param>
-        /// <param name="letFinishProcess">Позволить обработать всю очередь</param>
-        /// <param name="completeAdding">Запретить добавление новых элементов</param>
+        /// <param name="waitForStop">Whether the current thread should be blocked until all processing threads are be completed</param>
+        /// <param name="letFinishProcess">Whether all items that have already been added must be processed before stopping</param>
+        /// <param name="completeAdding">Marks that new items cannot be added to work items queue</param>
         public virtual void Dispose(bool waitForStop, bool letFinishProcess, bool completeAdding)
         {
             StopThreadPool(waitForStop, letFinishProcess, completeAdding);
@@ -1311,9 +1319,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Cleans-up resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли пользователем</param>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected override void Dispose(bool isUserCall)
         {
             if (isUserCall && State == ThreadPoolState.Stopped)

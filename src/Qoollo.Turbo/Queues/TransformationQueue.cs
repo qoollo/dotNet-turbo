@@ -93,7 +93,7 @@ namespace Qoollo.Turbo.Queues
         private void CheckDisposed()
         {
             if (_isDisposed)
-                throw new ObjectDisposedException(nameof(TransformationQueue<TExternal, TInner>));
+                throw new ObjectDisposedException(this.GetType().GetCSName());
         }
 
 
@@ -123,7 +123,8 @@ namespace Qoollo.Turbo.Queues
         /// <param name="item">New item</param>
         public sealed override void AddForced(TExternal item)
         {
-            CheckDisposed();
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().GetCSName());
 
             var convertedItem = Convert(item);
             _queue.AddForced(convertedItem);
@@ -138,7 +139,8 @@ namespace Qoollo.Turbo.Queues
         /// <returns>Was added sucessufully</returns>
         protected sealed override bool TryAddCore(TExternal item, int timeout, CancellationToken token)
         {
-            CheckDisposed();
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().GetCSName());
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
@@ -155,7 +157,8 @@ namespace Qoollo.Turbo.Queues
         /// <returns>True if the item was removed</returns>
         protected sealed override bool TryTakeCore(out TExternal item, int timeout, CancellationToken token)
         {
-            CheckDisposed();
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().GetCSName());
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
@@ -179,7 +182,8 @@ namespace Qoollo.Turbo.Queues
         /// <returns>True if the item was read</returns>
         protected sealed override bool TryPeekCore(out TExternal item, int timeout, CancellationToken token)
         {
-            CheckDisposed();
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().GetCSName());
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 

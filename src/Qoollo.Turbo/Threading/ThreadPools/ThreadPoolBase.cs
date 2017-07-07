@@ -10,109 +10,109 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
-    /// Базовый класс пула потоков
+    /// Base class for pool of threads that can be used to execute asynchronous tasks
     /// </summary>
     [ContractClass(typeof(ThreadPoolBaseCodeContractCheck))]
     public abstract class ThreadPoolBase : IConsumer<Action>, IDisposable
     {
         /// <summary>
-        /// Добавление задачи для пула потоков
+        /// Places a new task to the thread pool queue
         /// </summary>
-        /// <param name="item">Задача</param>
+        /// <param name="item">Thread pool work item</param>
         protected abstract void AddWorkItem(ThreadPoolWorkItem item);
         /// <summary>
-        /// Попытаться добавить задачу в пул потоков
+        /// Attemts to place a new task to the thread pool queue
         /// </summary>
-        /// <param name="item">Задача</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">Thread pool work item</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
         protected abstract bool TryAddWorkItem(ThreadPoolWorkItem item);
 
 
         /// <summary>
-        /// Исполнение метода в пуле потоков
+        /// Queues a method for exection inside the current ThreadPool
         /// </summary>
-        /// <param name="action">Делегат на выполняемый метод</param>
+        /// <param name="action">Representing the method to execute</param>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public void Run(Action action)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             AddWorkItem(new ActionThreadPoolWorkItem(action));
         }
         /// <summary>
-        /// Попытаться исполнить метод в пуле потоков
+        /// Attempts to queue a method for exection inside the current ThreadPool
         /// </summary>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <returns>Успшеность постановки в очередь (не гарантирует успешность запуска)</returns>
+        /// <param name="action">Representing the method to execute</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public bool TryRun(Action action)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             return TryAddWorkItem(new ActionThreadPoolWorkItem(action));
         }
 
         /// <summary>
-        /// Исполнение метода с пользовательским параметром в пуле потоков
+        /// Queues a method for exection inside the current ThreadPool
         /// </summary>
-        /// <typeparam name="T">Тип пользовательского параметра</typeparam>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <param name="state">Пользовательский параметр</param>
+        /// <typeparam name="T">Type of the user state object</typeparam>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public void Run<T>(Action<T> action, T state)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             AddWorkItem(new ActionThreadPoolWorkItem<T>(action, state));
         }
 
         /// <summary>
-        /// Попытаться исполнить метод с пользовательским параметром в пуле потоков
+        /// Attempts to queue a method for exection inside the current ThreadPool
         /// </summary>
-        /// <typeparam name="T">Тип пользовательского параметра</typeparam>
-        /// <param name="action">Делегат на выполняемый метод</param>
-        /// <param name="state">Пользовательский параметр</param>
-        /// <returns>Успшеность постановки в очередь (не гарантирует успешность запуска)</returns>
+        /// <typeparam name="T">Type of the user state object</typeparam>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <returns>True if work item was added to the queue, otherwise false</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public bool TryRun<T>(Action<T> action, T state)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             return TryAddWorkItem(new ActionThreadPoolWorkItem<T>(action, state));
         }
 
 
         /// <summary>
-        /// Запуск действия с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <returns>Task</returns>
+        /// <param name="action">Representing the method to execute</param>
+        /// <returns>Create Task</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public virtual Task RunAsTask(Action action)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             var item = new TaskThreadPoolWorkItem(action);
             AddWorkItem(item);
             return item.Task;
         }
         /// <summary>
-        /// Запуск действия с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TState">Тип параметра состояния</typeparam>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TState">Type of the user state object</typeparam>
+        /// <param name="action">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Action is null</exception>
         public virtual Task RunAsTask<TState>(Action<TState> action, TState state)
         {
-            Contract.Requires(action != null);
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             var item = new TaskThreadPoolWorkItem<TState>(action, state);
             AddWorkItem(item);
@@ -120,34 +120,34 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Запуск функции с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TRes">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TRes">The type of the operation result</typeparam>
+        /// <param name="func">Representing the method to execute</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Func is null</exception>
         public virtual Task<TRes> RunAsTask<TRes>(Func<TRes> func)
         {
-            Contract.Requires(func != null);
             if (func == null)
-                throw new ArgumentNullException("func");
+                throw new ArgumentNullException(nameof(func));
 
             var item = new TaskFuncThreadPoolWorkItem<TRes>(func);
             AddWorkItem(item);
             return item.Task;
         }
         /// <summary>
-        /// Запуск функции с обёртыванием в Task
+        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
-        /// <typeparam name="TState">Тип параметра состояния</typeparam>
-        /// <typeparam name="TRes">Тип результата</typeparam>
-        /// <param name="func">Функций</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <returns>Task</returns>
+        /// <typeparam name="TState">Type of the user state object</typeparam>
+        /// <typeparam name="TRes">The type of the operation result</typeparam>
+        /// <param name="func">Representing the method to execute</param>
+        /// <param name="state">State object</param>
+        /// <returns>Created Task</returns>
+        /// <exception cref="ArgumentNullException">Func is null</exception>
         public virtual Task<TRes> RunAsTask<TState, TRes>(Func<TState, TRes> func, TState state)
         {
-            Contract.Requires(func != null);
             if (func == null)
-                throw new ArgumentNullException("func");
+                throw new ArgumentNullException(nameof(func));
 
             var item = new TaskFuncThreadPoolWorkItem<TState, TRes>(func, state);
             AddWorkItem(item);
@@ -156,42 +156,42 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Переход на выполнение в пуле посредством await
+        /// Creates an awaitable that asynchronously switch to the current ThreadPool when awaited
         /// </summary>
-        /// <returns>Объект смены контекста выполнения</returns>
+        /// <returns>Context switch awaitable object</returns>
         public virtual ContextSwitchAwaitable SwitchToPool()
         {
             return new ContextSwitchAwaitable(new SingleDelegateNoFlowContextSwitchSupplier(Run));
         }
 
         /// <summary>
-        /// Добавить элемент
+        /// Pushes new element to the thread pool
         /// </summary>
-        /// <param name="item">Элемент</param>
+        /// <param name="item">Element</param>
         void IConsumer<Action>.Add(Action item)
         {
             this.Run(item);
         }
         /// <summary>
-        /// Попытаться добавить элемент
+        /// Attempts to push new element to the thread pool
         /// </summary>
-        /// <param name="item">Элемент</param>
-        /// <returns>Успешность</returns>
+        /// <param name="item">Element</param>
+        /// <returns>True if the element was consumed successfully</returns>
         bool IConsumer<Action>.TryAdd(Action item)
         {
             return this.TryRun(item);
         }
 
         /// <summary>
-        /// Основной код освобождения ресурсов
+        /// Cleans-up resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected virtual void Dispose(bool isUserCall)
         {
         }
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Cleans-up resources
         /// </summary>
         public void Dispose()
         {
@@ -207,15 +207,15 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(ThreadPoolBase))]
     abstract class ThreadPoolBaseCodeContractCheck : ThreadPoolBase
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private ThreadPoolBaseCodeContractCheck() { }
 
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         protected override void AddWorkItem(ThreadPoolWorkItem item)
         {
             Contract.Requires(item != null);
@@ -223,7 +223,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             throw new NotImplementedException();
         }
 
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         protected override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
             Contract.Requires(item != null);

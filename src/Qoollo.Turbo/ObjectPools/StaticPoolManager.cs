@@ -12,15 +12,15 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.ObjectPools
 {
     /// <summary>
-    /// Пул с ручным заполнением элементами
+    /// Object pool where elements must be added manually by the user
     /// </summary>
-    /// <typeparam name="TElem">Тип элементов пула</typeparam>
+    /// <typeparam name="TElem">The type of elements stored in Pool</typeparam>
     public class StaticPoolManager<TElem> : ObjectPoolManager<TElem>, IPoolElementOperationSource<TElem>
     {
         /// <summary>
-        /// Вызов Dispose у элемента
+        /// Calls Dispose for the <paramref name="element"/> if it implements <see cref="IDisposable"/> interface
         /// </summary>
-        /// <param name="element">Элемент</param>
+        /// <param name="element">Pool element</param>
         private static void CallElementDispose(TElem element)
         {
             IDisposable disposableElem = element as IDisposable;
@@ -39,10 +39,10 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Конструктор StaticPoolManager
+        /// <see cref="StaticPoolManager{TElem}"/> constructor
         /// </summary>
-        /// <param name="name">Имя пула</param>
-        /// <param name="destroyAction">Действие, выполняемое при уничтожении элемента</param>
+        /// <param name="name">Name for the current <see cref="StaticPoolManager{TElem}"/> instance</param>
+        /// <param name="destroyAction">The action that will be performed to destroy each element after removal ('null' means no action)</param>
         public StaticPoolManager(string name, Action<TElem> destroyAction)
         {
             _name = name ?? this.GetType().GetCSFullName();
@@ -55,24 +55,24 @@ namespace Qoollo.Turbo.ObjectPools
             Profiling.Profiler.ObjectPoolCreated(this.Name);
         }
         /// <summary>
-        /// Конструктор StaticPoolManager
+        /// <see cref="StaticPoolManager{TElem}"/> constructor
         /// </summary>
-        /// <param name="name">Имя пула</param>
-        /// <param name="disposeElementOnDestroy">Вызывать ли Dispose у элементов при их уничтожении</param>
+        /// <param name="name">Name for the current <see cref="StaticPoolManager{TElem}"/> instance</param>
+        /// <param name="disposeElementOnDestroy">Whether the <see cref="IDisposable.Dispose"/> should be called for element after removal</param>
         public StaticPoolManager(string name, bool disposeElementOnDestroy)
             : this(name, disposeElementOnDestroy ? new Action<TElem>(CallElementDispose) : null)
         {
         }
         /// <summary>
-        /// Конструктор StaticPoolManager
+        /// <see cref="StaticPoolManager{TElem}"/> constructor
         /// </summary>
-        /// <param name="name">Имя пула</param>
+        /// <param name="name">Name for the current <see cref="StaticPoolManager{TElem}"/> instance</param>
         public StaticPoolManager(string name)
             : this(name, null)
         {
         }
         /// <summary>
-        /// Конструктор StaticPoolManager
+        /// <see cref="StaticPoolManager{TElem}"/> constructor
         /// </summary>
         public StaticPoolManager()
             : this(null, null)
@@ -81,7 +81,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Имя пула
+        /// The name of the current ObjectPool instance
         /// </summary>
         public string Name
         {
@@ -89,7 +89,7 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Общее число элементов
+        /// Number of elements stored in ObjectPool
         /// </summary>
         public override int ElementCount
         {
@@ -97,14 +97,14 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Число свободных в данный момент элементов
+        /// Number of elements available for rent
         /// </summary>
         public int FreeElementCount
         {
             get { return _elementsContainer.AvailableCount; }
         }
         /// <summary>
-        /// Число арендованных элементов
+        /// Number of rented elements
         /// </summary>
         private int RentedElementCount
         {
@@ -114,9 +114,11 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Добавление нового элемента в пул
+        /// Adds new element to the ObjectPool
         /// </summary>
-        /// <param name="elem">Элемент</param>
+        /// <param name="elem">New element</param>
+        /// <exception cref="ObjectDisposedException">ObjectPool is in disposed state</exception>
+        /// <exception cref="InvalidOperationException">Too many elements inside ObjectPool</exception>
         public void AddElement(TElem elem)
         {
             if (_disposeCancellation.IsCancellationRequested)
@@ -131,15 +133,16 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Удаление арендованного элемента из пула (напрмер, если стал не валиден)
+        /// Removes the element from ObjectPool (the element should be rented before removing)
         /// </summary>
-        /// <param name="elemMonitor">Обёртка над элементом</param>
+        /// <param name="elemMonitor">Rented element monitor for the element to remove</param>
+        /// <exception cref="ArgumentException">Invalid <paramref name="elemMonitor"/></exception>
         public void RemoveElement(RentedElementMonitor<TElem> elemMonitor)
         {
             if (elemMonitor.IsDisposed)
-                throw new ArgumentException("Element from 'elemMonitor' already returned to ObjectPool (" + this.Name + ")", "elemMonitor");
+                throw new ArgumentException("Element from 'elemMonitor' already returned to ObjectPool (" + this.Name + ")", nameof(elemMonitor));
             if (!object.ReferenceEquals(this, elemMonitor.SourcePool))
-                throw new ArgumentException("RentedElementMonitor is not belog to current ObjectPool (" + this.Name + ")", "elemMonitor");
+                throw new ArgumentException("RentedElementMonitor is not belog to the current ObjectPool (" + this.Name + ")", nameof(elemMonitor));
 
             DestroyElementInner(elemMonitor.ElementWrapper);
             Profiling.Profiler.ObjectPoolElementDestroyed(this.Name, this.ElementCount);
@@ -148,9 +151,9 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Освобождение ресурсов элемента (точка расширения)
+        /// Destoroys element when it is removed from pool
         /// </summary>
-        /// <param name="elem">Элемент</param>
+        /// <param name="elem">Element to be destroyed</param>
         protected virtual void DestroyElement(TElem elem)
         {
             if (_destroyAction != null)
@@ -158,9 +161,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Набор действий для уничтожения элемента
+        /// Performs actions required to destroy the element
         /// </summary>
-        /// <param name="element">Элемент</param>
+        /// <param name="element">Element</param>
         private void DestroyElementInner(PoolElementWrapper<TElem> element)
         {
             Contract.Requires(element != null);
@@ -172,9 +175,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Уничтожить и удалить элемент
+        /// Destroys element and removes it from the Pool
         /// </summary>
-        /// <param name="element">Элемент</param>
+        /// <param name="element">Element</param>
         private void DestroyAndRemoveElement(PoolElementWrapper<TElem> element)
         {
             Contract.Requires(element != null);
@@ -194,9 +197,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Забрать свободный элемент, уничтожить и удалить
+        /// Takes element from the <see cref="_elementsContainer"/> then destroys it and removes from the Pool
         /// </summary>
-        /// <returns>Был ли свободный элемент</returns>
+        /// <returns>Whether the element was presented in <see cref="_elementsContainer"/></returns>
         private bool TakeDestroyAndRemoveElement()
         {
             PoolElementWrapper<TElem> element = null;
@@ -216,12 +219,12 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Арендовать элемент
+        /// Rents element from pool
         /// </summary>
-        /// <param name="timeout">Таймаут (-1 - бесконечно, 0 - быстрая проверка, > 0 - полная проверка)</param>
-        /// <param name="token">Токен для отмены</param>
-        /// <param name="throwOnUnavail">Выбрасывать исключение при недоступности элемента</param>
-        /// <returns>Обёртка над элементом пула</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds (-1 - infinity)</param>
+        /// <param name="token">Token to cancel waiting for element availability</param>
+        /// <param name="throwOnUnavail">True - throws <see cref="CantRetrieveElementException"/> when element can't be rented, otherwise returns null</param>
+        /// <returns>Wrapper for rented element</returns>
         protected sealed override PoolElementWrapper<TElem> RentElement(int timeout, CancellationToken token, bool throwOnUnavail)
         {
             if (_disposeCancellation.IsCancellationRequested)
@@ -305,9 +308,9 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Вернуть элемент в пул
+        /// Releases element back to the pool. Normally should be called from <see cref="RentedElementMonitor{TElem}"/>
         /// </summary>
-        /// <param name="element">Элемент</param>
+        /// <param name="element">Element wrapper to be released</param>
         protected internal sealed override void ReleaseElement(PoolElementWrapper<TElem> element)
         {
             if (!element.IsBusy)
@@ -335,10 +338,10 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Является ли элемент валидным
+        /// Checks whether the element is valid and can be used for operations (always true for <see cref="StaticPoolManager{TElem}"/>)
         /// </summary>
-        /// <param name="container">Контейнер элемента</param>
-        /// <returns>Является ли валидным</returns>
+        /// <param name="container">Element wrapper</param>
+        /// <returns>Whether the element is valid</returns>
         bool IPoolElementOperationSource<TElem>.IsValid(PoolElementWrapper<TElem> container)
         {
             return true;
@@ -347,7 +350,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Ожидание полной остановки и освобождения всех элементов
+        /// Blocks the current thread and waits for full completion (all elements should be returned back to the pool)
         /// </summary>
         public void WaitUntilStop()
         {
@@ -358,10 +361,10 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Ожидание полной остановки и освобождения всех элементов с таймаутом
+        /// Blocks the current thread and waits for full completion (all elements should be returned back to the pool)
         /// </summary>
-        /// <param name="timeout">Таймаут ожидания в миллисекундах</param>
-        /// <returns>true - дождались, false - вышли по таймауту</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <returns>True when pool was disposed and all its elements was destroyed in time</returns>
         public bool WaitUntilStop(int timeout)
         {
             if (_disposeCancellation.IsCancellationRequested && _elementsContainer.Count == 0)
@@ -372,9 +375,9 @@ namespace Qoollo.Turbo.ObjectPools
 
 
         /// <summary>
-        /// Уничтожить пул объектов
+        /// Pool clean-up (core method)
         /// </summary>
-        /// <param name="waitForRelease">Дожидаться ли возвращения всех элементов</param>
+        /// <param name="waitForRelease">Should it wait for full completion</param>
         private void DisposePool(bool waitForRelease)
         {
             if (!_disposeCancellation.IsCancellationRequested)
@@ -409,9 +412,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Освобождения ресурсов пула
+        /// Cleans-up ObjectPool resources
         /// </summary>
-        /// <param name="flags">Флаги остановки</param>
+        /// <param name="flags">Flags that controls disposing behaviour</param>
         public virtual void Dispose(DisposeFlags flags)
         {
             bool waitForRelease = (flags & DisposeFlags.WaitForElementsRelease) != DisposeFlags.None;
@@ -420,9 +423,9 @@ namespace Qoollo.Turbo.ObjectPools
         }
 
         /// <summary>
-        /// Основной код освобождения ресурсов
+        /// Cleans-up ObjectPool resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected override void Dispose(bool isUserCall)
         {
             if (isUserCall)
@@ -445,7 +448,7 @@ namespace Qoollo.Turbo.ObjectPools
 
 #if DEBUG
         /// <summary>
-        /// Финализатор
+        /// Finalizer
         /// </summary>
         ~StaticPoolManager()
         {

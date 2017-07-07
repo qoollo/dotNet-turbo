@@ -76,7 +76,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// DelegateQueueAsyncProcessor constructor
         /// </summary>
         /// <param name="threadCount">Number of processing threads</param>
-        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         /// <param name="isBackground">Whether or not processing threads are background threads</param>
         /// <param name="processing">Delegate that will be invoked to process every item</param>
@@ -94,7 +94,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// DelegateQueueAsyncProcessor constructor
         /// </summary>
         /// <param name="threadCount">Number of processing threads</param>
-        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         /// <param name="processing">Delegate that will be invoked to process every item</param>
         /// <param name="exceptionAct">Delegate that will be invoked to process unhandled exception (null is possible value)</param>
@@ -106,7 +106,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// DelegateQueueAsyncProcessor constructor
         /// </summary>
         /// <param name="threadCount">Number of processing threads</param>
-        /// <param name="maxQueueSize">The bounded size of the queue (if less or equeal to 0 then no limitation)</param>
+        /// <param name="maxQueueSize">The bounded size of the queue (if less or equal to 0 then no limitation)</param>
         /// <param name="name">The name for this instance of <see cref="QueueAsyncProcessor{T}"/> and its threads</param>
         /// <param name="processing">Delegate that will be invoked to process every item</param>
         public DelegateQueueAsyncProcessor(int threadCount, int maxQueueSize, string name, Action<T, CancellationToken> processing)

@@ -3,7 +3,6 @@ using Qoollo.Turbo.ObjectPools.Common;
 using Qoollo.Turbo.ObjectPools.ServiceStuff;
 using Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections;
 using Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers;
-using Qoollo.Turbo.OldPool;
 using Qoollo.Turbo.Threading;
 using System;
 using System.Collections.Concurrent;
@@ -95,57 +94,6 @@ namespace Qoollo.Turbo.PerformanceTests
                 _sem.Release();
                 //_objects.Enqueue(item);
                 //_objects.Add(item);
-            }
-        }
-
-
-        internal class OldDynPool : DynamicSizePoolManager<PoolElem, PoolElement<PoolElem>>
-        {
-            public OldDynPool(int cnt) : base(cnt) { }
-
-            protected override bool CreateElement(out PoolElem elem, int timeout, CancellationToken token)
-            {
-                elem = new PoolElem();
-                return true;
-            }
-
-            protected override bool IsValidElement(PoolElem elem)
-            {
-                return true;
-            }
-
-            protected override void DestroyElement(PoolElem elem)
-            {
-            }
-
-            protected override PoolElement<PoolElem> CreatePoolElement(PoolElem elem)
-            {
-                return new PoolElement<PoolElem>(this, elem);
-            }
-        }
-
-        internal sealed class OldBalDynPool : BalancingDynamicSizePoolManager<PoolElem, PoolElement<PoolElem>>
-        {
-            public OldBalDynPool(int cnt) : base(cnt, new PoolElemComparer()) { }
-
-            protected override bool CreateElement(out PoolElem elem, int timeout, CancellationToken token)
-            {
-                elem = new PoolElem();
-                return true;
-            }
-
-            protected override bool IsValidElement(PoolElem elem)
-            {
-                return true;
-            }
-
-            protected override void DestroyElement(PoolElem elem)
-            {
-            }
-
-            protected override PoolElement<PoolElem> CreatePoolElement(PoolElem elem)
-            {
-                return new PoolElement<PoolElem>(this, elem);
             }
         }
 
@@ -439,98 +387,6 @@ namespace Qoollo.Turbo.PerformanceTests
                 pool.Release(tmp);
             }
         }
-
-
-
-
-
-        private static TimeSpan TestPool(PoolManagerBase<PoolElem, PoolElement<PoolElem>> pool, int threadCount, int opCount, int pauseSpin)
-        {
-            Thread[] threads = new Thread[threadCount];
-            Barrier startBar = new Barrier(threadCount + 1);
-
-            int opCountPerThread = opCount / threadCount;
-
-            Action thAct = () =>
-                {
-                    startBar.SignalAndWait();
-
-                    int execOp = 0;
-                    while (execOp++ < opCountPerThread)
-                    {
-                        using (var el = pool.Rent())
-                        {
-                            //Thread.Sleep(pauseSpin);
-                            Thread.SpinWait(pauseSpin);
-                        }
-                    }
-                };
-
-
-            for (int i = 0; i < threads.Length; i++)
-                threads[i] = new Thread(new ThreadStart(thAct));
-
-            for (int i = 0; i < threads.Length; i++)
-                threads[i].Start();
-
-            startBar.SignalAndWait();
-            Stopwatch sw = Stopwatch.StartNew();
-
-            for (int i = 0; i < threads.Length; i++)
-                threads[i].Join();
-
-            sw.Stop();
-
-            Console.WriteLine(pool.ToString() + ". Elapsed = " + sw.ElapsedMilliseconds.ToString() + "ms");
-
-            return sw.Elapsed;
-        }
-
-
-
-        private static void TestStaticPool(int threadCount, int elemCount, int opCount, int pauseSpin)
-        {
-            using (var pool = new StaticPoolManager<PoolElem>("static"))
-            {
-                for (int i = 0; i < elemCount; i++)
-                    pool.AddNewElement(new PoolElem());
-
-                TestPool(pool, threadCount, opCount, pauseSpin);
-            }
-        }
-
-        private static void TestDynamicPool(int threadCount, int elemCount, int opCount, int pauseSpin)
-        {
-            using (var pool = new OldDynPool(elemCount))
-            {
-                //pool.FillPoolUpTo(elemCount);
-
-                TestPool(pool, threadCount, opCount, pauseSpin);
-            }
-        }
-
-
-        private static void TestBalancingStaticPool(int threadCount, int elemCount, int opCount, int pauseSpin)
-        {
-            using (var pool = new BalancingStaticPoolManager<PoolElem>(new PoolElemComparer(), "static"))
-            {
-                for (int i = 0; i < elemCount; i++)
-                    pool.AddNewElement(new PoolElem());
-
-                TestPool(pool, threadCount, opCount, pauseSpin);
-            }
-        }
-
-        private static void TestBalancingDynamicPool(int threadCount, int elemCount, int opCount, int pauseSpin)
-        {
-            using (var pool = new OldBalDynPool(elemCount))
-            {
-                //pool.FillPoolUpTo(elemCount);
-
-                TestPool(pool, threadCount, opCount, pauseSpin);
-            }
-        }
-
 
 
         private static TimeSpan TestNewPool(Qoollo.Turbo.ObjectPools.ObjectPoolManager<PoolElem> pool, int threadCount, int opCount, int pauseSpin)

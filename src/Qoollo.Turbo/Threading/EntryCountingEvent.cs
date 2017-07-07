@@ -55,7 +55,7 @@ namespace Qoollo.Turbo.Threading
     {
 		private int _currentCountInner;
 		private readonly ManualResetEventSlim _event;
-        private volatile bool _isTerminateRequested;
+        private volatile int _isTerminateRequested;
 		private volatile bool _isDisposed;
 
         /// <summary>
@@ -65,7 +65,9 @@ namespace Qoollo.Turbo.Threading
 		{
 			_currentCountInner = 1;
 			_event = new ManualResetEventSlim();
-		}
+            _isTerminateRequested = 0;
+            _isDisposed = false;
+        }
 
         /// <summary>
         /// The current number of entered clients
@@ -74,11 +76,11 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Is terminate requested (prevent new clients to enter the protected section)
         /// </summary>
-        public bool IsTerminateRequested { get { return _isTerminateRequested; } }
+        public bool IsTerminateRequested { get { return _isTerminateRequested != 0; } }
         /// <summary>
         /// Is terminated successfully (all clients has exited the protected section)
         /// </summary>
-        public bool IsTerminated { get { return _isTerminateRequested && Volatile.Read(ref _currentCountInner) <= 0; } }
+        public bool IsTerminated { get { return _isTerminateRequested != 0 && Volatile.Read(ref _currentCountInner) <= 0; } }
 
         /// <summary>
         /// Gets the underlying WaitHandle to wait for termination
@@ -100,13 +102,13 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Is entered successfully</returns>
         private bool TryEnterClientCore()
         {
-            if (_isDisposed || _isTerminateRequested)
+            if (_isDisposed || IsTerminateRequested)
                 return false;
 
             int newCount = Interlocked.Increment(ref _currentCountInner);
             Debug.Assert(newCount > 0);
 
-            if (_isDisposed || _isTerminateRequested)
+            if (_isDisposed || IsTerminateRequested)
             {
                 int newCountDec = Interlocked.Decrement(ref _currentCountInner);
                 if (newCount > 1 && newCountDec == 0)
@@ -278,7 +280,7 @@ namespace Qoollo.Turbo.Threading
         {
             if (newCount < 0)
                 throw new InvalidOperationException("ExitClient called more times then EnterClient. EntryCountingEvent is in desynced state.");
-            if (newCount == 0 && !_isTerminateRequested)
+            if (newCount == 0 && !IsTerminateRequested)
                 throw new InvalidOperationException("ExitClient called more times then EnterClient. EntryCountingEvent is in desynced state.");
 
             if (newCount == 0)
@@ -316,9 +318,9 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         public void Terminate()
         {
-            if (!_isTerminateRequested)
+            int isTerminateRequested = _isTerminateRequested;
+            if (isTerminateRequested == 0 && Interlocked.CompareExchange(ref _isTerminateRequested, 1, isTerminateRequested) == isTerminateRequested)
             {
-                _isTerminateRequested = true;
                 ExitClientCore();
             }
         }
@@ -345,7 +347,7 @@ namespace Qoollo.Turbo.Threading
                         Interlocked.Decrement(ref _currentCountInner);
                         return false;
                     }
-                    _isTerminateRequested = false;
+                    this._isTerminateRequested = 0;
                     this._event.Reset();
                 }
             }
@@ -465,10 +467,10 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="timeout">Timeout</param>
         /// <returns>True if all clients leaved the protected section in specified timeout</returns>
-        public void TerminateAndWait(TimeSpan timeout)
+        public bool TerminateAndWait(TimeSpan timeout)
         {
             Terminate();
-            Wait(timeout);
+            return Wait(timeout);
         }
         /// <summary>
         /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
@@ -476,20 +478,20 @@ namespace Qoollo.Turbo.Threading
         /// <param name="timeout">Timeout</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>True if all clients leaved the protected section in specified timeout</returns>
-        public void TerminateAndWait(TimeSpan timeout, CancellationToken cancellationToken)
+        public bool TerminateAndWait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             Terminate();
-            Wait(timeout, cancellationToken);
+            return Wait(timeout, cancellationToken);
         }
         /// <summary>
         /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
         /// </summary>
         /// <param name="millisecondsTimeout">Timeout</param>
         /// <returns>True if all clients leaved the protected section in specified timeout</returns>
-        public void TerminateAndWait(int millisecondsTimeout)
+        public bool TerminateAndWait(int millisecondsTimeout)
         {
             Terminate();
-            Wait(millisecondsTimeout);
+            return Wait(millisecondsTimeout);
         }
         /// <summary>
         /// Stops new clients from entering and waits until all already entered clients leave the protected code sections
@@ -497,10 +499,10 @@ namespace Qoollo.Turbo.Threading
         /// <param name="millisecondsTimeout">Timeout</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>True if all clients leaved the protected section in specified timeout</returns>
-        public void TerminateAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
+        public bool TerminateAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Terminate();
-            Wait(millisecondsTimeout, cancellationToken);
+            return Wait(millisecondsTimeout, cancellationToken);
         }
 
 
@@ -512,7 +514,7 @@ namespace Qoollo.Turbo.Threading
         {
             if (isUserCall)
             {
-                this._isTerminateRequested = true;
+                this._isTerminateRequested = 1;
                 this._isDisposed = true;
 
                 lock (this._event)

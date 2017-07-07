@@ -9,27 +9,27 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadManagement
 {
     /// <summary>
-    /// Делегат для запуска потока с передачей токена отмены
+    /// Represents the method that executes on <see cref="Thread"/> (with cancellation token)
     /// </summary>
-    /// <param name="token">Токен отмены</param>
+    /// <param name="token">Cancellation token</param>
     public delegate void TokenThreadStart(CancellationToken token);
     /// <summary>
-    /// Делегат для запуска потока с передачей состояния и токена отмены
+    /// Represents the method that executes on <see cref="Thread"/> (with state object and cancellation token)
     /// </summary>
-    /// <param name="state">Объект состояния</param>
-    /// <param name="token">Токен отмены</param>
+    /// <param name="state">State object</param>
+    /// <param name="token">Cancellation token</param>
     public delegate void ParametrizedTokenThreadStart(object state, CancellationToken token);
     /// <summary>
-    /// Делегат для запуска потока с передачей уникального id потока, объекта состояния и токена отмены
+    /// Represents the method that executes on <see cref="Thread"/> (with thread id, state object and cancellation token)
     /// </summary>
-    /// <param name="threadUID">ID потока</param>
-    /// <param name="state">Объект состояния</param>
-    /// <param name="token">Токен отмены</param>
+    /// <param name="threadUID">Thread ID</param>
+    /// <param name="state">State object</param>
+    /// <param name="token">Cancellation token</param>
     public delegate void ParametrizedIdTokenThreadStart(int threadUID, object state, CancellationToken token);
 
 
     /// <summary>
-    /// Менеджер группы потоков
+    /// Manages multiple threads. Concrete processing action passed as delegate.
     /// </summary>
     public sealed class DelegateThreadSetManager: ThreadSetManager
     {
@@ -42,76 +42,83 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         private object _state;
 
         /// <summary>
-        /// Конструктор DelegateThreadManager
+        /// <see cref="DelegateThreadSetManager"/> constructor
         /// </summary>
-        /// <param name="threadStartAction">Делегат запуска задачи для потока</param>
-        /// <param name="threadCount">Число потоков</param>
-        /// <param name="name">Имя для потоков</param>
+        /// <param name="threadStartAction">Delegate that represents the methods to be invoked within each thread</param>
+        /// <param name="threadCount">Number of threads to manage</param>
+        /// <param name="name">Name for this manager and its threads</param>
         public DelegateThreadSetManager(int threadCount, string name, ThreadStart threadStartAction)
             : base(threadCount, name)
         {
-            Contract.Requires<ArgumentNullException>(threadStartAction != null);
+            if (threadStartAction == null)
+                throw new ArgumentNullException(nameof(threadStartAction));
 
             _threadStartAction = threadStartAction;
         }
         /// <summary>
-        /// Конструктор DelegateThreadManager
+        /// <see cref="DelegateThreadSetManager"/> constructor
         /// </summary>
-        /// <param name="parametrizedThreadStartAction">Делегат запуска задачи для потока</param>
-        /// <param name="threadCount">Число потоков</param>
-        /// <param name="name">Имя для потоков</param>
+        /// <param name="parametrizedThreadStartAction">Delegate that represents the methods to be invoked within each thread</param>
+        /// <param name="threadCount">Number of threads to manage</param>
+        /// <param name="name">Name for this manager and its threads</param>
         public DelegateThreadSetManager(int threadCount, string name, ParameterizedThreadStart parametrizedThreadStartAction)
             : base(threadCount, name)
         {
-            Contract.Requires<ArgumentNullException>(parametrizedThreadStartAction != null);
+            if (parametrizedThreadStartAction == null)
+                throw new ArgumentNullException(nameof(parametrizedThreadStartAction));
 
             _parametrizedThreadStartAction = parametrizedThreadStartAction;
         }
         /// <summary>
-        /// Конструктор DelegateThreadManager
+        /// <see cref="DelegateThreadSetManager"/> constructor
         /// </summary>
-        /// <param name="tokenThreadStartAction">Делегат запуска задачи для потока</param>
-        /// <param name="threadCount">Число потоков</param>
-        /// <param name="name">Имя для потоков</param>
+        /// <param name="tokenThreadStartAction">Delegate that represents the methods to be invoked within each thread</param>
+        /// <param name="threadCount">Number of threads to manage</param>
+        /// <param name="name">Name for this manager and its threads</param>
         public DelegateThreadSetManager(int threadCount, string name, TokenThreadStart tokenThreadStartAction)
             : base(threadCount, name)
         {
-            Contract.Requires<ArgumentNullException>(tokenThreadStartAction != null);
+            if (tokenThreadStartAction == null)
+                throw new ArgumentNullException(nameof(tokenThreadStartAction));
 
             _tokenThreadStartAction = tokenThreadStartAction;
         }
         /// <summary>
-        /// Конструктор DelegateThreadManager
+        /// <see cref="DelegateThreadSetManager"/> constructor
         /// </summary>
-        /// <param name="stateTokenThreadStartAction">Делегат запуска задачи для потока</param>
-        /// <param name="threadCount">Число потоков</param>
-        /// <param name="name">Имя для потоков</param>
+        /// <param name="stateTokenThreadStartAction">Delegate that represents the methods to be invoked within each thread</param>
+        /// <param name="threadCount">Number of threads to manage</param>
+        /// <param name="name">Name for this manager and its threads</param>
         public DelegateThreadSetManager(int threadCount, string name, ParametrizedTokenThreadStart stateTokenThreadStartAction)
             : base(threadCount, name)
         {
-            Contract.Requires<ArgumentNullException>(stateTokenThreadStartAction != null);
+            if (stateTokenThreadStartAction == null)
+                throw new ArgumentNullException(nameof(stateTokenThreadStartAction));
 
             _stateTokenThreadStartAction = stateTokenThreadStartAction;
         }
         /// <summary>
-        /// Конструктор DelegateThreadManager
+        /// <see cref="DelegateThreadSetManager"/> constructor
         /// </summary>
-        /// <param name="idStateTokenThreadStartAction">Делегат запуска задачи для потока</param>
-        /// <param name="threadCount">Число потоков</param>
-        /// <param name="name">Имя для потоков</param>
+        /// <param name="idStateTokenThreadStartAction">Delegate that represents the methods to be invoked within each thread</param>
+        /// <param name="threadCount">Number of threads to manage</param>
+        /// <param name="name">Name for this manager and its threads</param>
         public DelegateThreadSetManager(int threadCount, string name, ParametrizedIdTokenThreadStart idStateTokenThreadStartAction)
             : base(threadCount, name)
         {
-            Contract.Requires<ArgumentNullException>(idStateTokenThreadStartAction != null);
+            if (idStateTokenThreadStartAction == null)
+                throw new ArgumentNullException(nameof(idStateTokenThreadStartAction));
 
             _idStateTokenThreadStartAction = idStateTokenThreadStartAction;
         }
 
 
         /// <summary>
-        /// Запуск обработчиков
+        /// Starts all processing threads and changes state to <see cref="ThreadSetManagerState.Running"/>
         /// </summary>
-        /// <param name="state">Объект состояния, передаваемый во все потоки</param>
+        /// <param name="state">State object that will be passed to thread delegate</param>
+        /// <exception cref="ObjectDisposedException">Object was disposed</exception>
+        /// <exception cref="WrongStateException">Can't start manager because it is not in <see cref="ThreadSetManagerState.Created"/> state</exception>
         public void Start(object state)
         {
             _state = state;
@@ -119,10 +126,10 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Основной метод обработки
+        /// The main processing logic for every thread (can contain a loop that runs until the cancellation request)
         /// </summary>
-        /// <param name="state">Объект состояния, инициализированный в методе Prepare()</param>
-        /// <param name="token">Токен для отмены обработки при вызове Stop</param>
+        /// <param name="state">Thread specific state object</param>
+        /// <param name="token">Cancellation token that will be cancelled when the stop is requested</param>
         protected override void Process(object state, CancellationToken token)
         {
             if (_threadStartAction != null)
@@ -141,9 +148,9 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
 
         /// <summary>
-        /// Остановка и освобождение ресурсов
+        /// Stops the current <see cref="ThreadSetManager"/>
         /// </summary>
-        /// <param name="waitForStop">Ожидать остановки</param>
+        /// <param name="waitForStop">Whether the current thread should be blocked until all processing threads are completed</param>
         public override void Stop(bool waitForStop)
         {
             base.Stop(waitForStop);
@@ -151,9 +158,9 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Основной код освобождения ресурсов
+        /// Cleans-up resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected override void Dispose(bool isUserCall)
         {
             base.Dispose(isUserCall);

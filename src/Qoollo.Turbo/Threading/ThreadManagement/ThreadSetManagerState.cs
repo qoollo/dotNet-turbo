@@ -7,32 +7,32 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadManagement
 {
     /// <summary>
-    /// Состояния ThreadManager
+    /// Defines possible states of the <see cref="ThreadSetManager"/>
     /// </summary>
     public enum ThreadSetManagerState: int
     {
         /// <summary>
-        /// Создан
+        /// Indicates that <see cref="ThreadSetManager"/> was created but not started
         /// </summary>
         Created = 0,
         /// <summary>
-        /// В процессе запуска
+        /// Indicates that <see cref="ThreadSetManager"/> is being transitioned from <see cref="Created"/> to <see cref="Running"/> state
         /// </summary>
         StartRequested = 1,
         /// <summary>
-        /// Работает
+        /// Indicates that <see cref="ThreadSetManager"/> is started
         /// </summary>
         Running = 2,
         /// <summary>
-        /// В процессе остановки
+        /// Indicates that <see cref="ThreadSetManager"/> is being transitioned from <see cref="Running"/> to <see cref="Stopped"/> state
         /// </summary>
         StopRequested = 3,
         /// <summary>
-        /// Все потоки завершились
+        /// Indicates that all threads from <see cref="ThreadSetManager"/> has exited
         /// </summary>
         AllThreadsExited = 4,
         /// <summary>
-        /// Остановлен
+        /// Indicates that <see cref="ThreadSetManager"/> is fully stopped
         /// </summary>
         Stopped = 5,
     }

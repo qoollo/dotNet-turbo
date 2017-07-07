@@ -30,22 +30,6 @@ namespace Qoollo.Turbo.PerformanceTests
             Console.WriteLine();
         }
 
-        private static void RunTestOnOldSystemThreadPoolWrapper(int elemCount)
-        {
-            Action clb = new Action(InnerAction);
-            Qoollo.Turbo.Threading.OldThreadPools.SystemThreadPool pool = new Threading.OldThreadPools.SystemThreadPool();
-
-            Stopwatch sw = Stopwatch.StartNew();
-
-            for (int i = 0; i < elemCount; i++)
-                pool.Run(clb);
-
-            sw.Stop();
-
-            Console.WriteLine("RunTestOnOldSystemThreadPoolWrapper. Time = " + sw.ElapsedMilliseconds.ToString() + "ms");
-            Console.WriteLine();
-        }
-
         private static void RunTestOnNewSystemThreadPoolWrapper(int elemCount)
         {
             Action clb = new Action(InnerAction);
@@ -69,9 +53,6 @@ namespace Qoollo.Turbo.PerformanceTests
             for (int i = 0; i < 10; i++)
             {
                 RunTestOnSystemThreadPool(2000000);
-                Thread.Sleep(5000);
-
-                RunTestOnOldSystemThreadPoolWrapper(2000000);
                 Thread.Sleep(5000);
 
                 RunTestOnNewSystemThreadPoolWrapper(2000000);

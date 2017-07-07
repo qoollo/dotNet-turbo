@@ -10,12 +10,12 @@ using Debug = System.Diagnostics.Debug;
 namespace Qoollo.Turbo.Threading.ThreadManagement
 {
     /// <summary>
-    /// Менеджер группы потоков
+    /// Manages multiple threads
     /// </summary>
     public abstract class ThreadSetManager : IDisposable
     {
         /// <summary>
-        /// Контракты
+        /// Code contracts
         /// </summary>
         [ContractInvariantMethod]
         private void Invariant()
@@ -45,17 +45,19 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
 
         /// <summary>
-        /// Конструктор ThreadManager
+        /// <see cref="ThreadSetManager"/> constructor
         /// </summary>
-        /// <param name="threadCount">Число потоков</param>
-        /// <param name="name">Имя для потоков</param>
-        /// <param name="isBackground">Являются ли потоки фоновыми</param>
-        /// <param name="priority">Приоритет</param>
-        /// <param name="maxStackSize">Максимальный размер стека потоков</param>
+        /// <param name="threadCount">Number of threads to manage</param>
+        /// <param name="name">Name for this manager and its threads</param>
+        /// <param name="isBackground">Whether or not threads are a background threads</param>
+        /// <param name="priority">Indicates the scheduling priority of the threads</param>
+        /// <param name="maxStackSize">The maximum stack size to be used by the thread</param>
         public ThreadSetManager(int threadCount, string name, bool isBackground, ThreadPriority priority, int maxStackSize)
         {
-            Contract.Requires(threadCount > 0);
-            Contract.Requires(maxStackSize >= 0);
+            if (threadCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(threadCount));
+            if (maxStackSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize));
 
             _isBackground = isBackground;
             _name = name ?? this.GetType().GetCSName();
@@ -82,53 +84,53 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
             Profiling.Profiler.ThreadSetManagerCreated(this.Name, threadCount);
         }
         /// <summary>
-        /// Конструктор ThreadManager
+        /// <see cref="ThreadSetManager"/> constructor
         /// </summary>
-        /// <param name="threadCount">Число потоков</param>
-        /// <param name="name">Имя для потоков</param>
+        /// <param name="threadCount">Number of threads to manage</param>
+        /// <param name="name">Name for this manager and its threads</param>
         public ThreadSetManager(int threadCount, string name)
             : this(threadCount, name, false, ThreadPriority.Normal, 0)
         {
         }
         /// <summary>
-        /// Конструктор ThreadManager
+        /// <see cref="ThreadSetManager"/> constructor
         /// </summary>
-        /// <param name="threadCount">Число потоков</param>
+        /// <param name="threadCount">Number of threads to manage</param>
         public ThreadSetManager(int threadCount)
             : this(threadCount, null, false, ThreadPriority.Normal, 0)
         {
         }
 
         /// <summary>
-        /// Текущее состояние
+        /// Current state
         /// </summary>
         public ThreadSetManagerState State
         {
             get { return (ThreadSetManagerState)Volatile.Read(ref _state); }
         }
         /// <summary>
-        /// Запущен ли сейчас обработчик
+        /// Whether the <see cref="ThreadSetManager"/> is running
         /// </summary>
         public bool IsWork
         {
             get { return State == ThreadSetManagerState.Running; }
         }
         /// <summary>
-        /// Запрошена ли остановка
+        /// Whether the stop was requested and the processor should complete its work
         /// </summary>
         protected bool IsStopRequested
         {
             get { return State == ThreadSetManagerState.StopRequested; }
         }
         /// <summary>
-        /// Остановлен ли
+        /// Whether the <see cref="ThreadSetManager"/> was stopped
         /// </summary>
         protected bool IsStopped
         {
             get { return State == ThreadSetManagerState.Stopped; }
         }
         /// <summary>
-        /// Запрошена ли остановка или остановлен
+        /// Whether the stop was requested or already stopped
         /// </summary>
         protected bool IsStopRequestedOrStopped
         {
@@ -140,7 +142,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Имя обработчика
+        /// The name for this instance of <see cref="ThreadSetManager"/>
         /// </summary>
         public string Name
         {
@@ -148,7 +150,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Работают ли потоки в фоновом режиме
+        /// Gets or sets a value indicating whether or not threads are a background threads
         /// </summary>
         public bool IsBackground
         {
@@ -164,7 +166,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Приоритет потоков
+        /// Gets or sets a value indicating the scheduling priority of the threads
         /// </summary>
         public ThreadPriority Priority
         {
@@ -180,7 +182,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Текущие настройки Culture
+        /// Gets or sets the culture for the managed threads
         /// </summary>
         public System.Globalization.CultureInfo CurrentCulture
         {
@@ -195,7 +197,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Текущие настройки Culture
+        /// Gets or sets the current culture used by the Resource Manager to look up culture-specific resources
         /// </summary>
         public System.Globalization.CultureInfo CurrentUICulture
         {
@@ -210,14 +212,14 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Число работающих потоков
+        /// Number of processing threads running right now
         /// </summary>
         public int ActiveThreadCount
         {
             get { return Volatile.Read(ref _activeThreadCount); }
         }
         /// <summary>
-        /// Число потоков обработки
+        /// Number of processing threads
         /// </summary>
         public int ThreadCount
         {
@@ -226,11 +228,11 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
 
         /// <summary>
-        /// Допустима ли смена состояния
+        /// Verifies that state transition is possible
         /// </summary>
-        /// <param name="oldState">Старое состояние</param>
-        /// <param name="newState">Новое состояние</param>
-        /// <returns>Допустим ли переход</returns>
+        /// <param name="oldState">Current state</param>
+        /// <param name="newState">New state</param>
+        /// <returns>True when state transition can be performed</returns>
         private bool IsValidStateTransition(ThreadSetManagerState oldState, ThreadSetManagerState newState)
         {
             switch (oldState)
@@ -252,11 +254,11 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
             }
         }
         /// <summary>
-        /// Безопасно сменить состояние
+        /// Safely changes the current state
         /// </summary>
-        /// <param name="newState">Новое состояние</param>
-        /// <param name="prevState">Состояние, которое было до смены</param>
-        /// <returns>Произошла ли смена</returns>
+        /// <param name="newState">New state</param>
+        /// <param name="prevState">Previously observed state</param>
+        /// <returns>Was state changed (false means that the state transition is not valid)</returns>
         private bool ChangeStateSafe(ThreadSetManagerState newState, out ThreadSetManagerState prevState)
         {
             prevState = (ThreadSetManagerState)Volatile.Read(ref _state);
@@ -277,7 +279,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Проверить, освобождён ли объект и если да, то вызвать исключение ObjectDisposedException
+        /// Checks whether the current instance is in Stopped state and throws ObjectDisposedException when it is
         /// </summary>
         protected void CheckDisposed()
         {
@@ -285,7 +287,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
                 throw new ObjectDisposedException(this.GetType().Name, "ThreadSetManager is Stopped");
         }
         /// <summary>
-        /// Проверить, освобождён ли объект и если да, то вызвать исключение ObjectDisposedException
+        /// Checks whether the current instance is in Stopped or StopRequested state and throws ObjectDisposedException when it is
         /// </summary>
         protected void CheckPendingDisposeOrDisposed()
         {
@@ -295,20 +297,20 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Получить уникальный ID потока в рамках менеджера (-1, если поток не принадлежит менеджеру)
+        /// Gets the unique thread ID whithin the current ThreadSetManager (-1 when thread is not a part of the ThreadSetManager)
         /// </summary>
-        /// <returns>Идентификатор</returns>
+        /// <returns>Thread number</returns>
         protected int GetThreadId()
         {
             return Array.IndexOf(_procThreads, Thread.CurrentThread);
         }
 
         /// <summary>
-        /// Просканировать все потоки и получить информацию об их состояниях
+        /// Scans all threads and gets the information about their states
         /// </summary>
-        /// <param name="totalThreadCount">Общее число зарегистрированных потоков</param>
-        /// <param name="runningCount">Число исполняющихся в данный момент потоков</param>
-        /// <param name="waitingCount">Число заблокированных потоков</param>
+        /// <param name="totalThreadCount">Total number of threads</param>
+        /// <param name="runningCount">Number of running threads (in <see cref="ThreadState.Running"/> state)</param>
+        /// <param name="waitingCount">Number of threads in <see cref="ThreadState.WaitSleepJoin"/> state</param>
         protected void ScanThreadStates(out int totalThreadCount, out int runningCount, out int waitingCount)
         {
             totalThreadCount = 0;
@@ -332,8 +334,10 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
 
         /// <summary>
-        /// Запуск обработчиков
+        /// Starts all processing threads and changes state to <see cref="ThreadSetManagerState.Running"/>
         /// </summary>
+        /// <exception cref="ObjectDisposedException">Object was disposed</exception>
+        /// <exception cref="WrongStateException">Can't start manager because it is not in <see cref="ThreadSetManagerState.Created"/> state</exception>
         public void Start()
         {
             ThreadSetManagerState prevState;
@@ -366,9 +370,9 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Получить токен отмены, срабатывающий при запросе остановки
+        /// Gets the CancellationToken that will be cancelled when a stop is requested 
         /// </summary>
-        /// <returns>Токен отмены</returns>
+        /// <returns>Cancellation token</returns>
         protected CancellationToken GetCancellationToken()
         {
             var tokenSrc = this._stopRequestedCancelation;
@@ -380,7 +384,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
 
         /// <summary>
-        /// Основная функция, выполняемая потоками
+        /// Main thread procedure
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadProcFunc()
@@ -451,9 +455,10 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
 
         /// <summary>
-        /// Обработка исключений
+        /// Method that allows to process unhandled exceptions (e.g. logging).
+        /// Default behaviour - throws <see cref="ThreadSetManagerException"/>.
         /// </summary>
-        /// <param name="ex">Исключение</param>
+        /// <param name="ex">Catched exception</param>
         [System.Diagnostics.DebuggerNonUserCode]
         protected virtual void ProcessThreadException(Exception ex)
         {
@@ -463,32 +468,31 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Создание объекта состояния на поток.
-        /// Вызывается при старте для каждого потока
+        /// Creates the state that is specific for every processing thread. Executes once for every thread during start-up.
         /// </summary>
-        /// <returns>Объект состояния</returns>
+        /// <returns>Created thread-specific state object</returns>
         protected virtual object Prepare()
         {
             return null;
         }
         /// <summary>
-        /// Основной метод обработки
+        /// The main processing logic for every thread (can contain a loop that runs until the cancellation request)
         /// </summary>
-        /// <param name="state">Объект состояния, инициализированный в методе Prepare()</param>
-        /// <param name="token">Токен для отмены обработки при вызове Stop</param>
+        /// <param name="state">Thread specific state object initialized by <see cref="Prepare"/> method</param>
+        /// <param name="token">Cancellation token that will be cancelled when the stop is requested</param>
         protected abstract void Process(object state, CancellationToken token);
 
         /// <summary>
-        /// Освобождение объекта состояния потока
+        /// Release the thread specific state object when the thread is about to exit
         /// </summary>
-        /// <param name="state">Объект состояния</param>
+        /// <param name="state">Thread-specific state object</param>
         protected virtual void Finalize(object state)
         {
         }
 
 
         /// <summary>
-        /// Ожидание полной остановки
+        /// Blocks the current thread and waits for all processing threads to complete
         /// </summary>
         public void Join()
         {
@@ -499,10 +503,10 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Ожидание полной остановки с таймаутом
+        /// Blocks the current thread and waits for all processing threads to complete
         /// </summary>
-        /// <param name="timeout">Таймаут ожидания в миллисекундах</param>
-        /// <returns>true - дождались, false - вышли по таймауту</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <returns>True when all threads completed in time</returns>
         public bool Join(int timeout)
         {
             if (State == ThreadSetManagerState.Stopped || State == ThreadSetManagerState.AllThreadsExited)
@@ -513,9 +517,9 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
 
         /// <summary>
-        /// Остановка работы
+        /// Stops the current <see cref="ThreadSetManager"/>
         /// </summary>
-        /// <param name="waitForStop">Ждать ли завершения всех потоков</param>
+        /// <param name="waitForStop">Whether the current thread should be blocked until all processing threads are be completed</param>
         private void StopThreadManager(bool waitForStop)
         {
             if (this.IsStopRequestedOrStopped)
@@ -574,9 +578,9 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
 
         /// <summary>
-        /// Остановка и освобождение ресурсов
+        /// Stops the current <see cref="ThreadSetManager"/>
         /// </summary>
-        /// <param name="waitForStop">Ожидать остановки</param>
+        /// <param name="waitForStop">Whether the current thread should be blocked until all processing threads are completed</param>
         public virtual void Stop(bool waitForStop)
         {
             StopThreadManager(waitForStop);
@@ -584,7 +588,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Остановка и освобождение ресурсов
+        /// Stops the current <see cref="ThreadSetManager"/>
         /// </summary>
         public void Stop()
         {
@@ -592,9 +596,9 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Основной код освобождения ресурсов
+        /// Cleans-up resources
         /// </summary>
-        /// <param name="isUserCall">Вызвано ли освобождение пользователем. False - деструктор</param>
+        /// <param name="isUserCall">Is it called explicitly by user (False - from finalizer)</param>
         protected virtual void Dispose(bool isUserCall)
         {
             if (!this.IsStopRequestedOrStopped)
@@ -617,7 +621,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Освобождение ресурсов
+        /// Cleans-up resources
         /// </summary>
         void IDisposable.Dispose()
         {
@@ -626,7 +630,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         }
 
         /// <summary>
-        /// Финализатор
+        /// Finalizer
         /// </summary>
         ~ThreadSetManager()
         {

@@ -101,9 +101,7 @@
     <Compile Include="Threading\SignalEventSignalWaiterTest.cs" />
     <Compile Include="ThreadManagement\ThreadSetManagerTest.cs" />
     <Compile Include="ThreadPools\DynamicThreadPoolNewTest.cs" />
-    <Compile Include="ThreadPools\DynamicThreadPoolOldTest.cs" />
     <Compile Include="ThreadPools\StaticThreadPoolNewTest.cs" />
-    <Compile Include="ThreadPools\StaticThreadPoolOldTest.cs" />
     <Compile Include="ThreadPools\ThreadPoolGlobalQueueTest.cs" />
     <Compile Include="ThreadPools\ThreadPoolLocalQueueTest.cs" />
     <Compile Include="ThreadPools\ThreadPoolConcurrentQueueTest.cs" />

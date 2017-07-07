@@ -1,6 +1,6 @@
 v2.3.0 Alpha (26.04.2017)
 - Queues infrastructure added (DiskQueue, MemoryQueue, TransformationQueue, LevelingQueue)
-- QueueAsynProcessor now supported newly added Queues
+- QueueAsyncProcessor now supported newly added Queues
 - MonitorObject added
 - StaticThreadPool and DynamicThreadPool does not use own SynchrnizationContext and TaskScheduler by default since now
 - Specific exceptions moved to their specific namespaces

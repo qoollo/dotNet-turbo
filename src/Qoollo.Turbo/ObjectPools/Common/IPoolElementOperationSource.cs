@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.ObjectPools.Common
 {
     /// <summary>
-    /// Операции для элемента, предоставляемые пулом
+    /// Additional operations on the element that should be supported by the concrete ObjectPool implementation
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">The type of the ObjectPool element</typeparam>
     [ContractClass(typeof(IPoolElementOperationSourceCodeContract<>))]
     public interface IPoolElementOperationSource<T>
     {
         /// <summary>
-        /// Является ли элемент валидным
+        /// Checks whether the element is valid and can be used for operations
         /// </summary>
-        /// <param name="container">Контейнер элемента</param>
-        /// <returns>Является ли валидным</returns>
+        /// <param name="container">Element wrapper</param>
+        /// <returns>Whether the element is valid</returns>
         bool IsValid(PoolElementWrapper<T> container);
     }
 

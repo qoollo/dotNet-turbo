@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.ObjectPools.Common
 {
     /// <summary>
-    /// Враппер над элементами объектного пула
+    /// Wrapper for ObjectPool elements which contains additional information necessary for the ObjectPool logic
     /// </summary>
     [DebuggerDisplay("IsBusy = {IsBusy}, IsDestroyed = {IsElementDestroyed}")]
     public class PoolElementWrapper
@@ -22,9 +22,9 @@ namespace Qoollo.Turbo.ObjectPools.Common
         private volatile bool _isRemoved;
 
         /// <summary>
-        /// Конструктор PoolElementWrapper
+        /// <see cref="PoolElementWrapper"/> constructor
         /// </summary>
-        /// <param name="owner">Объект-владелец</param>
+        /// <param name="owner">The owner of the wrapper (ObjectPool instance)</param>
         public PoolElementWrapper(object owner)
         {
             _owner = owner;
@@ -35,7 +35,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
             NextIndex = -1;
         }
         /// <summary>
-        /// Конструктор PoolElementWrapper
+        /// <see cref="PoolElementWrapper"/> constructor
         /// </summary>
         public PoolElementWrapper()
             : this(null)
@@ -44,37 +44,37 @@ namespace Qoollo.Turbo.ObjectPools.Common
 
 
         /// <summary>
-        /// Мой индекс в SparceArray
+        /// This item index inside <see cref="ServiceStuff.ElementCollections.IndexedStackElementStorage{T}"/>
         /// </summary>
         internal volatile int ThisIndex;
         /// <summary>
-        /// Индекс следующего за мной в SparceArray
+        /// Next item index inside <see cref="ServiceStuff.ElementCollections.IndexedStackElementStorage{T}"/>
         /// </summary>
         internal volatile int NextIndex;
 
 
 
         /// <summary>
-        /// Занят ли элемент
+        /// Indicates whether the element is rented by user
         /// </summary>
         public bool IsBusy { get { return Volatile.Read(ref _isBusy) != 0; } }
         /// <summary>
-        /// Удалён ли враппер
+        /// Indicates whether the element is removed from the owner ObjectPool
         /// </summary>
         public bool IsRemoved { get { return _isRemoved; } }
         /// <summary>
-        /// Уничтожен ли оборачиваемый элемент
+        /// Indicates whether the element is fully destroyed
         /// </summary>
         public bool IsElementDestroyed { get { return _isElementdDestroyed; } }
         /// <summary>
-        /// Владелец элемента
+        /// The owner of the current wrapper
         /// </summary>
         public object Owner { get { return _owner; } }
 
 
 
         /// <summary>
-        /// Пометить, что элемент уничтожен
+        /// Marks element as Destroyed
         /// </summary>
         public void MarkElementDestroyed()
         {
@@ -82,7 +82,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
             _isElementdDestroyed = true;
         }
         /// <summary>
-        /// Пометить, что элемент окончательно удалён
+        /// Marks element as Removed
         /// </summary>
         public void MarkRemoved()
         {
@@ -94,7 +94,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
 
 
         /// <summary>
-        /// Пометить, что элемент занят
+        /// Marks element as Busy
         /// </summary>
         protected internal void MakeBusy()
         {
@@ -107,7 +107,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
 #endif
         }
         /// <summary>
-        /// Освободить элемент
+        /// Marks element as not Busy (returned back to the pool)
         /// </summary>
         protected internal void MakeAvailable()
         {
@@ -120,15 +120,15 @@ namespace Qoollo.Turbo.ObjectPools.Common
         }
 
         /// <summary>
-        /// Попробовать сделать элемент занятым
+        /// Attempts to mark element as Busy (concurrent version)
         /// </summary>
-        /// <returns>Удалось ли</returns>
+        /// <returns>True when the element was not Busy and was successfully marked as Busy after this call</returns>
         protected internal bool TryMakeBusyAtomic()
         {
             return Interlocked.CompareExchange(ref _isBusy, 1, 0) == 0;
         }
         /// <summary>
-        /// Сделать элемент занятым (атомарно)
+        /// Forcibly marks the element as Busy (concurrent version)
         /// </summary>
         protected internal void MakeBusyAtomic()
         {
@@ -136,7 +136,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
             Debug.Assert(prevIsBusy == 0, "Pool Element is already busy");
         }
         /// <summary>
-        /// Сделать элемент доступным (атомарно)
+        /// Forcibly marks the element as not Busy (concurrent version)
         /// </summary>
         protected internal void MakeAvailableAtomic()
         {
@@ -158,7 +158,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         }
 
         /// <summary>
-        /// Финализатор
+        /// Finalizer
         /// </summary>
         ~PoolElementWrapper()
         {
@@ -178,9 +178,9 @@ namespace Qoollo.Turbo.ObjectPools.Common
 
 
     /// <summary>
-    /// Типизированный враппер над элементами объектного пула
+    /// Generic wrapper for ObjectPool elements which contains additional information necessary for the ObjectPool logic
     /// </summary>
-    /// <typeparam name="T">Тип элемента</typeparam>
+    /// <typeparam name="T">The type of the ObjectPool element</typeparam>
     [DebuggerDisplay("IsValid = {IsValid}, IsDestroyed = {IsElementDestroyed}, IsBusy = {IsBusy}")]
     public class PoolElementWrapper<T> : PoolElementWrapper
     {
@@ -200,11 +200,11 @@ namespace Qoollo.Turbo.ObjectPools.Common
         private bool _isBusyOnPoolDispose;
 
         /// <summary>
-        /// Конструктор PoolElementWrapper
+        /// <see cref="PoolElementWrapper{T}"/> constructor
         /// </summary>
-        /// <param name="element">Элемент</param>
-        /// <param name="operations">Помошник с операциями для элемента</param>
-        /// <param name="owner">Владелец</param>
+        /// <param name="element">Element to be wrapped</param>
+        /// <param name="operations">Provides additional operations on the element (IsValid)</param>
+        /// <param name="owner">Owner of the wrapper (ObjectPool instance)</param>
         public PoolElementWrapper(T element, IPoolElementOperationSource<T> operations, object owner)
             : base(owner)
         {
@@ -216,67 +216,67 @@ namespace Qoollo.Turbo.ObjectPools.Common
         }
 
         /// <summary>
-        /// Оборачиваемый элемент
+        /// Wrapped element
         /// </summary>
         public T Element { get { return _element; } }
         /// <summary>
-        /// Валиден ли элемент
+        /// Indicates whether the <see cref="Element"/> is valid and can be used for operations
         /// </summary>
         public bool IsValid { get { return !IsElementDestroyed && _operations.IsValid(this); } }
         /// <summary>
-        /// Имя пула-владельца
+        /// Name of the owner pool
         /// </summary>
         internal string SourcePoolName { get { return _sourcePoolName; } }
 
         /// <summary>
-        /// Уничтожен ли родительский пул
+        /// Indicates whether the owner ObjectPool is in Disposed state (for debug purposes)
         /// </summary>
         internal bool IsSourcePoolDisposed { get { return _isSourcePoolDisposed; } }
         /// <summary>
-        /// Занят ли был элемент в момент вызова Dispose на пуле
+        /// Indicates whether the element was in Busy state when owner ObjectPool becomes Disposed (for debug purposes)
         /// </summary>
         internal bool IsBusyOnPoolDispose { get { return _isBusyOnPoolDispose; } }
 
         /// <summary>
-        /// Иия метода, в котором произошло последнее получение элемента пула
+        /// Name of the caller method that used element the last time (for debug purposes)
         /// </summary>
         internal string LastTimeUsedAtMemberName { get { return _lastTimeUsedAtMemberName; } }
         /// <summary>
-        /// Путь до файла, в котором произошло последнее получение элемента пула
+        /// Path to the source code file with method that used the element the last time (for debug purposes)
         /// </summary>
         internal string LastTimeUsedAtFilePath { get { return _lastTimeUsedAtFilePath; } }
         /// <summary>
-        /// Строка файла, в которой произошло последнее получение элемента пула
+        /// Line number in the source code file with method that used the element the last time (for debug purposes)
         /// </summary>
         internal int LastTimeUsedAtLineNumber { get { return _lastTimeUsedAtLineNumber; } }
         /// <summary>
-        /// Время, когда элемент был арендован в последний раз
+        /// DateTime when the element was rented the last time
         /// </summary>
         internal DateTime LastTimeUsedAtTime { get { return _lastTimeUsedAtTime; } }
         /// <summary>
-        /// Время создания элемента
+        /// Time when the element wrapper was created
         /// </summary>
         internal DateTime CreateTime { get { return _createTime; } }
         /// <summary>
-        /// Сколько раз арендовали этот элемент
+        /// Number of times element was rented
         /// </summary>
         internal int NumberOfTimesWasRented { get { return _numberOfTimesWasRented; } }
         /// <summary>
-        /// Сколько раз элемент был освобождён
+        /// Number of times element was released
         /// </summary>
         internal int NumberOfTimesWasReleased { get { return _numberOfTimesWasReleased; } }
 
         /// <summary>
-        /// Задать имя пула-владельца
+        /// Sets the owner ObjectPool name
         /// </summary>
-        /// <param name="name">Имя</param>
+        /// <param name="name">Name of the owner ObjectPool</param>
         internal void SetPoolName(string name)
         {
             Contract.Requires(name != null);
             _sourcePoolName = name;
         }
         /// <summary>
-        /// Помечает, что родительский пул уничтожен
+        /// Marks that the owner pool was disposed (for debug purposes)
         /// </summary>
         internal void SetPoolDisposed()
         {
@@ -285,12 +285,12 @@ namespace Qoollo.Turbo.ObjectPools.Common
         }
 
         /// <summary>
-        /// Обновить статистику при аренде
+        /// Notifies that element was rented with some renting information
         /// </summary>
-        /// <param name="memberName">Имя метода</param>
-        /// <param name="filePath">Путь до файла</param>
-        /// <param name="lineNumber">Номер строки в файле</param>
-        /// <param name="rentTime">Время аренды</param>
+        /// <param name="memberName">Caller method name</param>
+        /// <param name="filePath">Caller source file name</param>
+        /// <param name="lineNumber">Caller line number name</param>
+        /// <param name="rentTime">DateTime when the element was rented</param>
         internal void UpdateStatOnRent(string memberName, string filePath, int lineNumber, DateTime rentTime)
         {
             _lastTimeUsedAtMemberName = memberName;
@@ -300,7 +300,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
             Interlocked.Increment(ref _numberOfTimesWasRented);
         }
         /// <summary>
-        /// Обновить статистику при освобождении
+        /// Notifies that element was released
         /// </summary>
         internal void UpdateStatOnRelease()
         {
