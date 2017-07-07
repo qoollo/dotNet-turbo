@@ -1,5 +1,4 @@
-﻿using Qoollo.Turbo.Threading.OldThreadPools;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -88,125 +87,6 @@ namespace Qoollo.Turbo.PerformanceTests
                     Append("]");
                 return data.ToString();
             }
-        }
-
-
-        private static TimeSpan RunTestOnPool(ThreadPoolBase pool, TestConfiguration config, bool waitForCompletion = true)
-        {
-            var taskActiveTimeDev = (int)(config.ActiveTaskAvgTime.Ticks / 4);
-            var taskPassiveTimeDev = (int)(config.PassiveTaskAvgTime.Ticks / 4);
-            Random rndGenerator = new Random();
-
-            int executedTaskCounter = 0;
-            int completedTaskCount = 0;
-   
-
-            Action taskAction = null;
-            taskAction = () =>
-                 {
-                     if (config.PassiveTaskAvgTime > TimeSpan.Zero)
-                     {
-                         TimeSpan taskTime = config.PassiveTaskAvgTime;
-                         if (config.UseDeviance)
-                             lock (rndGenerator)
-                                 taskTime += TimeSpan.FromTicks(rndGenerator.Next(-taskPassiveTimeDev, taskPassiveTimeDev));
-
-                         int taskTimeMs = CalcRandSleep(rndGenerator, taskTime.TotalMilliseconds);
-
-                         if (taskTimeMs > 0)
-                             Thread.Sleep(taskTimeMs);
-                         else if (taskTimeMs == 0)
-                             Thread.Yield();
-                     }
-
-                     // ----
-                     if (config.ActiveTaskAvgTime > TimeSpan.Zero)
-                     {
-                         TimeSpan taskTime = config.ActiveTaskAvgTime;
-                         if (config.UseDeviance)
-                             lock (rndGenerator)
-                                 taskTime += TimeSpan.FromTicks(rndGenerator.Next(-taskActiveTimeDev, taskActiveTimeDev));
-
-                         int taskTimeMs = CalcRandSleep(rndGenerator, taskTime.TotalMilliseconds);
-
-                         if (taskTimeMs > 0)
-                         {
-                             Stopwatch sw111 = Stopwatch.StartNew();
-                             while (sw111.ElapsedMilliseconds < taskTimeMs)
-                                 Thread.SpinWait(10000);
-                         }
-                         else if (taskTimeMs == 0)
-                             Thread.Yield();
-                     }
-
-                     // ----
-
-                     if (config.SpawnFromPool)
-                     {
-                         if (Interlocked.Increment(ref executedTaskCounter) <= config.TaskCount)
-                             pool.Run(taskAction);
-                     }
-
-                     Interlocked.Increment(ref completedTaskCount);
-                 };
-
-            Barrier bar = new Barrier(config.SpawnThreadCount + 1);
-
-            Random spawnRndGenerator = new Random();
-            int spawnTimeDev = (int)(config.SpawnPeriod.Ticks / 4);
-            Thread[] spawnThreads = new Thread[config.SpawnThreadCount];
-            ThreadStart spawnAction = () =>
-                {
-                    bar.SignalAndWait();
-
-                    long expectedSleep = 0;
-                    long realSleep = 0;
-
-                    while (Interlocked.Increment(ref executedTaskCounter) <= config.TaskCount)
-                    {
-                        pool.Run(taskAction);
-
-                        TimeSpan spawnSleep = config.SpawnPeriod;
-                        if (config.UseDeviance)
-                            lock (spawnRndGenerator)
-                                spawnSleep += TimeSpan.FromTicks(spawnRndGenerator.Next(-spawnTimeDev, spawnTimeDev));
-
-                        int spawnSleepMs = CalcRandSleep(spawnRndGenerator, spawnSleep.TotalMilliseconds);
-
-                        if (spawnSleepMs > 0)
-                        {
-                            expectedSleep += spawnSleepMs;
-
-                            int startTick = Environment.TickCount;
-                            if (realSleep <= expectedSleep)
-                                Thread.Sleep(spawnSleepMs);
-
-                            realSleep += (Environment.TickCount - startTick);
-                        }
-                    }
-                };
-
-
-            for (int i = 0; i < spawnThreads.Length; i++)
-                spawnThreads[i] = new Thread(spawnAction);
-
-            for (int i = 0; i < spawnThreads.Length; i++)
-                spawnThreads[i].Start();
-
-            bar.SignalAndWait();
-            Stopwatch sw = Stopwatch.StartNew();
-
-            if (waitForCompletion)
-                SpinWait.SpinUntil(() => Volatile.Read(ref completedTaskCount) >= config.TaskCount);
-            else
-                SpinWait.SpinUntil(() => Volatile.Read(ref executedTaskCounter) >= config.TaskCount);
-
-            sw.Stop();
-
-            if (waitForCompletion && completedTaskCount != config.TaskCount)
-                throw new Exception("completedTaskCount != config.TaskCount");
-
-            return sw.Elapsed;
         }
 
 
@@ -334,27 +214,6 @@ namespace Qoollo.Turbo.PerformanceTests
         }
 
 
-        private static void RunSingleTestSet(TestConfiguration config, string fileName, Func<TestConfiguration, ThreadPoolBase> poolConstructor, bool waitForCompletion = true, bool doDispose = true)
-        {
-            ThreadPoolBase pool = null;
-            try
-            {
-                pool = poolConstructor(config);
-                {
-                    var testRes = RunTestOnPool(pool, config, waitForCompletion);
-                    string msg = pool.GetType().Name + config.ToString() + "  ==  " + testRes.TotalMilliseconds.ToString() + "ms";
-                    Console.WriteLine(msg);
-                    if (fileName != null)
-                        File.AppendAllLines(fileName, new string[] { msg });
-                }
-            }
-            finally
-            {
-                if (doDispose && pool != null)
-                    pool.Dispose();
-            }
-        }
-
         private static void RunSingleTestSet(TestConfiguration config, string fileName, Func<TestConfiguration, Qoollo.Turbo.Threading.ThreadPools.ThreadPoolBase> poolConstructor, bool waitForCompletion = true, bool doDispose = true)
         {
             Qoollo.Turbo.Threading.ThreadPools.ThreadPoolBase pool = null;
@@ -377,7 +236,6 @@ namespace Qoollo.Turbo.PerformanceTests
         }
 
         private static void RunAllTestSets(
-            Func<TestConfiguration, Qoollo.Turbo.Threading.OldThreadPools.ThreadPoolBase> poolConstructor, 
             Func<TestConfiguration, Qoollo.Turbo.Threading.ThreadPools.ThreadPoolBase> poolConstructor2,     
             string fileName, bool useDeviance = true)
         {
@@ -454,10 +312,7 @@ namespace Qoollo.Turbo.PerformanceTests
                             realConfig.PoolThreadCount = threadCount;
                             realConfig.UseDeviance = useDeviance;
 
-                            if (poolConstructor != null)
-                                RunSingleTestSet(realConfig, fileName, poolConstructor);
-                            else
-                                RunSingleTestSet(realConfig, fileName, poolConstructor2);
+                            RunSingleTestSet(realConfig, fileName, poolConstructor2);
                         }
 
                         Console.WriteLine();
@@ -471,29 +326,17 @@ namespace Qoollo.Turbo.PerformanceTests
 
         private static void RunOnSystemThreadPool()
         {
-            RunAllTestSets(cfg => new SystemThreadPool(), null, @"f:\sysThPool.txt", true);
+            RunAllTestSets(cfg => new Qoollo.Turbo.Threading.ThreadPools.SystemThreadPool(), @"f:\sysThPool.txt", true);
         }
         private static void RunOnStaticThreadPool()
         {
-            RunAllTestSets(cfg => new StaticThreadPool(cfg.PoolThreadCount, cfg.PoolQueueSize), null, @"f:\statThPool.txt", true);
+            RunAllTestSets(cfg => new Qoollo.Turbo.Threading.ThreadPools.StaticThreadPool(cfg.PoolThreadCount, cfg.PoolQueueSize, "123"), @"f:\statThPool.txt", true);
         }
         private static void RunOnDynamicThreadPool()
         {
-            RunAllTestSets(cfg => new DynamicThreadPool(cfg.PoolThreadCount, cfg.PoolQueueSize), null, @"f:\dynThPool.txt", true);
+            RunAllTestSets(cfg => new Qoollo.Turbo.Threading.ThreadPools.DynamicThreadPool(0, cfg.PoolThreadCount, cfg.PoolQueueSize, "234"), @"f:\dynThPool.txt", true);
         }
 
-        private static void RunOnSystemThreadPool(TestConfiguration config)
-        {
-            RunSingleTestSet(config, null, cfg => new SystemThreadPool());
-        }
-        private static void RunOnStaticThreadPool(TestConfiguration config)
-        {
-            RunSingleTestSet(config, null, cfg => new StaticThreadPool(cfg.PoolThreadCount, cfg.PoolQueueSize));
-        }
-        private static void RunOnDynamicThreadPool(TestConfiguration config)
-        {
-            RunSingleTestSet(config, null, cfg => new DynamicThreadPool(cfg.PoolThreadCount, cfg.PoolQueueSize));
-        }
 
 
         private static void RunOnSystemThreadPoolNew(TestConfiguration config)
