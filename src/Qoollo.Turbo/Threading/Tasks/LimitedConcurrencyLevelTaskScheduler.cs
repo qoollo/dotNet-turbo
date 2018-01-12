@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.Tasks
 {
     /// <summary>
-    /// Планировщик задач с лимитом одновременных запросов
+    /// Task scheduler with the limited concurrency level (limit the number of simultaniously executing tasks)
     /// </summary>
     public class LimitedConcurrencyLevelTaskScheduler : TaskScheduler
     {
@@ -23,9 +23,9 @@ namespace Qoollo.Turbo.Threading.Tasks
         private int _delegatesQueuedOrRunning = 0; // protected by lock(_tasks)
 
         /// <summary>
-        /// Конструктор LimitedConcurrencyLevelTaskScheduler
+        /// LimitedConcurrencyLevelTaskScheduler constructor
         /// </summary>
-        /// <param name="maxDegreeOfParallelism">Максимальный уровень параллелизма</param>
+        /// <param name="maxDegreeOfParallelism">Maxumum degree of parallelism (maximum number of simultaniously executing tasks)</param>
         public LimitedConcurrencyLevelTaskScheduler(int maxDegreeOfParallelism)
         {
             if (maxDegreeOfParallelism < 1) 
@@ -35,7 +35,7 @@ namespace Qoollo.Turbo.Threading.Tasks
         }
 
         /// <summary>
-        /// Конструктор LimitedConcurrencyLevelTaskScheduler
+        /// LimitedConcurrencyLevelTaskScheduler constructor (limits the number of simultaniously executing tasks by 2 * Environment.ProcessorCount)
         /// </summary>
         public LimitedConcurrencyLevelTaskScheduler()
             : this(Environment.ProcessorCount * 2)
@@ -43,12 +43,16 @@ namespace Qoollo.Turbo.Threading.Tasks
         }
 
 
-        /// <summary>Максимальная степень параллелизма</summary>
+        /// <summary>
+        /// Maxumum degree of parallelism
+        /// </summary>
         public sealed override int MaximumConcurrencyLevel { get { return _maxDegreeOfParallelism; } }
 
 
-        /// <summary>Заносит Task в планировщик</summary>
-        /// <param name="task">Новый Task</param>
+        /// <summary>
+        /// Adds task to the scheduller queue
+        /// </summary>
+        /// <param name="task">Task</param>
         protected sealed override void QueueTask(Task task)
         {
             lock (_tasks)
@@ -63,7 +67,7 @@ namespace Qoollo.Turbo.Threading.Tasks
         }
 
         /// <summary>
-        /// Запускаем Task из очереди
+        /// Uses new thread from ThreadPool to execute tasks from queue
         /// </summary>
         private void NotifyThreadPoolOfPendingWork()
         {
@@ -106,10 +110,12 @@ namespace Qoollo.Turbo.Threading.Tasks
         }
 
 
-        /// <summary>Попробовать запустить Task в текущем потоке</summary>
-        /// <param name="task">Task для исполнения</param>
-        /// <param name="taskWasPreviouslyQueued">Task был в очереди</param>
-        /// <returns>Может ли он быть запущен в текущем потоке</returns>
+        /// <summary>
+        /// Attempts to exectue Task synchronously in the current thread
+        /// </summary>
+        /// <param name="task">Task to be executed</param>
+        /// <param name="taskWasPreviouslyQueued">Task was taken from queue</param>
+        /// <returns>True if the task can be executed synchronously in the current thread</returns>
         protected sealed override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
         {
             // If this thread isn't already processing a task, we don't support inlining
@@ -124,9 +130,11 @@ namespace Qoollo.Turbo.Threading.Tasks
             return base.TryExecuteTask(task);
         }
 
-        /// <summary>Удаление Task из очереди</summary>
-        /// <param name="task">Task для удаления</param>
-        /// <returns>Был ли удалён</returns>
+        /// <summary>
+        /// Dequeus task from scheduler queue
+        /// </summary>
+        /// <param name="task">Task that should be removed from queue</param>
+        /// <returns>True when task was removed</returns>
         protected sealed override bool TryDequeue(Task task)
         {
             lock (_tasks)
@@ -135,8 +143,10 @@ namespace Qoollo.Turbo.Threading.Tasks
             }
         }
 
-        /// <summary>Перечисление всех Task'ов в очереди</summary>
-        /// <returns>Перечисление</returns>
+        /// <summary>
+        /// Enumerates Tasks inside queue
+        /// </summary>
+        /// <returns>Tasks collection</returns>
         protected sealed override IEnumerable<Task> GetScheduledTasks()
         {
             bool lockTaken = false;

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ServiceStuff
 {
     /// <summary>
-    /// Помошник для работы с Task
+    /// Helper to execute private methods of Task
     /// </summary>
     internal static class TaskHelper
     {
@@ -25,9 +25,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         private static readonly object _syncObj = new object();
 
         /// <summary>
-        /// Создаёт динамчисекий метод для установки TaskScheduler
+        /// Creates dynamic method to set TaskScheduler on Task (set m_taskScheduler field)
         /// </summary>
-        /// <returns>Делегат для вызова динамического метода</returns>
+        /// <returns>Delegate to set TaskScheduler</returns>
         private static SetTaskSchedulerDelegate CreateSetTaskSchedulerMethod()
         {
             var TaskSchedulerField = typeof(Task).GetField("m_taskScheduler", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
@@ -47,9 +47,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         }
 
         /// <summary>
-        /// Создаёт динамический метод для выполнения внутренностей Task
+        /// Creates dynamic method to execute Task synchronously (ExecuteEntry method)
         /// </summary>
-        /// <returns>Делегат для вызова динамического метода</returns>
+        /// <returns>Delegate to execute Task</returns>
         private static ExecuteTaskEntryDelegate CreateExecuteTaskEntryMethod()
         {
             var ExecuteEntryMethod = typeof(Task).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Single(o => o.Name == "ExecuteEntry" && o.GetParameters().Length == 1);
@@ -67,9 +67,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         }
 
         /// <summary>
-        /// Создаёт динамический метод для отмены Task
+        /// Creates dynamic method to cancel Task (InternalCancel method)
         /// </summary>
-        /// <returns>Делегат для вызова динамического метода</returns>
+        /// <returns>Delegate to cancel Task</returns>
         private static CancelTaskDelegate CreateCancelTaskMethod()
         {
             var InternalCancelMethod = typeof(Task).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Single(o => o.Name == "InternalCancel" && o.GetParameters().Length == 1);
@@ -87,7 +87,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         }
 
         /// <summary>
-        /// Выполнить инициализацию динамчиеских методов
+        /// Initialize dynamic methods
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void InitDynamicMethods()
@@ -105,11 +105,11 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 
 
         /// <summary>
-        /// Выполнить внутренности Task
+        /// Executes work associated with Task synchronously
         /// </summary>
         /// <param name="task">Task</param>
-        /// <param name="preventDoubleExecution">Защита от повторного выполнения</param>
-        /// <returns>Успешность запуска</returns>
+        /// <param name="preventDoubleExecution">Prevent double execution</param>
+        /// <returns>Is executed successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ExecuteTaskEntry(Task task, bool preventDoubleExecution)
         {
@@ -124,11 +124,11 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             return action(task, preventDoubleExecution);
         }
         /// <summary>
-        /// Отменить Task
+        /// Cancels Task
         /// </summary>
         /// <param name="task">Task</param>
-        /// <param name="cancelNonExecutingOnly">Отменить только не начавший выполняться Task</param>
-        /// <returns>Удалось ли отменить</returns>
+        /// <param name="cancelNonExecutingOnly">Cancel only non executing task</param>
+        /// <returns>Is cancelled sucessfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CancelTask(Task task, bool cancelNonExecutingOnly)
         {
@@ -143,7 +143,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             return action(task, cancelNonExecutingOnly);
         }
         /// <summary>
-        /// Установить scheduler для task
+        /// Sets TaskScheduler on Task object
         /// </summary>
         /// <param name="task">Task</param>
         /// <param name="scheduler">TaskScheduler</param>
