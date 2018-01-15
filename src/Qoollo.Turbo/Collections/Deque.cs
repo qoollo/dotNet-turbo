@@ -111,8 +111,9 @@ namespace Qoollo.Turbo.Collections
         /// Adds an element to the end of the deque
         /// </summary>
         /// <param name="item">Element to add</param>
-        [Obsolete("Method was renamed. Consider to use 'AddLast' instead")]
-		public void AddToBack(T item)
+        [Obsolete("Method was renamed. Consider to use 'AddLast' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public void AddToBack(T item)
         {
             _circularList.AddLast(item);
         }
@@ -129,7 +130,8 @@ namespace Qoollo.Turbo.Collections
         /// Adds an element to the begining of the deque
         /// </summary>
         /// <param name="item">Element to add</param>
-        [Obsolete("Method was renamed. Consider to use 'AddFirst' instead")]
+        [Obsolete("Method was renamed. Consider to use 'AddFirst' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void AddToFront(T item)
         {
             _circularList.AddFirst(item);
@@ -153,7 +155,8 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         /// <returns>The element at the beginning of the deque</returns>
         [Pure]
-        [Obsolete("Method was renamed. Consider to use 'PeekFirst' instead")]
+        [Obsolete("Method was renamed. Consider to use 'PeekFirst' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public T PeekAtFront()
         {
             return PeekFirst();
@@ -178,7 +181,8 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         /// <returns>The element at the ending of the deque</returns>
         [Pure]
-        [Obsolete("Method was renamed. Consider to use 'PeekLast' instead")]
+        [Obsolete("Method was renamed. Consider to use 'PeekLast' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public T PeekAtEnd()
         {
             return PeekLast();
@@ -197,8 +201,9 @@ namespace Qoollo.Turbo.Collections
         /// Removes an element at the begining of the deque
         /// </summary>
         /// <returns>The element at the beginning of the deque</returns>
-        [Obsolete("Method was renamed. Consider to use 'RemoveFirst' instead")]
-		public T RemoveFromFront()
+        [Obsolete("Method was renamed. Consider to use 'RemoveFirst' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public T RemoveFromFront()
 		{
             return _circularList.RemoveFirst();
 		}
@@ -215,7 +220,8 @@ namespace Qoollo.Turbo.Collections
         /// Removes an element at the ending of the deque
         /// </summary>
         /// <returns>The element at the ending of the deque</returns>
-        [Obsolete("Method was renamed. Consider to use 'RemoveLast' instead")]
+        [Obsolete("Method was renamed. Consider to use 'RemoveLast' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public T RemoveFromBack()
         {
             return _circularList.RemoveLast();

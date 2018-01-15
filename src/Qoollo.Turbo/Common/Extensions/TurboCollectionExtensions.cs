@@ -13,6 +13,7 @@ namespace System.Collections.Generic
     /// Extension methods for BCL collections
     /// </summary>
     [Obsolete("Class was renamed to TurboCollectionExtensions", true)]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static class CollectionExtensions
     {
     }

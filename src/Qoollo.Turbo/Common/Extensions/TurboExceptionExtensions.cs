@@ -10,6 +10,7 @@ namespace System
     /// Extension methods for Exception objects
     /// </summary>
     [Obsolete("Class was renamed to TurboExceptionExtensions", true)]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static class ExceptionExtensions
     {
     }

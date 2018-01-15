@@ -122,7 +122,8 @@ namespace Qoollo.Turbo.Threading
         /// Attempts to enter to the protected code section
         /// </summary>
         /// <returns>Is entered successfully</returns>
-        [Obsolete("Unsafe. Consider to use TryEnter instead", false)]
+        [Obsolete("Unsafe. Consider to use TryEnter instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryEnterClient()
         {
             return TryEnterClientCore();
@@ -133,7 +134,8 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> was disposed</exception>
         /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
-        [Obsolete("Unsafe. Consider to use Enter instead", false)]
+        [Obsolete("Unsafe. Consider to use Enter instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void EnterClient()
         {
             Enter();
@@ -154,7 +156,8 @@ namespace Qoollo.Turbo.Threading
         /// Attemts to enter to the protected code section
         /// </summary>
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
-        [Obsolete("Renamed. Consider to use TryEnter instead", false)]
+        [Obsolete("Renamed. Consider to use TryEnter instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public EntryCountingEventGuard TryEnterClientGuarded()
         {
             return TryEnter();
@@ -184,7 +187,8 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
         /// <exception cref="ObjectDisposedException"><see cref="EntryCountingEvent"/> was disposed</exception>
         /// <exception cref="InvalidOperationException"><see cref="EntryCountingEvent"/> was terminated</exception>
-        [Obsolete("Renamed. Consider to use Enter instead", false)]
+        [Obsolete("Renamed. Consider to use Enter instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public EntryCountingEventGuard EnterClientGuarded()
         {
             return Enter();
@@ -209,7 +213,8 @@ namespace Qoollo.Turbo.Threading
         /// <typeparam name="TException">The type of exception to throw when attempt was unsuccessful</typeparam>
         /// <param name="message">Message, that will be passed to Exception constructor</param>
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
-        [Obsolete("Renamed. Consider to use Enter instead", false)]
+        [Obsolete("Renamed. Consider to use Enter instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public EntryCountingEventGuard EnterClientGuarded<TException>(string message) where TException : Exception
         {
             return Enter<TException>(message);
@@ -230,7 +235,8 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <typeparam name="TException">The type of exception to throw when attempt was unsuccessful</typeparam>
         /// <returns>Guard primitive to track the protected section scope with 'using' statement</returns>
-        [Obsolete("Renamed. Consider to use Enter instead", false)]
+        [Obsolete("Renamed. Consider to use Enter instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public EntryCountingEventGuard EnterClientGuarded<TException>() where TException : Exception
         {
             return Enter<TException>();
@@ -265,7 +271,8 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         /// <param name="condition">User-sepcified condition</param>
         /// <returns>Is entered successfully</returns>
-        [Obsolete("Unsafe. Consider to use TryEnterConditional instead", false)]
+        [Obsolete("Unsafe. Consider to use TryEnterConditional instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryEnterClientConditional(Func<bool> condition)
         {
             return TryEnterConditional(condition).IsAcquired;
@@ -306,7 +313,8 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Exits the protected code section (better to use <see cref="EntryCountingEventGuard"/> for safety)
         /// </summary>
-        [Obsolete("Unsafe. Consider to use Guarded version of methods", false)]
+        [Obsolete("Unsafe. Consider to use Guarded version of methods", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void ExitClient()
         {
             ExitClientCore();

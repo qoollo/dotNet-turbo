@@ -15,6 +15,7 @@ namespace Qoollo.Turbo.IoC
     /// Simple IoC container and object locator (without separated injection container)
     /// </summary>
     [Obsolete("This container is obsolete. Please, use TurboContainer instead.")]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public class SimpleObjectLocator : DirectTypeAssociationContainer, IObjectLocator<Type>
     {
         private readonly IInjectionResolver _resolver;

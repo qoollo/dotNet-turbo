@@ -16,6 +16,7 @@ namespace Qoollo.Turbo.IoC
     /// Common case IoC container and object locator
     /// </summary>
     [Obsolete("This container is obsolete. Please, use TurboContainer instead.")]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public class CommonObjectLocator: IObjectLocator<Type>, IDisposable
     {
         private bool _disposeInjectionWithBuilder;

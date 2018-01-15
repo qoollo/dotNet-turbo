@@ -117,7 +117,8 @@ namespace Qoollo.Turbo.Collections
         /// Adds an object to the head of the queue
         /// </summary>
         /// <param name="item">The item to add to the queue</param>
-        [Obsolete("Method was renamed. Consider to use 'EnqueueFirst' instead")]
+        [Obsolete("Method was renamed. Consider to use 'EnqueueFirst' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void EnqueueToFront(T item)
         {
             _circularList.AddFirst(item);

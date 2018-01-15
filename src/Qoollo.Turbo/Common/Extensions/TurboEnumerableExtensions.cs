@@ -10,6 +10,7 @@ namespace System.Linq
     /// Additional LINQ to Object extension methods
     /// </summary>
     [Obsolete("Class was renamed to TurboEnumerableExtensions", true)]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static class EnumerableExtensions
     {
     }
@@ -27,7 +28,8 @@ namespace System.Linq
         /// <param name="predicate">Predicate</param>
         /// <returns>The index of element inside the collection, if found. -1 otherwise</returns>
         [Pure]
-        [Obsolete("Method was renamed. Consider to use FindIndex instead")]
+        [Obsolete("Method was renamed. Consider to use FindIndex instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static int FindPosition<T>(this IEnumerable<T> collection, Func<T, bool> predicate)
         {
             return FindIndex(collection, new Predicate<T>(predicate));

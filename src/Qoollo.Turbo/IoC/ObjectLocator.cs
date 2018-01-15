@@ -20,6 +20,7 @@ namespace Qoollo.Turbo.IoC
     /// <typeparam name="TAssociation">The type of the association container</typeparam>
     /// <typeparam name="TAssocKey">The type of the key of association container</typeparam>
     [Obsolete("Do not use this class as a base for your custom IoC containers. Please, implement them from the core by hand.")]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract class ObjectLocator<TInjection, TInjKey, TAssociation, TAssocKey>: IObjectLocator<TAssocKey>, IDisposable
         where TInjection: IInjectionSource<TInjKey>
         where TAssociation: IAssociationSource<TAssocKey>
