@@ -54,6 +54,7 @@
     <Compile Include="LevelingQueueTest.cs" />
     <Compile Include="LocalThreadQueueTest.cs" />
     <Compile Include="ObjectPoolTest.cs" />
+    <Compile Include="ProfilerInliningTest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SemaphorePerfTest.cs" />
