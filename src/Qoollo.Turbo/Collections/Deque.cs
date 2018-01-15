@@ -34,7 +34,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="capacity">Initial capacity</param>
 		public Deque(int capacity)
 		{
-            Contract.Requires<ArgumentOutOfRangeException>(capacity >= 0);
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity), "capacity cannot be negative");
 
             _circularList = new CircularList<T>(capacity);
 		}
@@ -45,7 +46,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="collection">The collection whose elements are copied to the new deque</param>
         public Deque(IEnumerable<T> collection)
 		{
-            Contract.Requires<ArgumentNullException>(collection != null);
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             _circularList = new CircularList<T>(collection);
 		}
@@ -74,8 +76,8 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         internal T GetElement(int i)
         {
-            Contract.Requires(i >= 0);
-            Contract.Requires(i <= this.Count);
+            TurboContract.Requires(i >= 0);
+            TurboContract.Requires(i <= this.Count);
 
             return _circularList[i];
         }
@@ -144,7 +146,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public T PeekFirst()
         {
-            Contract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0);
             if (_circularList.Count == 0)
                 throw new InvalidOperationException("Collection is empty");
 
@@ -170,7 +172,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public T PeekLast()
         {
-            Contract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0);
             if (_circularList.Count == 0)
                 throw new InvalidOperationException("Collection is empty");
 

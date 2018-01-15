@@ -106,9 +106,21 @@ namespace Qoollo.Turbo
         /// <summary>
         /// Specifies a postcondition contract for the enclosing method or property
         /// </summary>
+        /// <param name="condition">Condition</param>
         [System.Diagnostics.Conditional("__NEVER__")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Ensures()
+        public static void Ensures(bool condition)
+        {
+            throw new NotSupportedException("'Ensures' is not supported");
+        }
+        /// <summary>
+        /// Specifies a postcondition contract for the enclosing method or property
+        /// </summary>
+        /// <param name="condition">Condition</param>
+        /// <param name="userMessage">Message</param>
+        [System.Diagnostics.Conditional("__NEVER__")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Ensures(bool condition, string userMessage)
         {
             throw new NotSupportedException("'Ensures' is not supported");
         }

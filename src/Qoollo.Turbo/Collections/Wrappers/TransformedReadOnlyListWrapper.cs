@@ -38,8 +38,8 @@ namespace Qoollo.Turbo.Collections
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_list != null);
-            Contract.Invariant(_transformer != null);
+            TurboContract.Invariant(_list != null);
+            TurboContract.Invariant(_transformer != null);
         }
 
         /// <summary>
@@ -49,8 +49,10 @@ namespace Qoollo.Turbo.Collections
         /// <param name="transformator">Transformation function that will be applied to source elements</param>
         public TransformedReadOnlyListWrapper(IList<TIn> list, Func<TIn, TOut> transformator)
         {
-            Contract.Requires<ArgumentNullException>(list != null);
-            Contract.Requires<ArgumentNullException>(transformator != null);
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
+            if (transformator == null)
+                throw new ArgumentNullException(nameof(transformator));
 
             _list = list;
             _transformer = transformator;
@@ -109,9 +111,13 @@ namespace Qoollo.Turbo.Collections
         /// <param name="arrayIndex">Index in array at which copying begins</param>
         private void CopyTo(TOut[] array, int arrayIndex)
         {
-            Contract.Requires<ArgumentNullException>(array != null);
-            Contract.Requires<ArgumentOutOfRangeException>(arrayIndex >= 0);
-            Contract.Requires<ArgumentOutOfRangeException>(arrayIndex <= array.Length - this.Count);
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (arrayIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+            if (arrayIndex > array.Length - this.Count)
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+
             for (int i = 0; i < _list.Count; i++)
                 array[i + arrayIndex] = _transformer(_list[i]);
         }
@@ -122,7 +128,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="action">Action</param>
         private void ForEach(Action<TOut> action)
         {
-            Contract.Requires<ArgumentNullException>(action != null);
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
 
             for (int i = 0; i < _list.Count; i++)
                 action(_transformer(_list[i]));
@@ -470,8 +477,7 @@ namespace Qoollo.Turbo.Collections
             {
                 if (this._syncRoot == null)
                 {
-                    ICollection collection = this._list as ICollection;
-                    if (collection != null)
+                    if (this._list is ICollection collection)
                     {
                         this._syncRoot = collection.SyncRoot;
                     }

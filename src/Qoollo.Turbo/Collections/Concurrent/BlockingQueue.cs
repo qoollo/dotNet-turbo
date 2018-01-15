@@ -123,7 +123,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="decreaseValue">The number of items by which the bounded capacity should be decreased</param>
         private void UpdateDelayedBoundedCapacityDecreaseField(int decreaseValue)
         {
-            Debug.Assert(decreaseValue >= 0);
+            TurboContract.Requires(decreaseValue >= 0);
 
             SpinWait sw = new SpinWait();
             int delayedBoundedCapacityDecrease = _delayedBoundedCapacityDecrease;
@@ -364,7 +364,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
                 if (currentAddersUpdated)
                 {
-                    Debug.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0);
+                    TurboContract.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0);
                     Interlocked.Decrement(ref _currentAdders);
                 }
             }
@@ -385,7 +385,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Enqueue(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(addResult);
+            TurboContract.Assume(addResult);
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -401,7 +401,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Enqueue(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
-            Debug.Assert(addResult);
+            TurboContract.Assume(addResult);
         }
 
         /// <summary>
@@ -485,7 +485,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Add(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(addResult);
+            TurboContract.Assume(addResult);
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -499,7 +499,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Add(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
-            Debug.Assert(addResult);
+            TurboContract.Assume(addResult);
         }
 
         /// <summary>
@@ -585,7 +585,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             try
             {
                 removeSucceeded = _innerQueue.TryDequeue(out item);
-                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
+                TurboContract.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally
@@ -669,7 +669,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                     throw new OperationCanceledException(token);
                 }
                 removeSucceeded = _innerQueue.TryDequeue(out item);
-                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
+                TurboContract.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally
@@ -706,9 +706,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public T Dequeue()
         {
-            T result;
-            bool takeResult = TryTakeInner(out result, Timeout.Infinite, new CancellationToken(), true);
-            Debug.Assert(takeResult);
+            bool takeResult = TryTakeInner(out T result, Timeout.Infinite, new CancellationToken(), true);
+            TurboContract.Assume(takeResult);
  
             return result;
         }
@@ -723,9 +722,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public T Dequeue(CancellationToken token)
         {
-            T result;
-            bool takeResult = TryTakeInner(out result, Timeout.Infinite, token, true);
-            Debug.Assert(takeResult);
+            bool takeResult = TryTakeInner(out T result, Timeout.Infinite, token, true);
+            TurboContract.Assume(takeResult);
 
             return result;
         }
@@ -820,9 +818,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Take()
         {
-            T result;
-            bool takeResult = TryTakeInner(out result, Timeout.Infinite, new CancellationToken(), true);
-            Debug.Assert(takeResult);
+            bool takeResult = TryTakeInner(out T result, Timeout.Infinite, new CancellationToken(), true);
+            TurboContract.Assume(takeResult);
 
             return result;
         }
@@ -835,9 +832,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Take(CancellationToken token)
         {
-            T result;
-            bool takeResult = TryTakeInner(out result, Timeout.Infinite, token, true);
-            Debug.Assert(takeResult);
+            bool takeResult = TryTakeInner(out T result, Timeout.Infinite, token, true);
+            TurboContract.Assume(takeResult);
 
             return result;
         }
@@ -997,9 +993,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Peek()
         {
-            T result;
-            bool takeResult = TryPeekInner(out result, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(takeResult);
+            bool takeResult = TryPeekInner(out T result, Timeout.Infinite, new CancellationToken());
+            TurboContract.Assume(takeResult);
 
             return result;
         }
@@ -1012,9 +1007,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Peek(CancellationToken token)
         {
-            T result;
-            bool takeResult = TryPeekInner(out result, Timeout.Infinite, token);
-            Debug.Assert(takeResult);
+            bool takeResult = TryPeekInner(out T result, Timeout.Infinite, token);
+            TurboContract.Assume(takeResult);
 
             return result;
         }
@@ -1148,8 +1142,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="index">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int index)
         {
-            Debug.Assert(array != null);
-            Debug.Assert(index >= 0 && index < array.Length);
+            TurboContract.Assert(array != null);
+            TurboContract.Assert(index >= 0 && index < array.Length);
 
             _innerQueue.CopyTo(array, index);
         }

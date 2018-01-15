@@ -1,4 +1,5 @@
-﻿using Qoollo.Turbo.Collections;
+﻿using Qoollo.Turbo;
+using Qoollo.Turbo.Collections;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -33,7 +34,7 @@ namespace System.Collections.Generic
         /// <returns>True if the collection contains a key</returns>
         public static bool Contains<TKey, TValue>(this Dictionary<TKey, TValue>.KeyCollection dictKeyCol, TKey item)
         {
-            Contract.Requires(dictKeyCol != null);
+            TurboContract.Requires(dictKeyCol != null);
 
             return (dictKeyCol as ICollection<TKey>).Contains(item);
         }
@@ -46,8 +47,8 @@ namespace System.Collections.Generic
         /// <returns>ReadOnlyList that wraps specified List instance</returns>
         public static ReadOnlyList<T> AsReadOnlyList<T>(this List<T> list)
         {
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ReadOnlyList<T>>() != null);
+            TurboContract.Requires(list != null);
+            TurboContract.Ensures(TurboContract.Result<ReadOnlyList<T>>() != null);
 
             return new ReadOnlyList<T>(list);
         }
@@ -60,8 +61,8 @@ namespace System.Collections.Generic
         /// <returns>ReadOnlyListWrapper that wraps specified IList instance</returns>
         public static ReadOnlyListWrapper<T> AsReadOnlyListWrapper<T>(this IList<T> list)
         {
-            Contract.Requires(list != null);
-            Contract.Ensures(Contract.Result<ReadOnlyListWrapper<T>>() != null);
+            TurboContract.Requires(list != null);
+            TurboContract.Ensures(TurboContract.Result<ReadOnlyListWrapper<T>>() != null);
 
             return new ReadOnlyListWrapper<T>(list);
         }
@@ -74,8 +75,8 @@ namespace System.Collections.Generic
         /// <returns>ReadOnlyCollectionWrapper that wraps specified ICollection instance</returns>
         public static ReadOnlyCollectionWrapper<T> AsReadOnlyCollectionWrapper<T>(this ICollection<T> col)
         {
-            Contract.Requires(col != null);
-            Contract.Ensures(Contract.Result<ReadOnlyCollectionWrapper<T>>() != null);
+            TurboContract.Requires(col != null);
+            TurboContract.Ensures(TurboContract.Result<ReadOnlyCollectionWrapper<T>>() != null);
 
             return new ReadOnlyCollectionWrapper<T>(col);
         }
@@ -88,8 +89,8 @@ namespace System.Collections.Generic
         /// <returns>ReadOnlySetWrapper that wraps specified ISet instance</returns>
         public static ReadOnlySetWrapper<T> AsReadOnlySetWrapper<T>(this ISet<T> set)
         {
-            Contract.Requires(set != null);
-            Contract.Ensures(Contract.Result<ReadOnlySetWrapper<T>>() != null);
+            TurboContract.Requires(set != null);
+            TurboContract.Ensures(TurboContract.Result<ReadOnlySetWrapper<T>>() != null);
 
             return new ReadOnlySetWrapper<T>(set);
         }
@@ -102,8 +103,8 @@ namespace System.Collections.Generic
         /// <returns>ReadOnlyHashSet that wraps specified HashSet instance</returns>
         public static ReadOnlyHashSet<T> AsReadOnlyHashSet<T>(this HashSet<T> set)
         {
-            Contract.Requires(set != null);
-            Contract.Ensures(Contract.Result<ReadOnlyHashSet<T>>() != null);
+            TurboContract.Requires(set != null);
+            TurboContract.Ensures(TurboContract.Result<ReadOnlyHashSet<T>>() != null);
 
             return new ReadOnlyHashSet<T>(set);
         }
@@ -117,8 +118,8 @@ namespace System.Collections.Generic
         /// <returns>ReadOnlyDictionaryWrapper that wraps specified IDictionary instance</returns>
         public static ReadOnlyDictionaryWrapper<TKey, TValue> AsReadOnlyDictionaryWrapper<TKey, TValue>(this IDictionary<TKey, TValue> dict)
         {
-            Contract.Requires(dict != null);
-            Contract.Ensures(Contract.Result<ReadOnlyDictionaryWrapper<TKey, TValue>>() != null);
+            TurboContract.Requires(dict != null);
+            TurboContract.Ensures(TurboContract.Result<ReadOnlyDictionaryWrapper<TKey, TValue>>() != null);
 
             return new ReadOnlyDictionaryWrapper<TKey, TValue>(dict);
         }
@@ -132,8 +133,8 @@ namespace System.Collections.Generic
         /// <returns>ReadOnlyDictionary that wraps specified Dictionary instance</returns>
         public static ReadOnlyDictionary<TKey, TValue> AsReadOnlyDictionary<TKey, TValue>(this Dictionary<TKey, TValue> dict)
         {
-            Contract.Requires(dict != null);
-            Contract.Ensures(Contract.Result<ReadOnlyDictionary<TKey, TValue>>() != null);
+            TurboContract.Requires(dict != null);
+            TurboContract.Ensures(TurboContract.Result<ReadOnlyDictionary<TKey, TValue>>() != null);
        
             return new ReadOnlyDictionary<TKey, TValue>(dict);
         }
@@ -149,9 +150,9 @@ namespace System.Collections.Generic
         /// <returns>Created TransformedReadOnlyListWrapper instance</returns>
         public static TransformedReadOnlyListWrapper<TIn, TOut> AsTransformedReadOnlyList<TIn, TOut>(this IList<TIn> list, Func<TIn, TOut> selector)
         {
-            Contract.Requires(list != null);
-            Contract.Requires(selector != null);
-            Contract.Ensures(Contract.Result<TransformedReadOnlyListWrapper<TIn, TOut>>() != null);
+            TurboContract.Requires(list != null);
+            TurboContract.Requires(selector != null);
+            TurboContract.Ensures(TurboContract.Result<TransformedReadOnlyListWrapper<TIn, TOut>>() != null);
 
             return new TransformedReadOnlyListWrapper<TIn, TOut>(list, selector);
         }

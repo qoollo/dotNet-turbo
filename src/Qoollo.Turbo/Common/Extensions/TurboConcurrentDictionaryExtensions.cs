@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Qoollo.Turbo;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -58,7 +59,7 @@ namespace System.Collections.Concurrent
             /// <returns></returns>
             public static int GetEstimateCount(ConcurrentDictionary<TKey, TValue> dictionary)
             {
-                Contract.Requires(dictionary != null);
+                TurboContract.Requires(dictionary != null);
 
                 if (_mCountField == null)
                     InitField();
@@ -181,7 +182,7 @@ namespace System.Collections.Concurrent
             /// <returns></returns>
             public static int GetEstimateCount(ConcurrentDictionary<TKey, TValue> dictionary)
             {
-                Contract.Requires(dictionary != null);
+                TurboContract.Requires(dictionary != null);
 
                 var func = _getEstimateCount;
                 if (func == null)
@@ -205,7 +206,7 @@ namespace System.Collections.Concurrent
         public static int GetEstimateCount<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             return GenericContainerCompiled<TKey, TValue>.GetEstimateCount(dictionary);
         }
