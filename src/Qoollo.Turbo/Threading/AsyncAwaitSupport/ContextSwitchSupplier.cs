@@ -30,15 +30,15 @@ namespace Qoollo.Turbo.Threading
     }
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(IContextSwitchSupplier))]
     abstract class IContextSwitchSupplierCodeContractCheck : IContextSwitchSupplier
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private IContextSwitchSupplierCodeContractCheck() { }
 
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public void Run(Action act, bool flowContext)
         {
             Contract.Requires(act != null);
@@ -46,7 +46,7 @@ namespace Qoollo.Turbo.Threading
             throw new NotImplementedException();
         }
 
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
             Contract.Requires(act != null);

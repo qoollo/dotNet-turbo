@@ -16,16 +16,16 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading
 {
     /// <summary>
-    /// Структура поддержки смены контекста
+    /// Provides an awaitable context for switching into a target context
     /// </summary>
     public struct ContextSwitchAwaitable
     {
         private IContextSwitchSupplier _supplier;
 
         /// <summary>
-        /// Конструктор для случая внешней смены контектса
+        /// ContextSwitchAwaitable constructor
         /// </summary>
-        /// <param name="supplier">Поставщик смены контекста</param>
+        /// <param name="supplier">Context switch supplier</param>
         public ContextSwitchAwaitable(IContextSwitchSupplier supplier)
         {
             Contract.Requires(supplier != null);
@@ -34,9 +34,9 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Конструктор, принимающий целевой контекст синхронизации
+        /// ContextSwitchAwaitable constructor
         /// </summary>
-        /// <param name="targetContext">Целевой контекст синхронизации</param>
+        /// <param name="targetContext">Target synchronization context</param>
         public ContextSwitchAwaitable(SynchronizationContext targetContext)
         {
             Contract.Requires(targetContext != null);
@@ -45,32 +45,32 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Получение объекта ожидания смены контекста
+        /// Gets an awaiter for this <see cref="ContextSwitchAwaitable"/>
         /// </summary>
-        /// <returns>Объект ожидания</returns>
+        /// <returns>An awaiter for this awaitable</returns>
         public ContextSwitchAwaiter GetAwaiter()
         {
             return new ContextSwitchAwaiter(_supplier);
         }
 
         /// <summary>
-        /// Структура ожидания смены контекста
+        /// Provides an awaiter that switches into a target context
         /// </summary>
         public struct ContextSwitchAwaiter : INotifyCompletion, ICriticalNotifyCompletion
         {
             private IContextSwitchSupplier _supplier;
 
             /// <summary>
-            /// Конструктор, принимающий операцию, которя сменит контекст
+            /// ContextSwitchAwaiter constructor
             /// </summary>
-            /// <param name="supplier">Поставщик контекста</param>
+            /// <param name="supplier">Context switch supplier</param>
             public ContextSwitchAwaiter(IContextSwitchSupplier supplier)
             {
                 _supplier = supplier;
             }
 
             /// <summary>
-            /// Завершена ли операция синхронно (всегда false)
+            /// Whether an operation already completed (always false)
             /// </summary>
             public bool IsCompleted
             {
@@ -78,16 +78,16 @@ namespace Qoollo.Turbo.Threading
             }
 
             /// <summary>
-            /// Получение результата (ничего не делает, т.к. просто меняем контектс)
+            /// Ends the await operation
             /// </summary>
             public void GetResult()
             {
             }
 
             /// <summary>
-            /// Собственно смена контекста
+            /// Performs context switching
             /// </summary>
-            /// <param name="continuation">Продолжение, которое будет выполнено в новом контектсе</param>
+            /// <param name="continuation">Continuation that will be executed in new context</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void OnCompleted(Action continuation)
             {
@@ -100,9 +100,9 @@ namespace Qoollo.Turbo.Threading
             }
 
             /// <summary>
-            /// Смена контекста без протаскивания данных текущего контекста.
+            /// Performs context switching (without flowing data from current context)
             /// </summary>
-            /// <param name="continuation">Продолжение, которое будет выполнено в новом контектсе</param>
+            /// <param name="continuation">Continuation that will be executed in new context</param>
             [SecurityCritical]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void UnsafeOnCompleted(Action continuation)

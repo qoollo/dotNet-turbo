@@ -277,9 +277,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Сделать пометку, что данный поток должен удалиться
+        /// Attempts to mark thread as ready for termination (resere die slot)
         /// </summary>
-        /// <returns>true - удалось, false - условие удаления было нарушено</returns>
+        /// <returns>true - termination slot was reserved sucessfully, false - reserving conditions are violated</returns>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private bool TryRequestDieSlot()
         {
@@ -298,9 +298,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return false;
         }
         /// <summary>
-        /// Вернуть пометку, что поток должен удалиться (когда уже удалён)
+        /// Returns die slot after thread termination
         /// </summary>
-        /// <returns>Успешность</returns>
+        /// <returns>Was successful</returns>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private bool TryReturnDieSlot()
         {
@@ -321,9 +321,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Хэндлер удаления потока из пула
+        /// Handles thread removing event and performs required action
         /// </summary>
-        /// <param name="elem">Удаляемый элемент</param>
+        /// <param name="elem">Thread to be removed</param>
         protected override void OnThreadRemove(Thread elem)
         {
             base.OnThreadRemove(elem);
@@ -334,9 +334,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Проверяет, должен ли поток завершится и уменьшает счётчик ожидающих завершение потоков
+        /// Checks, whether the current thread should be terminated and if so it is request a dia slot
         /// </summary>
-        /// <returns>Должен ли завершиться</returns>
+        /// <returns>True - current thread should be terminated (should exit processing loop)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool ShouldIDie()
         {
@@ -405,11 +405,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Функция для обслуживающего потока.
-        /// Отслеживаем ситуацию, когда пул завис и пытаемся решить вопрос расширением вместимости очереди.
+        /// Management function. Tracks the condition when the pool is dead-locked and attempts to increase the capacity of the work queue
         /// </summary>
-        /// <param name="elapsedMs">Прошедшее с момента последней обработки время</param>
-        /// <returns>Сделана ли обработка</returns>
+        /// <param name="elapsedMs">Elapsed time interval from the previous call</param>
+        /// <returns>True - processing completed</returns>
         private bool ManagementThreadProc(int elapsedMs)
         {
             if (State == ThreadPoolState.Stopped)

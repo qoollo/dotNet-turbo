@@ -700,9 +700,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Хэндлер удаления потока из пула
+        /// Handles thread removing event and performs required action
         /// </summary>
-        /// <param name="elem">Удаляемый элемент</param>
+        /// <param name="elem">Thread to be removed</param>
         protected override void OnThreadRemove(Thread elem)
         {
             base.OnThreadRemove(elem);
