@@ -50,7 +50,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <summary>Code contracts</summary>
         public LifetimeBase GetAssociation(T key)
         {
-            Contract.Ensures(Contract.Result<LifetimeBase>() != null);
+            TurboContract.Ensures(TurboContract.Result<LifetimeBase>() != null);
 
             throw new NotImplementedException();
         }
@@ -58,8 +58,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <summary>Code contracts</summary>
         public bool TryGetAssociation(T key, out LifetimeBase val)
         {
-            Contract.Ensures((Contract.Result<bool>() == true && Contract.ValueAtReturn<LifetimeBase>(out val) != null) ||
-                (Contract.Result<bool>() == false && Contract.ValueAtReturn<LifetimeBase>(out val) == null));
+            TurboContract.Ensures((TurboContract.Result<bool>() == true && TurboContract.ValueAtReturn<LifetimeBase>(out val) != null) ||
+                (TurboContract.Result<bool>() == false && TurboContract.ValueAtReturn<LifetimeBase>(out val) == null));
 
             throw new NotImplementedException();
         }

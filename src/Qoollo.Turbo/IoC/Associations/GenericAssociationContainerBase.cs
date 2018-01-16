@@ -139,7 +139,7 @@ namespace Qoollo.Turbo.IoC.Associations
                 case OverrideObjectInstantiationMode.None:
                     return src;
             }
-            Debug.Assert(false, "Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
+            TurboContract.Assert(false, "Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
             throw new AssociationIoCException("Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
         }
 
@@ -150,14 +150,12 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Lifetime object container to add</param>
         protected void AddAssociation(TKey key, LifetimeBase val)
         {
-            Contract.Requires(key != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(this.ContainsInner(key));
+            TurboContract.Ensures(this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (val == null)
-                throw new ArgumentNullException("val");
+                throw new ArgumentNullException(nameof(val));
 
             if (!IsGoodTypeForKey(key, val.OutputType))
                 throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for type ({1})", key, val.OutputType));
@@ -175,14 +173,12 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected bool TryAddAssociation(TKey key, LifetimeBase val)
         {
-            Contract.Requires(key != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (val == null)
-                throw new ArgumentNullException("val");
+                throw new ArgumentNullException(nameof(val));
 
             if (!IsGoodTypeForKey(key, val.OutputType))
                 throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, val.OutputType));
@@ -200,17 +196,14 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
         protected void AddAssociation(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires(key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(this.ContainsInner(key));
+            TurboContract.Ensures(this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (objType == null)
-                throw new ArgumentNullException("objType");
+                throw new ArgumentNullException(nameof(objType));
             if (val == null)
-                throw new ArgumentNullException("val");
+                throw new ArgumentNullException(nameof(val));
 
             if (!IsGoodTypeForKey(key, objType))
                 throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, objType));
@@ -307,7 +300,7 @@ namespace Qoollo.Turbo.IoC.Associations
             object[] attr = null;
             foreach (var curTp in typeSource)
             {
-                Debug.Assert(curTp != null);
+                TurboContract.Assert(curTp != null);
 
                 attr = curTp.GetCustomAttributes(false);
                 if (attr == null || attr.Length == 0)
@@ -315,7 +308,7 @@ namespace Qoollo.Turbo.IoC.Associations
 
                 foreach (var curAttr in attr.OfType<TAttr>())
                 {
-                    Debug.Assert(curAttr != null);
+                    TurboContract.Assert(curAttr != null);
 
                     if (attrCmpPredicate == null || attrCmpPredicate(curAttr))
                     {

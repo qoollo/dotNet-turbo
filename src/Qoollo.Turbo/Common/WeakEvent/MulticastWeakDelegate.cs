@@ -38,8 +38,6 @@ namespace Qoollo.Turbo
             _handlers = new List<WeakDelegate>();
         }
 
-        Predicate<int> aaa;
-
         /// <summary>
         /// Add subscription to the current delegate
         /// </summary>
