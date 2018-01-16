@@ -45,9 +45,10 @@ namespace Qoollo.Turbo
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         public static void Throw(Type exceptionType, string message)
         {
-            Contract.Requires<ArgumentNullException>(exceptionType != null);
-            Contract.Requires<ArgumentException>(exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception)));
-
+            if (exceptionType == null)
+                throw new ArgumentNullException(nameof(exceptionType));
+            if (exceptionType != typeof(Exception) && !exceptionType.IsSubclassOf(typeof(Exception)))
+                throw new ArgumentException(nameof(exceptionType) + " should be of type 'Exception'");
 
             Exception ex = null;
 

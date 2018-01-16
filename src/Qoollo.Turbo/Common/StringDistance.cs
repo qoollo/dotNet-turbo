@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,9 +20,12 @@ namespace Qoollo.Turbo
         /// <returns>Hamming distance</returns>
         public static int GetHammingDistance(string strA, string strB)
         {
-            Contract.Requires<ArgumentNullException>(strA != null);
-            Contract.Requires<ArgumentNullException>(strB != null);
-            Contract.Requires<ArgumentException>(strA.Length == strB.Length);
+            if (strA == null)
+                throw new ArgumentNullException(nameof(strA));
+            if (strB == null)
+                throw new ArgumentNullException(nameof(strB));
+            if (strA.Length != strB.Length)
+                throw new ArgumentException("Strings should have equal length");
 
             int distance = 0;
             for (int i = 0; i < strA.Length; i++)
@@ -46,8 +48,10 @@ namespace Qoollo.Turbo
         /// <returns>Levenshtein distance</returns>
         public static int GetLevenshteinDistance(string strA, string strB, bool withTranspositions)
         {
-            Contract.Requires<ArgumentNullException>(strA != null);
-            Contract.Requires<ArgumentNullException>(strB != null);
+            if (strA == null)
+                throw new ArgumentNullException(nameof(strA));
+            if (strB == null)
+                throw new ArgumentNullException(nameof(strB));
 
             int boundHeight = strA.Length + 1;
             int boundWidth = strB.Length + 1;

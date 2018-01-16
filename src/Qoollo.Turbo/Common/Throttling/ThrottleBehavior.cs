@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -22,7 +21,7 @@ namespace Qoollo.Turbo
         /// <returns>Created ThrottleBehavior</returns>
         public static ThrottleBehavior CreateNotLimited()
         {
-            Contract.Ensures(Contract.Result<ThrottleBehavior>() != null);
+            TurboContract.Ensures(TurboContract.Result<ThrottleBehavior>() != null);
             return new ThrottleBehavior(int.MaxValue, 1000);
         }
 
@@ -43,8 +42,10 @@ namespace Qoollo.Turbo
         /// <param name="measurePeriodMs">Measure period to estimate current number of operations</param>
         public ThrottleBehavior(double maxRequestPerSecond, int measurePeriodMs)
         {
-            Contract.Requires<ArgumentException>(maxRequestPerSecond > 0);
-            Contract.Requires<ArgumentException>(measurePeriodMs > 50);
+            if (maxRequestPerSecond <= 0)
+                throw new ArgumentOutOfRangeException(nameof(maxRequestPerSecond), nameof(maxRequestPerSecond) + " should be positive");
+            if (measurePeriodMs <= 50)
+                throw new ArgumentOutOfRangeException(nameof(measurePeriodMs), nameof(measurePeriodMs) + " should be grater than 50");
 
             _measurePeriod = measurePeriodMs;
             _maxRequestPerSecond = maxRequestPerSecond;
@@ -59,7 +60,7 @@ namespace Qoollo.Turbo
             else
                 _maxHitPerMeasure = int.MaxValue;
 
-            Debug.Assert(_maxHitPerMeasure > 0);
+            TurboContract.Assert(_maxHitPerMeasure > 0);
         }
         /// <summary>
         /// ThrottleBehavior constructor
@@ -140,7 +141,7 @@ namespace Qoollo.Turbo
         /// <param name="restTimeMs">Time in milliseconds till the end of the current measure period</param>
         protected virtual void OnThrottle(int restTimeMs)
         {
-            Contract.Requires(restTimeMs >= 0);
+            TurboContract.Requires(restTimeMs >= 0);
         }
     }
 }

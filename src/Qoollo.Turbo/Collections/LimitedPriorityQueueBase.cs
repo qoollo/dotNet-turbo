@@ -319,8 +319,8 @@ namespace Qoollo.Turbo.Collections
 
         protected override int MapPriority(TPriority prior)
         {
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() < this.PriorityLevelsCount);
+            TurboContract.Ensures(TurboContract.Result<int>() >= 0);
+            TurboContract.Ensures(TurboContract.Result<int>() < this.PriorityLevelsCount);
 
             throw new NotImplementedException();
         }
