@@ -33,6 +33,18 @@ namespace Qoollo.Turbo
         {
             System.Diagnostics.Debug.Assert(condition, userMessage);
         }
+        /// <summary>
+        /// Specifies a precondition contract
+        /// </summary>
+        /// <param name="condition">Condition</param>
+        /// <param name="userMessage">Message</param>
+        /// <param name="conditionString">String representation of 'condition' argument</param>
+        [System.Diagnostics.Conditional("DEBUG")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Requires(bool condition, string userMessage, string conditionString)
+        {
+            System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
+        }
 
 
         /// <summary>
@@ -56,6 +68,18 @@ namespace Qoollo.Turbo
         {
             System.Diagnostics.Debug.Assert(condition, userMessage);
         }
+        /// <summary>
+        /// Checks for a condition; if the condition is false, outputs a specified message and displays a message box that shows the call stack
+        /// </summary>
+        /// <param name="condition">Condition</param>
+        /// <param name="userMessage">Message</param>
+        /// <param name="conditionString">String representation of 'condition' argument</param>
+        [System.Diagnostics.Conditional("DEBUG")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Assert(bool condition, string userMessage, string conditionString)
+        {
+            System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
+        }
 
 
         /// <summary>
@@ -78,6 +102,18 @@ namespace Qoollo.Turbo
         public static void Assume(bool condition, string userMessage)
         {
             System.Diagnostics.Debug.Assert(condition, userMessage);
+        }
+        /// <summary>
+        /// Checks for a condition; if the condition is false, outputs a specified message and displays a message box that shows the call stack
+        /// </summary>
+        /// <param name="condition">Condition</param>
+        /// <param name="userMessage">Message</param>
+        /// <param name="conditionString">String representation of 'condition' argument</param>
+        [System.Diagnostics.Conditional("DEBUG")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Assume(bool condition, string userMessage, string conditionString)
+        {
+            System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
         }
 
         /// <summary>
