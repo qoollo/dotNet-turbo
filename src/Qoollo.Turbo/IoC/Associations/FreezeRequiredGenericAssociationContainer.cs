@@ -23,7 +23,7 @@ namespace Qoollo.Turbo.IoC.Associations
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_storage != null);
+            TurboContract.Invariant(_storage != null);
         }
 
         /// <summary>
@@ -42,6 +42,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Lifetime object container to add</param>
         protected sealed override void AddAssociationInner(TKey key, LifetimeBase val)
         {
+            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(val != null, "val != null");
+
             lock (_storage)
             {
                 if (_storage.ContainsKey(key))
@@ -58,6 +61,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddAssociationInner(TKey key, LifetimeBase val)
         {
+            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(val != null, "val != null");
+
             lock (_storage)
             {
                 if (_storage.ContainsKey(key))
@@ -75,6 +81,10 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
         protected sealed override void AddAssociationInner(TKey key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
+            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(objType != null, "objType != null");
+            TurboContract.Requires(val != null, "val != null");
+
             lock (_storage)
             {
                 if (_storage.ContainsKey(key))
@@ -93,6 +103,10 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddAssociationInner(TKey key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
+            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(objType != null, "objType != null");
+            TurboContract.Requires(val != null, "val != null");
+
             lock (_storage)
             {
                 if (_storage.ContainsKey(key))
@@ -111,6 +125,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the AssociationContainer contains the lifetime container for the specified key</returns>
         protected sealed override bool TryGetAssociationInner(TKey key, out LifetimeBase val)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return _storage.TryGetValue(key, out val);
         }
         /// <summary>
@@ -120,6 +136,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was presented in container</returns>
         protected sealed override bool RemoveAssociationInner(TKey key)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             lock (_storage)
             {
                 return _storage.Remove(key);
@@ -132,6 +150,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association is presented in container</returns>
         protected sealed override bool ContainsInner(TKey key)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return _storage.ContainsKey(key);
         }
 
