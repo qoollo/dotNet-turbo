@@ -302,11 +302,11 @@ namespace Qoollo.Turbo.Collections
         public void CopyTo(T[] array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (index > array.Length - this.Count)
-                throw new ArgumentException("index");
+                throw new ArgumentException(nameof(index));
 
             if (this._size == 0)
                 return;
@@ -372,9 +372,9 @@ namespace Qoollo.Turbo.Collections
         public int IndexOf(T item, int index, int count)
         {
             if (index < 0 || index > this.Count)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (count < 0 || count > this.Count - index)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             int curPos = (this._head + index) % this._elemArray.Length;
             int end = index + count;
@@ -425,15 +425,15 @@ namespace Qoollo.Turbo.Collections
         public int LastIndexOf(T item, int index, int count)
         {
             if (this.Count > 0 && index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (this.Count == 0 && index != -1)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (index >= this.Count)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             if (count > index + 1)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if (this.Count == 0)
                 return -1;
@@ -478,7 +478,7 @@ namespace Qoollo.Turbo.Collections
         public int FindIndex(Predicate<T> match)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
 
             int curPos = this._head;
 
@@ -501,7 +501,7 @@ namespace Qoollo.Turbo.Collections
         public int FindLastIndex(Predicate<T> match)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
 
             int curPos = (this._tail + this._elemArray.Length - 1) % this._elemArray.Length;
 
@@ -549,7 +549,7 @@ namespace Qoollo.Turbo.Collections
         public void ForEach(Action<T> action)
         {
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             int version = this._version;
             int curPos = this._head;
@@ -575,7 +575,7 @@ namespace Qoollo.Turbo.Collections
             TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) + 1);
 
             if (index < 0 || index > _size)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             bool moveToBeginning = index <= this.Count / 2;
             
@@ -736,7 +736,7 @@ namespace Qoollo.Turbo.Collections
             TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) - 1);
 
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             bool moveFromBeginning = index < this.Count / 2;
             int removePos = (index + _head) % _elemArray.Length;
@@ -938,11 +938,11 @@ namespace Qoollo.Turbo.Collections
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
-                throw new ArgumentException("Array rank not equal to 1", "array");
+                throw new ArgumentException("Array rank not equal to 1", nameof(array));
             if (index < 0 || index > array.Length)
-                throw new ArgumentOutOfRangeException("index", "index < 0 || index > array.Length");
+                throw new ArgumentOutOfRangeException(nameof(index), "index < 0 || index > array.Length");
             if (array.Length - index < this._size)
                 throw new ArgumentException("array has not enough space");
 
@@ -1024,7 +1024,7 @@ namespace Qoollo.Turbo.Collections
         int IList.Add(object value)
         {
             if (value == null && default(T) != null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             try
             {
@@ -1032,7 +1032,7 @@ namespace Qoollo.Turbo.Collections
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), "value");
+                throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), nameof(value));
             }
             return this.Count - 1;
         }
@@ -1069,7 +1069,7 @@ namespace Qoollo.Turbo.Collections
         void IList.Insert(int index, object value)
         {
             if (value == null && default(T) != null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             try
             {
@@ -1077,7 +1077,7 @@ namespace Qoollo.Turbo.Collections
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), "value");
+                throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), nameof(value));
             }
         }
 
@@ -1116,7 +1116,7 @@ namespace Qoollo.Turbo.Collections
             set
             {
                 if (value == null && default(T) != null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 try
                 {
@@ -1124,7 +1124,7 @@ namespace Qoollo.Turbo.Collections
                 }
                 catch (InvalidCastException)
                 {
-                    throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), "value");
+                    throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), nameof(value));
                 }
             }
         }

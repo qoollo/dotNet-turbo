@@ -440,7 +440,7 @@ namespace Qoollo.Turbo.Collections
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException("array has wrong dimension");
             if (index < 0)

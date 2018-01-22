@@ -24,7 +24,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public PerCallInlinedParamsLifetime(Type outType, Func<object> createInstanceFunc)
             : base(outType)
         {
-            Contract.Requires<ArgumentNullException>(createInstanceFunc != null, "createInstanceFunc");
+            Contract.Requires<ArgumentNullException>(createInstanceFunc != null, nameof(createInstanceFunc));
 
             _createInstanceFunc = createInstanceFunc;
         }

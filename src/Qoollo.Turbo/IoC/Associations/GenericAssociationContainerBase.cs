@@ -228,11 +228,11 @@ namespace Qoollo.Turbo.IoC.Associations
             Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (objType == null)
-                throw new ArgumentNullException("objType");
+                throw new ArgumentNullException(nameof(objType));
             if (val == null)
-                throw new ArgumentNullException("val");
+                throw new ArgumentNullException(nameof(val));
 
             if (!IsGoodTypeForKey(key, objType))
                 throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, objType));
@@ -254,7 +254,7 @@ namespace Qoollo.Turbo.IoC.Associations
             Contract.Ensures(!this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             CheckContainerState(true);
 
@@ -271,7 +271,7 @@ namespace Qoollo.Turbo.IoC.Associations
             Contract.Requires(key != null);
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (_isDisposed)
                 return false;
@@ -400,7 +400,7 @@ namespace Qoollo.Turbo.IoC.Associations
         LifetimeBase IAssociationSource<TKey>.GetAssociation(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
             
@@ -420,7 +420,7 @@ namespace Qoollo.Turbo.IoC.Associations
         bool IAssociationSource<TKey>.TryGetAssociation(TKey key, out LifetimeBase val)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (_isDisposed)
             {
@@ -439,7 +439,7 @@ namespace Qoollo.Turbo.IoC.Associations
         bool IAssociationSource<TKey>.Contains(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (_isDisposed)
                 return false;
 

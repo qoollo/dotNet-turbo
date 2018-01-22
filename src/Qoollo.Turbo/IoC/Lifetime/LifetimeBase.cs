@@ -31,7 +31,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <param name="outType">The type of the object to be stored in the current Lifetime container</param>
         public LifetimeBase(Type outType)
         {
-            Contract.Requires<ArgumentNullException>(outType != null, "outType");
+            Contract.Requires<ArgumentNullException>(outType != null, nameof(outType));
 
             _outputType = outType;
         }

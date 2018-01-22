@@ -401,7 +401,7 @@ namespace Qoollo.Turbo.Threading
 		{
 			long num = (long)timeout.TotalMilliseconds;
 			if (num < -1L || num > 2147483647L)
-				throw new ArgumentOutOfRangeException("timeout");
+				throw new ArgumentOutOfRangeException(nameof(timeout));
 
             return this.Wait((int)num, CancellationToken.None);
 		}
@@ -416,7 +416,7 @@ namespace Qoollo.Turbo.Threading
 		{
 			long num = (long)timeout.TotalMilliseconds;
 			if (num < -1L || num > 2147483647L)
-				throw new ArgumentOutOfRangeException("timeout");
+				throw new ArgumentOutOfRangeException(nameof(timeout));
 
 			return this.Wait((int)num, cancellationToken);
 		}

@@ -20,7 +20,7 @@ namespace Qoollo.Turbo.Profiling
         public ProfilingProviderWrapper(IProfilingProvider wrappedProvider)
         {
             if (wrappedProvider == null)
-                throw new ArgumentNullException("wrappedProvider");
+                throw new ArgumentNullException(nameof(wrappedProvider));
 
             _wrappedProvider = wrappedProvider;
         }

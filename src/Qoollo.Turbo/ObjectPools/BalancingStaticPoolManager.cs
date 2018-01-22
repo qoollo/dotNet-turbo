@@ -171,9 +171,9 @@ namespace Qoollo.Turbo.ObjectPools
         public void RemoveElement(RentedElementMonitor<TElem> elemMonitor)
         {
             if (elemMonitor.IsDisposed)
-                throw new ArgumentException("Element from 'elemMonitor' already returned to ObjectPool (" + this.Name + ")", "elemMonitor");
+                throw new ArgumentException("Element from 'elemMonitor' already returned to ObjectPool (" + this.Name + ")", nameof(elemMonitor));
             if (!object.ReferenceEquals(this, elemMonitor.SourcePool))
-                throw new ArgumentException("RentedElementMonitor is not belog to current ObjectPool (" + this.Name + ")", "elemMonitor");
+                throw new ArgumentException("RentedElementMonitor is not belog to current ObjectPool (" + this.Name + ")", nameof(elemMonitor));
 
             DestroyElementInner(elemMonitor.ElementWrapper);
             Profiling.Profiler.ObjectPoolElementDestroyed(this.Name, this.ElementCount);

@@ -40,7 +40,7 @@ namespace Qoollo.Turbo.IoC.Injections
         protected override bool IsGoodInjectionForKey(Type key, object injection)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (injection != null)
             {

@@ -38,7 +38,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public DeferedSingletonLifetime(Func<IInjectionResolver, object> createInstanceFunc, Type objType)
             : base(objType)
         {
-            Contract.Requires<ArgumentNullException>(createInstanceFunc != null, "createInstanceFunc");
+            Contract.Requires<ArgumentNullException>(createInstanceFunc != null, nameof(createInstanceFunc));
 
             _isInited = false;
             _createInstanceFunc = createInstanceFunc;

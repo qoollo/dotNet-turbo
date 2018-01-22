@@ -23,7 +23,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public PerCallLifetime(Type outType, Func<IInjectionResolver, object> createInstanceFunc)
             : base(outType)
         {
-            Contract.Requires<ArgumentNullException>(createInstanceFunc != null, "createInstanceFunc");
+            Contract.Requires<ArgumentNullException>(createInstanceFunc != null, nameof(createInstanceFunc));
 
             _createInstanceFunc = createInstanceFunc;
         }

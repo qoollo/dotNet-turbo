@@ -113,11 +113,11 @@ namespace Qoollo.Turbo.Collections
         public void CopyTo(TElem[] array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (index > array.Length - this.Count)
-                throw new ArgumentException("index");
+                throw new ArgumentException(nameof(index));
 
             int curIndex = index;
             for (int i = 0; i < _innerQueue.Length; i++)
@@ -261,11 +261,11 @@ namespace Qoollo.Turbo.Collections
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
-                throw new ArgumentException("Array rank not equal to 1", "array");
+                throw new ArgumentException("Array rank not equal to 1", nameof(array));
             if (index < 0 || index > array.Length)
-                throw new ArgumentOutOfRangeException("index", "index < 0 || index > array.Length");
+                throw new ArgumentOutOfRangeException(nameof(index), "index < 0 || index > array.Length");
             if (array.Length - index < this._count)
                 throw new ArgumentException("array has not enough space");
 

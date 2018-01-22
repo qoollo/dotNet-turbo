@@ -53,7 +53,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public PerThreadLifetime(Func<IInjectionResolver, object> createInstFunc, Type objType)
             : base(objType)
         {
-            Contract.Requires<ArgumentNullException>(createInstFunc != null, "createInstFunc");
+            Contract.Requires<ArgumentNullException>(createInstFunc != null, nameof(createInstFunc));
 
             _obj = new ThreadLocal<ThreadLocalSlot>(true);
             _createInstFunc = createInstFunc;

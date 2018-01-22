@@ -212,7 +212,7 @@ namespace Qoollo.Turbo.IoC
         object IInjectionResolver.Resolve(Type reqObjectType, string paramName, Type forType, object extData)
         {
             if (reqObjectType == null)
-                throw new ArgumentNullException("reqObjectType", "Requested object type cannot be null");
+                throw new ArgumentNullException(nameof(reqObjectType), "Requested object type cannot be null");
 
             Lifetime.LifetimeBase life = null;
             if (!this.TryGetAssociation(reqObjectType, out life))

@@ -23,7 +23,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public PerCallInterfaceLifetime(Type outType, IInstanceCreator createInstanceObj)
             : base(outType)
         {
-            Contract.Requires<ArgumentNullException>(createInstanceObj != null, "createInstanceObj");
+            Contract.Requires<ArgumentNullException>(createInstanceObj != null, nameof(createInstanceObj));
 
             _createInstanceObj = createInstanceObj;
         }

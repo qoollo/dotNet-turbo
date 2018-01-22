@@ -432,7 +432,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -526,7 +526,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -753,7 +753,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -859,7 +859,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -1034,7 +1034,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 

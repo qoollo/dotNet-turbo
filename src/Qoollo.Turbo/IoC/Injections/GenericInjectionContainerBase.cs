@@ -184,7 +184,7 @@ namespace Qoollo.Turbo.IoC.Injections
             Contract.Ensures(this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (!IsGoodInjectionForKey(key, val))
                 throw new InjectionBadKeyForItemException(string.Format("Bad key ({0}) for the supplied object", key));
@@ -208,7 +208,7 @@ namespace Qoollo.Turbo.IoC.Injections
             Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (!IsGoodInjectionForKey(key, val))
                 throw new InjectionBadKeyForItemException(string.Format("Bad key ({0}) for the supplied object", key));
@@ -231,7 +231,7 @@ namespace Qoollo.Turbo.IoC.Injections
             Contract.Ensures(!this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             CheckContainerState(true);
 

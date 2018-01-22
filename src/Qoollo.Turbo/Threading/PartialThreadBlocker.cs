@@ -241,7 +241,7 @@ namespace Qoollo.Turbo.Threading
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
 
             return Wait((int)timeoutMs, new CancellationToken());
         }
@@ -255,7 +255,7 @@ namespace Qoollo.Turbo.Threading
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
 
             return Wait((int)timeoutMs, token);
         }
