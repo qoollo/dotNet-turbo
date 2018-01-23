@@ -196,9 +196,9 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="element">Element</param>
         private void DestroyElementInner(PoolElementWrapper<TElem> element)
         {
-            Contract.Requires(element != null);
-            Contract.Requires(element.IsBusy);
-            Contract.Requires(!element.IsElementDestroyed);
+            TurboContract.Requires(element != null, "element != null");
+            TurboContract.Requires(element.IsBusy, "element.IsBusy");
+            TurboContract.Requires(!element.IsElementDestroyed, "!element.IsElementDestroyed");
 
             DestroyElement(element.Element);
             element.MarkElementDestroyed();
@@ -210,9 +210,9 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="element">Element</param>
         private void DestroyAndRemoveElement(PoolElementWrapper<TElem> element)
         {
-            Contract.Requires(element != null);
-            Contract.Requires(element.IsBusy);
-            Contract.Requires(!element.IsElementDestroyed);
+            TurboContract.Requires(element != null, "element != null");
+            TurboContract.Requires(element.IsBusy, "element.IsBusy");
+            TurboContract.Requires(!element.IsElementDestroyed, "!element.IsElementDestroyed");
 
             try
             {
@@ -326,7 +326,7 @@ namespace Qoollo.Turbo.ObjectPools
                 if (timeout >= 0)
                     throw new TimeoutException(string.Format("Pool 'Rent' operation has timeouted. Pool: {0}. Timeout value: {1}ms", this.Name, timeout));
 
-                Debug.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
+                TurboContract.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
                 throw new CantRetrieveElementException("Rent from pool failed");
             }
 
@@ -343,6 +343,8 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="element">Element wrapper to be released</param>
         protected internal sealed override void ReleaseElement(PoolElementWrapper<TElem> element)
         {
+            TurboContract.Requires(element != null, "element != null");
+
             if (!element.IsBusy)
                 throw new InvalidOperationException("Trying to release same element several times in Pool: " + this.Name);
 
@@ -374,6 +376,7 @@ namespace Qoollo.Turbo.ObjectPools
         /// <returns>Whether the element is valid</returns>
         bool IPoolElementOperationSource<TElem>.IsValid(PoolElementWrapper<TElem> container)
         {
+            TurboContract.Requires(container != null, "container != null");
             return true;
         }
 
@@ -423,7 +426,7 @@ namespace Qoollo.Turbo.ObjectPools
                 {
                     int count = _elementsContainer.Count;
                     while (TakeDestroyAndRemoveElement())
-                        Debug.Assert(--count >= 0);
+                        TurboContract.Assert(--count >= 0, "--count >= 0");
 
                     if (_elementsContainer.Count == 0)
                         _stoppedEvent.Set();
@@ -468,7 +471,7 @@ namespace Qoollo.Turbo.ObjectPools
 #if DEBUG
                 var elementsContainer = _elementsContainer;
                 if (elementsContainer == null)
-                    Debug.Assert(false, "BalancingStaticPoolManager should be Disposed by user! PoolName: " + this.Name);
+                    TurboContract.Assert(false, "BalancingStaticPoolManager should be Disposed by user! PoolName: " + this.Name);
 
                 elementsContainer.ProcessFreeElements(o => o.MarkElementDestroyed());
 #endif

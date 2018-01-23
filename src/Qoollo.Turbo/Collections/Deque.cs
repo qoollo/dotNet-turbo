@@ -76,8 +76,8 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         internal T GetElement(int i)
         {
-            TurboContract.Requires(i >= 0);
-            TurboContract.Requires(i <= this.Count);
+            TurboContract.Requires(i >= 0, "i >= 0");
+            TurboContract.Requires(i <= this.Count, "i <= this.Count");
 
             return _circularList[i];
         }
@@ -146,7 +146,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public T PeekFirst()
         {
-            TurboContract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0, "this.Count > 0");
             if (_circularList.Count == 0)
                 throw new InvalidOperationException("Collection is empty");
 
@@ -172,7 +172,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public T PeekLast()
         {
-            TurboContract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0, "this.Count > 0");
             if (_circularList.Count == 0)
                 throw new InvalidOperationException("Collection is empty");
 

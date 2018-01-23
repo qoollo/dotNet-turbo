@@ -36,7 +36,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <param name="dataArray">Массив данных</param>
         public IndexedStackElementStorage(SparceArrayStorage<PoolElementWrapper<T>> dataArray)
         {
-            Contract.Requires(dataArray != null);
+            TurboContract.Requires(dataArray != null, "dataArray != null");
 
             _headIndexOp = Repack(NoElementHeadIndex, 1);
             _dataArray = dataArray;
@@ -111,12 +111,12 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <param name="element">Элемент</param>
         public void Add(PoolElementWrapper<T> element)
         {
-            Contract.Requires(element != null);
-            Contract.Requires(element.ThisIndex >= 0);
-            Contract.Requires(element.ThisIndex < (1 << 16));
-            Contract.Requires(element.NextIndex < 0);
+            TurboContract.Requires(element != null, "element != null");
+            TurboContract.Requires(element.ThisIndex >= 0, "element.ThisIndex >= 0");
+            TurboContract.Requires(element.ThisIndex < (1 << 16), "element.ThisIndex < (1 << 16)");
+            TurboContract.Requires(element.NextIndex < 0, "element.NextIndex < 0");
 
-            Debug.Assert(element.ThisIndex == DataArray.IndexOf(element));
+            TurboContract.Assert(element.ThisIndex == DataArray.IndexOf(element), "element.ThisIndex == DataArray.IndexOf(element)");
 
             var headIndexOp = _headIndexOp;
             element.NextIndex = GetHeadIndex(headIndexOp);

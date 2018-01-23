@@ -94,8 +94,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
             {
                 if (curListItem.IsUnowned)
                 {
-                    T elem = null;
-                    if (curListItem.TryTake(out elem))
+                    if (curListItem.TryTake(out T elem))
                         result.Add(elem);
                 }
             }
@@ -171,7 +170,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryAddLocal(T element)
         {
-            Contract.Requires(element != null);
+            TurboContract.Requires(element != null, "element != null");
 
             var storage = GetThreadLocalStorage(true);
             return storage.TryAdd(element);
