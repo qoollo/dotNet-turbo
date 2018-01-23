@@ -41,7 +41,7 @@ namespace Qoollo.Turbo
         /// <param name="conditionString">String representation of 'condition' argument</param>
         [System.Diagnostics.Conditional("DEBUG")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Requires(bool condition, string userMessage, string conditionString)
+        internal static void Requires(bool condition, string userMessage = null, string conditionString = null)
         {
             System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
         }
@@ -76,7 +76,7 @@ namespace Qoollo.Turbo
         /// <param name="conditionString">String representation of 'condition' argument</param>
         [System.Diagnostics.Conditional("DEBUG")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Assert(bool condition, string userMessage, string conditionString)
+        internal static void Assert(bool condition, string userMessage = null, string conditionString = null)
         {
             System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
         }
@@ -111,7 +111,7 @@ namespace Qoollo.Turbo
         /// <param name="conditionString">String representation of 'condition' argument</param>
         [System.Diagnostics.Conditional("DEBUG")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Assume(bool condition, string userMessage, string conditionString)
+        internal static void Assume(bool condition, string userMessage = null, string conditionString = null)
         {
             System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
         }
