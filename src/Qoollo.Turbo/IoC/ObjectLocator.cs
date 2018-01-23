@@ -19,7 +19,7 @@ namespace Qoollo.Turbo.IoC
     /// <typeparam name="TInjKey">The type of the key of injection container</typeparam>
     /// <typeparam name="TAssociation">The type of the association container</typeparam>
     /// <typeparam name="TAssocKey">The type of the key of association container</typeparam>
-    [Obsolete("Do not use this class as a base for your custom IoC containers. Please, implement them from the core by hand.")]
+    [Obsolete("Do not use this class as a base for your custom IoC containers. Please, implement them from the core by hand.", true)]
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract class ObjectLocator<TInjection, TInjKey, TAssociation, TAssocKey>: IObjectLocator<TAssocKey>, IDisposable
         where TInjection: IInjectionSource<TInjKey>
@@ -37,9 +37,9 @@ namespace Qoollo.Turbo.IoC
         /// <param name="resolver">Injection resolver</param>
         protected ObjectLocator(TInjection injection, TAssociation association, IInjectionResolver resolver)
         {
-            Contract.Requires(injection != null);
-            Contract.Requires(association != null);
-            Contract.Requires(resolver != null);
+            TurboContract.Requires(injection != null, "injection != null");
+            TurboContract.Requires(association != null, "association != null");
+            TurboContract.Requires(resolver != null, "resolver != null");
 
             _injection = injection;
             _association = association;
@@ -62,9 +62,9 @@ namespace Qoollo.Turbo.IoC
         /// <param name="resolver">Injection resolver</param>
         protected void SetInnerObjects(TInjection injection, TAssociation association, IInjectionResolver resolver)
         {
-            Contract.Requires(injection != null);
-            Contract.Requires(association != null);
-            Contract.Requires(resolver != null);
+            TurboContract.Requires(injection != null, "injection != null");
+            TurboContract.Requires(association != null, "association != null");
+            TurboContract.Requires(resolver != null, "resolver != null");
 
             _injection = injection;
             _association = association;
@@ -95,10 +95,10 @@ namespace Qoollo.Turbo.IoC
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object Resolve(TAssocKey key)
         {
-            Contract.Requires((object)key != null);
+            TurboContract.Requires(key != null, "key != null");
 
             var life = _association.GetAssociation(key);
-            Debug.Assert(life != null);
+            TurboContract.Assert(life != null, "life != null");
             return life.GetInstance(_resolver);
         }
         /// <summary>
@@ -110,13 +110,13 @@ namespace Qoollo.Turbo.IoC
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryResolve(TAssocKey key, out object val)
         {
-            Contract.Requires((object)key != null);
+            TurboContract.Requires(key != null, "key != null");
 
             Lifetime.LifetimeBase life = null;
 
             if (_association.TryGetAssociation(key, out life))
             {
-                Debug.Assert(life != null);
+                TurboContract.Assert(life != null, "life != null");
                 if (life.TryGetInstance(_resolver, out val))
                     return true;
             }
@@ -133,7 +133,7 @@ namespace Qoollo.Turbo.IoC
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanResolve(TAssocKey key)
         {
-            Contract.Requires((object)key != null);
+            TurboContract.Requires(key != null, "key != null");
 
             return Association.Contains(key);
         }
@@ -145,6 +145,7 @@ namespace Qoollo.Turbo.IoC
         /// <returns>Resolved object</returns>
         object IObjectLocator<TAssocKey>.Resolve(TAssocKey key)
         {
+            TurboContract.Requires(key != null, "key != null");
             return this.Resolve(key);
         }
 
@@ -156,6 +157,7 @@ namespace Qoollo.Turbo.IoC
         /// <returns>True if the resolution succeeded; overwise false</returns>
         bool IObjectLocator<TAssocKey>.TryResolve(TAssocKey key, out object val)
         {
+            TurboContract.Requires(key != null, "key != null");
             return this.TryResolve(key, out val);
         }
 
@@ -166,6 +168,7 @@ namespace Qoollo.Turbo.IoC
         /// <returns>True if the object can be resolved</returns>
         bool IObjectLocator<TAssocKey>.CanResolve(TAssocKey key)
         {
+            TurboContract.Requires(key != null, "key != null");
             return this.CanResolve(key);
         }
 

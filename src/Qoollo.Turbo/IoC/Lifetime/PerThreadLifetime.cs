@@ -41,8 +41,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_obj != null);
-            Contract.Invariant(_createInstFunc != null);
+            TurboContract.Invariant(_obj != null);
+            TurboContract.Invariant(_createInstFunc != null);
         }
 
         /// <summary>
@@ -53,7 +53,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public PerThreadLifetime(Func<IInjectionResolver, object> createInstFunc, Type objType)
             : base(objType)
         {
-            Contract.Requires<ArgumentNullException>(createInstFunc != null, nameof(createInstFunc));
+            if (createInstFunc == null)
+                throw new ArgumentNullException(nameof(createInstFunc));
 
             _obj = new ThreadLocal<ThreadLocalSlot>(true);
             _createInstFunc = createInstFunc;
@@ -80,6 +81,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
+            TurboContract.Requires(resolver != null, "resolver != null");
+
             var result = _obj.Value;
 
             if (!result.IsInitialized)
@@ -102,8 +105,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
             {
                 if (inObj.IsInitialized)
                 {
-                    IDisposable inObjDisp = inObj.Object as IDisposable;
-                    if (inObjDisp != null)
+                    if (inObj.Object is IDisposable inObjDisp)
                         inObjDisp.Dispose();
                 }
             }

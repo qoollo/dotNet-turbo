@@ -20,7 +20,8 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
         /// <returns>Created object</returns>
         public static object CreateObject(Type objType)
         {
-            Contract.Requires(objType != null);
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
 
             return ObjectInstantiationHelper.CreateObject(objType);
         }
@@ -33,7 +34,8 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
         /// <returns>Created object</returns>
         public static T CreateObject<T>(IInjectionResolver resolver)
         {
-            Contract.Requires(resolver != null);
+            if (resolver == null)
+                throw new ArgumentNullException(nameof(resolver));
 
             return (T)ObjectInstantiationHelper.CreateObject(typeof(T), resolver, null);
         }
@@ -46,8 +48,10 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
         /// <returns>Created object</returns>
         public static object CreateObject(Type objType, IInjectionResolver resolver)
         {
-            Contract.Requires(objType != null);
-            Contract.Requires(resolver != null);
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+            if (resolver == null)
+                throw new ArgumentNullException(nameof(resolver));
 
             return ObjectInstantiationHelper.CreateObject(objType, resolver, null);
         }

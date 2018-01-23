@@ -26,8 +26,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_createInstanceFunc != null);
-            Contract.Invariant(_lockObj != null);
+            TurboContract.Invariant(_createInstanceFunc != null);
+            TurboContract.Invariant(_lockObj != null);
         }
 
         /// <summary>
@@ -38,7 +38,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public DeferedSingletonLifetime(Func<IInjectionResolver, object> createInstanceFunc, Type objType)
             : base(objType)
         {
-            Contract.Requires<ArgumentNullException>(createInstanceFunc != null, nameof(createInstanceFunc));
+            if (createInstanceFunc == null)
+                throw new ArgumentNullException(nameof(createInstanceFunc));
 
             _isInited = false;
             _createInstanceFunc = createInstanceFunc;
@@ -69,6 +70,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
+            TurboContract.Requires(resolver != null, "resolver != null");
+
             if (!_isInited)
                 CreateInstanceCore(resolver);
 
@@ -81,8 +84,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <param name="isUserCall">True when called explicitly by user from Dispose method</param>
         protected override void Dispose(bool isUserCall)
         {
-            IDisposable objDisp = _obj as IDisposable;
-            if (objDisp != null)
+            if (_obj is IDisposable objDisp)
                 objDisp.Dispose();
 
             base.Dispose(isUserCall);

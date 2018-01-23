@@ -25,8 +25,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public SingletonLifetime(object obj, Type outType, bool disposeInnerObject)
             : base(outType)
         {
-            Contract.Requires<ArgumentException>((obj != null && obj.GetType() == outType) ||
-                                                 (obj == null && outType.IsAssignableFromNull()));
+            if (!((obj != null && obj.GetType() == outType) || (obj == null && outType.IsAssignableFromNull())))
+                throw new ArgumentException("Type of 'obj' is incompatible with 'outType'", nameof(obj));
 
             _obj = obj;
             _disposeInnerObject = disposeInnerObject;
@@ -48,7 +48,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public SingletonLifetime(object obj, bool disposeInnerObject)
             : base(obj.GetType())
         {
-            Contract.Requires<ArgumentNullException>(obj != null);
+            if (obj == null)
+                throw new ArgumentNullException(nameof(obj));
 
             _obj = obj;
             _disposeInnerObject = disposeInnerObject;
@@ -70,6 +71,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
+            TurboContract.Requires(resolver != null, "resolver != null");
+
             return _obj;
         }
 
@@ -91,8 +94,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         {
             if (_disposeInnerObject)
             {
-                IDisposable objDisp = _obj as IDisposable;
-                if (objDisp != null)
+                if (_obj is IDisposable objDisp)
                     objDisp.Dispose();
             }
 

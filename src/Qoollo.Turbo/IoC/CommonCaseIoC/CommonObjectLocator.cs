@@ -15,7 +15,7 @@ namespace Qoollo.Turbo.IoC
     /// <summary>
     /// Common case IoC container and object locator
     /// </summary>
-    [Obsolete("This container is obsolete. Please, use TurboContainer instead.")]
+    [Obsolete("This container is obsolete. Please, use TurboContainer instead.", true)]
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public class CommonObjectLocator: IObjectLocator<Type>, IDisposable
     {
@@ -29,9 +29,9 @@ namespace Qoollo.Turbo.IoC
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_resolver != null);
-            Contract.Invariant(_association != null);
-            Contract.Invariant(_injection != null);
+            TurboContract.Invariant(_resolver != null);
+            TurboContract.Invariant(_association != null);
+            TurboContract.Invariant(_injection != null);
         }
 
         /// <summary>
@@ -43,12 +43,17 @@ namespace Qoollo.Turbo.IoC
 
             public AssociationContainer(IInjectionResolver resolver)
             {
-                Contract.Requires(resolver != null);
+                TurboContract.Requires(resolver != null, "resolver != null");
+
                 _resolver = resolver;
             }
 
             protected override Lifetime.LifetimeBase ProduceResolveInfo(Type key, Type objType, Lifetime.Factories.LifetimeFactory val)
             {
+                TurboContract.Requires(key != null, "key != null");
+                TurboContract.Requires(objType != null, "objType != null");
+                TurboContract.Requires(val != null, "val != null");
+
                 return val.Create(objType, _resolver, null);
             }
         }
@@ -65,8 +70,8 @@ namespace Qoollo.Turbo.IoC
             [ContractInvariantMethod]
             private void Invariant()
             {
-                Contract.Invariant(_sourceInj != null);
-                Contract.Invariant(_curLocator != null);
+                TurboContract.Invariant(_sourceInj != null);
+                TurboContract.Invariant(_curLocator != null);
             }
 
             /// <summary>
@@ -76,8 +81,8 @@ namespace Qoollo.Turbo.IoC
             /// <param name="locator">Owner</param>
             public InjectionThenAssociationResolver(TypeStrictInjectionContainer srcInj, CommonObjectLocator locator)
             {
-                Contract.Requires(srcInj != null);
-                Contract.Requires(locator != null);
+                TurboContract.Requires(srcInj != null, "srcInj != null");
+                TurboContract.Requires(locator != null, "locator != null");
 
                 _sourceInj = srcInj;
                 _curLocator = locator;
@@ -85,6 +90,8 @@ namespace Qoollo.Turbo.IoC
 
             public object Resolve(Type reqObjectType, string paramName, Type forType, object extData)
             {
+                TurboContract.Requires(reqObjectType != null, "reqObjectType != null");
+
                 object res = null;            
                 if (_sourceInj.TryGetInjection(reqObjectType, out res))
                     return res;
@@ -142,7 +149,7 @@ namespace Qoollo.Turbo.IoC
         public T Resolve<T>()
         {
             var life = _association.GetAssociation(typeof(T));
-            Debug.Assert(life != null);
+            TurboContract.Assert(life != null, "life != null");
             return (T)life.GetInstance(_resolver);
         }
 
@@ -159,7 +166,7 @@ namespace Qoollo.Turbo.IoC
 
             if (_association.TryGetAssociation(typeof(T), out life))
             {
-                Debug.Assert(life != null);
+                TurboContract.Assert(life != null, "life != null");
                 object tmp = null;
                 if (life.TryGetInstance(_resolver, out tmp))
                 {
@@ -225,10 +232,10 @@ namespace Qoollo.Turbo.IoC
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object Resolve(Type key)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, "key != null");
 
             var life = _association.GetAssociation(key);
-            Debug.Assert(life != null);
+            TurboContract.Assert(life != null, "life != null");
             return life.GetInstance(_resolver);
         }
 
@@ -241,13 +248,13 @@ namespace Qoollo.Turbo.IoC
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryResolve(Type key, out object val)
         {
-            Contract.Requires((object)key != null);
+            TurboContract.Requires(key != null, "key != null");
 
             Lifetime.LifetimeBase life = null;
 
             if (_association.TryGetAssociation(key, out life))
             {
-                Debug.Assert(life != null);
+                TurboContract.Assert(life != null, "life != null");
                 if (life.TryGetInstance(_resolver, out val))
                     return true;
             }
@@ -264,7 +271,7 @@ namespace Qoollo.Turbo.IoC
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanResolve(Type key)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, "key != null");
 
             return Association.Contains(key);
         }
@@ -276,6 +283,8 @@ namespace Qoollo.Turbo.IoC
         /// <returns>Resolved object</returns>
         object IObjectLocator<Type>.Resolve(Type key)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return this.Resolve(key);
         }
         /// <summary>
@@ -286,6 +295,8 @@ namespace Qoollo.Turbo.IoC
         /// <returns>True if the resolution succeeded; overwise false</returns>
         bool IObjectLocator<Type>.TryResolve(Type key, out object val)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return this.TryResolve(key, out val);
         }
         /// <summary>
@@ -295,6 +306,8 @@ namespace Qoollo.Turbo.IoC
         /// <returns>True if the object can be resolved</returns>
         bool IObjectLocator<Type>.CanResolve(Type key)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return this.CanResolve(key);
         }
 

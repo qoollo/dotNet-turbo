@@ -115,15 +115,12 @@ namespace Qoollo.Turbo.IoC.Injections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object GetInjection(TKey key)
         {
-            Contract.Requires(key != null);
-
             if (key == null)
                 ThrowKeyNullException();
             if (_isDisposed)
                 CheckContainerState(false);
 
-            object res = null;
-            if (!TryGetInjectionInner(key, out res))
+            if (!TryGetInjectionInner(key, out object res))
                 ThrowKeyNotFoundException(key);
 
             return res;
@@ -138,8 +135,6 @@ namespace Qoollo.Turbo.IoC.Injections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetInjection(TKey key, out object val)
         {
-            Contract.Requires(key != null);
-
             if (key == null)
                 ThrowKeyNullException();
 
@@ -161,8 +156,6 @@ namespace Qoollo.Turbo.IoC.Injections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains(TKey key)
         {
-            Contract.Requires(key != null);
-
             if (key == null)
                 ThrowKeyNullException();
             if (_isDisposed)
@@ -180,8 +173,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <exception cref="ObjectFrozenException"></exception>
         public void AddInjection(TKey key, object val)
         {
-            Contract.Requires(key != null);
-            Contract.Ensures(this.ContainsInner(key));
+            TurboContract.Ensures(this.ContainsInner(key));
 
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -204,8 +196,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <exception cref="ObjectFrozenException"></exception>
         public bool TryAddInjection(TKey key, object val)
         {
-            Contract.Requires(key != null);
-            Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || this.ContainsInner(key));
 
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -227,8 +218,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <exception cref="ObjectFrozenException"></exception>
         public bool RemoveInjection(TKey key)
         {
-            Contract.Requires(key != null);
-            Contract.Ensures(!this.ContainsInner(key));
+            TurboContract.Ensures(!this.ContainsInner(key));
 
             if (key == null)
                 throw new ArgumentNullException(nameof(key));

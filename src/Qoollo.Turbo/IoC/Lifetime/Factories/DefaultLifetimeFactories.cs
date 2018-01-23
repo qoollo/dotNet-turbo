@@ -39,6 +39,11 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+            if (injection == null)
+                throw new ArgumentNullException(nameof(injection));
+
             var obj = ObjectInstantiationHelper.CreateObject(objType, injection, extInfo);
             return new SingletonLifetime(obj);
         }
@@ -58,6 +63,11 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+            if (injection == null)
+                throw new ArgumentNullException(nameof(injection));
+
             var creationFunc = ObjectInstantiationHelper.GetReflectionBasedCreationFunction(objType, extInfo);
             return new DeferedSingletonLifetime(creationFunc, objType);
         }
@@ -77,6 +87,11 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+            if (injection == null)
+                throw new ArgumentNullException(nameof(injection));
+
             var creationFunc = ObjectInstantiationHelper.GetCompiledCreationFunction(objType, extInfo);
             return new PerThreadLifetime(creationFunc, objType);
         }
@@ -96,6 +111,11 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+            if (injection == null)
+                throw new ArgumentNullException(nameof(injection));
+
             var creationObj = ObjectInstantiationHelper.BuildInstanceCreatorInDynAssembly(objType, extInfo);
             return new PerCallInterfaceLifetime(objType, creationObj);
         }
@@ -115,6 +135,11 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
         /// <returns>Created lifetime container for the specified object type</returns>
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+            if (injection == null)
+                throw new ArgumentNullException(nameof(injection));
+
             var creationObj = ObjectInstantiationHelper.BuildInstanceCreatorNoParamInDynAssembly(objType, injection, extInfo);
             return new PerCallInlinedParamsInterfaceLifetime(objType, creationObj);
         }

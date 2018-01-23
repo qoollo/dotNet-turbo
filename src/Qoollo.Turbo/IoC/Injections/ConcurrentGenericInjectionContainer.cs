@@ -21,7 +21,7 @@ namespace Qoollo.Turbo.IoC.Injections
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_injections != null);
+            TurboContract.Invariant(_injections != null);
         }
 
         /// <summary>
@@ -49,6 +49,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the object with 'objType' can be used by container with specified 'key'</returns>
         protected override bool IsGoodInjectionForKey(TKey key, object injection)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return true;
         }
 
@@ -60,6 +62,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the InjectionContainer contains the object for the specified key</returns>
         protected sealed override bool TryGetInjectionInner(TKey key, out object val)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return _injections.TryGetValue(key, out val);
         }
 
@@ -70,6 +74,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection is presented in container</returns>
         protected sealed override bool ContainsInner(TKey key)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return _injections.ContainsKey(key);
         }
 
@@ -80,6 +86,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <param name="val">Object to add for the specified key</param>
         protected sealed override void AddInjectionInner(TKey key, object val)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             if (!_injections.TryAdd(key, val))
                 throw new ItemAlreadyExistsException(string.Format("InjectionContainer already contains the injection for the key ({0})", key));
         }
@@ -92,6 +100,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection was added, that is InjectionContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddInjectionInner(TKey key, object val)
         {
+            TurboContract.Requires(key != null, "key != null");
+
             return _injections.TryAdd(key, val);
         }
 
@@ -102,8 +112,9 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection was presented in container</returns>
         protected sealed override bool RemoveInjectionInner(TKey key)
         {
-            object val = null;
-            return _injections.TryRemove(key, out val);
+            TurboContract.Requires(key != null, "key != null");
+
+            return _injections.TryRemove(key, out object val);
         }
 
 
@@ -188,8 +199,7 @@ namespace Qoollo.Turbo.IoC.Injections
 
                     for (int i = 0; i < toDispose.Length; i++)
                     {
-                        IDisposable disp = toDispose[i].Value as IDisposable;
-                        if (disp != null)
+                        if (toDispose[i].Value is IDisposable disp)
                             disp.Dispose();
                     }
                 }

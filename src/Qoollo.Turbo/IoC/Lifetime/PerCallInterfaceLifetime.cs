@@ -23,7 +23,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public PerCallInterfaceLifetime(Type outType, IInstanceCreator createInstanceObj)
             : base(outType)
         {
-            Contract.Requires<ArgumentNullException>(createInstanceObj != null, nameof(createInstanceObj));
+            if (createInstanceObj == null)
+                throw new ArgumentNullException(nameof(createInstanceObj));
 
             _createInstanceObj = createInstanceObj;
         }
@@ -36,6 +37,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
+            TurboContract.Requires(resolver != null, "resolver != null");
+
             return _createInstanceObj.CreateInstance(resolver);
         }
     }
