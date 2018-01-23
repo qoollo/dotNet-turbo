@@ -31,8 +31,8 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// <returns>Comparison result</returns>
         public override int Compare(PoolElementWrapper<T> a, PoolElementWrapper<T> b, out bool stopHere)
         {
-            TurboContract.Requires(a != null, "a != null");
-            TurboContract.Requires(b != null, "b != null");
+            TurboContract.Requires(a != null, conditionString: "a != null");
+            TurboContract.Requires(b != null, conditionString: "b != null");
 
             stopHere = false;
             return _comparer.Compare(a.Element, b.Element);
@@ -73,8 +73,8 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// <returns>Comparison result</returns>
         public override int Compare(PoolElementWrapper<T> a, PoolElementWrapper<T> b, out bool stopHere)
         {
-            TurboContract.Requires(a != null, "a != null");
-            TurboContract.Requires(b != null, "b != null");
+            TurboContract.Requires(a != null, conditionString: "a != null");
+            TurboContract.Requires(b != null, conditionString: "b != null");
 
             stopHere = false;
             return _comparer.Compare(a.Element, b.Element);

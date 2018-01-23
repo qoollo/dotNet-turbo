@@ -56,15 +56,15 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <returns>Обёртка для нового элемента</returns>
         public PoolElementWrapper<T> Add(T rawElement, IPoolElementOperationSource<T> operations, bool makeAvailable)
         {
-            TurboContract.Requires(operations != null, "operations != null");
-            TurboContract.Assert(!_isDisposed, "!_isDisposed");
+            TurboContract.Requires(operations != null, conditionString: "operations != null");
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             PoolElementWrapper<T> container = new PoolElementWrapper<T>(rawElement, operations, this);
             container.MakeBusy();
             container.ThisIndex = _allElements.Add(container);
 
-            TurboContract.Assert(container.ThisIndex >= 0 && container.ThisIndex < _allElements.Capacity, "container.ThisIndex >= 0 && container.ThisIndex < _allElements.Capacity");
-            TurboContract.Assert(object.ReferenceEquals(container, _allElements.RawData[container.ThisIndex]), "object.ReferenceEquals(container, _allElements.RawData[container.ThisIndex])");
+            TurboContract.Assert(container.ThisIndex >= 0 && container.ThisIndex < _allElements.Capacity, conditionString: "container.ThisIndex >= 0 && container.ThisIndex < _allElements.Capacity");
+            TurboContract.Assert(object.ReferenceEquals(container, _allElements.RawData[container.ThisIndex]), conditionString: "object.ReferenceEquals(container, _allElements.RawData[container.ThisIndex])");
 
             if (container.ThisIndex >= (1 << 16) - 2)
             {
@@ -88,19 +88,19 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="element">Элемент</param>
         private void PerformRealRemove(PoolElementWrapper<T> element)
         {
-            TurboContract.Requires(element != null, "element != null");
-            TurboContract.Requires(element.Owner == this, "element.Owner == this");
-            TurboContract.Requires(element.IsBusy, "element.IsBusy");
+            TurboContract.Requires(element != null, conditionString: "element != null");
+            TurboContract.Requires(element.Owner == this, conditionString: "element.Owner == this");
+            TurboContract.Requires(element.IsBusy, conditionString: "element.IsBusy");
 
             if (element.IsRemoved)
                 return;
 
-            TurboContract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity, "element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity");
-            TurboContract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]), "object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex])");
+            TurboContract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity, conditionString: "element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity");
+            TurboContract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]), conditionString: "object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex])");
 
             bool removeResult = _allElements.RemoveAt(element.ThisIndex);
-            TurboContract.Assert(removeResult == true, "removeResult == true");
-            TurboContract.Assert(_allElements.IndexOf(element) < 0, "_allElements.IndexOf(element) < 0");
+            TurboContract.Assert(removeResult == true, conditionString: "removeResult == true");
+            TurboContract.Assert(_allElements.IndexOf(element) < 0, conditionString: "_allElements.IndexOf(element) < 0");
             element.MarkRemoved();
             _allElements.Compact(false);
         }
@@ -112,7 +112,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="element">Элемент</param>
         private void ReleaseCore(PoolElementWrapper<T> element)
         {
-            TurboContract.Requires(element != null, "element != null");
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             try { }
             finally
@@ -129,8 +129,8 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="element">Элемент</param>
         public void Release(PoolElementWrapper<T> element)
         {
-            TurboContract.Requires(element != null, "element != null");
-            TurboContract.Requires(element.Owner == this, "element.Owner == this");
+            TurboContract.Requires(element != null, conditionString: "element != null");
+            TurboContract.Requires(element.Owner == this, conditionString: "element.Owner == this");
 
             if (element.IsElementDestroyed)
             {
@@ -139,15 +139,15 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
                 return;
             }
 
-            TurboContract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity, "element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity");
-            TurboContract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]), "object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex])");
+            TurboContract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity, conditionString: "element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity");
+            TurboContract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]), conditionString: "object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex])");
 
 #pragma warning disable 0420
             _allElements.CompactElementAt(ref element.ThisIndex);
 #pragma warning restore 0420
 
-            TurboContract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity, "element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity");
-            TurboContract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]), "object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex])");
+            TurboContract.Assert(element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity, conditionString: "element.ThisIndex >= 0 && element.ThisIndex < _allElements.Capacity");
+            TurboContract.Assert(object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex]), conditionString: "object.ReferenceEquals(element, _allElements.RawData[element.ThisIndex])");
 
             ReleaseCore(element);
         }
@@ -300,7 +300,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="action">Действие</param>
         public void ProcessFreeElements(Action<PoolElementWrapper<T>> action)
         {
-            TurboContract.Requires(action != null, "action != null");
+            TurboContract.Requires(action != null, conditionString: "action != null");
 
             List<PoolElementWrapper<T>> takenElems = new List<PoolElementWrapper<T>>(_allElements.Count + 1);
 
@@ -326,7 +326,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="action">Действие</param>
         public void ProcessAllElements(Action<PoolElementWrapper<T>> action)
         {
-            TurboContract.Requires(action != null, "action != null");
+            TurboContract.Requires(action != null, conditionString: "action != null");
 
 
             var rawArray = _allElements.RawData;

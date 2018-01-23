@@ -170,7 +170,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryAddLocal(T element)
         {
-            TurboContract.Requires(element != null, "element != null");
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             var storage = GetThreadLocalStorage(true);
             return storage.TryAdd(element);

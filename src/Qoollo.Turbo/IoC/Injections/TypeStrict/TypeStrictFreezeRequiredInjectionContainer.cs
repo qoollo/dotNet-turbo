@@ -146,7 +146,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>Resolved instance to be injected</returns>
         object IInjectionResolver.Resolve(Type reqObjectType, string paramName, Type forType, object extData)
         {
-            TurboContract.Requires(reqObjectType != null, "reqObjectType != null");
+            TurboContract.Requires(reqObjectType != null, conditionString: "reqObjectType != null");
 
             return this.GetInjection(reqObjectType);
         }

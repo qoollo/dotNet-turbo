@@ -37,7 +37,7 @@ namespace Qoollo.Turbo.Collections
             /// <param name="srcList">Source CircularList to enumerate</param>
             internal Enumerator(CircularList<T> srcList)
             {
-                TurboContract.Requires(srcList != null, "srcList != null");
+                TurboContract.Requires(srcList != null, conditionString: "srcList != null");
 
                 _srcList = srcList;
                 _version = _srcList._version;
@@ -446,7 +446,7 @@ namespace Qoollo.Turbo.Collections
             {
                 for (int curIndex = index; curIndex > start; curIndex--)
                 {
-                    TurboContract.Assert(curIndex >= 0, "curIndex >= 0");
+                    TurboContract.Assert(curIndex >= 0, conditionString: "curIndex >= 0");
 
                     if (this._elemArray[curPos] == null)
                         return curIndex;
@@ -461,7 +461,7 @@ namespace Qoollo.Turbo.Collections
             EqualityComparer<T> comparer = EqualityComparer<T>.Default;
             for (int curIndex = index; curIndex > start; curIndex--)
             {
-                TurboContract.Assert(curIndex >= 0, "curIndex >= 0");
+                TurboContract.Assert(curIndex >= 0, conditionString: "curIndex >= 0");
 
                 if (this._elemArray[curPos] != null && comparer.Equals(this._elemArray[curPos], item))
                     return curIndex;
@@ -524,7 +524,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The first element that matches the condition, if found; otherwise, the default value for type T</returns>
         public T Find(Predicate<T> match)
         {
-            TurboContract.Requires(match != null, "match != null");
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             int index = this.FindIndex(match);
             return index < 0 ? default(T) : this[index];
@@ -538,7 +538,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool Exists(Predicate<T> match)
         {
-            TurboContract.Requires(match != null, "match != null");
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             return this.FindIndex(match) >= 0;
         }
@@ -598,7 +598,7 @@ namespace Qoollo.Turbo.Collections
                         }
                         else
                         {
-                            TurboContract.Assert(_head == 0, "_head == 0");
+                            TurboContract.Assert(_head == 0, conditionString: "_head == 0");
                             _elemArray[_elemArray.Length - 1] = _elemArray[0];
                             Array.Copy(_elemArray, 1, _elemArray, 0, insertPos);
                         }
@@ -693,7 +693,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The element at the beginning of the list</returns>
         public T RemoveFirst()
         {
-            TurboContract.Requires(this.Count > 0, "this.Count > 0");
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
             TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) - 1);
 
             if (this._size == 0)
@@ -713,7 +713,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The element at the ending of the list</returns>
         public T RemoveLast()
         {
-            TurboContract.Requires(this.Count > 0, "this.Count > 0");
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
             TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) - 1);
 
             if (this._size == 0)
@@ -872,7 +872,7 @@ namespace Qoollo.Turbo.Collections
         /// <param name="capacity">Desired capacity</param>
         private void SetCapacity(int headOffset, int capacity)
         {
-            TurboContract.Requires(capacity >= this.Count, "capacity >= this.Count");
+            TurboContract.Requires(capacity >= this.Count, conditionString: "capacity >= this.Count");
 
             if (headOffset < 0)
                 headOffset = (capacity - _size) / 2;
@@ -896,7 +896,7 @@ namespace Qoollo.Turbo.Collections
             _elemArray = array;
             _head = headOffset;
             _tail = _elemArray.Length > 0 ? ((_head + _size) % _elemArray.Length) : 0;
-            TurboContract.Assert(_tail == ((_size == capacity) ? 0 : this._size + headOffset), "_tail == ((_size == capacity) ? 0 : this._size + headOffset)");
+            TurboContract.Assert(_tail == ((_size == capacity) ? 0 : this._size + headOffset), conditionString: "_tail == ((_size == capacity) ? 0 : this._size + headOffset)");
 
             _version++;
         }

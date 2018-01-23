@@ -54,7 +54,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <returns>True if the object was successfully resolved</returns>
         public bool TryGetInstance(IInjectionResolver resolver, out object val)
         {
-            TurboContract.Requires(resolver != null, "resolver != null");
+            TurboContract.Requires(resolver != null, conditionString: "resolver != null");
             TurboContract.Ensures((TurboContract.Result<bool>() == true && 
                     ((TurboContract.ValueAtReturn(out val) != null && TurboContract.ValueAtReturn(out val).GetType() == this.OutputType) ||
                      (TurboContract.ValueAtReturn(out val) == null && this.OutputType.IsAssignableFromNull())))           

@@ -150,8 +150,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Lifetime object container to add</param>
         protected void AddAssociation(TKey key, LifetimeBase val)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(val != null, "val != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
             TurboContract.Ensures(this.ContainsInner(key));
 
             if (!IsGoodTypeForKey(key, val.OutputType))
@@ -170,8 +170,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected bool TryAddAssociation(TKey key, LifetimeBase val)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(val != null, "val != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
             TurboContract.Ensures(TurboContract.Result<bool>() == false || this.ContainsInner(key));
 
             if (!IsGoodTypeForKey(key, val.OutputType))
@@ -190,9 +190,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
         protected void AddAssociation(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(val != null, "val != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
             TurboContract.Ensures(this.ContainsInner(key));
 
             if (!IsGoodTypeForKey(key, objType))
@@ -212,9 +212,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected bool TryAddAssociation(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(val != null, "val != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
             TurboContract.Ensures(TurboContract.Result<bool>() == false || this.ContainsInner(key));
 
             if (!IsGoodTypeForKey(key, objType))
@@ -282,7 +282,7 @@ namespace Qoollo.Turbo.IoC.Associations
             object[] attr = null;
             foreach (var curTp in typeSource)
             {
-                TurboContract.Assert(curTp != null, "curTp != null");
+                TurboContract.Assert(curTp != null, conditionString: "curTp != null");
 
                 attr = curTp.GetCustomAttributes(false);
                 if (attr == null || attr.Length == 0)
@@ -290,7 +290,7 @@ namespace Qoollo.Turbo.IoC.Associations
 
                 foreach (var curAttr in attr.OfType<TAttr>())
                 {
-                    TurboContract.Assert(curAttr != null, "curAttr != null");
+                    TurboContract.Assert(curAttr != null, conditionString: "curAttr != null");
 
                     if (attrCmpPredicate == null || attrCmpPredicate(curAttr))
                     {

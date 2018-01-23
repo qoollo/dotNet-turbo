@@ -60,8 +60,8 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <returns>Обёртка для нового элемента</returns>
         public PoolElementWrapper<T> Add(T rawElement, IPoolElementOperationSource<T> operations, bool makeAvailable)
         {
-            TurboContract.Requires(operations != null, "operations != null");
-            TurboContract.Assert(!_isDisposed, "!_isDisposed");
+            TurboContract.Requires(operations != null, conditionString: "operations != null");
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             PoolElementWrapper<T> container = new PoolElementWrapper<T>(rawElement, operations, this);
             container.MakeBusyAtomic();
@@ -80,16 +80,16 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="element">Элемент</param>
         private void PerformRealRemove(PoolElementWrapper<T> element)
         {
-            TurboContract.Requires(element != null, "element != null");
-            TurboContract.Requires(element.Owner == this, "element.Owner == this");
-            TurboContract.Requires(element.IsBusy, "element.IsBusy");
+            TurboContract.Requires(element != null, conditionString: "element != null");
+            TurboContract.Requires(element.Owner == this, conditionString: "element.Owner == this");
+            TurboContract.Requires(element.IsBusy, conditionString: "element.IsBusy");
 
             if (element.IsRemoved)
                 return;
 
             bool removeResult = _allElements.Remove(element);
-            TurboContract.Assert(removeResult == true, "removeResult == true");
-            TurboContract.Assert(_allElements.IndexOf(element) < 0, "_allElements.IndexOf(element) < 0");
+            TurboContract.Assert(removeResult == true, conditionString: "removeResult == true");
+            TurboContract.Assert(_allElements.IndexOf(element) < 0, conditionString: "_allElements.IndexOf(element) < 0");
             element.MarkRemoved();
         }
 
@@ -100,7 +100,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="element">Элемент</param>
         private void ReleaseCore(PoolElementWrapper<T> element)
         {
-            TurboContract.Requires(element != null, "element != null");
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             try { }
             finally
@@ -116,8 +116,8 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="element">Элемент</param>
         public void Release(PoolElementWrapper<T> element)
         {
-            TurboContract.Requires(element != null, "element != null");
-            TurboContract.Requires(element.Owner == this, "element.Owner == this");
+            TurboContract.Requires(element != null, conditionString: "element != null");
+            TurboContract.Requires(element.Owner == this, conditionString: "element.Owner == this");
 
             if (element.IsElementDestroyed)
             {
@@ -226,7 +226,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
 
             if (earlyStopResult != null)
             {
-                TurboContract.Assert(earlyStopResult.IsBusy, "earlyStopResult.IsBusy");
+                TurboContract.Assert(earlyStopResult.IsBusy, conditionString: "earlyStopResult.IsBusy");
                 element = earlyStopResult;
                 return true;
             }
@@ -270,7 +270,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
                     if (TryTakeBest(out element))
                         return true;
 
-                    TurboContract.Assert(tryCount++ < 1000, "tryCount++ < 1000");
+                    TurboContract.Assert(tryCount++ < 1000, conditionString: "tryCount++ < 1000");
                 }
             }
         }
@@ -429,7 +429,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
                     if (TryTakeWorst(out element))
                         return true;
 
-                    TurboContract.Assert(tryCount++ < 1000, "tryCount++ < 1000");
+                    TurboContract.Assert(tryCount++ < 1000, conditionString: "tryCount++ < 1000");
                 }
             }
         }
@@ -552,7 +552,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="action">Действие</param>
         public void ProcessFreeElements(Action<PoolElementWrapper<T>> action)
         {
-            TurboContract.Requires(action != null, "action != null");
+            TurboContract.Requires(action != null, conditionString: "action != null");
 
             List<PoolElementWrapper<T>> takenElems = new List<PoolElementWrapper<T>>(_allElements.Count + 1);
 
@@ -578,7 +578,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers
         /// <param name="action">Действие</param>
         public void ProcessAllElements(Action<PoolElementWrapper<T>> action)
         {
-            TurboContract.Requires(action != null, "action != null");
+            TurboContract.Requires(action != null, conditionString: "action != null");
 
 
             var rawArray = _allElements.RawData;

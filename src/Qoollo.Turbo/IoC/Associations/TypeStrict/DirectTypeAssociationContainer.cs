@@ -21,8 +21,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the object with 'objType' can be used by container with specified 'key'</returns>
         protected override bool IsGoodTypeForKey(Type key, Type objType)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(objType != null, "objType != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             return (key == objType) || (key.IsAssignableFrom(objType));
         }

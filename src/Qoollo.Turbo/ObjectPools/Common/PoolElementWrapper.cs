@@ -273,7 +273,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// <param name="name">Name of the owner ObjectPool</param>
         internal void SetPoolName(string name)
         {
-            TurboContract.Requires(name != null, "name != null");
+            TurboContract.Requires(name != null, conditionString: "name != null");
             _sourcePoolName = name;
         }
         /// <summary>

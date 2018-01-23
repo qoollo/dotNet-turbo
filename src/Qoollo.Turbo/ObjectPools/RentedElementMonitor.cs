@@ -64,7 +64,7 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="sourcePool">Source object pool</param>
         internal RentedElementMonitor(PoolElementWrapper<TElem> element, ObjectPoolManager<TElem> sourcePool)
         {
-            TurboContract.Requires(element == null || (element != null && sourcePool != null), "element == null || (element != null && sourcePool != null)");
+            TurboContract.Requires(element == null || (element != null && sourcePool != null), conditionString: "element == null || (element != null && sourcePool != null)");
 
             if (element == null)
             {
@@ -182,7 +182,7 @@ namespace Qoollo.Turbo.ObjectPools
             _elementWrapper = null;
             _sourcePool = null;
 
-            TurboContract.Assert((wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null), "(wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null)");
+            TurboContract.Assert((wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null), conditionString: "(wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null)");
 
             if (wrapperCopy != null && sourcePool != null)
             {

@@ -71,7 +71,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
-            TurboContract.Requires(resolver != null, "resolver != null");
+            TurboContract.Requires(resolver != null, conditionString: "resolver != null");
 
             return _obj;
         }

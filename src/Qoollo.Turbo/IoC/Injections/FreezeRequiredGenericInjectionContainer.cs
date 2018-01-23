@@ -50,7 +50,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the object with 'objType' can be used by container with specified 'key'</returns>
         protected override bool IsGoodInjectionForKey(TKey key, object injection)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             return true;
         }
@@ -63,7 +63,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the InjectionContainer contains the object for the specified key</returns>
         protected sealed override bool TryGetInjectionInner(TKey key, out object val)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             return _injections.TryGetValue(key, out val);
         }
@@ -75,7 +75,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection is presented in container</returns>
         protected sealed override bool ContainsInner(TKey key)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             return _injections.ContainsKey(key);
         }
@@ -87,7 +87,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <param name="val">Object to add for the specified key</param>
         protected sealed override void AddInjectionInner(TKey key, object val)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             lock (_injections)
             {
@@ -106,7 +106,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection was added, that is InjectionContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddInjectionInner(TKey key, object val)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             lock (_injections)
             {
@@ -126,7 +126,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection was presented in container</returns>
         protected sealed override bool RemoveInjectionInner(TKey key)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             lock (_injections)
             {

@@ -42,8 +42,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Lifetime object container to add</param>
         protected sealed override void AddAssociationInner(TKey key, LifetimeBase val)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(val != null, "val != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             lock (_storage)
             {
@@ -61,8 +61,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddAssociationInner(TKey key, LifetimeBase val)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(val != null, "val != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             lock (_storage)
             {
@@ -81,9 +81,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
         protected sealed override void AddAssociationInner(TKey key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(val != null, "val != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             lock (_storage)
             {
@@ -103,9 +103,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected sealed override bool TryAddAssociationInner(TKey key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(val != null, "val != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             lock (_storage)
             {
@@ -125,7 +125,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the AssociationContainer contains the lifetime container for the specified key</returns>
         protected sealed override bool TryGetAssociationInner(TKey key, out LifetimeBase val)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             return _storage.TryGetValue(key, out val);
         }
@@ -136,7 +136,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was presented in container</returns>
         protected sealed override bool RemoveAssociationInner(TKey key)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             lock (_storage)
             {
@@ -150,7 +150,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association is presented in container</returns>
         protected sealed override bool ContainsInner(TKey key)
         {
-            TurboContract.Requires(key != null, "key != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             return _storage.ContainsKey(key);
         }

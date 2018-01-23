@@ -27,7 +27,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Found constructor</returns>
         public static ConstructorInfo FindConstructor(Type executerType, bool onlyPublic = false)
         {
-            TurboContract.Requires(executerType != null, "executerType != null");
+            TurboContract.Requires(executerType != null, conditionString: "executerType != null");
 
             ConstructorInfo res = null;
             ConstructorInfo[] allConstr = null;
@@ -70,10 +70,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Created object</returns>
         public static object CreateObject(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(injection != null, "injection != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<object>() != null);
 
@@ -83,12 +83,12 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             for (int i = 0; i < cparam.Length; i++)
             {
-                TurboContract.Assert(cparam[i] != null, "cparam[i] != null");
+                TurboContract.Assert(cparam[i] != null, conditionString: "cparam[i] != null");
                 args[i] = injection.Resolve(cparam[i].ParameterType, cparam[i].Name, objType, extData);
             }
 
             var res = constructor.Invoke(args);
-            TurboContract.Assert(res != null, "res != null");
+            TurboContract.Assert(res != null, conditionString: "res != null");
             return res;
         }
 
@@ -101,9 +101,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Created object</returns>
         public static object CreateObject(Type objType, ConstructorInfo constructor)
         {
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<object>() != null);
 
@@ -113,7 +113,7 @@ namespace Qoollo.Turbo.IoC.Helpers
                 throw new CommonIoCException("Only constructor without parameters can be used here");
 
             var res = constructor.Invoke(new object[] { });
-            TurboContract.Assert(res != null, "res != null");
+            TurboContract.Assert(res != null, conditionString: "res != null");
             return res;
         }
 
@@ -133,8 +133,8 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Created object</returns>
         public static object CreateObject(Type objType, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(injection != null, "injection != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
 
             TurboContract.Ensures(TurboContract.Result<object>() != null);
 
@@ -146,7 +146,7 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             object res = ObjectInstantiationHelper.CreateObject(objType, ci, injection, extData);
 
-            TurboContract.Assert(res != null, "res != null");
+            TurboContract.Assert(res != null, conditionString: "res != null");
             return res;
         }
 
@@ -158,7 +158,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns></returns>
         public static object CreateObject(Type objType)
         {
-            TurboContract.Requires(objType != null, "objType != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
             TurboContract.Ensures(TurboContract.Result<object>() != null);
 
             var ci = objType.GetConstructor(System.Type.EmptyTypes);
@@ -169,7 +169,7 @@ namespace Qoollo.Turbo.IoC.Helpers
 
             object res = ObjectInstantiationHelper.CreateObject(objType, ci);
 
-            TurboContract.Assert(res != null, "res != null");
+            TurboContract.Assert(res != null, conditionString: "res != null");
             return res;
         }
 
@@ -189,12 +189,12 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Function to create an instance of an object</returns>
         public static Func<IInjectionResolver, object> GetReflectionBasedCreationFunction(Type objType, ConstructorInfo constructor, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
 
             TurboContract.Ensures(TurboContract.Result<Func<IInjectionResolver, object>>() != null);
 
-            TurboContract.Assert(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Assert(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             return (injection) => CreateObject(objType, constructor, injection, extData);
         }
@@ -207,7 +207,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Function to create an instance of an object</returns>
         public static Func<IInjectionResolver, object> GetReflectionBasedCreationFunction(Type objType, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             TurboContract.Ensures(TurboContract.Result<Func<IInjectionResolver, object>>() != null);
 
@@ -229,7 +229,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Extracted MethodInfo</returns>
         private static MethodInfo ExtractMethodInfo<InstT>(Expression<Action<InstT>> methodCallExpr)
         {
-            TurboContract.Requires(methodCallExpr != null, "methodCallExpr != null");
+            TurboContract.Requires(methodCallExpr != null, conditionString: "methodCallExpr != null");
             TurboContract.Ensures(TurboContract.Result<MethodInfo>() != null);
 
             var body = methodCallExpr.Body;
@@ -249,7 +249,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Extracted MethodInfo</returns>
         private static MethodInfo ExtractMethodInfo(Expression<Action> methodCallExpr)
         {
-            TurboContract.Requires(methodCallExpr != null, "methodCallExpr != null");
+            TurboContract.Requires(methodCallExpr != null, conditionString: "methodCallExpr != null");
             TurboContract.Ensures(TurboContract.Result<MethodInfo>() != null);
 
             var body = methodCallExpr.Body;
@@ -270,7 +270,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Extracted ConstructorInfo</returns>
         private static ConstructorInfo ExtractConstructorInfo(Expression<Action> constructorCallExpr)
         {
-            TurboContract.Requires(constructorCallExpr != null, "constructorCallExpr != null");
+            TurboContract.Requires(constructorCallExpr != null, conditionString: "constructorCallExpr != null");
             TurboContract.Ensures(TurboContract.Result<ConstructorInfo>() != null);
 
             var body = constructorCallExpr.Body;
@@ -302,13 +302,13 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Expression Tree to resolve the injection from IInjectionResolver</returns>
         private static Expression CreateInjectionExtractionExpr(Type key, IInjectionResolver injection, string paramName, Type forType, object extData)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(injection != null, "injection != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
 
             TurboContract.Ensures(TurboContract.Result<Expression>() != null);
 
             var methodInfo = ExtractMethodInfo<IInjectionResolver>(a => a.Resolve(typeof(int), "", typeof(int), null));
-            TurboContract.Assert(methodInfo != null, "methodInfo != null");
+            TurboContract.Assert(methodInfo != null, conditionString: "methodInfo != null");
 
             return Expression.Convert(
                             Expression.Call(
@@ -333,15 +333,15 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Expression Tree to resolve the injection from IInjectionResolver</returns>
         private static Expression CreateInjectionExtractionExpr(Type key, Expression param, string paramName, Type forType, object extData)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(param != null, "param != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(param != null, conditionString: "param != null");
 
             TurboContract.Ensures(TurboContract.Result<Expression>() != null);
 
-            TurboContract.Assert(param.Type == typeof(IInjectionResolver), "param.Type == typeof(IInjectionResolver)");
+            TurboContract.Assert(param.Type == typeof(IInjectionResolver), conditionString: "param.Type == typeof(IInjectionResolver)");
 
             var methodInfo = ExtractMethodInfo<IInjectionResolver>(a => a.Resolve(typeof(int), "", typeof(int), null));
-            TurboContract.Assert(methodInfo != null, "methodInfo != null");
+            TurboContract.Assert(methodInfo != null, conditionString: "methodInfo != null");
 
             return Expression.Convert(
                             Expression.Call(
@@ -365,15 +365,15 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Expression Tree to resolve the injection from IInjectionResolver</returns>
         private static Expression CreateInjectionExtractionExpr(Type key, Expression param, Expression paramName, Expression forType, Expression extData)
         {
-            TurboContract.Requires(key != null, "key != null");
-            TurboContract.Requires(param != null, "param != null");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(param != null, conditionString: "param != null");
 
             TurboContract.Ensures(TurboContract.Result<Expression>() != null);
 
-            TurboContract.Assert(param.Type == typeof(IInjectionResolver), "param.Type == typeof(IInjectionResolver)");
+            TurboContract.Assert(param.Type == typeof(IInjectionResolver), conditionString: "param.Type == typeof(IInjectionResolver)");
 
             var methodInfo = ExtractMethodInfo<IInjectionResolver>(a => a.Resolve(typeof(int), "", typeof(int), null));
-            TurboContract.Assert(methodInfo != null, "methodInfo != null");
+            TurboContract.Assert(methodInfo != null, conditionString: "methodInfo != null");
 
             return Expression.Convert(
                             Expression.Call(
@@ -402,32 +402,32 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Final LambdaExpression to create an object of specified type</returns>
         private static Expression<Func<IInjectionResolver, object>> GetObjectCreationExpression(Type objType, ConstructorInfo constructor, Expression extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(extData != null, "extData != null");
-            TurboContract.Requires(extData.Type == typeof(object), "extData.Type == typeof(object)");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(extData != null, conditionString: "extData != null");
+            TurboContract.Requires(extData.Type == typeof(object), conditionString: "extData.Type == typeof(object)");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<Expression<Func<IInjectionResolver, object>>>() != null);
 
             var injectionParam = Expression.Parameter(typeof(IInjectionResolver), "injection");
-            TurboContract.Assert(injectionParam != null, "injectionParam != null");
+            TurboContract.Assert(injectionParam != null, conditionString: "injectionParam != null");
 
             var cparam = constructor.GetParameters();
-            TurboContract.Assert(cparam != null, "cparam != null");
+            TurboContract.Assert(cparam != null, conditionString: "cparam != null");
 
             Expression[] args = new Expression[cparam.Length];
 
             for (int i = 0; i < cparam.Length; i++)
             {
-                TurboContract.Assert(cparam[i] != null, "cparam[i] != null");
+                TurboContract.Assert(cparam[i] != null, conditionString: "cparam[i] != null");
                 args[i] = CreateInjectionExtractionExpr(cparam[i].ParameterType, injectionParam, Expression.Constant(cparam[i].Name), Expression.Constant(objType, typeof(Type)), extData);
             }
 
             var finalExpr = Expression.New(constructor, args);
             var linqExpr = Expression.Lambda<Func<IInjectionResolver, object>>(finalExpr, injectionParam);
 
-            TurboContract.Assert(linqExpr != null, "linqExpr != null");
+            TurboContract.Assert(linqExpr != null, conditionString: "linqExpr != null");
             return linqExpr;
         }
 
@@ -446,20 +446,20 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Function to create the instance of 'objType'</returns>
         public static Func<object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(injection != null, "injection != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<Func<object>>() != null);
 
             var cparam = constructor.GetParameters();
-            TurboContract.Assert(cparam != null, "cparam != null");
+            TurboContract.Assert(cparam != null, conditionString: "cparam != null");
             Expression[] args = new Expression[cparam.Length];
 
             for (int i = 0; i < cparam.Length; i++)
             {
-                TurboContract.Assert(cparam[i] != null, "cparam[i] != null");
+                TurboContract.Assert(cparam[i] != null, conditionString: "cparam[i] != null");
                 args[i] = CreateInjectionExtractionExpr(cparam[i].ParameterType, injection, cparam[i].Name, objType, extData);
             }
 
@@ -467,7 +467,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             var linqExpr = Expression.Lambda<Func<object>>(finalExpr);
 
             var res = linqExpr.Compile();
-            TurboContract.Assert(res != null, "res != null");
+            TurboContract.Assert(res != null, conditionString: "res != null");
             return res;
         }
 
@@ -483,19 +483,19 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Function to create the instance of 'objType'</returns>
         private static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, ConstructorInfo constructor, Expression extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(extData != null, "extData != null");
-            TurboContract.Requires(extData.Type == typeof(object), "extData.Type == typeof(object)");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(extData != null, conditionString: "extData != null");
+            TurboContract.Requires(extData.Type == typeof(object), conditionString: "extData.Type == typeof(object)");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<Func<IInjectionResolver, object>>() != null);
 
             var linqExpr = GetObjectCreationExpression(objType, constructor, extData);
-            TurboContract.Assert(linqExpr != null, "linqExpr != null");
+            TurboContract.Assert(linqExpr != null, conditionString: "linqExpr != null");
 
             var res = linqExpr.Compile();
-            TurboContract.Assert(res != null, "res != null");
+            TurboContract.Assert(res != null, conditionString: "res != null");
             return res;
         }
 
@@ -510,17 +510,17 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Function to create the instance of 'objType'</returns>
         private static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, Expression extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(extData != null, "extData != null");
-            TurboContract.Requires(extData.Type == typeof(object), "extData.Type == typeof(object)");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(extData != null, conditionString: "extData != null");
+            TurboContract.Requires(extData.Type == typeof(object), conditionString: "extData.Type == typeof(object)");
 
             TurboContract.Ensures(TurboContract.Result<Func<IInjectionResolver, object>>() != null);
 
             var constructor = FindConstructor(objType);
-            TurboContract.Assert(constructor != null, "constructor != null");
+            TurboContract.Assert(constructor != null, conditionString: "constructor != null");
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
-            TurboContract.Assert(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Assert(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             return GetCompiledCreationFunction(objType, constructor, extData);
         }
@@ -535,15 +535,15 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Function to create the instance of 'objType'</returns>
         public static Func<IInjectionResolver, object> GetCompiledCreationFunction(Type objType, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             TurboContract.Ensures(TurboContract.Result<Func<IInjectionResolver, object>>() != null);
 
             var constructor = FindConstructor(objType);
-            TurboContract.Assert(constructor != null, "constructor != null");
+            TurboContract.Assert(constructor != null, conditionString: "constructor != null");
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
-            TurboContract.Assert(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Assert(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             return GetCompiledCreationFunction(objType, constructor, Expression.Constant(extData, typeof(object)));
         }
@@ -568,20 +568,20 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Function to create the instance of 'objType'</returns>
         public static Func<object> GetCompiledArgsInlinedCreationFunction(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(injection != null, "injection != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<Func<object>>() != null);
 
             var cparam = constructor.GetParameters();
-            TurboContract.Assert(cparam != null, "cparam != null");
+            TurboContract.Assert(cparam != null, conditionString: "cparam != null");
             Expression[] args = new Expression[cparam.Length];
 
             for (int i = 0; i < cparam.Length; i++)
             {
-                TurboContract.Assert(cparam[i] != null, "cparam[i] != null");
+                TurboContract.Assert(cparam[i] != null, conditionString: "cparam[i] != null");
                 object locArgVal = injection.Resolve(cparam[i].ParameterType, cparam[i].Name, objType, extData);
                 args[i] = Expression.Constant(locArgVal);
             }
@@ -590,7 +590,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             var linqExpr = Expression.Lambda<Func<object>>(finalExpr);
 
             var res = linqExpr.Compile();
-            TurboContract.Assert(res != null, "res != null");
+            TurboContract.Assert(res != null, conditionString: "res != null");
             return res;
         }
 
@@ -605,14 +605,14 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Function to create the instance of 'objType'</returns>
         public static Func<object> GetCompiledArgsInlinedCreationFunction(Type objType, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(injection != null, "injection != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
 
             var constructor = FindConstructor(objType);
-            TurboContract.Assert(constructor != null, "constructor != null");
+            TurboContract.Assert(constructor != null, conditionString: "constructor != null");
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
-            TurboContract.Assert(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Assert(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             return GetCompiledArgsInlinedCreationFunction(objType, constructor, injection, extData);
         }
@@ -674,13 +674,13 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <param name="storageFields">Fields that should be inited by the constructor</param>
         private static void EmitConstructor(ConstructorBuilder constr, params FieldInfo[] storageFields)
         {
-            TurboContract.Requires(constr != null, "constr != null");
+            TurboContract.Requires(constr != null, conditionString: "constr != null");
 
             if (storageFields != null)
             {
                 for (int i = 0; i < storageFields.Length; i++)
                 {
-                    TurboContract.Assert(storageFields[i] != null, "storageFields[i] != null");
+                    TurboContract.Assert(storageFields[i] != null, conditionString: "storageFields[i] != null");
                     constr.DefineParameter(i, ParameterAttributes.None, "c_" + storageFields[i].Name);
                 }
             }
@@ -725,19 +725,19 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <param name="extData">Field that stores the custom data passed by the user</param>
         private static void EmitMethodWithResolver(MethodBuilder method, Type objType, ConstructorInfo constructor, FieldInfo extData)
         {
-            TurboContract.Requires(method != null, "method != null");
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(extData != null, "extData != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
-            TurboContract.Requires(extData.FieldType == typeof(object), "extData.FieldType == typeof(object)");
+            TurboContract.Requires(method != null, conditionString: "method != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(extData != null, conditionString: "extData != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
+            TurboContract.Requires(extData.FieldType == typeof(object), conditionString: "extData.FieldType == typeof(object)");
 
             method.DefineParameter(0, ParameterAttributes.None, "resolver");
 
             var GetTypeFromHandle = ExtractMethodInfo(() => Type.GetTypeFromHandle(new RuntimeTypeHandle()));
-            TurboContract.Assert(GetTypeFromHandle != null, "GetTypeFromHandle != null");
+            TurboContract.Assert(GetTypeFromHandle != null, conditionString: "GetTypeFromHandle != null");
             var Resolve = ExtractMethodInfo<IInjectionResolver>(a => a.Resolve(typeof(int), "", typeof(int), null));
-            TurboContract.Assert(Resolve != null, "Resolve != null");
+            TurboContract.Assert(Resolve != null, conditionString: "Resolve != null");
 
             var methodILGen = method.GetILGenerator();
 
@@ -775,26 +775,26 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <param name="allFields">Fields that strores the objects required for the constructor</param>
         private static void EmitMethodWithInlinedParams(MethodBuilder method, Type objType, ConstructorInfo constructor, FieldInfo[] allFields)
         {
-            TurboContract.Requires(method != null, "method != null");
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(allFields != null, "allFields != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(method != null, conditionString: "method != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(allFields != null, conditionString: "allFields != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             method.DefineParameter(0, ParameterAttributes.None, "resolver");
 
             var GetTypeFromHandle = ExtractMethodInfo(() => Type.GetTypeFromHandle(new RuntimeTypeHandle()));
-            TurboContract.Assert(GetTypeFromHandle != null, "GetTypeFromHandle != null");
+            TurboContract.Assert(GetTypeFromHandle != null, conditionString: "GetTypeFromHandle != null");
 
             var methodILGen = method.GetILGenerator();
 
             var cparams = constructor.GetParameters();
 
-            TurboContract.Assert(cparams.Length == allFields.Length, "cparams.Length == allFields.Length");
+            TurboContract.Assert(cparams.Length == allFields.Length, conditionString: "cparams.Length == allFields.Length");
 
             for (int i = 0; i < cparams.Length; i++)
             {
-                TurboContract.Assert(cparams[i].ParameterType == allFields[i].FieldType, "cparams[i].ParameterType == allFields[i].FieldType");
+                TurboContract.Assert(cparams[i].ParameterType == allFields[i].FieldType, conditionString: "cparams[i].ParameterType == allFields[i].FieldType");
                 methodILGen.Emit(OpCodes.Ldarg_0);
                 methodILGen.Emit(OpCodes.Ldfld, allFields[i]);
             }
@@ -812,14 +812,14 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Built type</returns>
         private static Type BuildTypeOfInstanceCreator(Type objType, ConstructorInfo constructor)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<Type>() != null);
 
             var methodToImplement = ExtractMethodInfo<IInstanceCreator>(a => a.CreateInstance(null));
-            TurboContract.Assert(methodToImplement != null, "methodToImplement != null");
+            TurboContract.Assert(methodToImplement != null, conditionString: "methodToImplement != null");
 
             lock (_singleThreadAccessToDynModule)
             {
@@ -831,18 +831,18 @@ namespace Qoollo.Turbo.IoC.Helpers
                 var extInfoField = typeBuilder.DefineField("extInfo", typeof(object), FieldAttributes.Private | FieldAttributes.InitOnly);
 
                 var constr = typeBuilder.DefineConstructor(MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis, new Type[] { typeof(object) });
-                TurboContract.Assert(constr != null, "constr != null");
+                TurboContract.Assert(constr != null, conditionString: "constr != null");
                 EmitConstructor(constr, extInfoField);
 
                 var method = typeBuilder.DefineMethod(methodToImplement.Name, MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis,
                     typeof(object), new Type[] { typeof(IInjectionResolver) });
-                TurboContract.Assert(method != null, "method != null");
+                TurboContract.Assert(method != null, conditionString: "method != null");
                 EmitMethodWithResolver(method, objType, constructor, extInfoField);
 
                 var interfMethod = typeBuilder.DefineMethod(methodToImplement.Name, MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                     CallingConventions.HasThis, typeof(object), new Type[] { typeof(IInjectionResolver) });
                 typeBuilder.DefineMethodOverride(interfMethod, methodToImplement);
-                TurboContract.Assert(interfMethod != null, "interfMethod != null");
+                TurboContract.Assert(interfMethod != null, conditionString: "interfMethod != null");
                 EmitMethodWithResolver(interfMethod, objType, constructor, extInfoField);
 
 
@@ -859,14 +859,14 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Built type</returns>
         private static Type BuildTypeOfInstanceCreatorNoParam(Type objType, ConstructorInfo constructor)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<Type>() != null);
 
             var methodToImplement = ExtractMethodInfo<IInstanceCreatorNoParam>(a => a.CreateInstance());
-            TurboContract.Assert(methodToImplement != null, "methodToImplement != null");
+            TurboContract.Assert(methodToImplement != null, conditionString: "methodToImplement != null");
 
             lock (_singleThreadAccessToDynModule)
             {
@@ -883,18 +883,18 @@ namespace Qoollo.Turbo.IoC.Helpers
 
 
                 var constr = typeBuilder.DefineConstructor(MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis, allFields.Select(o => o.FieldType).ToArray());
-                TurboContract.Assert(constr != null, "constr != null");
+                TurboContract.Assert(constr != null, conditionString: "constr != null");
                 EmitConstructor(constr, allFields);
 
                 var method = typeBuilder.DefineMethod(methodToImplement.Name, MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis,
                     typeof(object), Type.EmptyTypes);
-                TurboContract.Assert(method != null, "method != null");
+                TurboContract.Assert(method != null, conditionString: "method != null");
                 EmitMethodWithInlinedParams(method, objType, constructor, allFields);
 
                 var intefMethod = typeBuilder.DefineMethod(methodToImplement.Name, MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                     CallingConventions.HasThis, typeof(object), Type.EmptyTypes);
                 typeBuilder.DefineMethodOverride(intefMethod, methodToImplement);
-                TurboContract.Assert(intefMethod != null, "intefMethod != null");
+                TurboContract.Assert(intefMethod != null, conditionString: "intefMethod != null");
                 EmitMethodWithInlinedParams(intefMethod, objType, constructor, allFields);
 
 
@@ -920,15 +920,15 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Instance of an object that implements IInstanceCreator</returns>
         private static object GetInstanceCreatorObject(Type objType, ConstructorInfo constructor, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<object>() != null);
             TurboContract.Ensures(TurboContract.Result<object>() is IInstanceCreator);
 
             var type = BuildTypeOfInstanceCreator(objType, constructor);
-            TurboContract.Assert(type != null, "type != null");
+            TurboContract.Assert(type != null, conditionString: "type != null");
 
             return Activator.CreateInstance(type, extData);
         }
@@ -944,16 +944,16 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Instance of an object that implements IInstanceCreatorNoParam</returns>
         private static object GetInstanceCreatorNoParamObject(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(injection != null, "injection != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<object>() != null);
             TurboContract.Ensures(TurboContract.Result<object>() is IInstanceCreatorNoParam);
 
             var type = BuildTypeOfInstanceCreatorNoParam(objType, constructor);
-            TurboContract.Assert(type != null, "type != null");
+            TurboContract.Assert(type != null, conditionString: "type != null");
 
             return CreateObject(type, injection, extData);
         }
@@ -969,9 +969,9 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>IInstanceCreator to create 'objType' object</returns>
         public static IInstanceCreator BuildInstanceCreatorInDynAssembly(Type objType, ConstructorInfo constructor, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<IInstanceCreator>() != null);
 
@@ -990,10 +990,10 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>IInstanceCreatorNoParam to create 'objType' object</returns>
         public static IInstanceCreatorNoParam BuildInstanceCreatorNoParamInDynAssembly(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(injection != null, "injection != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<IInstanceCreatorNoParam>() != null);
 
@@ -1011,19 +1011,19 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Delegate for the emitted method</returns>
         public static Func<IInjectionResolver, object> BuildCreatorFuncInDynAssembly(Type objType, ConstructorInfo constructor, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<Func<IInjectionResolver, object>>() != null);
 
             var inst = GetInstanceCreatorObject(objType, constructor, extData);
-            TurboContract.Assert(inst != null, "inst != null");
+            TurboContract.Assert(inst != null, conditionString: "inst != null");
 
             var instType = inst.GetType();
             var methodName = ExtractMethodInfo<IInstanceCreator>(a => a.CreateInstance(null)).Name;
             var method = instType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
-            TurboContract.Assert(method != null, "method != null");
+            TurboContract.Assert(method != null, conditionString: "method != null");
 
             var deleg = Delegate.CreateDelegate(typeof(Func<IInjectionResolver, object>), inst, method);
 
@@ -1042,20 +1042,20 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Delegate for the emitted method</returns>
         public static Func<object> BuildCreatorFuncNoParamInDynAssembly(Type objType, ConstructorInfo constructor, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(constructor != null, "constructor != null");
-            TurboContract.Requires(injection != null, "injection != null");
-            TurboContract.Requires(constructor.DeclaringType == objType, "constructor.DeclaringType == objType");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(constructor != null, conditionString: "constructor != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
+            TurboContract.Requires(constructor.DeclaringType == objType, conditionString: "constructor.DeclaringType == objType");
 
             TurboContract.Ensures(TurboContract.Result<Func<object>>() != null);
 
             var inst = GetInstanceCreatorNoParamObject(objType, constructor, injection, extData);
-            TurboContract.Assert(inst != null, "inst != null");
+            TurboContract.Assert(inst != null, conditionString: "inst != null");
 
             var instType = inst.GetType();
             var methodName = ExtractMethodInfo<IInstanceCreatorNoParam>(a => a.CreateInstance()).Name;
             var method = instType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
-            TurboContract.Assert(method != null, "method != null");
+            TurboContract.Assert(method != null, conditionString: "method != null");
 
             var deleg = Delegate.CreateDelegate(typeof(Func<object>), inst, method);
 
@@ -1072,12 +1072,12 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>IInstanceCreator to create 'objType' object</returns>
         public static IInstanceCreator BuildInstanceCreatorInDynAssembly(Type objType, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             TurboContract.Ensures(TurboContract.Result<IInstanceCreator>() != null);
 
             var constructor = FindConstructor(objType);
-            TurboContract.Assert(constructor != null, "constructor != null");
+            TurboContract.Assert(constructor != null, conditionString: "constructor != null");
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 
@@ -1096,13 +1096,13 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>IInstanceCreatorNoParam to create 'objType' object</returns>
         public static IInstanceCreatorNoParam BuildInstanceCreatorNoParamInDynAssembly(Type objType, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(injection != null, "injection != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
 
             TurboContract.Ensures(TurboContract.Result<IInstanceCreatorNoParam>() != null);
 
             var constructor = FindConstructor(objType);
-            TurboContract.Assert(constructor != null, "constructor != null");
+            TurboContract.Assert(constructor != null, conditionString: "constructor != null");
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 
@@ -1119,12 +1119,12 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Delegate for the emitted method</returns>
         public static Func<IInjectionResolver, object> BuildCreatorFuncInDynAssembly(Type objType, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             TurboContract.Ensures(TurboContract.Result<Func<IInjectionResolver, object>>() != null);
 
             var constructor = FindConstructor(objType);
-            TurboContract.Assert(constructor != null, "constructor != null");
+            TurboContract.Assert(constructor != null, conditionString: "constructor != null");
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 
@@ -1143,13 +1143,13 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <returns>Delegate for the emitted method</returns>
         public static Func<object> BuildCreatorFuncNoParamInDynAssembly(Type objType, IInjectionResolver injection, object extData)
         {
-            TurboContract.Requires(objType != null, "objType != null");
-            TurboContract.Requires(injection != null, "injection != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
 
             TurboContract.Ensures(TurboContract.Result<Func<object>>() != null);
 
             var constructor = FindConstructor(objType);
-            TurboContract.Assert(constructor != null, "constructor != null");
+            TurboContract.Assert(constructor != null, conditionString: "constructor != null");
             if (constructor == null)
                 throw new CommonIoCException(string.Format("Can't find appropriate constructor for type {0}", objType.FullName));
 

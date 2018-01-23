@@ -123,7 +123,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="decreaseValue">The number of items by which the bounded capacity should be decreased</param>
         private void UpdateDelayedBoundedCapacityDecreaseField(int decreaseValue)
         {
-            TurboContract.Requires(decreaseValue >= 0, "decreaseValue >= 0");
+            TurboContract.Requires(decreaseValue >= 0, conditionString: "decreaseValue >= 0");
 
             SpinWait sw = new SpinWait();
             int delayedBoundedCapacityDecrease = _delayedBoundedCapacityDecrease;
@@ -364,7 +364,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
                 if (currentAddersUpdated)
                 {
-                    TurboContract.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0, "(_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0");
+                    TurboContract.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0, conditionString: "(_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0");
                     Interlocked.Decrement(ref _currentAdders);
                 }
             }
@@ -1142,8 +1142,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="index">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int index)
         {
-            TurboContract.Assert(array != null, "array != null");
-            TurboContract.Assert(index >= 0 && index < array.Length, "index >= 0 && index < array.Length");
+            TurboContract.Assert(array != null, conditionString: "array != null");
+            TurboContract.Assert(index >= 0 && index < array.Length, conditionString: "index >= 0 && index < array.Length");
 
             _innerQueue.CopyTo(array, index);
         }
