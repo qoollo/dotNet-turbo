@@ -209,9 +209,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             /// <returns>Created ItemHeader</returns>
             public static ItemHeader Init(byte[] bytes, int startIndex)
             {
-                Debug.Assert(bytes != null);
-                Debug.Assert(startIndex >= 0);
-                Debug.Assert(startIndex + Size <= bytes.Length);
+                TurboContract.Requires(bytes != null, conditionString: "bytes != null");
+                TurboContract.Requires(startIndex >= 0, conditionString: "startIndex >= 0");
+                TurboContract.Requires(startIndex + Size <= bytes.Length, conditionString: "startIndex + Size <= bytes.Length");
 
                 return new ItemHeader(BitConverter.ToInt32(bytes, startIndex), BitConverter.ToInt32(bytes, startIndex + sizeof(int)));
             }
@@ -229,8 +229,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 _length = length;
                 _info = info;
 
-                Debug.Assert(Enum.IsDefined(typeof(ItemState), State));
-                Debug.Assert(Checksum <= (1 << 24));
+                TurboContract.Assert(Enum.IsDefined(typeof(ItemState), State), conditionString: "Enum.IsDefined(typeof(ItemState), State)");
+                TurboContract.Assert(Checksum <= (1 << 24), conditionString: "Checksum <= (1 << 24)");
             }
 
             /// <summary>
@@ -271,7 +271,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
             public ItemReadInfo(T item, long position)
             {
-                Debug.Assert(position >= 0);
+                TurboContract.Requires(position >= 0, conditionString: "position >= 0");
                 _item = item;
                 _position = position;
             }
@@ -783,11 +783,11 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 _isDisposed = false;
 
-                Debug.Assert(_flushToDiskOnItem >= 0);
-                Debug.Assert(_maxCachedMemoryWriteStreamSize >= 0);
-                Debug.Assert(_maxReadBufferSize >= 0);
-                Debug.Assert(_maxCachedMemoryReadStreamSize >= 0);
-                Debug.Assert(openExisted || _writeStream.Position == _readStream.Position);
+                TurboContract.Assert(_flushToDiskOnItem >= 0, conditionString: "_flushToDiskOnItem >= 0");
+                TurboContract.Assert(_maxCachedMemoryWriteStreamSize >= 0, conditionString: "_maxCachedMemoryWriteStreamSize >= 0");
+                TurboContract.Assert(_maxReadBufferSize >= 0, conditionString: "_maxReadBufferSize >= 0");
+                TurboContract.Assert(_maxCachedMemoryReadStreamSize >= 0, conditionString: "_maxCachedMemoryReadStreamSize >= 0");
+                TurboContract.Assert(openExisted || _writeStream.Position == _readStream.Position, conditionString: "openExisted || _writeStream.Position == _readStream.Position");
             }
             catch
             {
@@ -912,10 +912,10 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>Checksum (lower 3 bytes)</returns>
         private static int CalculateChecksum(byte[] data, int startIndex, int length)
         {
-            Debug.Assert(data != null);
-            Debug.Assert(startIndex >= 0 && startIndex < data.Length);
-            Debug.Assert(length >= 0);
-            Debug.Assert(startIndex + length <= data.Length);
+            TurboContract.Requires(data != null, conditionString: "data != null");
+            TurboContract.Requires(startIndex >= 0 && startIndex < data.Length, conditionString: "startIndex >= 0 && startIndex < data.Length");
+            TurboContract.Requires(length >= 0, conditionString: "length >= 0");
+            TurboContract.Requires(startIndex + length <= data.Length, conditionString: "startIndex + length <= data.Length");
 
             if (length == 0)
                 return 0;
@@ -936,8 +936,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>BinaryWriter with stream for in-memory writing</returns>
         private RegionBinaryWriter GetMemoryWriteStream(int itemCount)
         {
-            Debug.Assert(Monitor.IsEntered(_writeLock));
-            Debug.Assert(itemCount > 0);
+            TurboContract.Requires(itemCount > 0, conditionString: "itemCount > 0");
+            TurboContract.Assert(Monitor.IsEntered(_writeLock), conditionString: "Monitor.IsEntered(_writeLock)");
 
             RegionBinaryWriter result = _cachedMemoryWriteStream;
             _cachedMemoryWriteStream = null;
@@ -961,9 +961,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="bufferingWriteStream">Buffered stream to release</param>
         private void ReleaseMemoryWriteStream(RegionBinaryWriter bufferingWriteStream)
         {
-            Debug.Assert(bufferingWriteStream != null);
-            Debug.Assert(Monitor.IsEntered(_writeLock));
-            Debug.Assert(_cachedMemoryWriteStream == null);
+            TurboContract.Requires(bufferingWriteStream != null, conditionString: "bufferingWriteStream != null");
+            TurboContract.Assert(Monitor.IsEntered(_writeLock), conditionString: "Monitor.IsEntered(_writeLock)");
+            TurboContract.Assert(_cachedMemoryWriteStream == null, conditionString: "_cachedMemoryWriteStream == null");
 
             if (bufferingWriteStream.BaseStream.InnerStream.Length <= _maxCachedMemoryWriteStreamSize)
             {
@@ -987,8 +987,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>BinaryReader with stream for in-memory reading</returns>
         private RegionBinaryReader GetMemoryReadStream(int itemCount = 1)
         {
-            Debug.Assert(Monitor.IsEntered(_readLock));
-            Debug.Assert(itemCount > 0);
+            TurboContract.Requires(itemCount > 0, conditionString: "itemCount > 0");
+            TurboContract.Assert(Monitor.IsEntered(_readLock), conditionString: "Monitor.IsEntered(_readLock)");
 
             RegionBinaryReader result = _cachedMemoryReadStream;
             _cachedMemoryReadStream = null;
@@ -1012,9 +1012,9 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="bufferingReadStream">Buffered stream to release</param>
         private void ReleaseMemoryReadStream(RegionBinaryReader bufferingReadStream)
         {
-            Debug.Assert(bufferingReadStream != null);
-            Debug.Assert(Monitor.IsEntered(_readLock));
-            Debug.Assert(_cachedMemoryReadStream == null);
+            TurboContract.Requires(bufferingReadStream != null, conditionString: "bufferingReadStream != null");
+            TurboContract.Assert(Monitor.IsEntered(_readLock), conditionString: "Monitor.IsEntered(_readLock)");
+            TurboContract.Assert(_cachedMemoryReadStream == null, conditionString: "_cachedMemoryReadStream == null");
 
             if (bufferingReadStream.BaseStream.InnerStream.Length <= _maxCachedMemoryReadStreamSize)
             {
@@ -1041,8 +1041,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="writer">Writer that wraps memory stream</param>
         private void SerializeItemToStream(T item, RegionBinaryWriter writer)
         {
-            Debug.Assert(writer != null);
-            Debug.Assert(Monitor.IsEntered(_writeLock));
+            TurboContract.Requires(writer != null, conditionString: "writer != null");
+            TurboContract.Assert(Monitor.IsEntered(_writeLock), conditionString: "Monitor.IsEntered(_writeLock)");
 
             checked
             {
@@ -1050,11 +1050,11 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 int origin = stream.InnerStreamPosition;
                 stream.SetOriginLength(origin + ItemHeader.Size, -1); // Offset 4 to store length later
-                Debug.Assert(stream.Length == 0);
+                TurboContract.Assert(stream.Length == 0, conditionString: "stream.Length == 0");
 
                 _serializer.Serialize(writer, item);
                 writer.Flush();
-                Debug.Assert(stream.Length >= 0);
+                TurboContract.Assert(stream.Length >= 0, conditionString: "stream.Length >= 0");
 
                 int length = (int)stream.Length;
                 int checkSum = CalculateChecksum(stream.InnerStream.GetBuffer(), origin + ItemHeader.Size, length);
@@ -1085,8 +1085,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     throw new ObjectDisposedException(this.GetType().Name);
 
                 RegionBinaryWriter writer = GetMemoryWriteStream(1);
-                Debug.Assert(writer.BaseStream.Length == 0);
-                Debug.Assert(writer.BaseStream.InnerStream.Length == 0);
+                TurboContract.Assert(writer.BaseStream.Length == 0, conditionString: "writer.BaseStream.Length == 0");
+                TurboContract.Assert(writer.BaseStream.InnerStream.Length == 0, conditionString: "writer.BaseStream.InnerStream.Length == 0");
 
                 SerializeItemToStream(item, writer);
 
@@ -1100,7 +1100,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     writer.BaseStream.InnerStream.WriteTo(_writeStream);
                     _writeStream.Flush(flushToDisk: false);
 
-                    Debug.Assert(streamPositionAfterWriteCompleted == _writeStream.Position);
+                    TurboContract.Assert(streamPositionAfterWriteCompleted == _writeStream.Position, conditionString: "streamPositionAfterWriteCompleted == _writeStream.Position");
 
                     // Mark record as written
                     _writeStream.Position = initialStreamPosition + ItemHeader.OffsetToStateByte;
@@ -1129,8 +1129,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         private static bool TryReadItemHeaderFromDisk(FileStream readStream, MemoryStream targetStream, out ItemHeader itemHeader)
         {
-            Debug.Assert(readStream != null);
-            Debug.Assert(targetStream != null);
+            TurboContract.Requires(readStream != null, conditionString: "readStream != null");
+            TurboContract.Requires(targetStream != null, conditionString: "targetStream != null");
 
             // Ensure capacity on MemoryStream
             targetStream.SetLength(targetStream.Position + ItemHeader.Size);
@@ -1155,8 +1155,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         private static bool TryReadItemBytesFromDisk(FileStream readStream, MemoryStream targetStream, ref ItemHeader itemHeader)
         {
-            Debug.Assert(readStream != null);
-            Debug.Assert(targetStream != null);
+            TurboContract.Requires(readStream != null, conditionString: "readStream != null");
+            TurboContract.Requires(targetStream != null, conditionString: "targetStream != null");
 
             // Ensure capacity on MemoryStream
             targetStream.SetLength(targetStream.Position + itemHeader.Length);
@@ -1182,8 +1182,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>Is read</returns>
         private bool TryTakeOrPeekSingleItemBytesFromDisk(MemoryStream targetStream, out ItemHeader itemHeader, out long itemPosition, bool stopOnNewState, bool take)
         {
-            Debug.Assert(targetStream != null);
-            Debug.Assert(Monitor.IsEntered(_readLock));
+            TurboContract.Requires(targetStream != null, conditionString: "targetStream != null");
+            TurboContract.Assert(Monitor.IsEntered(_readLock), conditionString: "Monitor.IsEntered(_readLock)");
 
             itemPosition = _readStream.Position;
             long targetStreamPosition = targetStream.Position;
@@ -1201,7 +1201,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                         if (_readStream.Position != itemPosition)
                             _readStream.Seek(itemPosition, SeekOrigin.Begin);
 
-                        Debug.Assert(_readStream.Position == itemPosition);
+                        TurboContract.Assert(_readStream.Position == itemPosition, conditionString: "_readStream.Position == itemPosition");
                         return false;
                     }
 
@@ -1215,7 +1215,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     if (itemHeader.State == ItemState.New && stopOnNewState) 
                     {
                         _readStream.Seek(itemPosition, SeekOrigin.Begin); // Rewind back the position
-                        Debug.Assert(_readStream.Position == itemPosition);
+                        TurboContract.Assert(_readStream.Position == itemPosition, conditionString: "_readStream.Position == itemPosition");
                         return false;
                     }
                     // Skip or throw on New state when it is invalid
@@ -1232,7 +1232,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 if (!TryReadItemBytesFromDisk(_readStream, targetStream, ref itemHeader))
                 {
                     _readStream.Seek(itemPosition, SeekOrigin.Begin); // Rewind back the position
-                    Debug.Assert(_readStream.Position == itemPosition);
+                    TurboContract.Assert(_readStream.Position == itemPosition, conditionString: "_readStream.Position == itemPosition");
                     return false;
                 }
 
@@ -1249,8 +1249,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 throw;
             }
 
-            Debug.Assert(targetStream.Position == targetStream.Length);
-            Debug.Assert(take || _readStream.Position == itemPosition);
+            TurboContract.Assert(targetStream.Position == targetStream.Length, conditionString: "targetStream.Position == targetStream.Length");
+            TurboContract.Assert(take || _readStream.Position == itemPosition, conditionString: "take || _readStream.Position == itemPosition");
             return true;
         }
 
@@ -1265,8 +1265,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <returns>Success or not</returns>
         private bool TryTakeOrPeekItemFromDisk(out ItemReadInfo itemInfo, RegionBinaryReader buffer, bool canNewStateBeObserved, bool take)
         {
-            Debug.Assert(buffer != null);
-            Debug.Assert(Monitor.IsEntered(_readLock));
+            TurboContract.Requires(buffer != null, conditionString: "buffer != null");
+            TurboContract.Assert(Monitor.IsEntered(_readLock), conditionString: "Monitor.IsEntered(_readLock)");
 
             ItemHeader header = default(ItemHeader);
             long itemPosition = 0;
@@ -1279,14 +1279,14 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 return false;
             }
 
-            Debug.Assert(header.State == ItemState.Written);
+            TurboContract.Assert(header.State == ItemState.Written, conditionString: "header.State == ItemState.Written");
 
             int checkSum = ItemHeader.CoerceChecksum(CalculateChecksum(buffer.BaseStream.InnerStream.GetBuffer(), ItemHeader.Size, header.Length));
             if (checkSum != header.Checksum)
                 throw new ItemCorruptedException($"Checksum mismatch on item read. That indicates that the file is corrupted ({_fileName}). To fix the problem you can use '{nameof(ScanSegment)}' method.");
 
             buffer.BaseStream.SetOriginLength(ItemHeader.Size, header.Length);
-            Debug.Assert(buffer.BaseStream.Length == header.Length);
+            TurboContract.Assert(buffer.BaseStream.Length == header.Length, conditionString: "buffer.BaseStream.Length == header.Length");
 
             var item = _serializer.Deserialize(buffer); // Deserialize
             itemInfo = new ItemReadInfo(item, itemPosition);
@@ -1299,7 +1299,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         private void MarkItemAsRead(ref ItemReadInfo itemInfo)
         {
-            Debug.Assert(itemInfo.Position > 0);
+            TurboContract.Requires(itemInfo.Position > 0, conditionString: "itemInfo.Position > 0");
 
             lock (_readMarkerLock)
             {
@@ -1316,7 +1316,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         private void InvalidateReadBuffer()
         {
-            Debug.Assert(Monitor.IsEntered(_readLock));
+            TurboContract.Assert(Monitor.IsEntered(_readLock), conditionString: "Monitor.IsEntered(_readLock)");
             _readStream.Flush(false); // This invalidate read buffer
         }
 
@@ -1335,8 +1335,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                     throw new ObjectDisposedException(this.GetType().Name);
 
                 RegionBinaryReader memoryBuffer = GetMemoryReadStream();
-                Debug.Assert(memoryBuffer.BaseStream.Length == 0);
-                Debug.Assert(memoryBuffer.BaseStream.InnerStream.Length == 0);
+                TurboContract.Assert(memoryBuffer.BaseStream.Length == 0, conditionString: "memoryBuffer.BaseStream.Length == 0");
+                TurboContract.Assert(memoryBuffer.BaseStream.InnerStream.Length == 0, conditionString: "memoryBuffer.BaseStream.InnerStream.Length == 0");
 
                 try
                 {
@@ -1368,7 +1368,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         private bool TryTakeOrPeekFromReadBuffer(out ItemReadInfo itemInfo, bool take)
         {
-            Debug.Assert(_readBuffer != null);
+            TurboContract.Assert(_readBuffer != null, conditionString: "_readBuffer != null");
             if (take)
                 return _readBuffer.TryDequeue(out itemInfo);
             return _readBuffer.TryPeek(out itemInfo);
@@ -1384,8 +1384,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         private bool TryTakeOrPeekThroughReadBuffer(out ItemReadInfo itemInfo, bool take)
         {
-            Debug.Assert(_readBuffer != null);
-            Debug.Assert(_maxReadBufferSize > 0);
+            TurboContract.Assert(_readBuffer != null, conditionString: "_readBuffer != null");
+            TurboContract.Assert(_maxReadBufferSize > 0, conditionString: "_maxReadBufferSize > 0");
 
             lock (_readLock)
             {
@@ -1398,8 +1398,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 // Read buffer is empty => should read from disk
                 RegionBinaryReader memoryBuffer = GetMemoryReadStream();
-                Debug.Assert(memoryBuffer.BaseStream.Length == 0);
-                Debug.Assert(memoryBuffer.BaseStream.InnerStream.Length == 0);
+                TurboContract.Assert(memoryBuffer.BaseStream.Length == 0, conditionString: "memoryBuffer.BaseStream.Length == 0");
+                TurboContract.Assert(memoryBuffer.BaseStream.InnerStream.Length == 0, conditionString: "memoryBuffer.BaseStream.InnerStream.Length == 0");
 
                 try
                 {
@@ -1538,7 +1538,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
 
                 if (disposeBehaviour == DiskQueueSegmentDisposeBehaviour.Delete)
                 {
-                    Debug.Assert(this.Count == 0);
+                    TurboContract.Assert(this.Count == 0, conditionString: "this.Count == 0");
                     File.Delete(_fileName);
                 }
             }

@@ -237,7 +237,7 @@ namespace Qoollo.Turbo.Queues
                         // Only in exclusive mode
                         using (var gateGuard = _backgoundTransfererExclusive.EnterMain(Timeout.Infinite, default(CancellationToken))) // This should happen fast
                         {
-                            Debug.Assert(gateGuard.IsAcquired);
+                            TurboContract.Assert(gateGuard.IsAcquired, conditionString: "gateGuard.IsAcquired");
                             addedToHighLevelQueue = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
                         }
                     }
@@ -289,7 +289,7 @@ namespace Qoollo.Turbo.Queues
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryAddFast(T item)
         {
-            Debug.Assert(_addingMode == LevelingQueueAddingMode.PreferLiveData, "Only PreferLiveData supported");
+            TurboContract.Assert(_addingMode == LevelingQueueAddingMode.PreferLiveData, "Only PreferLiveData supported");
 
             if (_highLevelQueue.TryAdd(item, 0, default(CancellationToken)))
                 return true;
@@ -384,7 +384,7 @@ namespace Qoollo.Turbo.Queues
                         // Only in exclusive mode
                         using (var gateGuard = _backgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
                         {
-                            Debug.Assert(gateGuard.IsAcquired);
+                            TurboContract.Assert(gateGuard.IsAcquired, conditionString: "gateGuard.IsAcquired");
                             result = _lowLevelQueue.IsEmpty && _highLevelQueue.TryAdd(item, 0, default(CancellationToken));
                         }
                     }
@@ -470,11 +470,11 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         private bool TryTakeExclusively(out T item, TimeoutTracker timeoutTracker, CancellationToken token)
         {
-            Debug.Assert(_isBackgroundTransferingEnabled);
+            TurboContract.Assert(_isBackgroundTransferingEnabled, conditionString: "_isBackgroundTransferingEnabled");
 
             using (var gateGuard = _backgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
             {
-                Debug.Assert(gateGuard.IsAcquired);
+                TurboContract.Assert(gateGuard.IsAcquired, conditionString: "gateGuard.IsAcquired");
 
                 if (_takeMonitor.WaiterCount == 0)
                 {
@@ -592,11 +592,11 @@ namespace Qoollo.Turbo.Queues
         /// </summary>
         private bool TryPeekExclusively(out T item, TimeoutTracker timeoutTracker, CancellationToken token)
         {
-            Debug.Assert(_isBackgroundTransferingEnabled);
+            TurboContract.Assert(_isBackgroundTransferingEnabled, conditionString: "_isBackgroundTransferingEnabled");
 
             using (var gateGuard = _backgoundTransfererExclusive.EnterMain(Timeout.Infinite, token)) // This should happen fast
             {
-                Debug.Assert(gateGuard.IsAcquired);
+                TurboContract.Assert(gateGuard.IsAcquired, conditionString: "gateGuard.IsAcquired");
 
                 if (_peekMonitor.WaiterCount == 0)
                 {
@@ -667,7 +667,7 @@ namespace Qoollo.Turbo.Queues
             {
                 using (var gateGuard = _backgoundTransfererExclusive.EnterBackground(Timeout.Infinite, token))
                 {
-                    Debug.Assert(gateGuard.IsAcquired);
+                    TurboContract.Assert(gateGuard.IsAcquired, conditionString: "gateGuard.IsAcquired");
 
                     T item = default(T);
                     bool itemTaken = false;
@@ -709,7 +709,7 @@ namespace Qoollo.Turbo.Queues
                             if (itemTaken)
                             {
                                 bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
-                                Debug.Assert(itemAdded);
+                                TurboContract.Assert(itemAdded, conditionString: "itemAdded");
                                 itemTaken = false;
                             }
 
@@ -720,7 +720,7 @@ namespace Qoollo.Turbo.Queues
                                     if (!_highLevelQueue.TryAdd(item, 0, default(CancellationToken))) // Fast path to ignore cancellation
                                     {
                                         bool itemAdded = _highLevelQueue.TryAdd(item, Timeout.Infinite, linkedCancellation.Token);
-                                        Debug.Assert(itemAdded);
+                                        TurboContract.Assert(itemAdded, conditionString: "itemAdded");
                                     }
 
                                     item = default(T);
