@@ -682,7 +682,7 @@ namespace Qoollo.Turbo.ObjectPools
 
         protected override bool IsValidElement(TElem elem)
         {
-            Contract.EnsuresOnThrow<Exception>(false, "DynamicPoolManager.IsValidElement should not throw any exception");
+            TurboContract.EnsuresOnThrow<Exception>(false, "DynamicPoolManager.IsValidElement should not throw any exception");
 
             throw new NotImplementedException();
         }

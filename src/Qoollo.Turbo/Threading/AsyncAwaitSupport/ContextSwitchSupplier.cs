@@ -41,7 +41,7 @@ namespace Qoollo.Turbo.Threading
         /// <summary>Code contracts</summary>
         public void Run(Action act, bool flowContext)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             throw new NotImplementedException();
         }
@@ -49,7 +49,7 @@ namespace Qoollo.Turbo.Threading
         /// <summary>Code contracts</summary>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             throw new NotImplementedException();
         }

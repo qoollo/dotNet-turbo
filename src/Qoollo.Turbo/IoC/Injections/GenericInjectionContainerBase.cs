@@ -320,42 +320,42 @@ namespace Qoollo.Turbo.IoC.Injections
 
         protected override bool TryGetInjectionInner(T key, out object val)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool ContainsInner(T key)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override void AddInjectionInner(T key, object val)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool TryAddInjectionInner(T key, object val)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool RemoveInjectionInner(T key)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool IsGoodInjectionForKey(T key, object injection)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }

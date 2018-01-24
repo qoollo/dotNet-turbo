@@ -218,7 +218,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <summary>Code contracts</summary>
         protected override void AddWorkItem(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             throw new NotImplementedException();
         }
@@ -226,7 +226,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <summary>Code contracts</summary>
         protected override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             throw new NotImplementedException();
         }

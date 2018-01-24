@@ -492,10 +492,10 @@ namespace Qoollo.Turbo.IoC.Associations
 
         protected override LifetimeBase ProduceResolveInfo(T key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(Contract.Result<LifetimeBase>() != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
+            TurboContract.Ensures(TurboContract.Result<LifetimeBase>() != null);
 
             throw new NotImplementedException();
         }
@@ -503,65 +503,65 @@ namespace Qoollo.Turbo.IoC.Associations
 
         protected override bool IsGoodTypeForKey(T key, Type objType)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(objType != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             throw new NotImplementedException();
         }
 
         protected override void AddAssociationInner(T key, LifetimeBase val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(val != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool TryAddAssociationInner(T key, LifetimeBase val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(val != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             throw new NotImplementedException();
         }
 
         protected override void AddAssociationInner(T key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool TryAddAssociationInner(T key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool TryGetAssociationInner(T key, out LifetimeBase val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Ensures((Contract.Result<bool>() == true && Contract.ValueAtReturn<LifetimeBase>(out val) != null) ||
-                (Contract.Result<bool>() == false && Contract.ValueAtReturn<LifetimeBase>(out val) == null));
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Ensures((TurboContract.Result<bool>() == true && TurboContract.ValueAtReturn<LifetimeBase>(out val) != null) ||
+                (TurboContract.Result<bool>() == false && TurboContract.ValueAtReturn<LifetimeBase>(out val) == null));
 
             throw new NotImplementedException();
         }
 
         protected override bool RemoveAssociationInner(T key)
         {
-            Contract.Requires((object)key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool ContainsInner(T key)
         {
-            Contract.Requires((object)key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }

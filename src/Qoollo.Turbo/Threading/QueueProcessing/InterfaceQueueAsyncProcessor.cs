@@ -219,7 +219,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <summary>Code contracts</summary>
         public bool ProcessThreadException(Exception ex)
         {
-            Contract.Requires(ex != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
 
             throw new NotImplementedException();
         }

@@ -97,7 +97,7 @@ namespace Qoollo.Turbo.Threading
         /// <summary>Контракты</summary>
         public void RunAsync(SendOrPostCallback act, object state)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             throw new NotImplementedException();
         }
@@ -105,7 +105,7 @@ namespace Qoollo.Turbo.Threading
         /// <summary>Контракты</summary>
         public void RunSync(SendOrPostCallback act, object state)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             throw new NotImplementedException();
         }

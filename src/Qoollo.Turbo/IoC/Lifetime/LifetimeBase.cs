@@ -118,9 +118,9 @@ namespace Qoollo.Turbo.IoC.Lifetime
 
         public override object GetInstance(IInjectionResolver resolver)
         {
-            Contract.Requires(resolver != null);
-            Contract.Ensures((Contract.Result<object>() != null && Contract.Result<object>().GetType() == this.OutputType) ||
-                             (Contract.Result<object>() == null && this.OutputType.IsAssignableFromNull()));
+            TurboContract.Requires(resolver != null, conditionString: "resolver != null");
+            TurboContract.Ensures((TurboContract.Result<object>() != null && TurboContract.Result<object>().GetType() == this.OutputType) ||
+                             (TurboContract.Result<object>() == null && this.OutputType.IsAssignableFromNull()));
 
             throw new NotImplementedException();
         }

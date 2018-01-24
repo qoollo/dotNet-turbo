@@ -165,10 +165,10 @@ namespace Qoollo.Turbo.IoC.Lifetime.Factories
 
         public override LifetimeBase Create(Type objType, IInjectionResolver injection, object extInfo)
         {
-            Contract.Requires<ArgumentNullException>(objType != null, "objType != null");
-            Contract.Requires<ArgumentNullException>(injection != null, "injection != null");
-            Contract.Ensures(Contract.Result<LifetimeBase>() != null);
-            Contract.Ensures(Contract.Result<LifetimeBase>().OutputType == objType);
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(injection != null, conditionString: "injection != null");
+            TurboContract.Ensures(TurboContract.Result<LifetimeBase>() != null);
+            TurboContract.Ensures(TurboContract.Result<LifetimeBase>().OutputType == objType);
 
             throw new NotImplementedException();
         }
