@@ -120,22 +120,22 @@ namespace Qoollo.Turbo
         /// Specifies an invariant contract for the enclosing method or property
         /// </summary>
         /// <param name="condition">Condition</param>
-        [System.Diagnostics.Conditional("__NEVER__")]
+        [System.Diagnostics.Conditional("DEBUG")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Invariant(bool condition)
         {
-            throw new NotSupportedException("'Invariant' is not supported");
+            System.Diagnostics.Debug.Assert(condition);
         }
         /// <summary>
         /// Specifies an invariant contract for the enclosing method or property
         /// </summary>
         /// <param name="condition">Condition</param>
         /// <param name="userMessage">Message</param>
-        [System.Diagnostics.Conditional("__NEVER__")]
+        [System.Diagnostics.Conditional("DEBUG")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Invariant(bool condition, string userMessage)
         {
-            throw new NotSupportedException("'Invariant' is not supported");
+            System.Diagnostics.Debug.Assert(condition, userMessage);
         }
 
 
