@@ -161,6 +161,30 @@ namespace Qoollo.Turbo
             throw new NotSupportedException("'Ensures' is not supported");
         }
 
+        /// <summary>
+        /// Specifies a postcondition contract for the enclosing method or property, based on the provided exception and condition
+        /// </summary>
+        /// <typeparam name="TException">The type of exception that invokes the postcondition check</typeparam>
+        /// <param name="condition">Condition</param>
+        [System.Diagnostics.Conditional("__NEVER__")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsuresOnThrow<TException>(bool condition) where TException: Exception
+        {
+            throw new NotSupportedException("'Ensures' is not supported");
+        }
+        /// <summary>
+        /// Specifies a postcondition contract for the enclosing method or property, based on the provided exception and condition
+        /// </summary>
+        /// <typeparam name="TException">The type of exception that invokes the postcondition check</typeparam>
+        /// <param name="condition">Condition</param>
+        /// <param name="userMessage">Message</param>
+        [System.Diagnostics.Conditional("__NEVER__")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsuresOnThrow<TException>(bool condition, string userMessage) where TException : Exception
+        {
+            throw new NotSupportedException("'Ensures' is not supported");
+        }
+
 
         /// <summary>
         /// Represents values as they were at the start of a method or property
