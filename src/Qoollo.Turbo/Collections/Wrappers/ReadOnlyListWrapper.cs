@@ -38,7 +38,7 @@ namespace Qoollo.Turbo.Collections
         public ReadOnlyListWrapper(IList<T> list)
             : base(list)
         {
-            TurboContract.Requires(list != null);
+            TurboContract.Requires(list != null, conditionString: "list != null");
         }
 
 
@@ -123,7 +123,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>Created TransformedReadOnlyListWrapper</returns>
         public TransformedReadOnlyListWrapper<T, TOut> AsTransformedReadOnlyList<TOut>(Func<T, TOut> selector)
         {
-            TurboContract.Requires(selector != null);
+            TurboContract.Requires(selector != null, conditionString: "selector != null");
 
             return new TransformedReadOnlyListWrapper<T, TOut>(Items, selector);
         }

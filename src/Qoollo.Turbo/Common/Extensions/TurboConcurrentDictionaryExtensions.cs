@@ -59,7 +59,7 @@ namespace System.Collections.Concurrent
             /// <returns></returns>
             public static int GetEstimateCount(ConcurrentDictionary<TKey, TValue> dictionary)
             {
-                TurboContract.Requires(dictionary != null);
+                TurboContract.Requires(dictionary != null, conditionString: "dictionary != null");
 
                 if (_mCountField == null)
                     InitField();
@@ -182,7 +182,7 @@ namespace System.Collections.Concurrent
             /// <returns></returns>
             public static int GetEstimateCount(ConcurrentDictionary<TKey, TValue> dictionary)
             {
-                TurboContract.Requires(dictionary != null);
+                TurboContract.Requires(dictionary != null, conditionString: "dictionary != null");
 
                 var func = _getEstimateCount;
                 if (func == null)

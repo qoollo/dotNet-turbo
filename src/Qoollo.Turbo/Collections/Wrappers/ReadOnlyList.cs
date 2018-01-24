@@ -138,8 +138,8 @@ namespace Qoollo.Turbo.Collections
         {
             get
             {
-                TurboContract.Requires(index >= 0);
-                TurboContract.Requires(index < this.Count);
+                TurboContract.Requires(index >= 0, conditionString: "index >= 0");
+                TurboContract.Requires(index < this.Count, conditionString: "index < this.Count");
 
                 return _list[index];
             }
@@ -163,9 +163,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="arrayIndex">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
-            TurboContract.Requires(array != null);
-            TurboContract.Requires(arrayIndex >= 0);
-            TurboContract.Requires(arrayIndex <= array.Length - this.Count);
+            TurboContract.Requires(array != null, conditionString: "array != null");
+            TurboContract.Requires(arrayIndex >= 0, conditionString: "arrayIndex >= 0");
+            TurboContract.Requires(arrayIndex <= array.Length - this.Count, conditionString: "arrayIndex <= array.Length - this.Count");
 
             _list.CopyTo(array, arrayIndex);
         }
@@ -194,7 +194,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool Exists(Predicate<T> match)
         {
-            TurboContract.Requires(match != null);
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             return _list.Exists(match);
         }
@@ -207,7 +207,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public T Find(Predicate<T> match)
         {
-            TurboContract.Requires(match != null);
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             return _list.Find(match);
         }
@@ -228,7 +228,7 @@ namespace Qoollo.Turbo.Collections
         /// <param name="action">Action</param>
         public void ForEach(Action<T> action)
         {
-            TurboContract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
 
             _list.ForEach(action);
         }
@@ -241,7 +241,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool TrueForAll(Predicate<T> match)
         {
-            TurboContract.Requires(match != null);
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             return _list.TrueForAll(match);
         }
@@ -255,7 +255,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>Created TransformedReadOnlyListWrapper</returns>
         public TransformedReadOnlyListWrapper<T, TOut> AsTransformedReadOnlyList<TOut>(Func<T, TOut> selector)
         {
-            TurboContract.Requires(selector != null);
+            TurboContract.Requires(selector != null, conditionString: "selector != null");
             TurboContract.Ensures(TurboContract.Result<TransformedReadOnlyListWrapper<T, TOut>>() != null);
 
             return new TransformedReadOnlyListWrapper<T, TOut>(_list, selector);

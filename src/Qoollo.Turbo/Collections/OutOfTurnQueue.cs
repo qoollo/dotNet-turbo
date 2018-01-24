@@ -90,9 +90,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="index">Starting index</param>
         public void CopyTo(T[] array, int index)
         {
-            TurboContract.Requires(array != null);
-            TurboContract.Requires(index >= 0);
-            TurboContract.Requires(index <= array.Length - this.Count);
+            TurboContract.Requires(array != null, conditionString: "array != null");
+            TurboContract.Requires(index >= 0, conditionString: "index >= 0");
+            TurboContract.Requires(index <= array.Length - this.Count, conditionString: "index <= array.Length - this.Count");
 
             _circularList.CopyTo(array, index);
         }
@@ -144,7 +144,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The item that is removed from the head of the queue</returns>
         public T Dequeue()
         {
-            TurboContract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
 
             return _circularList.RemoveFirst();
         }

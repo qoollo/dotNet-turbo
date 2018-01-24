@@ -385,7 +385,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Enqueue(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
-            TurboContract.Assume(addResult);
+            TurboContract.Assume(addResult, "addResult is false when timeout is Infinite");
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -401,7 +401,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Enqueue(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
-            TurboContract.Assume(addResult);
+            TurboContract.Assume(addResult, "addResult is false when timeout is Infinite");
         }
 
         /// <summary>
@@ -485,7 +485,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Add(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
-            TurboContract.Assume(addResult);
+            TurboContract.Assume(addResult, "addResult is false when timeout is Infinite");
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -499,7 +499,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Add(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
-            TurboContract.Assume(addResult);
+            TurboContract.Assume(addResult, "addResult is false when timeout is Infinite");
         }
 
         /// <summary>
@@ -707,7 +707,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public T Dequeue()
         {
             bool takeResult = TryTakeInner(out T result, Timeout.Infinite, new CancellationToken(), true);
-            TurboContract.Assume(takeResult);
+            TurboContract.Assume(takeResult, "takeResult is false when timeout is Infinite");
  
             return result;
         }
@@ -723,7 +723,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public T Dequeue(CancellationToken token)
         {
             bool takeResult = TryTakeInner(out T result, Timeout.Infinite, token, true);
-            TurboContract.Assume(takeResult);
+            TurboContract.Assume(takeResult, "takeResult is false when timeout is Infinite");
 
             return result;
         }
@@ -819,7 +819,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public T Take()
         {
             bool takeResult = TryTakeInner(out T result, Timeout.Infinite, new CancellationToken(), true);
-            TurboContract.Assume(takeResult);
+            TurboContract.Assume(takeResult, "takeResult is false when timeout is Infinite");
 
             return result;
         }
@@ -833,7 +833,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public T Take(CancellationToken token)
         {
             bool takeResult = TryTakeInner(out T result, Timeout.Infinite, token, true);
-            TurboContract.Assume(takeResult);
+            TurboContract.Assume(takeResult, "takeResult is false when timeout is Infinite");
 
             return result;
         }
@@ -993,8 +993,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Peek()
         {
-            bool takeResult = TryPeekInner(out T result, Timeout.Infinite, new CancellationToken());
-            TurboContract.Assume(takeResult);
+            bool peekResult = TryPeekInner(out T result, Timeout.Infinite, new CancellationToken());
+            TurboContract.Assume(peekResult, "peekResult is false when timeout is Infinite");
 
             return result;
         }
@@ -1007,8 +1007,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Peek(CancellationToken token)
         {
-            bool takeResult = TryPeekInner(out T result, Timeout.Infinite, token);
-            TurboContract.Assume(takeResult);
+            bool peekResult = TryPeekInner(out T result, Timeout.Infinite, token);
+            TurboContract.Assume(peekResult, "peekResult is false when timeout is Infinite");
 
             return result;
         }

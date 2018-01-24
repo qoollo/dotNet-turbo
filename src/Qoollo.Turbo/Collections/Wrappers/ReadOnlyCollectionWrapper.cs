@@ -80,9 +80,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="arrayIndex">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
-            TurboContract.Requires(array != null);
-            TurboContract.Requires(arrayIndex >= 0);
-            TurboContract.Requires(arrayIndex <= array.Length - this.Count); 
+            TurboContract.Requires(array != null, conditionString: "array != null");
+            TurboContract.Requires(arrayIndex >= 0, conditionString: "arrayIndex >= 0");
+            TurboContract.Requires(arrayIndex <= array.Length - this.Count, conditionString: "arrayIndex <= array.Length - this.Count"); 
 
             _collection.CopyTo(array, arrayIndex);
         }

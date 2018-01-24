@@ -30,7 +30,7 @@ namespace System
         [Pure]
         public static bool IsAssignableFromNull(this Type tp)
         {
-            TurboContract.Requires(tp != null);
+            TurboContract.Requires(tp != null, conditionString: "tp != null");
 
             return (!tp.IsValueType) || (tp.IsGenericType && tp.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
@@ -90,7 +90,7 @@ namespace System
         [Pure]
         private static string GetFullTypeName(Type type, string genericPrefix, string genericSuffix)
         {
-            TurboContract.Requires(type != null);
+            TurboContract.Requires(type != null, conditionString: "type != null");
 
             if (!type.IsNested)
                 return type.Namespace + "." + GetTypeName(type, genericPrefix, genericSuffix);

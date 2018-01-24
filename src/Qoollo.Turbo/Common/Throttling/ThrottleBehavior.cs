@@ -60,7 +60,7 @@ namespace Qoollo.Turbo
             else
                 _maxHitPerMeasure = int.MaxValue;
 
-            TurboContract.Assert(_maxHitPerMeasure > 0);
+            TurboContract.Assert(_maxHitPerMeasure > 0, conditionString: "_maxHitPerMeasure > 0");
         }
         /// <summary>
         /// ThrottleBehavior constructor
@@ -141,7 +141,7 @@ namespace Qoollo.Turbo
         /// <param name="restTimeMs">Time in milliseconds till the end of the current measure period</param>
         protected virtual void OnThrottle(int restTimeMs)
         {
-            TurboContract.Requires(restTimeMs >= 0);
+            TurboContract.Requires(restTimeMs >= 0, conditionString: "restTimeMs >= 0");
         }
     }
 }

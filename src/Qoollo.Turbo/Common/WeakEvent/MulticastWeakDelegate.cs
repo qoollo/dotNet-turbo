@@ -47,7 +47,7 @@ namespace Qoollo.Turbo
             if (reference == null)
                 return;
 
-            TurboContract.Assert(reference is Delegate);
+            TurboContract.Assert(reference is Delegate, conditionString: "reference is Delegate");
 
             if (reference is MulticastDelegate)
             {
@@ -81,7 +81,7 @@ namespace Qoollo.Turbo
                 return;
 
 
-            TurboContract.Assert(reference is Delegate);
+            TurboContract.Assert(reference is Delegate, conditionString: "reference is Delegate");
 
             if (reference is MulticastDelegate)
             {
@@ -119,7 +119,7 @@ namespace Qoollo.Turbo
             {
                 for (int i = 0; i < _handlers.Count; i++)
                 {
-                    TurboContract.Assert(_handlers[i] != null);
+                    TurboContract.Assert(_handlers[i] != null, conditionString: "_handlers[i] != null");
 
                     var newDeleg = _handlers[i].GetDelegate();
                     if (newDeleg != null)

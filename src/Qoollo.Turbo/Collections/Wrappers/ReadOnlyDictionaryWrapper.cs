@@ -35,7 +35,7 @@ namespace Qoollo.Turbo.Collections
         public ReadOnlyDictionaryWrapper(IDictionary<TKey, TValue> dictionary)
             : base(dictionary)
         {
-            TurboContract.Requires(dictionary != null);
+            TurboContract.Requires(dictionary != null, conditionString: "dictionary != null");
         }
     }
 }

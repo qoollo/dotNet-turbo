@@ -28,7 +28,7 @@ namespace System
         /// <returns>Full description for the exception</returns>
         public static string GetFullDescription(this Exception ex)
         {
-            TurboContract.Requires(ex != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
             TurboContract.Ensures(TurboContract.Result<string>() != null);
 
             if (ex == null)
@@ -58,7 +58,7 @@ namespace System
         /// <returns>Full description for the exception</returns>
         public static string GetShortDescription(this Exception ex)
         {
-            TurboContract.Requires(ex != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
             TurboContract.Ensures(TurboContract.Result<string>() != null);
 
             if (ex == null)
@@ -87,7 +87,7 @@ namespace System
         /// <returns>True if the CodeContract exception</returns>
         public static bool IsCodeContractException(this Exception ex)
         {
-            TurboContract.Requires(ex != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
 
             return ex.GetType().FullName.StartsWith(CodeContractAssemblyName);
         }
@@ -101,8 +101,8 @@ namespace System
         /// <param name="message">Message, that will be passed to Exception constructor (can be null)</param>
         public static void ThrowException(Type exceptionType, string message)
         {
-            TurboContract.Requires(exceptionType != null);
-            TurboContract.Requires(exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception)));
+            TurboContract.Requires(exceptionType != null, conditionString: "exceptionType != null");
+            TurboContract.Requires(exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception)), conditionString: "exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception))");
 
             Qoollo.Turbo.TurboException.Throw(exceptionType, message);
         }

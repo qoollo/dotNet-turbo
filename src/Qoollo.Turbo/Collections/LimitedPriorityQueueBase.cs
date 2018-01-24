@@ -148,7 +148,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The item at the head of the queue</returns>
         public TElem Peek()
         {
-            TurboContract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
 
             if (Count == 0)
                 throw new InvalidOperationException("Collection is empty");
@@ -168,7 +168,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The item that is removed from the head of the queue</returns>
         public TElem Dequeue()
         {
-            TurboContract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
             TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) - 1);
 
             if (Count == 0)
