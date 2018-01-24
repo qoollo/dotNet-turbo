@@ -71,7 +71,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 
             public CallbackItem(ManagementThreadControllerCallback callback)
             {
-                Contract.Requires(callback != null);
+                TurboContract.Requires(callback != null, conditionString: "callback != null");
 
                 _callback = callback;
                 _startTimeMs = ManagementThreadController.GetTimestamp();
@@ -132,7 +132,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// <param name="callback">Коллбэк</param>
         public void RegisterCallback(ManagementThreadControllerCallback callback)
         {
-            Contract.Requires(callback != null);
+            TurboContract.Requires(callback != null, conditionString: "callback != null");
 
             lock (_pendingAddItems)
             {
@@ -145,7 +145,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// <param name="callback">Коллбэк</param>
         public void UnregisterCallback(ManagementThreadControllerCallback callback)
         {
-            Contract.Requires(callback != null);
+            TurboContract.Requires(callback != null, conditionString: "callback != null");
             lock (_pendingRemoveItems)
             {
                 _pendingRemoveItems.Add(callback);

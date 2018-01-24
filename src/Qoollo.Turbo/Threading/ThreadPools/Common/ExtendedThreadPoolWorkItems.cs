@@ -25,7 +25,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public ActionThreadPoolWorkItem(Action action, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
         }
         /// <summary>
@@ -65,7 +65,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public ActionThreadPoolWorkItem(Action<T> action, T state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _state = state;
         }
@@ -106,7 +106,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public TaskThreadPoolWorkItem(Action action, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _completionSource = new TaskCompletionSource<object>(creationOptions);
         }
@@ -168,7 +168,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public TaskThreadPoolWorkItem(Action<TState> action, TState state, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _state = state;
             _completionSource = new TaskCompletionSource<object>(creationOptions);
@@ -231,7 +231,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public TaskFuncThreadPoolWorkItem(Func<TRes> action, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _completionSource = new TaskCompletionSource<TRes>(creationOptions);
         }
@@ -295,7 +295,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public TaskFuncThreadPoolWorkItem(Func<TState, TRes> action, TState state, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _state = state;
             _completionSource = new TaskCompletionSource<TRes>(creationOptions);
@@ -360,7 +360,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public SendOrPostCallbackThreadPoolWorkItem(SendOrPostCallback action, object state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _state = state;
         }
@@ -408,7 +408,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public SendOrPostCallbackSyncThreadPoolWorkItem(SendOrPostCallback action, object state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _state = state;
             _isCompleted = false;
@@ -521,7 +521,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public WaitCallbackThreadPoolWorkItem(WaitCallback action, object state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _state = state;
         }
@@ -561,7 +561,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public TaskEntryExecutionThreadPoolWorkItem(Task task, bool allowExecutionContextFlow)
             : base(allowExecutionContextFlow, (task.CreationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
-            Contract.Requires(task != null);
+            TurboContract.Requires(task != null, conditionString: "task != null");
             _task = task;
             _taskProcessFlag = 0;
         }
@@ -617,7 +617,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private static void RunRaw(object closure)
         {
             var extractedClosure = (TaskEntryExecutionWithClosureThreadPoolWorkItem<TState>)closure;
-            Debug.Assert(extractedClosure != null);
+            TurboContract.Assert(extractedClosure != null, conditionString: "extractedClosure != null");
             extractedClosure._action(extractedClosure._state);
         }
 
@@ -639,7 +639,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public TaskEntryExecutionWithClosureThreadPoolWorkItem(Action<TState> action, TState state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _state = state;
             _taskProcessFlag = 0;
@@ -672,7 +672,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <param name="task">Task</param>
         public void SetTask(Task task)
         {
-            Contract.Requires(task != null);
+            TurboContract.Requires(task != null, conditionString: "task != null");
             if (_task != null)
                 throw new InvalidOperationException("Task already setted");
             if (!object.ReferenceEquals(task.AsyncState, this))
@@ -731,7 +731,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private static TRes RunRaw(object closure)
         {
             var extractedClosure = (TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes>)closure;
-            Debug.Assert(extractedClosure != null);
+            TurboContract.Assert(extractedClosure != null, conditionString: "extractedClosure != null");
             return extractedClosure._action(extractedClosure._state);
         }
 
@@ -753,7 +753,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         public TaskEntryExecutionWithClosureThreadPoolWorkItem(Func<TState, TRes> action, TState state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
             _action = action;
             _state = state;
             _taskProcessFlag = 0;
@@ -786,7 +786,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// <param name="task">Task</param>
         public void SetTask(Task<TRes> task)
         {
-            Contract.Requires(task != null);
+            TurboContract.Requires(task != null, conditionString: "task != null");
             if (_task != null)
                 throw new InvalidOperationException("Task already setted");
             if (!object.ReferenceEquals(task.AsyncState, this))

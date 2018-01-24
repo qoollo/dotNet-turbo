@@ -26,7 +26,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_switchDel != null);
+            TurboContract.Invariant(_switchDel != null);
         }
 
         private ContextSwitchDelegate _switchDel;
@@ -37,7 +37,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="switchDel">Делегат смены контекста</param>
         public SingleDelegateContextSwitchSupplier(ContextSwitchDelegate switchDel)
         {
-            Contract.Requires(switchDel != null);
+            TurboContract.Requires(switchDel != null, conditionString: "switchDel != null");
 
             _switchDel = switchDel;
         }
@@ -49,6 +49,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void Run(Action act, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _switchDel(act, flowContext);
         }
         /// <summary>
@@ -59,6 +61,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _switchDel(() => act(state), flowContext);
         }
     }
@@ -84,7 +88,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_switchDel != null);
+            TurboContract.Invariant(_switchDel != null);
         }
 
         private ContextSwitchWithStateDelegate _switchDel;
@@ -95,7 +99,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="switchDel">Делегат смены контекста</param>
         public SingleDelegateWithStateContextSwitchSupplier(ContextSwitchWithStateDelegate switchDel)
         {
-            Contract.Requires(switchDel != null);
+            TurboContract.Requires(switchDel != null, conditionString: "switchDel != null");
 
             _switchDel = switchDel;
         }
@@ -106,7 +110,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="act">Действие</param>
         private static void RunAction(object act)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             ((Action)act)();
         }
@@ -118,6 +122,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void Run(Action act, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _switchDel(RunAction, act, flowContext);
         }
 
@@ -129,6 +135,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _switchDel(act, state, flowContext);
         }
     }
@@ -151,7 +159,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_switchDel != null);
+            TurboContract.Invariant(_switchDel != null);
         }
 
         private ContextSwitchNoFlowDelegate _switchDel;
@@ -162,7 +170,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="switchDel">Делегат смены контекста</param>
         public SingleDelegateNoFlowContextSwitchSupplier(ContextSwitchNoFlowDelegate switchDel)
         {
-            Contract.Requires(switchDel != null);
+            TurboContract.Requires(switchDel != null, conditionString: "switchDel != null");
 
             _switchDel = switchDel;
         }
@@ -174,6 +182,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void Run(Action act, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _switchDel(act);
         }
         /// <summary>
@@ -184,6 +194,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _switchDel(() => act(state));
         }
     }
@@ -208,7 +220,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_switchDel != null);
+            TurboContract.Invariant(_switchDel != null);
         }
 
         private ContextSwitchWithStateNoFlowDelegate _switchDel;
@@ -219,7 +231,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="switchDel">Делегат смены контекста</param>
         public SingleDelegateWithStateNoFlowContextSwitchSupplier(ContextSwitchWithStateNoFlowDelegate switchDel)
         {
-            Contract.Requires(switchDel != null);
+            TurboContract.Requires(switchDel != null, conditionString: "switchDel != null");
 
             _switchDel = switchDel;
         }
@@ -230,7 +242,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="act">Действие</param>
         private static void RunAction(object act)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             ((Action)act)();
         }
@@ -242,6 +254,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void Run(Action act, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _switchDel(RunAction, act);
         }
 
@@ -253,6 +267,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _switchDel(act, state);
         }
     }
@@ -269,7 +285,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_syncContext != null);
+            TurboContract.Invariant(_syncContext != null);
         }
 
         private SynchronizationContext _syncContext;
@@ -280,7 +296,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="syncContext">Контекст синхронизации</param>
         public ContextSwitchFromSynchroContextSupplier(SynchronizationContext syncContext)
         {
-            Contract.Requires(syncContext != null);
+            TurboContract.Requires(syncContext != null, conditionString: "syncContext != null");
 
             _syncContext = syncContext;
         }
@@ -291,7 +307,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="act">Действие</param>
         private static void RunAction(object act)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             ((Action)act)();
         }
@@ -303,6 +319,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void Run(Action act, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _syncContext.Post(RunAction, act);
         }
 
@@ -314,6 +332,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             _syncContext.Post(new SendOrPostCallback(act), state);
         }
     }

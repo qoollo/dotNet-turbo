@@ -113,7 +113,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ExecuteTaskEntry(Task task, bool preventDoubleExecution)
         {
-            Contract.Requires(task != null);
+            TurboContract.Requires(task != null, conditionString: "task != null");
 
             var action = _executeTaskEntryDelegate;
             if (action == null)
@@ -132,7 +132,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CancelTask(Task task, bool cancelNonExecutingOnly)
         {
-            Contract.Requires(task != null);
+            TurboContract.Requires(task != null, conditionString: "task != null");
 
             var action = _cancelTaskDelegate;
             if (action == null)
@@ -150,7 +150,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetTaskScheduler(Task task, TaskScheduler scheduler)
         {
-            Contract.Requires(task != null);
+            TurboContract.Requires(task != null, conditionString: "task != null");
 
             var action = _setTaskSchedulerDelegate;
             if (action == null)

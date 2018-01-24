@@ -326,6 +326,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="elem">Thread to be removed</param>
         protected override void OnThreadRemove(Thread elem)
         {
+            TurboContract.Requires(elem != null, conditionString: "elem != null");
+
             base.OnThreadRemove(elem);
 
             if (Volatile.Read(ref _waitForDestroyThreadCount) > 0)
@@ -378,7 +380,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                     }
                     else
                     {
-                        Debug.Assert(token.IsCancellationRequested);
+                        TurboContract.Assert(token.IsCancellationRequested, conditionString: "token.IsCancellationRequested");
                     }
                 }
             }
@@ -437,6 +439,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="item">Thread pool work item</param>
         protected sealed override void AddWorkItem(ThreadPoolWorkItem item)
         {
+            TurboContract.Requires(item != null, conditionString: "item != null");
+
             CheckDisposed();
             if (IsAddingCompleted)
                 throw new InvalidOperationException("Adding was completed for ThreadPool: " + Name);
@@ -451,6 +455,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>True if work item was added to the queue, otherwise false</returns>
         protected sealed override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
+            TurboContract.Requires(item != null, conditionString: "item != null");
+
             if (State == ThreadPoolState.Stopped || IsAddingCompleted)
                 return false;
 

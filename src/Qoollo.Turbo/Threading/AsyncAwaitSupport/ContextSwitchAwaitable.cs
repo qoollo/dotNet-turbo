@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="supplier">Context switch supplier</param>
         public ContextSwitchAwaitable(IContextSwitchSupplier supplier)
         {
-            Contract.Requires(supplier != null);
+            TurboContract.Requires(supplier != null, conditionString: "supplier != null");
 
             _supplier = supplier;
         }
@@ -39,7 +39,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="targetContext">Target synchronization context</param>
         public ContextSwitchAwaitable(SynchronizationContext targetContext)
         {
-            Contract.Requires(targetContext != null);
+            TurboContract.Requires(targetContext != null, conditionString: "targetContext != null");
 
             _supplier = new ContextSwitchFromSynchroContextSupplier(targetContext);
         }
@@ -91,7 +91,7 @@ namespace Qoollo.Turbo.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void OnCompleted(Action continuation)
             {
-                Debug.Assert(continuation != null);
+                TurboContract.Assert(continuation != null, conditionString: "continuation != null");
 
                 if (_supplier != null)
                     _supplier.Run(continuation, true);
@@ -107,7 +107,7 @@ namespace Qoollo.Turbo.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void UnsafeOnCompleted(Action continuation)
             {
-                Debug.Assert(continuation != null);
+                TurboContract.Assert(continuation != null, conditionString: "continuation != null");
 
                 if (_supplier != null)
                     _supplier.Run(continuation, false);

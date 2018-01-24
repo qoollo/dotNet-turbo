@@ -65,10 +65,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         {
             public ThroughoutData(int executedTaskCount, double throughout, double averageThroughout, int threadCount, bool isPerfMeasureThreadWork)
             {
-                Contract.Requires(executedTaskCount >= 0);
-                Contract.Requires(throughout >= 0);
-                Contract.Requires(averageThroughout >= 0);
-                Contract.Requires(threadCount >= 0);
+                TurboContract.Requires(executedTaskCount >= 0, conditionString: "executedTaskCount >= 0");
+                TurboContract.Requires(throughout >= 0, conditionString: "throughout >= 0");
+                TurboContract.Requires(averageThroughout >= 0, conditionString: "averageThroughout >= 0");
+                TurboContract.Requires(threadCount >= 0, conditionString: "threadCount >= 0");
 
                 ExecutedTaskCount = executedTaskCount;
                 Throughout = throughout;
@@ -130,8 +130,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Среднее</returns>
         private static double CalcAverageThroughout(ThroughoutData[] data)
         {
-            Contract.Requires(data != null);
-            Contract.Requires(data.Length > 0);
+            TurboContract.Requires(data != null, conditionString: "data != null");
+            TurboContract.Requires(data.Length > 0, conditionString: "data.Length > 0");
 
             double res = 0;
             for (int i = 0; i < data.Length; i++)
@@ -148,11 +148,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Среднее</returns>
         private static double CalcAverageThroughoutForSomeElements(ThroughoutData[] data, int startIndex, int k, int n)
         {
-            Contract.Requires(data != null);
-            Contract.Requires(data.Length > 0);
-            Contract.Requires(startIndex >= 0 && startIndex < data.Length);
-            Contract.Requires(n > 0 && n < data.Length);
-            Contract.Requires(k >= 0 && k < n);
+            TurboContract.Requires(data != null, conditionString: "data != null");
+            TurboContract.Requires(data.Length > 0, conditionString: "data.Length > 0");
+            TurboContract.Requires(startIndex >= 0 && startIndex < data.Length, conditionString: "startIndex >= 0 && startIndex < data.Length");
+            TurboContract.Requires(n > 0 && n < data.Length, conditionString: "n > 0 && n < data.Length");
+            TurboContract.Requires(k >= 0 && k < n, conditionString: "k >= 0 && k < n");
 
             double throughoutSum = 0;
             int valCount = 0;
@@ -179,9 +179,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Оценочная производительность</returns>
         private static double EstimateExpectedThroughout(int curThreadCount, double curThroughout, int newThreadCount)
         {
-            Contract.Requires(curThreadCount >= 0);
-            Contract.Requires(curThroughout >= 0);
-            Contract.Requires(newThreadCount >= 0);
+            TurboContract.Requires(curThreadCount >= 0, conditionString: "curThreadCount >= 0");
+            TurboContract.Requires(curThroughout >= 0, conditionString: "curThroughout >= 0");
+            TurboContract.Requires(newThreadCount >= 0, conditionString: "newThreadCount >= 0");
 
             if (curThreadCount == 0)
                 return 1.0;
@@ -198,10 +198,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Коэффициент</returns>
         private static double EstimateThroughoutDiffCoef(int curThreadCount, double curThroughout, int newThreadCount, double newThroughout)
         {
-            Contract.Requires(curThreadCount >= 0);
-            Contract.Requires(curThroughout >= 0);
-            Contract.Requires(newThreadCount >= 0);
-            Contract.Requires(newThroughout >= 0);
+            TurboContract.Requires(curThreadCount >= 0, conditionString: "curThreadCount >= 0");
+            TurboContract.Requires(curThroughout >= 0, conditionString: "curThroughout >= 0");
+            TurboContract.Requires(newThreadCount >= 0, conditionString: "newThreadCount >= 0");
+            TurboContract.Requires(newThroughout >= 0, conditionString: "newThroughout >= 0");
 
             double estimatedThroughout = EstimateExpectedThroughout(curThreadCount, curThroughout, newThreadCount);
             return (newThroughout - curThroughout) / (estimatedThroughout - curThroughout);
@@ -215,9 +215,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Оценочная амплитуда</returns>
         private static double EstimateAmplitudeForBlinking(int baseThreadCount, int blinkThreadCount, double avgThroughout)
         {
-            Contract.Requires(baseThreadCount >= 0);
-            Contract.Requires(blinkThreadCount > 0);
-            Contract.Requires(avgThroughout >= 0);
+            TurboContract.Requires(baseThreadCount >= 0, conditionString: "baseThreadCount >= 0");
+            TurboContract.Requires(blinkThreadCount > 0, conditionString: "blinkThreadCount > 0");
+            TurboContract.Requires(avgThroughout >= 0, conditionString: "avgThroughout >= 0");
 
             return avgThroughout * blinkThreadCount / (2 * baseThreadCount + blinkThreadCount);
         }
@@ -232,10 +232,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="xIm">Мнимая часть гармоники</param>
         private static void CalcFourierThoughoutHarmonic(ThroughoutData[] data, int startIndex, int k, out double xRe, out double xIm)
         {
-            Contract.Requires(data != null);
-            Contract.Requires(data.Length > 0);
-            Contract.Requires(startIndex >= 0 && startIndex < data.Length);
-            Contract.Requires(k >= 0 && k < data.Length);
+            TurboContract.Requires(data != null, conditionString: "data != null");
+            TurboContract.Requires(data.Length > 0, conditionString: "data.Length > 0");
+            TurboContract.Requires(startIndex >= 0 && startIndex < data.Length, conditionString: "startIndex >= 0 && startIndex < data.Length");
+            TurboContract.Requires(k >= 0 && k < data.Length, conditionString: "k >= 0 && k < data.Length");
 
             double xReLoc = 0, xImLoc = 0;
 
@@ -262,10 +262,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="xIm">Мнимая часть гармоники</param>
         private static void CalcFourierThreadCountHarmonic(ThroughoutData[] data, int startIndex, int k, out double xRe, out double xIm)
         {
-            Contract.Requires(data != null);
-            Contract.Requires(data.Length > 0);
-            Contract.Requires(startIndex >= 0 && startIndex < data.Length);
-            Contract.Requires(k >= 0 && k < data.Length);
+            TurboContract.Requires(data != null, conditionString: "data != null");
+            TurboContract.Requires(data.Length > 0, conditionString: "data.Length > 0");
+            TurboContract.Requires(startIndex >= 0 && startIndex < data.Length, conditionString: "startIndex >= 0 && startIndex < data.Length");
+            TurboContract.Requires(k >= 0 && k < data.Length, conditionString: "k >= 0 && k < data.Length");
 
             double xReLoc = 0, xImLoc = 0;
 
@@ -335,9 +335,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="reasonableThreadCount">Базовое число потоков</param>
         public ExecutionThroughoutTrackerUpDownCorrection(int maxThreadCount, int reasonableThreadCount)
         {
-            Contract.Requires(maxThreadCount > 0);
-            Contract.Requires(reasonableThreadCount > 0);
-            Contract.Requires(maxThreadCount >= reasonableThreadCount);
+            TurboContract.Requires(maxThreadCount > 0, conditionString: "maxThreadCount > 0");
+            TurboContract.Requires(reasonableThreadCount > 0, conditionString: "reasonableThreadCount > 0");
+            TurboContract.Requires(maxThreadCount >= reasonableThreadCount, conditionString: "maxThreadCount >= reasonableThreadCount");
 
             _maxThreadCount = maxThreadCount;
             _reasonableThreadCount = reasonableThreadCount;
@@ -402,7 +402,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Выполненный замер</returns>
         private ThroughoutData RegisterMeasure(int workThreadCount, bool isPerfThreadActive, int elapsedMs = -1)
         {
-            Contract.Requires(workThreadCount >= 0);
+            TurboContract.Requires(workThreadCount >= 0, conditionString: "workThreadCount >= 0");
 
             int executedTasks = Interlocked.Exchange(ref _executedTasks, 0);
             var currentTime = GetTimestamp();
@@ -527,7 +527,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 _optimalStateAverageThroughout = -1;
                 _decresingAverageThoughoutBaseline = -1;
 
-                Debug.Assert(_isPerfMeasureThreadWork == false);
+                TurboContract.Assert(_isPerfMeasureThreadWork == false, conditionString: "_isPerfMeasureThreadWork == false");
             }
         }
         /// <summary>
@@ -678,7 +678,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 return ReturnSuggestion("Upper bound reached", 0);
             }
 
-            Debug.Assert(curMeasure.ThreadCount > prevMeasure.ThreadCount);
+            TurboContract.Assert(curMeasure.ThreadCount > prevMeasure.ThreadCount, conditionString: "curMeasure.ThreadCount > prevMeasure.ThreadCount");
 
             double throughoutDiffCoef = EstimateThroughoutDiffCoef(prevMeasure.ThreadCount, prevMeasure.Throughout, curMeasure.ThreadCount, curMeasure.Throughout);
             double avgThroughoutDiffCoef = EstimateThroughoutDiffCoef(prevMeasure.ThreadCount, prevMeasure.AverageThroughout, curMeasure.ThreadCount, curMeasure.AverageThroughout);
@@ -758,7 +758,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 return ReturnSuggestion("Decrease when prev thread count == cur thread count", -1);
             }
 
-            Debug.Assert(curMeasure.ThreadCount < prevMeasure.ThreadCount);
+            TurboContract.Assert(curMeasure.ThreadCount < prevMeasure.ThreadCount, conditionString: "curMeasure.ThreadCount < prevMeasure.ThreadCount");
 
             //Console.WriteLine("Baseline avgThroughout = " + _decresingAverageThoughoutBaseline.ToString());
             //Console.WriteLine(string.Format("Th == {0}: {1}; {2}: {3}", prevMeasure.ThreadCount, prevMeasure.Throughout, curMeasure.ThreadCount, curMeasure.Throughout));
@@ -844,7 +844,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>На сколько надо изменить число потоков</returns>
         public int RegisterAndMakeSuggestion(int workThreadCount, bool needAction, bool isCriticalCondition)
         {
-            Contract.Requires(workThreadCount >= 0);
+            TurboContract.Requires(workThreadCount >= 0, conditionString: "workThreadCount >= 0");
 
             RegisterMeasure(workThreadCount, _isPerfMeasureThreadWork);
             return MakeSuggestion(needAction, isCriticalCondition);
@@ -852,7 +852,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
 
         public int RegisterAndMakeSuggestionTest(int workThreadCount, int executedTaskCount, int elapsedMs)
         {
-            Contract.Requires(workThreadCount >= 0);
+            TurboContract.Requires(workThreadCount >= 0, conditionString: "workThreadCount >= 0");
             RegisterExecution(executedTaskCount);
             RegisterMeasure(workThreadCount, _isPerfMeasureThreadWork, elapsedMs);
             return MakeSuggestion(true, false);

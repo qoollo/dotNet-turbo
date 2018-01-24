@@ -26,7 +26,7 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             SemaphoreLight semaphore = obj as SemaphoreLight;
-            Debug.Assert(semaphore != null);
+            TurboContract.Assert(semaphore != null, conditionString: "semaphore != null");
             lock (semaphore._lockObj)
             {
                 Monitor.PulseAll(semaphore._lockObj);
@@ -238,7 +238,7 @@ namespace Qoollo.Turbo.Threading
                 finally
                 {
                     Monitor.Enter(_lockObj, ref lockTaken);
-                    Debug.Assert(lockTaken);
+                    TurboContract.Assert(lockTaken, conditionString: "lockTaken");
                     Interlocked.Increment(ref _waitCount); // Release должен увидеть наше появление
                 }
 
@@ -276,7 +276,7 @@ namespace Qoollo.Turbo.Threading
                 if (lockTaken)
                 {
                     _waitCount--;
-                    Debug.Assert(_waitCount >= 0);
+                    TurboContract.Assert(_waitCount >= 0, conditionString: "_waitCount >= 0");
                     Monitor.Exit(_lockObj);
                 }
 
@@ -311,7 +311,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait()
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, new CancellationToken(), true);
-            Debug.Assert(semaphoreSlotTaken);
+            TurboContract.Assert(semaphoreSlotTaken, "semaphoreSlotTaken is false when timeout is infinite");
         }
         /// <summary>
         /// Blocks the current thread until it can enter the semaphore
@@ -324,7 +324,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait(CancellationToken token)
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, token, true);
-            Debug.Assert(semaphoreSlotTaken);
+            TurboContract.Assert(semaphoreSlotTaken, "semaphoreSlotTaken is false when timeout is infinite");
         }
         /// <summary>
         /// Blocks the current thread until it can enter the semaphore
@@ -416,15 +416,15 @@ namespace Qoollo.Turbo.Threading
                 releaseCountLocFree = releaseCount - releaseCountForWait;
             }
 
-            Debug.Assert(releaseCountForWait >= 0);
-            Debug.Assert(releaseCountLocFree >= 0);
-            Debug.Assert(releaseCountForWait + releaseCountLocFree == releaseCount);
+            TurboContract.Assert(releaseCountForWait >= 0, conditionString: "releaseCountForWait >= 0");
+            TurboContract.Assert(releaseCountLocFree >= 0, conditionString: "releaseCountLocFree >= 0");
+            TurboContract.Assert(releaseCountForWait + releaseCountLocFree == releaseCount, conditionString: "releaseCountForWait + releaseCountLocFree == releaseCount");
 
             // Сначала возврат в lockFree
             if (releaseCountLocFree > 0)
             {
                 int currentCountLocFree = Interlocked.Add(ref _currentCountLockFree, releaseCountLocFree);
-                Debug.Assert(currentCountLocFree > 0);
+                TurboContract.Assert(currentCountLocFree > 0, conditionString: "currentCountLocFree > 0");
             }
 
             // Теперь возврат для waiter'ов. Если число waiter'ов увеличилось, то тоже нужно зайти в lock
@@ -442,7 +442,7 @@ namespace Qoollo.Turbo.Threading
                         // Если слотов оказывается больше, то избыток возвращаем в _currentCountLocFree
                         int countForReturnToLockFree = Math.Min(releaseCountForWait, nextCurrentCountForWait - waitCount);
                         int currentCountLocFree = Interlocked.Add(ref _currentCountLockFree, countForReturnToLockFree);
-                        Debug.Assert(currentCountLocFree > 0);
+                        TurboContract.Assert(currentCountLocFree > 0, conditionString: "currentCountLocFree > 0");
                         releaseCountForWait -= countForReturnToLockFree;
                         releaseCountLocFree += countForReturnToLockFree;
                     }
@@ -460,7 +460,7 @@ namespace Qoollo.Turbo.Threading
                             int countToRequestFromLockFree = Math.Min(currentCountLocFree, maxToRequestFromLockFree);
                             while (countToRequestFromLockFree > 0)
                             {
-                                Debug.Assert(currentCountLocFree - countToRequestFromLockFree >= 0);
+                                TurboContract.Assert(currentCountLocFree - countToRequestFromLockFree >= 0, conditionString: "currentCountLocFree - countToRequestFromLockFree >= 0");
                                 if (Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - countToRequestFromLockFree, currentCountLocFree) == currentCountLocFree)
                                 {
                                     releaseCountForWait += countToRequestFromLockFree;
@@ -475,16 +475,16 @@ namespace Qoollo.Turbo.Threading
                         }
                     }
 
-                    Debug.Assert(releaseCountForWait >= 0);
-                    Debug.Assert(releaseCountLocFree >= 0);
-                    Debug.Assert(releaseCountForWait + releaseCountLocFree == releaseCount);
+                    TurboContract.Assert(releaseCountForWait >= 0, conditionString: "releaseCountForWait >= 0");
+                    TurboContract.Assert(releaseCountLocFree >= 0, conditionString: "releaseCountLocFree >= 0");
+                    TurboContract.Assert(releaseCountForWait + releaseCountLocFree == releaseCount, conditionString: "releaseCountForWait + releaseCountLocFree == releaseCount");
 
                     if (releaseCountForWait > 0)
                     {
-                        Debug.Assert(_currentCountForWait == currentCountForWait);
+                        TurboContract.Assert(_currentCountForWait == currentCountForWait, conditionString: "_currentCountForWait == currentCountForWait");
 
                         currentCountForWait += releaseCountForWait;
-                        Debug.Assert(currentCountForWait > 0);
+                        TurboContract.Assert(currentCountForWait > 0, conditionString: "currentCountForWait > 0");
 
                         int waitersToNotify = Math.Min(currentCountForWait, waitCount);
                         for (int i = 0; i < waitersToNotify; i++)

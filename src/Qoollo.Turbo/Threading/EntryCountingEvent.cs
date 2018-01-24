@@ -106,7 +106,7 @@ namespace Qoollo.Turbo.Threading
                 return false;
 
             int newCount = Interlocked.Increment(ref _currentCountInner);
-            Debug.Assert(newCount > 0);
+            TurboContract.Assert(newCount > 0, conditionString: "newCount > 0");
 
             if (_isDisposed || IsTerminateRequested)
             {

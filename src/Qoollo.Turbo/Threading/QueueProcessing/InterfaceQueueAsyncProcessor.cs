@@ -21,7 +21,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_logic != null);
+            TurboContract.Invariant(_logic != null);
         }
 
         private readonly IQueueAsyncProcessorLogic<T> _logic;

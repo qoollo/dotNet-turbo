@@ -21,7 +21,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_processing != null);
+            TurboContract.Invariant(_processing != null);
         }
 
         private readonly Action<T, CancellationToken> _processing;

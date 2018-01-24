@@ -110,7 +110,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Удалось ли добавить</returns>
         public bool TryAddLocal(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             int tail = _tail;
             if (tail > NormalizeThreshold)
@@ -132,7 +132,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Удалось ли сделать выборку</returns>
         public bool TryTakeLocal(out ThreadPoolWorkItem item)
         {
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
 
             int tail = _tail;
             if (HasElements(_head, tail))
@@ -158,7 +158,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Удалось ли сделать выборку</returns>
         public bool TrySteal(out ThreadPoolWorkItem item)
         {
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
 
             if (HasElements(_head, _tail))
             {

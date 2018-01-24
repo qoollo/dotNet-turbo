@@ -108,8 +108,8 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RunInContext(ExecutionContext context, ContextCallback callback, object state, bool preserveSyncCtx)
         {
-            Contract.Requires(context != null);
-            Contract.Requires(callback != null);
+            TurboContract.Requires(context != null, conditionString: "context != null");
+            TurboContract.Requires(callback != null, conditionString: "callback != null");
 
             var action = _runInContextDelegate;
             if (action == null)

@@ -72,7 +72,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
-            Debug.Assert(_sourceWaiter.IsEntered());
+            TurboContract.Assert(_sourceWaiter.IsEntered(), conditionString: "_sourceWaiter.IsEntered()");
 
             int remainingWaitMilliseconds = Timeout.Infinite;
             if (_timeout != Timeout.Infinite)
@@ -122,7 +122,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
-            Debug.Assert(_sourceWaiter.IsEntered());
+            TurboContract.Assert(_sourceWaiter.IsEntered(), conditionString: "_sourceWaiter.IsEntered()");
 
             int remainingWaitMilliseconds = Timeout.Infinite;
             if (_timeout != Timeout.Infinite)
@@ -167,7 +167,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
-            Debug.Assert(_sourceWaiter.IsEntered());
+            TurboContract.Assert(_sourceWaiter.IsEntered(), conditionString: "_sourceWaiter.IsEntered()");
 
             if (predicate(state))
                 return true;
@@ -225,7 +225,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
-            Debug.Assert(_sourceWaiter.IsEntered());
+            TurboContract.Assert(_sourceWaiter.IsEntered(), conditionString: "_sourceWaiter.IsEntered()");
 
             if (predicate(ref state))
                 return true;
@@ -292,7 +292,7 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             MonitorObject monitorObject = obj as MonitorObject;
-            Debug.Assert(monitorObject != null);
+            TurboContract.Assert(monitorObject != null, conditionString: "monitorObject != null");
             monitorObject.PulseAll();
         }
 
@@ -446,7 +446,7 @@ namespace Qoollo.Turbo.Threading
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(MonitorObject), $"MonitorObject '{Name}' was disposed");
 
-            Debug.Assert(Monitor.IsEntered(this), "External lock should be acquired");
+            TurboContract.Assert(Monitor.IsEntered(this), "External lock should be acquired");
 
             if (timeout < -1)
                 timeout = Timeout.Infinite;

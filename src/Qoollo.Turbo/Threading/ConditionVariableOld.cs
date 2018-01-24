@@ -21,7 +21,7 @@ namespace Qoollo.Turbo.Threading
             if (!lockTaken)
             {
                 Monitor.Enter(syncObj, ref lockTaken);
-                Debug.Assert(lockTaken);
+                TurboContract.Assert(lockTaken, "lockTaken == false");
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,7 +58,7 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             ConditionVariableOld conditionVar = obj as ConditionVariableOld;
-            Debug.Assert(conditionVar != null);
+            TurboContract.Assert(conditionVar != null, conditionString: "conditionVar != null");
             lock (conditionVar._internalLock)
             {
                 Monitor.PulseAll(conditionVar._internalLock);
@@ -131,7 +131,7 @@ namespace Qoollo.Turbo.Threading
                 finally
                 {
                     Monitor.Enter(_internalLock, ref internalLockTaken);
-                    Debug.Assert(internalLockTaken);
+                    TurboContract.Assert(internalLockTaken, conditionString: "internalLockTaken");
                     _waitCount++;
                 }
 
@@ -171,7 +171,7 @@ namespace Qoollo.Turbo.Threading
                 if (internalLockTaken)
                 {
                     _waitCount--;
-                    Debug.Assert(_waitCount >= 0);
+                    TurboContract.Assert(_waitCount >= 0, conditionString: "_waitCount >= 0");
                     Monitor.Exit(_internalLock);
                 }
 
@@ -232,9 +232,9 @@ namespace Qoollo.Turbo.Threading
 
         private bool WaitUntilPredicate<TState>(ref bool internalLockTaken, ref bool externalLockTaken, WaitPredicate<TState> predicate, TState state, uint startTime, int timeout, CancellationToken token)
         {
-            Debug.Assert(internalLockTaken);
-            Debug.Assert(externalLockTaken);
-            Debug.Assert(predicate != null);
+            TurboContract.Requires(internalLockTaken, "internalLockTaken == false");
+            TurboContract.Requires(externalLockTaken, "externalLockTaken == false");
+            TurboContract.Requires(predicate != null, conditionString: "predicate != null");
 
             int remainingWaitMilliseconds = Timeout.Infinite;
             bool recursiveLockChecked = false;
@@ -301,7 +301,7 @@ namespace Qoollo.Turbo.Threading
                 finally
                 {
                     Monitor.Enter(_internalLock, ref internalLockTaken);
-                    Debug.Assert(internalLockTaken);
+                    TurboContract.Assert(internalLockTaken, conditionString: "internalLockTaken");
                     _waitCount++;
                 }
 
@@ -319,7 +319,7 @@ namespace Qoollo.Turbo.Threading
                 if (internalLockTaken)
                 {
                     _waitCount--;
-                    Debug.Assert(_waitCount >= 0);
+                    TurboContract.Assert(_waitCount >= 0, conditionString: "_waitCount >= 0");
                     Monitor.Exit(_internalLock);
                 }
 
