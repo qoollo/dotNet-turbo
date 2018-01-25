@@ -1,8 +1,39 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <AssemblyName>Qoollo.Turbo</AssemblyName>
+    <Title>Qoollo.Turbo</Title>
+    
+    <TargetFrameworks>net45;net46;netstandard1.3</TargetFrameworks>
+    <TargetFrameworkKind>desktop</TargetFrameworkKind>
+    <DefineConstants>SERVICE_CLASSES_PROFILING</DefineConstants>
   </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+    <TargetFrameworkKind>core</TargetFrameworkKind>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Qoollo.Turbo</PackageId>
+    <PackageVersion>3.0.0</PackageVersion>
+    <Authors>Qoollo</Authors>
+    <PackageLicenseUrl>https://github.com/qoollo/dotNet-turbo/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/qoollo/dotNet-turbo</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/qoollo/dotNet-turbo</RepositoryUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Description>Collection of useful classes for your .NET application:
+    Object Pool, Thread Pool, Queue Async Processor, BlockingQueue, DiskQueue, ThreadSetManager, Throttling, Semaphore, EntryCounteringEvent, Collections, ReadOnlyCollections, IoC, WeakEvent and other.
+    </Description>
+    <PackageReleaseNotes>v3.0.0 (26.04.2017)
+    - .NET Core support
+    </PackageReleaseNotes>
+    <Copyright>Copyright 2015</Copyright>
+    <PackageTags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance CircularList Disk DiskQueue MemoryQueue</PackageTags>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <AssemblyVersion>3.0.0</AssemblyVersion>
+    <FileVersion>3.0.0</FileVersion>
+  </PropertyGroup>
+   
 
   <ItemGroup>
     <None Update="IoC\Associations\AssociationContainerGenerator.tt">
@@ -21,6 +52,13 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>AssociationContainerGenerator.tt</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkKind)' == 'desktop'">
+  </ItemGroup>
+ 
+  
+  <ItemGroup Condition="'$(TargetFrameworkKind)' == 'core'">   
   </ItemGroup>
 
 </Project>
