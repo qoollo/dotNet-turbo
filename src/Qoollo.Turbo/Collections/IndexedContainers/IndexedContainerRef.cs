@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -30,7 +29,8 @@ namespace Qoollo.Turbo.Collections
             /// <param name="container">IndexedContainerRef</param>
             public Enumerator(IndexedContainerRef<T> container)
             {
-                Contract.Requires<ArgumentNullException>(container != null);
+                if (container == null)
+                    throw new ArgumentNullException(nameof(container));
 
                 _capturedData = container._data;
                 _currentIndex = -1;
@@ -117,7 +117,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="initialSize">Initial size</param>
         public IndexedContainerRef(int initialSize)
         {
-            Contract.Requires<ArgumentException>(initialSize >= 0);
+            if (initialSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(initialSize), "initialSize cannot be negative");
 
             _data = new T[initialSize];
         }
@@ -166,7 +167,8 @@ namespace Qoollo.Turbo.Collections
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public void SetItem(int index, T value)
         {
-            Contract.Requires<ArgumentOutOfRangeException>(index >= 0);
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index), "index cannot be negative");
 
             lock (_lockObject)
             {
@@ -185,7 +187,8 @@ namespace Qoollo.Turbo.Collections
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public bool TrySetItem(int index, T value)
         {
-            Contract.Requires<ArgumentOutOfRangeException>(index >= 0);
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index), "index cannot be negative");
 
             lock (_lockObject)
             {

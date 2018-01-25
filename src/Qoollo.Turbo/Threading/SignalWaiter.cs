@@ -38,7 +38,7 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             SignalWaiter signalWaiter = obj as SignalWaiter;
-            Debug.Assert(signalWaiter != null);
+            TurboContract.Assert(signalWaiter != null, conditionString: "signalWaiter != null");
             signalWaiter.SignalAll();
         }
 
@@ -60,7 +60,7 @@ namespace Qoollo.Turbo.Threading
             if (originalEvent == null)
                 throw new ArgumentNullException(nameof(originalEvent));
 
-            Debug.Assert(Enum.IsDefined(typeof(SignalMode), signalMode));
+            TurboContract.Assert(Enum.IsDefined(typeof(SignalMode), signalMode), conditionString: "Enum.IsDefined(typeof(SignalMode), signalMode)");
 
             _originalEventList = null;
             _signalMode = signalMode;
@@ -87,7 +87,7 @@ namespace Qoollo.Turbo.Threading
             if (originalEvents == null)
                 throw new ArgumentNullException(nameof(originalEvents));
 
-            Debug.Assert(Enum.IsDefined(typeof(SignalMode), signalMode));
+            TurboContract.Assert(Enum.IsDefined(typeof(SignalMode), signalMode), conditionString: "Enum.IsDefined(typeof(SignalMode), signalMode)");
 
             _originalEvent = null;
             _signalMode = signalMode;
@@ -242,7 +242,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         private bool WaitUntilPredicate<TState>(WaitPredicate<TState> predicate, TState state, uint startTime, int timeout, CancellationToken token)
         {
-            Debug.Assert(predicate != null);
+            TurboContract.Assert(predicate != null, conditionString: "predicate != null");
 
             int remainingWaitMilliseconds = Timeout.Infinite;
 
@@ -476,7 +476,7 @@ namespace Qoollo.Turbo.Threading
         /// </summary>
         private void RemoveAllSubscriptions()
         {
-            Debug.Assert((_originalEvent != null && _originalEventList == null) || (_originalEvent == null && _originalEventList != null));
+            TurboContract.Assert((_originalEvent != null && _originalEventList == null) || (_originalEvent == null && _originalEventList != null), conditionString: "(_originalEvent != null && _originalEventList == null) || (_originalEvent == null && _originalEventList != null)");
 
             if (_originalEvent != null)
             {

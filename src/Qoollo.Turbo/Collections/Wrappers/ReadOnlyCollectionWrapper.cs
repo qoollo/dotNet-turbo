@@ -43,7 +43,7 @@ namespace Qoollo.Turbo.Collections
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_collection != null);
+            TurboContract.Invariant(_collection != null);
         }
 
         /// <summary>
@@ -52,7 +52,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="collection">The collection to wrap</param>
         public ReadOnlyCollectionWrapper(ICollection<T> collection)
         {
-            Contract.Requires<ArgumentNullException>(collection != null);
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             _collection = collection;
         }
@@ -79,9 +80,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="arrayIndex">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
-            Contract.Requires(array != null);
-            Contract.Requires(arrayIndex >= 0);
-            Contract.Requires(arrayIndex <= array.Length - this.Count); 
+            TurboContract.Requires(array != null, conditionString: "array != null");
+            TurboContract.Requires(arrayIndex >= 0, conditionString: "arrayIndex >= 0");
+            TurboContract.Requires(arrayIndex <= array.Length - this.Count, conditionString: "arrayIndex <= array.Length - this.Count"); 
 
             _collection.CopyTo(array, arrayIndex);
         }
@@ -220,8 +221,7 @@ namespace Qoollo.Turbo.Collections
             {
                 if (this._syncRoot == null)
                 {
-                    ICollection collection = this._collection as ICollection;
-                    if (collection != null)
+                    if (this._collection is ICollection collection)
                     {
                         this._syncRoot = collection.SyncRoot;
                     }

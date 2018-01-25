@@ -29,7 +29,7 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             PartialThreadBlocker blocker = obj as PartialThreadBlocker;
-            Debug.Assert(blocker != null);
+            TurboContract.Assert(blocker != null, conditionString: "blocker != null");
             lock (blocker._lockObj)
             {
                 Monitor.PulseAll(blocker._lockObj);
@@ -51,7 +51,8 @@ namespace Qoollo.Turbo.Threading
         /// <param name="expectedWaiterCount">Число потоков для блокировки</param>
         public PartialThreadBlocker(int expectedWaiterCount)
         {
-            Contract.Requires<ArgumentException>(expectedWaiterCount >= 0);
+            if (expectedWaiterCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(expectedWaiterCount), "expectedWaiterCount should be greater or equal to 0");
 
             _expectedWaiterCount = expectedWaiterCount;
             _realWaiterCount = 0;
@@ -99,7 +100,7 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Предыдущее значение числа потоков для блокировки</returns>
         public int SetExpectedWaiterCount(int newValue)
         {
-            Contract.Requires(newValue >= 0);
+            TurboContract.Requires(newValue >= 0, conditionString: "newValue >= 0");
 
             int prevValue = Interlocked.Exchange(ref _expectedWaiterCount, newValue);
             WakeUpWaiters(newValue - prevValue);
@@ -114,13 +115,13 @@ namespace Qoollo.Turbo.Threading
         {
             SpinWait sw = new SpinWait();
             int expectedWaiterCount = _expectedWaiterCount;
-            Debug.Assert(expectedWaiterCount + addValue >= 0, "Negative ExpectedWaiterCount. Can be commented");
+            TurboContract.Assert(expectedWaiterCount + addValue >= 0, "Negative ExpectedWaiterCount. Can be commented");
             int newExpectedWaiterCount = Math.Max(0, expectedWaiterCount + addValue);
             while (Interlocked.CompareExchange(ref _expectedWaiterCount, newExpectedWaiterCount, expectedWaiterCount) != expectedWaiterCount)
             {
                 sw.SpinOnce();
                 expectedWaiterCount = _expectedWaiterCount;
-                Debug.Assert(expectedWaiterCount + addValue >= 0, "Negative ExpectedWaiterCount. Can be commented");
+                TurboContract.Assert(expectedWaiterCount + addValue >= 0, "Negative ExpectedWaiterCount. Can be commented");
                 newExpectedWaiterCount = Math.Max(0, expectedWaiterCount + addValue);
             }
 
@@ -220,7 +221,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait()
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, new CancellationToken());
-            Debug.Assert(semaphoreSlotTaken);
+            TurboContract.Assert(semaphoreSlotTaken, conditionString: "semaphoreSlotTaken");
         }
         /// <summary>
         /// Заблокироваться, если требуется
@@ -230,7 +231,7 @@ namespace Qoollo.Turbo.Threading
         public void Wait(CancellationToken token)
         {
             bool semaphoreSlotTaken = Wait(Timeout.Infinite, token);
-            Debug.Assert(semaphoreSlotTaken);
+            TurboContract.Assert(semaphoreSlotTaken, conditionString: "semaphoreSlotTaken");
         }
         /// <summary>
         /// Заблокироваться, если требуется
@@ -241,7 +242,7 @@ namespace Qoollo.Turbo.Threading
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
 
             return Wait((int)timeoutMs, new CancellationToken());
         }
@@ -255,7 +256,7 @@ namespace Qoollo.Turbo.Threading
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
 
             return Wait((int)timeoutMs, token);
         }

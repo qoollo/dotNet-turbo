@@ -54,7 +54,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private static void RunInnerHelper(object workItemState)
         {
             ThreadPoolWorkItem workItem = (ThreadPoolWorkItem)workItemState;
-            Debug.Assert(workItem != null);
+            TurboContract.Assert(workItem != null, conditionString: "workItem != null");
             workItem.RunInner();
         }
 

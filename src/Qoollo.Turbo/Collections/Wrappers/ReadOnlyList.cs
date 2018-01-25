@@ -39,7 +39,7 @@ namespace Qoollo.Turbo.Collections
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_list != null);
+            TurboContract.Invariant(_list != null);
         }
 
         /// <summary>
@@ -56,7 +56,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="list">List to be wrapped</param>
         public ReadOnlyList(List<T> list)
         {
-            Contract.Requires<ArgumentNullException>(list != null);
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
 
             _list = list;
         }
@@ -64,13 +65,14 @@ namespace Qoollo.Turbo.Collections
         /// <summary>
         /// ReadOnlyList constructor. Creates ReadOnlyList from element sequence
         /// </summary>
-        /// <param name="data">The collection whose elements are copied to the new ReadOnlyList</param>
+        /// <param name="collection">The collection whose elements are copied to the new ReadOnlyList</param>
         /// <exception cref="System.ArgumentNullException"></exception>
-        public ReadOnlyList(IEnumerable<T> data)
+        public ReadOnlyList(IEnumerable<T> collection)
         {
-            Contract.Requires<ArgumentNullException>(data != null);
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
-            _list = new List<T>(data);
+            _list = new List<T>(collection);
         }
 
 
@@ -136,8 +138,8 @@ namespace Qoollo.Turbo.Collections
         {
             get
             {
-                Contract.Requires(index >= 0);
-                Contract.Requires(index < this.Count);
+                TurboContract.Requires(index >= 0, conditionString: "index >= 0");
+                TurboContract.Requires(index < this.Count, conditionString: "index < this.Count");
 
                 return _list[index];
             }
@@ -161,9 +163,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="arrayIndex">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
-            Contract.Requires(array != null);
-            Contract.Requires(arrayIndex >= 0);
-            Contract.Requires(arrayIndex <= array.Length - this.Count);
+            TurboContract.Requires(array != null, conditionString: "array != null");
+            TurboContract.Requires(arrayIndex >= 0, conditionString: "arrayIndex >= 0");
+            TurboContract.Requires(arrayIndex <= array.Length - this.Count, conditionString: "arrayIndex <= array.Length - this.Count");
 
             _list.CopyTo(array, arrayIndex);
         }
@@ -192,7 +194,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool Exists(Predicate<T> match)
         {
-            Contract.Requires(match != null);
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             return _list.Exists(match);
         }
@@ -205,7 +207,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public T Find(Predicate<T> match)
         {
-            Contract.Requires(match != null);
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             return _list.Find(match);
         }
@@ -216,7 +218,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>An array with copied elements</returns>
         public T[] ToArray()
         {
-            Contract.Ensures(Contract.Result<T[]>() != null);
+            TurboContract.Ensures(TurboContract.Result<T[]>() != null);
 
             return _list.ToArray();
         }
@@ -226,7 +228,7 @@ namespace Qoollo.Turbo.Collections
         /// <param name="action">Action</param>
         public void ForEach(Action<T> action)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
 
             _list.ForEach(action);
         }
@@ -239,7 +241,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool TrueForAll(Predicate<T> match)
         {
-            Contract.Requires(match != null);
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             return _list.TrueForAll(match);
         }
@@ -253,8 +255,8 @@ namespace Qoollo.Turbo.Collections
         /// <returns>Created TransformedReadOnlyListWrapper</returns>
         public TransformedReadOnlyListWrapper<T, TOut> AsTransformedReadOnlyList<TOut>(Func<T, TOut> selector)
         {
-            Contract.Requires(selector != null);
-            Contract.Ensures(Contract.Result<TransformedReadOnlyListWrapper<T, TOut>>() != null);
+            TurboContract.Requires(selector != null, conditionString: "selector != null");
+            TurboContract.Ensures(TurboContract.Result<TransformedReadOnlyListWrapper<T, TOut>>() != null);
 
             return new TransformedReadOnlyListWrapper<T, TOut>(_list, selector);
         }

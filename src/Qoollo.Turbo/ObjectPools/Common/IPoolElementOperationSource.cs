@@ -30,7 +30,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
 
         public bool IsValid(PoolElementWrapper<T> container)
         {
-            Contract.Requires(container != null);
+            TurboContract.Requires(container != null, conditionString: "container != null");
 
             throw new NotImplementedException();
         }

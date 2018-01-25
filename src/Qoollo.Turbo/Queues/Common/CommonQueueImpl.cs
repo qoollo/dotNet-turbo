@@ -71,7 +71,7 @@ namespace Qoollo.Turbo.Queues.Common
         public void Add(T item)
         {
             bool addResult = TryAddCore(item, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(addResult, "addResult != true");
+            TurboContract.Assert(addResult, "addResult != true");
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -82,7 +82,7 @@ namespace Qoollo.Turbo.Queues.Common
         public void Add(T item, CancellationToken token)
         {
             bool addResult = TryAddCore(item, Timeout.Infinite, token);
-            Debug.Assert(addResult, "addResult != true");
+            TurboContract.Assert(addResult, "addResult != true");
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace Qoollo.Turbo.Queues.Common
         {
             T result;
             bool takeResult = TryTakeCore(out result, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(takeResult, "takeResult != true");
+            TurboContract.Assert(takeResult, "takeResult != true");
 
             return result;
         }
@@ -181,7 +181,7 @@ namespace Qoollo.Turbo.Queues.Common
         {
             T result;
             bool takeResult = TryTakeCore(out result, Timeout.Infinite, token);
-            Debug.Assert(takeResult, "takeResult != true");
+            TurboContract.Assert(takeResult, "takeResult != true");
 
             return result;
         }
@@ -267,7 +267,7 @@ namespace Qoollo.Turbo.Queues.Common
         {
             T result;
             bool takeResult = TryPeekCore(out result, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(takeResult, "takeResult != true");
+            TurboContract.Assert(takeResult, "takeResult != true");
 
             return result;
         }
@@ -281,7 +281,7 @@ namespace Qoollo.Turbo.Queues.Common
         {
             T result;
             bool takeResult = TryPeekCore(out result, Timeout.Infinite, token);
-            Debug.Assert(takeResult, "takeResult != true");
+            TurboContract.Assert(takeResult, "takeResult != true");
 
             return result;
         }

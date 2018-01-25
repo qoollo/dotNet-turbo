@@ -30,9 +30,9 @@ namespace Qoollo.Turbo
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_valueStorage != null || _staticDelegateStorage != null);
-            Contract.Invariant(_delegateType != null);
-            Contract.Invariant(_methodInfo != null);
+            TurboContract.Invariant(_valueStorage != null || _staticDelegateStorage != null);
+            TurboContract.Invariant(_delegateType != null);
+            TurboContract.Invariant(_methodInfo != null);
         }
 
         /// <summary>
@@ -41,7 +41,8 @@ namespace Qoollo.Turbo
         /// <param name="value">Source delegate</param>
         public WeakDelegate(Delegate value)
         {
-            Contract.Requires<ArgumentNullException>(value != null);
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
             _delegateType = value.GetType();
             _methodInfo = value.Method;

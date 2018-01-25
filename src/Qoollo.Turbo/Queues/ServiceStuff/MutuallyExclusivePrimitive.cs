@@ -422,7 +422,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
         private void SwapGatesAtomic(int newCombinedStateValue)
         {
-            Debug.Assert(!IsBackgroundGateOpened(newCombinedStateValue) || !IsMainGateOpened(newCombinedStateValue), "Two gates can't be opened at the same time");
+            TurboContract.Assert(!IsBackgroundGateOpened(newCombinedStateValue) || !IsMainGateOpened(newCombinedStateValue), "Two gates can't be opened at the same time");
 
             bool lockTaken = false;
             try
@@ -432,7 +432,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                     return;
 
                 int combinedState = _combinedState; // Should reread the current state
-                Debug.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
+                TurboContract.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
 
                 try { }
                 finally
@@ -449,7 +449,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                         _backgroundGate.Open();
                 }
 
-                Debug.Assert(IsBackgroundGateOpened(combinedState) == _backgroundGate.IsOpened && IsMainGateOpened(combinedState) == _mainGate.IsOpened, "Gate states should be in sync");
+                TurboContract.Assert(IsBackgroundGateOpened(combinedState) == _backgroundGate.IsOpened && IsMainGateOpened(combinedState) == _mainGate.IsOpened, "Gate states should be in sync");
             }
             finally
             {
@@ -460,7 +460,7 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
 
         private int UpdateZeroClientCountState(int newCombinedStateValue)
         {
-            Debug.Assert(GetClientCount(newCombinedStateValue) == 0);
+            TurboContract.Assert(GetClientCount(newCombinedStateValue) == 0, conditionString: "GetClientCount(newCombinedStateValue) == 0");
 
             if (_mainGate.WaiterCount > 0)
             {
@@ -487,10 +487,10 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 int combinedState = _combinedState;
                 int newValue = combinedState;
                 bool canEnter = false;
-                Debug.Assert(combinedState >= 0);
-                Debug.Assert(GetClientCount(combinedState) + 1 < ClientCountMask, "Client number is too large");
-                Debug.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
-                Debug.Assert(IsAllowBackground(combinedState) || !IsBackgroundGateOpened(combinedState), "When background is not allowed, background gate should be closed");
+                TurboContract.Assert(combinedState >= 0, conditionString: "combinedState >= 0");
+                TurboContract.Assert(GetClientCount(combinedState) + 1 < ClientCountMask, "Client number is too large");
+                TurboContract.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
+                TurboContract.Assert(IsAllowBackground(combinedState) || !IsBackgroundGateOpened(combinedState), "When background is not allowed, background gate should be closed");
 
 
                 if (GetClientCount(combinedState) == 0) // Can open any gate
@@ -523,12 +523,12 @@ namespace Qoollo.Turbo.Queues.ServiceStuff
                 int combinedState = _combinedState;
                 int newValue = combinedState - 1;
 
-                Debug.Assert(combinedState >= 0);
-                Debug.Assert((!IsMainGateOpened(combinedState) && isBackground) || (!IsBackgroundGateOpened(combinedState) && !isBackground), "Can exit only if specified gate opened");
-                Debug.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
+                TurboContract.Assert(combinedState >= 0, conditionString: "combinedState >= 0");
+                TurboContract.Assert((!IsMainGateOpened(combinedState) && isBackground) || (!IsBackgroundGateOpened(combinedState) && !isBackground), "Can exit only if specified gate opened");
+                TurboContract.Assert(!IsBackgroundGateOpened(combinedState) || !IsMainGateOpened(combinedState), "Two gates can't be opened at the same time");
 
-                Debug.Assert(GetClientCount(combinedState) > 0, "Client number should be positive");
-                Debug.Assert(IsAllowBackground(combinedState) || !IsBackgroundGateOpened(combinedState), "When background is not allowed, background gate should be closed");
+                TurboContract.Assert(GetClientCount(combinedState) > 0, "Client number should be positive");
+                TurboContract.Assert(IsAllowBackground(combinedState) || !IsBackgroundGateOpened(combinedState), "When background is not allowed, background gate should be closed");
 
                 if (GetClientCount(newValue) == 0) // zero number of clients => can switch gates
                     newValue = UpdateZeroClientCountState(newValue);

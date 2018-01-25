@@ -390,8 +390,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>Успешность</returns>
         private bool IncrementThreadCount(out int newThreadCount)
         {
-            Contract.Ensures(EvaluateThreadCountFromCombination() >= 0);
-            Contract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
 
             SpinWait sw = new SpinWait();
             var dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -421,9 +421,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>Успешность</returns>
         private bool DecremenetThreadCount(int minThreadCount = 0)
         {
-            Contract.Requires(minThreadCount >= 0);
-            Contract.Ensures(EvaluateThreadCountFromCombination() >= 0);
-            Contract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
+            TurboContract.Requires(minThreadCount >= 0, conditionString: "minThreadCount >= 0");
+            TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
 
             SpinWait sw = new SpinWait();
             var dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -468,8 +468,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>Успешность</returns>
         private bool DecrementThreadCountCascade(out bool wasActiveThreadCountDecremented)
         {
-            Contract.Ensures(EvaluateThreadCountFromCombination() >= 0);
-            Contract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
 
             SpinWait sw = new SpinWait();
             var dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -496,8 +496,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>Успешность</returns>
         private bool IncrementActiveThreadCount()
         {
-            Contract.Ensures(EvaluateThreadCountFromCombination() >= 0);
-            Contract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
 
             SpinWait sw = new SpinWait();
             var dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -522,9 +522,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>Успешность</returns>
         private bool DecrementActiveThreadCount(int activeThreadCountLowLimit = 0)
         {
-            Contract.Requires(activeThreadCountLowLimit >= 0);
-            Contract.Ensures(EvaluateThreadCountFromCombination() >= 0);
-            Contract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
+            TurboContract.Requires(activeThreadCountLowLimit >= 0, conditionString: "activeThreadCountLowLimit >= 0");
+            TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
 
             SpinWait sw = new SpinWait();
             var dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -551,10 +551,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>Успешность</returns>
         private bool RequestDieSlot(int threadCountLowLimit, int curThreadCountMax = int.MaxValue)
         {
-            Contract.Requires(threadCountLowLimit >= 0);
-            Contract.Requires(curThreadCountMax >= 0);
-            Contract.Ensures(EvaluateThreadCountFromCombination() >= 0);
-            Contract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
+            TurboContract.Requires(threadCountLowLimit >= 0, conditionString: "threadCountLowLimit >= 0");
+            TurboContract.Requires(curThreadCountMax >= 0, conditionString: "curThreadCountMax >= 0");
+            TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
+            TurboContract.Ensures(EvaluatePausedThreadCountFromCombination() >= 0);
 
             SpinWait sw = new SpinWait();
             var dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -660,9 +660,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                 int threadCountBefore = base.ThreadCount;
                 try
                 {
-                    int trackingThreadCount = 0;
-                    bool incrementThreadCountSuccess = IncrementThreadCount(out trackingThreadCount);
-                    Debug.Assert(incrementThreadCountSuccess, "Error. Thread count was not incremented");
+                    bool incrementThreadCountSuccess = IncrementThreadCount(out int trackingThreadCount);
+                    TurboContract.Assert(incrementThreadCountSuccess, "Error. Thread count was not incremented");
 
                     result = AddNewThread(UniversalThreadProc) != null;
                 }
@@ -676,7 +675,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                     else
                     {
                         bool decrementThreadCountSuccess = DecremenetThreadCount();
-                        Debug.Assert(decrementThreadCountSuccess, "Error. Thread count was not decremented");
+                        TurboContract.Assert(decrementThreadCountSuccess, "Error. Thread count was not decremented");
                     }
                 }
 
@@ -705,6 +704,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="elem">Thread to be removed</param>
         protected override void OnThreadRemove(Thread elem)
         {
+            TurboContract.Requires(elem != null, conditionString: "elem != null");
+
             base.OnThreadRemove(elem);
 
             lock (_syncObject)
@@ -714,7 +715,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                 {
                     bool wasActiveThreadCountDecremented = false;
                     bool decrementThreadCountSuccess = DecrementThreadCountCascade(out wasActiveThreadCountDecremented);
-                    Debug.Assert(decrementThreadCountSuccess, "Error. Thread count was not decremented.");
+                    TurboContract.Assert(decrementThreadCountSuccess, "Error. Thread count was not decremented.");
                     // Если не было уменьшения активных, то заблокируем лишний => уменьшае число потоков для блокирования
                     if (!wasActiveThreadCountDecremented)
                     {
@@ -938,6 +939,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="item">Thread pool work item</param>
         protected sealed override void AddWorkItem(ThreadPoolWorkItem item)
         {
+            TurboContract.Requires(item != null, conditionString: "item != null");
+
             CheckDisposed();
             if (IsAddingCompleted)
                 throw new InvalidOperationException("Adding was completed for ThreadPool: " + Name);
@@ -954,6 +957,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>True if work item was added to the queue, otherwise false</returns>
         protected sealed override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
+            TurboContract.Requires(item != null, conditionString: "item != null");
+
             if (State == ThreadPoolState.Stopped || IsAddingCompleted)
                 return false;
 

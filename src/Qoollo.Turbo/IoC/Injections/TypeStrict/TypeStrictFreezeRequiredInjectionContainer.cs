@@ -41,7 +41,7 @@ namespace Qoollo.Turbo.IoC.Injections
         protected override bool IsGoodInjectionForKey(Type key, object injection)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (injection != null)
             {
@@ -70,8 +70,7 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection object is registered for the specified key; overwise false</returns>
         public bool TryGetInjection<T>(out T val)
         {
-            object tmp = null;
-            if (this.TryGetInjection(typeof(T), out tmp))
+            if (this.TryGetInjection(typeof(T), out object tmp))
             {
                 val = (T)tmp;
                 return true;
@@ -147,6 +146,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>Resolved instance to be injected</returns>
         object IInjectionResolver.Resolve(Type reqObjectType, string paramName, Type forType, object extData)
         {
+            TurboContract.Requires(reqObjectType != null, conditionString: "reqObjectType != null");
+
             return this.GetInjection(reqObjectType);
         }
         /// <summary>

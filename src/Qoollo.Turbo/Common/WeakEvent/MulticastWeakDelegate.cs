@@ -18,8 +18,8 @@ namespace Qoollo.Turbo
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_locker != null);
-            Contract.Invariant(_handlers != null);
+            TurboContract.Invariant(_locker != null);
+            TurboContract.Invariant(_handlers != null);
         }
  
         private readonly object _locker;
@@ -44,8 +44,10 @@ namespace Qoollo.Turbo
         /// <param name="reference">New subscriber</param>
         public void Add(T reference)
         {
-            Contract.Requires(reference != null);
-            Debug.Assert(reference is Delegate);
+            if (reference == null)
+                return;
+
+            TurboContract.Assert(reference is Delegate, conditionString: "reference is Delegate");
 
             if (reference is MulticastDelegate)
             {
@@ -75,7 +77,11 @@ namespace Qoollo.Turbo
         /// <param name="reference">Subscriber that will be removed</param>
         public void Remove(T reference)
         {
-            Contract.Requires(reference != null);
+            if (reference == null)
+                return;
+
+
+            TurboContract.Assert(reference is Delegate, conditionString: "reference is Delegate");
 
             if (reference is MulticastDelegate)
             {
@@ -113,7 +119,7 @@ namespace Qoollo.Turbo
             {
                 for (int i = 0; i < _handlers.Count; i++)
                 {
-                    Debug.Assert(_handlers[i] != null);
+                    TurboContract.Assert(_handlers[i] != null, conditionString: "_handlers[i] != null");
 
                     var newDeleg = _handlers[i].GetDelegate();
                     if (newDeleg != null)

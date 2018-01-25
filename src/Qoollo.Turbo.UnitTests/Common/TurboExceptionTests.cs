@@ -121,5 +121,12 @@ namespace Qoollo.Turbo.UnitTests.Common
                 Assert.IsTrue(ex.GetType() == typeof(ArgumentException));
             }
         }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestWithNonExceptionType()
+        {
+            TurboException.Throw(typeof(int), "message");
+        }
     }
 }

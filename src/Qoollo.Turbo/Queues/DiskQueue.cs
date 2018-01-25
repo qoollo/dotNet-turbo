@@ -197,34 +197,34 @@ namespace Qoollo.Turbo.Queues
         [Conditional("DEBUG")]
         private void VerifyConsistency()
         {
-            Debug.Assert(Monitor.IsEntered(_segmentOperationsLock), "segment lock is not acquired");
+            TurboContract.Assert(Monitor.IsEntered(_segmentOperationsLock), "segment lock is not acquired");
 
-            Debug.Assert(_headSegment != null, "_headSegment != null");
-            Debug.Assert(_tailSegment != null, "_tailSegment != null");
-            Debug.Assert(_segments.Count > 0, "_segments.Count > 0");
-            Debug.Assert(_tailSegment == _segments[_segments.Count - 1], "_tailSegment == _segments[_segments.Count - 1]");
+            TurboContract.Assert(_headSegment != null, conditionString: "_headSegment != null");
+            TurboContract.Assert(_tailSegment != null, conditionString: "_tailSegment != null");
+            TurboContract.Assert(_segments.Count > 0, conditionString: "_segments.Count > 0");
+            TurboContract.Assert(_tailSegment == _segments[_segments.Count - 1], conditionString: "_tailSegment == _segments[_segments.Count - 1]");
 
             bool beforeHead = true;
             DiskQueueSegmentWrapper<T> prevSegment = null;
             _segments.ForEach(curSegment =>
             {
                 if (prevSegment != null)
-                    Debug.Assert(prevSegment.NextSegment == curSegment, "Linked-list of segments is broken");
+                    TurboContract.Assert(prevSegment.NextSegment == curSegment, "Linked-list of segments is broken");
 
                 if (curSegment == _headSegment)
                 {
-                    Debug.Assert(beforeHead, "Head segments met twice");
+                    TurboContract.Assert(beforeHead, "Head segments met twice");
                     beforeHead = false;
                 }
 
                 if (beforeHead)
-                    Debug.Assert(curSegment.IsCompleted, "All segements before head should be in IsCompleted state");
+                    TurboContract.Assert(curSegment.IsCompleted, "All segements before head should be in IsCompleted state");
                 if (curSegment != _tailSegment)
-                    Debug.Assert(curSegment.IsFull, "All segements before tail should be in IsFull state");
+                    TurboContract.Assert(curSegment.IsFull, "All segements before tail should be in IsFull state");
 
                 prevSegment = curSegment;
             });
-            Debug.Assert(!beforeHead, "HeadSegment is not found in the list of segments");
+            TurboContract.Assert(!beforeHead, "HeadSegment is not found in the list of segments");
         }
 
 
@@ -294,14 +294,14 @@ namespace Qoollo.Turbo.Queues
         {
             CheckDisposed();
 
-            Debug.Assert(Monitor.IsEntered(_segmentOperationsLock));
-            Debug.Assert(!Monitor.IsEntered(_takeMonitor));
-            Debug.Assert(!Monitor.IsEntered(_peekMonitor));
+            TurboContract.Assert(Monitor.IsEntered(_segmentOperationsLock), conditionString: "Monitor.IsEntered(_segmentOperationsLock)");
+            TurboContract.Assert(!Monitor.IsEntered(_takeMonitor), conditionString: "!Monitor.IsEntered(_takeMonitor)");
+            TurboContract.Assert(!Monitor.IsEntered(_peekMonitor), conditionString: "!Monitor.IsEntered(_peekMonitor)");
 
             var result = _segmentFactory.CreateSegmentWrapped(_segmentsPath, checked(++_lastSegmentNumber));
             if (result == null)
                 throw new InvalidOperationException("CreateSegment returned null");
-            Debug.Assert(result.Number == _lastSegmentNumber);
+            TurboContract.Assert(result.Number == _lastSegmentNumber, conditionString: "result.Number == _lastSegmentNumber");
 
             _segments.Add(result);
             _tailSegment.NextSegment = result;
@@ -318,7 +318,7 @@ namespace Qoollo.Turbo.Queues
         /// <returns>New head segment</returns>
         private DiskQueueSegmentWrapper<T> MoveHeadToNonCompletedSegment()
         {
-            Debug.Assert(Monitor.IsEntered(_segmentOperationsLock));
+            TurboContract.Assert(Monitor.IsEntered(_segmentOperationsLock), conditionString: "Monitor.IsEntered(_segmentOperationsLock)");
 
             DiskQueueSegmentWrapper<T> curHeadSegment = _headSegment;
 
@@ -435,7 +435,7 @@ namespace Qoollo.Turbo.Queues
                     if (tailSegment.TryAdd(item))
                         return;
 
-                    Debug.Assert(tailSegment.IsFull);
+                    TurboContract.Assert(tailSegment.IsFull, conditionString: "tailSegment.IsFull");
                 }
 
                 if (_isDisposed)
@@ -459,7 +459,7 @@ namespace Qoollo.Turbo.Queues
             var tailSegment = _tailSegment;
             if (!tailSegment.TryAdd(item))
             {
-                Debug.Assert(tailSegment.IsFull);
+                TurboContract.Assert(tailSegment.IsFull, conditionString: "tailSegment.IsFull");
                 AddForcedSlow(item); // Enter slow path (should be rare with reasonable size of the segment)
             }
 
@@ -499,7 +499,7 @@ namespace Qoollo.Turbo.Queues
                     if (tailSegment != null && tailSegment.TryAdd(item))
                         return true;
 
-                    Debug.Assert(tailSegment == null || tailSegment.IsFull);
+                    TurboContract.Assert(tailSegment == null || tailSegment.IsFull, conditionString: "tailSegment == null || tailSegment.IsFull");
                 }
                 while (waiter.Wait());
             }
@@ -526,9 +526,9 @@ namespace Qoollo.Turbo.Queues
             if (_addMonitor.WaiterCount == 0) // Check WaiterCount to preserve fairness
             {
                 var tailSegment = _tailSegment;
-                Debug.Assert(tailSegment != null);
+                TurboContract.Assert(tailSegment != null, conditionString: "tailSegment != null");
                 result = tailSegment.TryAdd(item);
-                Debug.Assert(result || tailSegment.IsFull);
+                TurboContract.Assert(result || tailSegment.IsFull, conditionString: "result || tailSegment.IsFull");
             }
 
             if (!result)
@@ -613,7 +613,7 @@ namespace Qoollo.Turbo.Queues
             if (_takeMonitor.WaiterCount == 0) // Check WaiterCount to preserve fairness
             {
                 var headSegment = _headSegment;
-                Debug.Assert(headSegment != null);
+                TurboContract.Assert(headSegment != null, conditionString: "headSegment != null");
                 result = headSegment.TryTake(out item);
             }
 
@@ -690,7 +690,7 @@ namespace Qoollo.Turbo.Queues
             if (_peekMonitor.WaiterCount == 0) // Preserve fairness
             {
                 var headSegment = _headSegment;
-                Debug.Assert(headSegment != null);
+                TurboContract.Assert(headSegment != null, conditionString: "headSegment != null");
                 if (headSegment.TryPeek(out item))
                     return true;
             }

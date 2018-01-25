@@ -19,6 +19,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>Resolved object</returns>
         public static T GetInjection<T>(this GenericInjectionContainerBase<Type> obj)
         {
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+
             return (T)obj.GetInjection(typeof(T));
         }
 
@@ -31,8 +33,9 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection object is registered for the specified key; overwise false</returns>
         public static bool TryGetInjection<T>(this GenericInjectionContainerBase<Type> obj, out T val)
         {
-            object tmpVal = null;
-            if (obj.TryGetInjection(typeof(T), out tmpVal))
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+
+            if (obj.TryGetInjection(typeof(T), out object tmpVal))
             {
                 val = (T)tmpVal;
                 return true;
@@ -49,6 +52,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the InjectionSource contains the object of the specified type</returns>
         public static bool Contains<T>(this GenericInjectionContainerBase<Type> obj)
         {
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+
             return obj.Contains(typeof(T));
         }
 
@@ -61,6 +66,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <param name="val">Object to add</param>
         public static void AddInjection<T>(this GenericInjectionContainerBase<Type> obj, T val)
         {
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+
             obj.AddInjection(typeof(T), val);
         }
 
@@ -74,6 +81,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection was added, that is InjectionContainer not contains lifetime container with the same key; overwise false</returns>
         public static bool TryAddInjection<T>(this GenericInjectionContainerBase<Type> obj, T val)
         {
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+
             return obj.TryAddInjection(typeof(T), val);
         }
 
@@ -86,6 +95,8 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <returns>True if the injection was presented in container</returns>
         public static bool RemoveInjection<T>(this GenericInjectionContainerBase<Type> obj)
         {
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+
             return obj.RemoveInjection(typeof(T));
         }
     }

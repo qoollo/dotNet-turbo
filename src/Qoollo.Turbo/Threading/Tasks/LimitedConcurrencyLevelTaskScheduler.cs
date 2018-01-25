@@ -29,7 +29,7 @@ namespace Qoollo.Turbo.Threading.Tasks
         public LimitedConcurrencyLevelTaskScheduler(int maxDegreeOfParallelism)
         {
             if (maxDegreeOfParallelism < 1) 
-                throw new ArgumentOutOfRangeException("maxDegreeOfParallelism");
+                throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism));
 
             _maxDegreeOfParallelism = maxDegreeOfParallelism;
         }

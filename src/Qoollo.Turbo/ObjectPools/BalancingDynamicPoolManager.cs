@@ -33,7 +33,7 @@ namespace Qoollo.Turbo.ObjectPools
             /// <param name="objectPool">Parent object pool</param>
             public ElementComparer(BalancingDynamicPoolManager<TElem> objectPool)
             {
-                Contract.Requires(objectPool != null);
+                TurboContract.Requires(objectPool != null, conditionString: "objectPool != null");
 
                 _objectPool = objectPool;
             }
@@ -47,6 +47,9 @@ namespace Qoollo.Turbo.ObjectPools
             /// <returns>Comparison result</returns>
             public override int Compare(PoolElementWrapper<TElem> a, PoolElementWrapper<TElem> b, out bool stopHere)
             {
+                TurboContract.Requires(a != null, conditionString: "a != null");
+                TurboContract.Requires(b != null, conditionString: "b != null");
+
                 return _objectPool.CompareElements(a.Element, b.Element, out stopHere);
             }
         }
@@ -304,9 +307,9 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="element">Element</param>
         private void DestroyAndRemoveElement(PoolElementWrapper<TElem> element)
         {
-            Contract.Requires(element != null);
-            Contract.Requires(element.IsBusy);
-            Contract.Requires(!element.IsElementDestroyed);
+            TurboContract.Requires(element != null, conditionString: "element != null");
+            TurboContract.Requires(element.IsBusy, conditionString: "element.IsBusy");
+            TurboContract.Requires(!element.IsElementDestroyed, conditionString: "!element.IsElementDestroyed");
 
             try
             {
@@ -397,7 +400,7 @@ namespace Qoollo.Turbo.ObjectPools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool ProcessTakenElement(ref PoolElementWrapper<TElem> element)
         {
-            Contract.Requires(element != null);
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             if (this.IsValidElement(element.Element))
                 return true;
@@ -418,7 +421,7 @@ namespace Qoollo.Turbo.ObjectPools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CreateNewInsteadOfTakenIfRequired(ref PoolElementWrapper<TElem> element, int timeout, CancellationToken token)
         {
-            Contract.Requires(element != null);
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             if (Volatile.Read(ref _reservedCount) < _maxElementCount && this.IsBetterAllocateNew(element.Element))
             {
@@ -567,7 +570,7 @@ namespace Qoollo.Turbo.ObjectPools
                 if (timeout >= 0)
                     throw new TimeoutException(string.Format("Pool 'Rent' operation has timeouted. Pool: {0}. Timeout value: {1}ms", this.Name, timeout));
 
-                Debug.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
+                TurboContract.Assert(false, "Element in pool is not available. Reason: UNKNOWN!");
                 throw new CantRetrieveElementException("Rent from pool failed");
             }
 
@@ -584,6 +587,8 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="element">Element wrapper to be released</param>
         protected internal sealed override void ReleaseElement(PoolElementWrapper<TElem> element)
         {
+            TurboContract.Requires(element != null, conditionString: "element != null");
+
             if (!element.IsBusy)
                 throw new InvalidOperationException("Trying to release same element several times in Pool: " + this.Name);
 
@@ -622,6 +627,8 @@ namespace Qoollo.Turbo.ObjectPools
         /// <returns>Whether the element is valid</returns>
         bool IPoolElementOperationSource<TElem>.IsValid(PoolElementWrapper<TElem> container)
         {
+            TurboContract.Requires(container != null, conditionString: "container != null");
+
             return this.IsValidElement(container.Element);
         }
 
@@ -672,7 +679,7 @@ namespace Qoollo.Turbo.ObjectPools
                 {
                     int count = _elementsContainer.Count;
                     while (TakeDestroyAndRemoveElement())
-                        Debug.Assert(--count >= 0);
+                        TurboContract.Assert(--count >= 0, conditionString: "--count >= 0");
 
                     if (_elementsContainer.Count == 0)
                         _stoppedEvent.Set();
@@ -717,7 +724,7 @@ namespace Qoollo.Turbo.ObjectPools
 #if DEBUG
                 var elementsContainer = _elementsContainer;
                 if (elementsContainer == null)
-                    Debug.Assert(false, "BalancingDynamicPoolManager should be Disposed by user! PoolName: " + this.Name);
+                    TurboContract.Assert(false, "BalancingDynamicPoolManager should be Disposed by user! PoolName: " + this.Name);
 
                 elementsContainer.ProcessFreeElements(o => o.MarkElementDestroyed());
 #endif

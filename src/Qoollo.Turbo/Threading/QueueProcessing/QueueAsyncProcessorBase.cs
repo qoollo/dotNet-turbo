@@ -29,7 +29,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         public void Add(T element)
         {
             bool result = Add(element, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(result);
+            TurboContract.Assert(result, "Add returned false with infinite timeout");
         }
         /// <summary>
         /// Adds new item to processing queue
@@ -39,7 +39,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         public void Add(T element, CancellationToken token)
         {
             bool result = Add(element, Timeout.Infinite, token);
-            Debug.Assert(result);
+            TurboContract.Assert(result, "Add returned false with infinite timeout");
         }
         /// <summary>
         /// Attempts to add new item to processing queue

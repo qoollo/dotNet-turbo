@@ -23,11 +23,11 @@ namespace Qoollo.Turbo.IoC
         [ContractInvariantMethod]
         private static void Invariant()
         {
-            Contract.Invariant(Singleton != null);
-            Contract.Invariant(DeferedSingleton != null);
-            Contract.Invariant(PerThread != null);
-            Contract.Invariant(PerCall != null);
-            Contract.Invariant(PerCallInlinedParams != null); 
+            TurboContract.Invariant(Singleton != null);
+            TurboContract.Invariant(DeferedSingleton != null);
+            TurboContract.Invariant(PerThread != null);
+            TurboContract.Invariant(PerCall != null);
+            TurboContract.Invariant(PerCallInlinedParams != null); 
         }
 
 
@@ -86,7 +86,7 @@ namespace Qoollo.Turbo.IoC
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LifetimeFactory GetLifetimeFactory(ObjectInstantiationMode instMode)
         {
-            Contract.Ensures(Contract.Result<LifetimeFactory>() != null);
+            TurboContract.Ensures(TurboContract.Result<LifetimeFactory>() != null);
 
             switch (instMode)
             {
@@ -101,8 +101,8 @@ namespace Qoollo.Turbo.IoC
                 case ObjectInstantiationMode.PerCallInlinedParams:
                     return LifetimeFactories.PerCallInlinedParams;
             }
-            Debug.Assert(false, "Unknown ObjectInstantiationMode");
-            throw new CommonIoCException("Unknown ObjectInstantiationMode");
+            
+            throw new CommonIoCException($"Unknown ObjectInstantiationMode: {instMode}");
         }
     }
 }

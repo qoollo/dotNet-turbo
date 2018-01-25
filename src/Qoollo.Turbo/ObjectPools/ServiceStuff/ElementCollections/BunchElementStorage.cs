@@ -26,7 +26,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <param name="arr">Массив данных</param>
         public BunchElementStorage(SparceArrayStorage<PoolElementWrapper<T>> arr)
         {
-            Contract.Requires(arr != null);
+            TurboContract.Requires(arr != null, conditionString: "arr != null");
 
             _bunches = new IndexedStackElementStorage<T>[Math.Min(8, Environment.ProcessorCount)];
             for (int i = 0; i < _bunches.Length; i++)
@@ -39,7 +39,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <param name="element">Элемент</param>
         public void Add(PoolElementWrapper<T> element)
         {
-            Contract.Requires(element != null);
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             _bunches[Thread.CurrentThread.ManagedThreadId % _bunches.Length].Add(element);
         }
@@ -60,7 +60,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
                     return;
                 curIndex = (curIndex + 1) % _bunches.Length;
 
-                Debug.Assert(iterationCount++ < 1024);
+                TurboContract.Assert(iterationCount++ < 1024, conditionString: "iterationCount++ < 1024");
             }
         }
     }

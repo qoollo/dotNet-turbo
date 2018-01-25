@@ -19,7 +19,7 @@ namespace Qoollo.Turbo.Threading
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_supplier != null);
+            TurboContract.Invariant(_supplier != null);
         }
 
         private ICustomSynchronizationContextSupplier _supplier;
@@ -30,7 +30,7 @@ namespace Qoollo.Turbo.Threading
         /// <param name="supplier">Объект-исполнитель действий</param>
         public CustomSynchronizationContext(ICustomSynchronizationContextSupplier supplier)
         {
-            Contract.Requires(supplier != null);
+            TurboContract.Requires(supplier != null, conditionString: "supplier != null");
 
             _supplier = supplier;
         }
@@ -97,7 +97,7 @@ namespace Qoollo.Turbo.Threading
         /// <summary>Контракты</summary>
         public void RunAsync(SendOrPostCallback act, object state)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             throw new NotImplementedException();
         }
@@ -105,7 +105,7 @@ namespace Qoollo.Turbo.Threading
         /// <summary>Контракты</summary>
         public void RunSync(SendOrPostCallback act, object state)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             throw new NotImplementedException();
         }

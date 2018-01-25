@@ -115,15 +115,12 @@ namespace Qoollo.Turbo.IoC.Injections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object GetInjection(TKey key)
         {
-            Contract.Requires(key != null);
-
             if (key == null)
                 ThrowKeyNullException();
             if (_isDisposed)
                 CheckContainerState(false);
 
-            object res = null;
-            if (!TryGetInjectionInner(key, out res))
+            if (!TryGetInjectionInner(key, out object res))
                 ThrowKeyNotFoundException(key);
 
             return res;
@@ -138,8 +135,6 @@ namespace Qoollo.Turbo.IoC.Injections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetInjection(TKey key, out object val)
         {
-            Contract.Requires(key != null);
-
             if (key == null)
                 ThrowKeyNullException();
 
@@ -161,8 +156,6 @@ namespace Qoollo.Turbo.IoC.Injections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains(TKey key)
         {
-            Contract.Requires(key != null);
-
             if (key == null)
                 ThrowKeyNullException();
             if (_isDisposed)
@@ -180,11 +173,10 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <exception cref="ObjectFrozenException"></exception>
         public void AddInjection(TKey key, object val)
         {
-            Contract.Requires(key != null);
-            Contract.Ensures(this.ContainsInner(key));
+            TurboContract.Ensures(this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (!IsGoodInjectionForKey(key, val))
                 throw new InjectionBadKeyForItemException(string.Format("Bad key ({0}) for the supplied object", key));
@@ -204,11 +196,10 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <exception cref="ObjectFrozenException"></exception>
         public bool TryAddInjection(TKey key, object val)
         {
-            Contract.Requires(key != null);
-            Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (!IsGoodInjectionForKey(key, val))
                 throw new InjectionBadKeyForItemException(string.Format("Bad key ({0}) for the supplied object", key));
@@ -227,11 +218,10 @@ namespace Qoollo.Turbo.IoC.Injections
         /// <exception cref="ObjectFrozenException"></exception>
         public bool RemoveInjection(TKey key)
         {
-            Contract.Requires(key != null);
-            Contract.Ensures(!this.ContainsInner(key));
+            TurboContract.Ensures(!this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             CheckContainerState(true);
 
@@ -330,42 +320,42 @@ namespace Qoollo.Turbo.IoC.Injections
 
         protected override bool TryGetInjectionInner(T key, out object val)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool ContainsInner(T key)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override void AddInjectionInner(T key, object val)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool TryAddInjectionInner(T key, object val)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool RemoveInjectionInner(T key)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool IsGoodInjectionForKey(T key, object injection)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }

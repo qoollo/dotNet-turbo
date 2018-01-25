@@ -67,9 +67,9 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <param name="ownerThread">Поток-владелец</param>
         public void SetOwnerThread(Thread ownerThread)
         {
-            Contract.Requires(ownerThread != null);
+            TurboContract.Requires(ownerThread != null, conditionString: "ownerThread != null");
 
-            System.Diagnostics.Debug.Assert(this.IsUnowned);
+            TurboContract.Assert(this.IsUnowned, conditionString: "this.IsUnowned");
             _ownerThread = ownerThread;
         }
 
@@ -95,7 +95,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryAdd(T element)
         {
-            Contract.Requires(element != null);
+            TurboContract.Requires(element != null, conditionString: "element != null");
             return Interlocked.CompareExchange(ref _element, element, null) == null;
         }
     }

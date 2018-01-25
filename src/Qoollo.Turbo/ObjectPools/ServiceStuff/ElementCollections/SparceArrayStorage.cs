@@ -129,7 +129,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <returns>Индекс в массиве</returns>
         public int Add(T element)
         {
-            Contract.Requires(element != null);
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             lock (_syncObj)
             {
@@ -152,9 +152,9 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
                     data = IncreaseLength();
                 }
 
-                Debug.Assert(index >= 0);
-                Debug.Assert(index < data.Length);
-                Debug.Assert(data[index] == null);
+                TurboContract.Assert(index >= 0, conditionString: "index >= 0");
+                TurboContract.Assert(index < data.Length, conditionString: "index < data.Length");
+                TurboContract.Assert(data[index] == null, conditionString: "data[index] == null");
 
                 try { }
                 finally
@@ -175,8 +175,8 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <returns>Успешность</returns>
         private bool RemoveCore(int index)
         {
-            Contract.Requires(index >= 0);
-            Contract.Requires(index < _data.Length);
+            TurboContract.Requires(index >= 0, conditionString: "index >= 0");
+            TurboContract.Requires(index < _data.Length, conditionString: "index < _data.Length");
 
             T[] data = _data;
             if (Volatile.Read(ref data[index]) == null)
@@ -201,7 +201,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <returns>Был ли удалён элемент</returns>
         public bool RemoveAt(int index)
         {
-            Contract.Requires(index >= 0);
+            TurboContract.Requires(index >= 0, conditionString: "index >= 0");
 
             lock (_syncObj)
             {
@@ -219,7 +219,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <returns>Был ли удалён элемент</returns>
         public bool Remove(T element)
         {
-            Contract.Requires(element != null);
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             lock (_syncObj)
             {
@@ -247,7 +247,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
                 return;
 
             int newSize = count + (BlockSize - (count % BlockSize));
-            Debug.Assert(newSize < data.Length);
+            TurboContract.Assert(newSize < data.Length, conditionString: "newSize < data.Length");
 
             T[] newData = new T[newSize];
             int targetIndex = 0;
@@ -291,7 +291,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
             int copyCount = data.Length - emptyBackCount;
             int newSize = copyCount + (BlockSize - (copyCount % BlockSize));
 
-            Debug.Assert(newSize < data.Length);
+            TurboContract.Assert(newSize < data.Length, conditionString: "newSize < data.Length");
 
             T[] newData = new T[newSize];
             for (int i = 0; i < newData.Length; i++)
@@ -337,8 +337,8 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         /// <param name="index">Индекс элемента, который можно переместить</param>
         private void CompactElementAtCore(ref int index)
         {
-            Contract.Requires(index >= 0);
-            Contract.Requires(index < _data.Length);
+            TurboContract.Requires(index >= 0, conditionString: "index >= 0");
+            TurboContract.Requires(index < _data.Length, conditionString: "index < _data.Length");
 
             T[] data = _data;
             int count = _count;
@@ -391,7 +391,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CompactElementAt(ref int index)
         {
-            Contract.Requires(index >= 0);
+            TurboContract.Requires(index >= 0, conditionString: "index >= 0");
 
             int count = _count;
             T[] data = _data;

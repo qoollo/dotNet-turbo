@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -19,7 +18,7 @@ namespace Qoollo.Turbo
         /// <returns>Created CPUThrottleBehavior</returns>
         public new static CPUThrottleBehavior CreateNotLimited()
         {
-            Contract.Ensures(Contract.Result<CPUThrottleBehavior>() != null);
+            TurboContract.Ensures(TurboContract.Result<CPUThrottleBehavior>() != null);
             return new CPUThrottleBehavior(int.MaxValue, 1000);
         }
 

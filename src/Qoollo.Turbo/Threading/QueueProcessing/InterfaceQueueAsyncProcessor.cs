@@ -21,7 +21,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_logic != null);
+            TurboContract.Invariant(_logic != null);
         }
 
         private readonly IQueueAsyncProcessorLogic<T> _logic;
@@ -219,7 +219,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <summary>Code contracts</summary>
         public bool ProcessThreadException(Exception ex)
         {
-            Contract.Requires(ex != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
 
             throw new NotImplementedException();
         }

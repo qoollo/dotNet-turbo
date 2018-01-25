@@ -123,7 +123,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="decreaseValue">The number of items by which the bounded capacity should be decreased</param>
         private void UpdateDelayedBoundedCapacityDecreaseField(int decreaseValue)
         {
-            Debug.Assert(decreaseValue >= 0);
+            TurboContract.Requires(decreaseValue >= 0, conditionString: "decreaseValue >= 0");
 
             SpinWait sw = new SpinWait();
             int delayedBoundedCapacityDecrease = _delayedBoundedCapacityDecrease;
@@ -227,7 +227,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// Adds new item to the queue, even when the bounded capacity reached
         /// </summary>
         /// <param name="item">New item</param>
-        [Obsolete("Use AddForced")]
+        [Obsolete("Use AddForced", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void EnqueueForced(T item)
         {
             this.AddForced(item);
@@ -363,7 +364,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
                 if (currentAddersUpdated)
                 {
-                    Debug.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0);
+                    TurboContract.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0, conditionString: "(_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0");
                     Interlocked.Decrement(ref _currentAdders);
                 }
             }
@@ -379,11 +380,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'Add' instead")]
+        [Obsolete("Method was renamed. Consider to use 'Add' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void Enqueue(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(addResult);
+            TurboContract.Assume(addResult, "addResult is false when timeout is Infinite");
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -394,11 +396,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'Add' instead")]
+        [Obsolete("Method was renamed. Consider to use 'Add' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void Enqueue(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
-            Debug.Assert(addResult);
+            TurboContract.Assume(addResult, "addResult is false when timeout is Infinite");
         }
 
         /// <summary>
@@ -408,7 +411,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>True if item was added, otherwise false</returns>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryEnqueue(T item)
         {
             return TryAddInner(item, 0, new CancellationToken());
@@ -422,12 +426,13 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryEnqueue(T item, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -442,7 +447,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryEnqueue(T item, int timeout)
         {
             if (timeout < 0)
@@ -460,7 +466,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="OperationInterruptedException">Operation was interrupted by disposing</exception>
         /// <exception cref="InvalidOperationException">Adding was completed</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryAdd' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryEnqueue(T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -478,7 +485,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Add(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(addResult);
+            TurboContract.Assume(addResult, "addResult is false when timeout is Infinite");
         }
         /// <summary>
         /// Adds the item to the tail of the queue
@@ -492,7 +499,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public void Add(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
-            Debug.Assert(addResult);
+            TurboContract.Assume(addResult, "addResult is false when timeout is Infinite");
         }
 
         /// <summary>
@@ -519,7 +526,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -578,7 +585,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             try
             {
                 removeSucceeded = _innerQueue.TryDequeue(out item);
-                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
+                TurboContract.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally
@@ -662,7 +669,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                     throw new OperationCanceledException(token);
                 }
                 removeSucceeded = _innerQueue.TryDequeue(out item);
-                Debug.Assert(removeSucceeded, "Take from underlying collection return false");
+                TurboContract.Assert(removeSucceeded, "Take from underlying collection return false");
                 removeFaulted = false;
             }
             finally
@@ -695,12 +702,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// </summary>
         /// <returns>The item removed from queue</returns>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'Take' instead")]
+        [Obsolete("Method was renamed. Consider to use 'Take' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public T Dequeue()
         {
-            T result;
-            bool takeResult = TryTakeInner(out result, Timeout.Infinite, new CancellationToken(), true);
-            Debug.Assert(takeResult);
+            bool takeResult = TryTakeInner(out T result, Timeout.Infinite, new CancellationToken(), true);
+            TurboContract.Assume(takeResult, "takeResult is false when timeout is Infinite");
  
             return result;
         }
@@ -711,12 +718,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>The item removed from queue</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'Take' instead")]
+        [Obsolete("Method was renamed. Consider to use 'Take' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public T Dequeue(CancellationToken token)
         {
-            T result;
-            bool takeResult = TryTakeInner(out result, Timeout.Infinite, token, true);
-            Debug.Assert(takeResult);
+            bool takeResult = TryTakeInner(out T result, Timeout.Infinite, token, true);
+            TurboContract.Assume(takeResult, "takeResult is false when timeout is Infinite");
 
             return result;
         }
@@ -727,7 +734,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="item">The item removed from queue</param>
         /// <returns>True if the item was removed</returns>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryDequeue(out T item)
         {
             return TryTakeInner(out item, 0, CancellationToken.None, true);
@@ -739,12 +747,13 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="timeout">Removing timeout</param>
         /// <returns>True if the item was removed</returns>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryDequeue(out T item, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -757,7 +766,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="timeout">Removing timeout in milliseconds</param>
         /// <returns>True if the item was removed</returns>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryDequeue(out T item, int timeout)
         {
             if (timeout < 0)
@@ -771,7 +781,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="timeout">Removing timeout in milliseconds</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the item was removed</returns>
-        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool TryDequeue(out T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -788,7 +799,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>True if the item was removed</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
-        [Obsolete("Method was renamed. Consider to use 'TryTake' instead")]
+        [Obsolete("Method was renamed. Consider to use 'TryTake' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         internal bool TryDequeue(out T item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
             if (timeout < 0)
@@ -806,9 +818,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Take()
         {
-            T result;
-            bool takeResult = TryTakeInner(out result, Timeout.Infinite, new CancellationToken(), true);
-            Debug.Assert(takeResult);
+            bool takeResult = TryTakeInner(out T result, Timeout.Infinite, new CancellationToken(), true);
+            TurboContract.Assume(takeResult, "takeResult is false when timeout is Infinite");
 
             return result;
         }
@@ -821,9 +832,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Take(CancellationToken token)
         {
-            T result;
-            bool takeResult = TryTakeInner(out result, Timeout.Infinite, token, true);
-            Debug.Assert(takeResult);
+            bool takeResult = TryTakeInner(out T result, Timeout.Infinite, token, true);
+            TurboContract.Assume(takeResult, "takeResult is false when timeout is Infinite");
 
             return result;
         }
@@ -849,7 +859,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -983,9 +993,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Peek()
         {
-            T result;
-            bool takeResult = TryPeekInner(out result, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(takeResult);
+            bool peekResult = TryPeekInner(out T result, Timeout.Infinite, new CancellationToken());
+            TurboContract.Assume(peekResult, "peekResult is false when timeout is Infinite");
 
             return result;
         }
@@ -998,9 +1007,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T Peek(CancellationToken token)
         {
-            T result;
-            bool takeResult = TryPeekInner(out result, Timeout.Infinite, token);
-            Debug.Assert(takeResult);
+            bool peekResult = TryPeekInner(out T result, Timeout.Infinite, token);
+            TurboContract.Assume(peekResult, "peekResult is false when timeout is Infinite");
 
             return result;
         }
@@ -1026,7 +1034,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
             if (timeoutMs > int.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             if (timeoutMs < 0)
                 timeoutMs = Timeout.Infinite;
 
@@ -1134,8 +1142,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="index">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int index)
         {
-            Debug.Assert(array != null);
-            Debug.Assert(index >= 0 && index < array.Length);
+            TurboContract.Assert(array != null, conditionString: "array != null");
+            TurboContract.Assert(index >= 0 && index < array.Length, conditionString: "index >= 0 && index < array.Length");
 
             _innerQueue.CopyTo(array, index);
         }

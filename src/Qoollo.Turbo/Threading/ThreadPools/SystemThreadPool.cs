@@ -29,7 +29,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             public static void Run(object closure)
             {
                 var unwrapClosure = (ParameterizedClosure<TState>)closure;
-                Debug.Assert(unwrapClosure != null);
+                TurboContract.Assert(unwrapClosure != null, conditionString: "unwrapClosure != null");
                 unwrapClosure.Action(unwrapClosure.State);
             }
 
@@ -52,7 +52,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             public static TRes Run(object closure)
             {
                 var unwrapClosure = (ParameterizedClosure<TState, TRes>)closure;
-                Debug.Assert(unwrapClosure != null);
+                TurboContract.Assert(unwrapClosure != null, conditionString: "unwrapClosure != null");
                 return unwrapClosure.Action(unwrapClosure.State);
             }
 
@@ -69,16 +69,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         {
             get
             {
-                int res = 0;
-                int tmp = 0;
-                System.Threading.ThreadPool.GetMaxThreads(out res, out tmp);
+                System.Threading.ThreadPool.GetMaxThreads(out int res, out int tmp);
                 return res;
             }
             set
             {
-                int tmp = 0;
-                int portCompTh = 0;
-                System.Threading.ThreadPool.GetMaxThreads(out tmp, out portCompTh);
+                System.Threading.ThreadPool.GetMaxThreads(out int tmp, out int portCompTh);
                 System.Threading.ThreadPool.SetMaxThreads(value, portCompTh);
             }
         }
@@ -90,16 +86,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         {
             get
             {
-                int res = 0;
-                int tmp = 0;
-                System.Threading.ThreadPool.GetMinThreads(out res, out tmp);
+                System.Threading.ThreadPool.GetMinThreads(out int res, out int tmp);
                 return res;
             }
             set
             {
-                int tmp = 0;
-                int portCompTh = 0;
-                System.Threading.ThreadPool.GetMinThreads(out tmp, out portCompTh);
+                System.Threading.ThreadPool.GetMinThreads(out int tmp, out int portCompTh);
                 System.Threading.ThreadPool.SetMinThreads(value, portCompTh);
             }
         }
@@ -112,7 +104,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="act">Action to execute</param>
         private static void RunAction(object act)
         {
-            Contract.Requires(act != null);
+            TurboContract.Requires(act != null, conditionString: "act != null");
 
             ((Action)act)();
         }
@@ -126,6 +118,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="item">Thread pool work item</param>
         protected sealed override void AddWorkItem(ThreadPoolWorkItem item)
         {
+            TurboContract.Requires(item != null, conditionString: "item != null");
+
             System.Threading.ThreadPool.QueueUserWorkItem(ThreadPoolWorkItem.RunWaitCallback, item);
         }
 
@@ -136,6 +130,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>True if work item was added to the queue, otherwise false</returns>
         protected sealed override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
+            TurboContract.Requires(item != null, conditionString: "item != null");
+
             return System.Threading.ThreadPool.QueueUserWorkItem(ThreadPoolWorkItem.RunWaitCallback, item);
         }
 
@@ -175,7 +171,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <exception cref="ArgumentNullException">Action is null</exception>
         public void Run(System.Threading.WaitCallback action, object state)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
+
             System.Threading.ThreadPool.QueueUserWorkItem(action, state);
         }
 
@@ -188,7 +185,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <exception cref="ArgumentNullException">Action is null</exception>
         public bool TryRun(System.Threading.WaitCallback action, object state)
         {
-            Contract.Requires(action != null);
+            TurboContract.Requires(action != null, conditionString: "action != null");
+
             return System.Threading.ThreadPool.QueueUserWorkItem(action, state);
         }
 
@@ -201,6 +199,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="flowContext">Whether or not the exectuion context should be flowed</param>
         void IContextSwitchSupplier.Run(Action act, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             if (flowContext)
                 System.Threading.ThreadPool.QueueUserWorkItem(RunActionWaitCallback, act);
             else
@@ -215,6 +215,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="flowContext">Whether or not the exectuion context should be flowed</param>
         void IContextSwitchSupplier.RunWithState(Action<object> act, object state, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
+
             if (flowContext)
                 System.Threading.ThreadPool.QueueUserWorkItem(new System.Threading.WaitCallback(act), state);
             else
