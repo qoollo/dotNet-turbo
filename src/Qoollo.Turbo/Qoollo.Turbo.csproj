@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>Qoollo.Turbo</AssemblyName>
     <Title>Qoollo.Turbo</Title>
+    <AssemblyName>Qoollo.Turbo</AssemblyName>
+    <AssemblyVersion>3.0.0</AssemblyVersion>
+    <InformationalVersion>3.0.0</InformationalVersion>
     
     <TargetFrameworks>net45;net46;netstandard1.3</TargetFrameworks>
-    <TargetFrameworkKind>desktop</TargetFrameworkKind>
     <DefineConstants>SERVICE_CLASSES_PROFILING</DefineConstants>
-  </PropertyGroup>
 
-  <PropertyGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
-    <TargetFrameworkKind>core</TargetFrameworkKind>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
+  
+  
   <PropertyGroup>
     <PackageId>Qoollo.Turbo</PackageId>
     <PackageVersion>3.0.0</PackageVersion>
@@ -30,11 +30,20 @@
     <Copyright>Copyright 2015</Copyright>
     <PackageTags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance CircularList Disk DiskQueue MemoryQueue</PackageTags>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <AssemblyVersion>3.0.0</AssemblyVersion>
-    <FileVersion>3.0.0</FileVersion>
   </PropertyGroup>
-   
 
+  
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46'">
+    <TargetFrameworkKind>desktop</TargetFrameworkKind>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <TargetFrameworkKind>netstandard</TargetFrameworkKind>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  
   <ItemGroup>
     <None Update="IoC\Associations\AssociationContainerGenerator.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -58,7 +67,7 @@
   </ItemGroup>
  
   
-  <ItemGroup Condition="'$(TargetFrameworkKind)' == 'core'">   
+  <ItemGroup Condition="'$(TargetFrameworkKind)' == 'netstandard'">   
   </ItemGroup>
 
 </Project>
