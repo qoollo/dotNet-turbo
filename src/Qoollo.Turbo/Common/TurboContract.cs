@@ -145,7 +145,7 @@ namespace Qoollo.Turbo
         /// <param name="condition">Condition</param>
         [System.Diagnostics.Conditional("__NEVER__")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Ensures(bool condition)
+        internal static void Ensures(bool condition)
         {
             throw new NotSupportedException("'Ensures' is not supported");
         }
@@ -156,7 +156,7 @@ namespace Qoollo.Turbo
         /// <param name="userMessage">Message</param>
         [System.Diagnostics.Conditional("__NEVER__")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Ensures(bool condition, string userMessage)
+        internal static void Ensures(bool condition, string userMessage)
         {
             throw new NotSupportedException("'Ensures' is not supported");
         }
@@ -168,7 +168,7 @@ namespace Qoollo.Turbo
         /// <param name="condition">Condition</param>
         [System.Diagnostics.Conditional("__NEVER__")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsuresOnThrow<TException>(bool condition) where TException: Exception
+        internal static void EnsuresOnThrow<TException>(bool condition) where TException: Exception
         {
             throw new NotSupportedException("'Ensures' is not supported");
         }
@@ -180,7 +180,7 @@ namespace Qoollo.Turbo
         /// <param name="userMessage">Message</param>
         [System.Diagnostics.Conditional("__NEVER__")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsuresOnThrow<TException>(bool condition, string userMessage) where TException : Exception
+        internal static void EnsuresOnThrow<TException>(bool condition, string userMessage) where TException : Exception
         {
             throw new NotSupportedException("'Ensures' is not supported");
         }
@@ -193,7 +193,7 @@ namespace Qoollo.Turbo
         /// <param name="value">Value</param>
         /// <returns>Original value</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T OldValue<T>(T value)
+        internal static T OldValue<T>(T value)
         {
             throw new NotSupportedException("'OldValue' is not supported");
         }
@@ -204,7 +204,7 @@ namespace Qoollo.Turbo
         /// <typeparam name="T">Type of the returned value</typeparam>
         /// <returns>Returned value</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Result<T>()
+        internal static T Result<T>()
         {
             throw new NotSupportedException("'Result' is not supported");
         }
@@ -215,7 +215,7 @@ namespace Qoollo.Turbo
         /// <typeparam name="T">Type of the value</typeparam>
         /// <param name="value">Value</param>
         /// <returns>Value at return</returns>
-        public static T ValueAtReturn<T>(out T value)
+        internal static T ValueAtReturn<T>(out T value)
         {
             throw new NotSupportedException("'ValueAtReturn' is not supported");
         }
@@ -259,7 +259,6 @@ namespace Qoollo.Turbo
     /// Specifies the type with contracts
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-    [System.Diagnostics.Conditional("DEBUG")]
     internal sealed class ContractClassForAttribute : Attribute
     {
         /// <summary>
