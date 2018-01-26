@@ -27,12 +27,15 @@ namespace Qoollo.Turbo
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public TurboException(string message, Exception innerException) : base(message, innerException) { }
+
+#if HAS_SERIALIZABLE
         /// <summary>
         /// TurboException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected TurboException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+#endif
 
         // =============================
 

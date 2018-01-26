@@ -5,8 +5,8 @@
     <AssemblyName>Qoollo.Turbo</AssemblyName>
     <AssemblyVersion>3.0.0</AssemblyVersion>
     <InformationalVersion>3.0.0</InformationalVersion>
-    
-    <TargetFrameworks>net45;net46;netstandard1.3</TargetFrameworks>
+
+    <TargetFrameworks>net45;net46;netstandard1.3;netstandard2.0</TargetFrameworks>
     <DefineConstants>SERVICE_CLASSES_PROFILING</DefineConstants>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -35,12 +35,17 @@
   
   <PropertyGroup Condition="'$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46'">
     <TargetFrameworkKind>desktop</TargetFrameworkKind>
-    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <DefineConstants>$(DefineConstants);HAS_SERIALIZABLE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <TargetFrameworkKind>netstandard</TargetFrameworkKind>
     <DefineConstants>$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <TargetFrameworkKind>netstandard</TargetFrameworkKind>
+    <DefineConstants>$(DefineConstants);HAS_SERIALIZABLE</DefineConstants>
   </PropertyGroup>
 
   

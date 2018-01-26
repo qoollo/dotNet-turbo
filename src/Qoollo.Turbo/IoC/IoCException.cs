@@ -27,12 +27,15 @@ namespace Qoollo.Turbo.IoC
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public CommonIoCException(string message, Exception innerException) : base(message, innerException) { }
+
+#if HAS_SERIALIZABLE
         /// <summary>
         /// CommonIoCException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected CommonIoCException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+#endif
     }
 
 
@@ -57,12 +60,15 @@ namespace Qoollo.Turbo.IoC
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public AssociationIoCException(string message, Exception innerException) : base(message, innerException) { }
+
+#if HAS_SERIALIZABLE
         /// <summary>
         /// AssociationIoCException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected AssociationIoCException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+#endif
     }
 
 
@@ -87,12 +93,15 @@ namespace Qoollo.Turbo.IoC
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public InjectionIoCException(string message, Exception innerException) : base(message, innerException) { }
+
+#if HAS_SERIALIZABLE
         /// <summary>
         /// InjectionIoCException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected InjectionIoCException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+#endif
     }
 
 
@@ -117,12 +126,15 @@ namespace Qoollo.Turbo.IoC
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public ObjectCannotBeResolvedException(string message, Exception innerException) : base(message, innerException) { }
+
+#if HAS_SERIALIZABLE
         /// <summary>
         /// ObjectCannotBeResolvedException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected ObjectCannotBeResolvedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+#endif
     }
 
 
@@ -147,12 +159,15 @@ namespace Qoollo.Turbo.IoC
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public AssociationBadKeyForTypeException(string message, Exception innerException) : base(message, innerException) { }
+
+#if HAS_SERIALIZABLE
         /// <summary>
         /// AssociationBadKeyForTypeException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected AssociationBadKeyForTypeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+#endif
     }
 
 
@@ -177,11 +192,14 @@ namespace Qoollo.Turbo.IoC
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public InjectionBadKeyForItemException(string message, Exception innerException) : base(message, innerException) { }
+
+#if HAS_SERIALIZABLE
         /// <summary>
         /// InjectionBadKeyForItemException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected InjectionBadKeyForItemException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+#endif
     }
 }

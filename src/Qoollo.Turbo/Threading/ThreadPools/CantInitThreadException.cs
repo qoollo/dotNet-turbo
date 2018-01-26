@@ -27,11 +27,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public CantInitThreadException(string message, Exception innerException) : base(message, innerException) { }
+
+#if HAS_SERIALIZABLE
         /// <summary>
         /// CantInitThreadException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected CantInitThreadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+#endif
     }
 }
