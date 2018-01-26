@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -212,34 +211,34 @@ namespace Qoollo.Turbo.IoC.Associations
 
         public void AddAssociation(T key, Lifetime.LifetimeBase lifetimeContainer)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(lifetimeContainer != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(lifetimeContainer != null);
 
             throw new NotImplementedException();
         }
 
         public void AddAssociation(T key, Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
-            Contract.Requires<ArgumentNullException>(factory != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
+            TurboContract.Requires(factory != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryAddAssociation(T key, Lifetime.LifetimeBase lifetimeContainer)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(lifetimeContainer != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(lifetimeContainer != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryAddAssociation(T key, Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
-            Contract.Requires<ArgumentNullException>(factory != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
+            TurboContract.Requires(factory != null);
 
             throw new NotImplementedException();
         }
@@ -258,16 +257,16 @@ namespace Qoollo.Turbo.IoC.Associations
 
         public void AddSingleton(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryAddSingleton(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
@@ -285,14 +284,14 @@ namespace Qoollo.Turbo.IoC.Associations
 
         public void AddSingleton(T key, object val)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
+            TurboContract.Requires(key != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryAddSingleton(T key, object val)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
+            TurboContract.Requires(key != null);
 
             throw new NotImplementedException();
         }
@@ -310,16 +309,16 @@ namespace Qoollo.Turbo.IoC.Associations
 
         public void AddDeferedSingleton(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryAddDeferedSingleton(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
@@ -337,16 +336,16 @@ namespace Qoollo.Turbo.IoC.Associations
 
         public void AddPerThread(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryAddPerThread(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
@@ -364,16 +363,16 @@ namespace Qoollo.Turbo.IoC.Associations
 
         public void AddPerCall(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryAddPerCall(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
@@ -392,16 +391,16 @@ namespace Qoollo.Turbo.IoC.Associations
 
         public void AddPerCallInlinedParams(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }
 
         public bool TryAddPerCallInlinedParams(T key, Type objType)
         {
-            Contract.Requires<ArgumentNullException>((object)key != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(key != null);
+            TurboContract.Requires(objType != null);
 
             throw new NotImplementedException();
         }

@@ -220,4 +220,59 @@ namespace Qoollo.Turbo
             throw new NotSupportedException("'ValueAtReturn' is not supported");
         }
     }
+
+
+    /// <summary>
+    /// Marks construction without visible side-effects
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Parameter | AttributeTargets.Delegate, AllowMultiple = false, Inherited = true)]
+    internal sealed class PureAttribute : Attribute { }
+
+    /// <summary>
+    /// Marks a method as being the invariant method for a class
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    internal sealed class ContractInvariantMethodAttribute : Attribute { }
+
+    /// <summary>
+    /// Specifies that a separate type contains the code contracts for this type
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
+    [System.Diagnostics.Conditional("DEBUG")]
+    internal sealed class ContractClassAttribute : Attribute
+    {
+        /// <summary>
+        /// ContractClassAttribute constructor
+        /// </summary>
+        /// <param name="typeContainingContracts">The type that contains the code contracts for this type</param>
+        public ContractClassAttribute(Type typeContainingContracts)
+        {
+            TypeContainingContracts = typeContainingContracts;
+        }
+        /// <summary>
+        /// Gets the type that contains the code contracts for this type
+        /// </summary>
+        public Type TypeContainingContracts { get; }
+    }
+
+    /// <summary>
+    /// Specifies the type with contracts
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    [System.Diagnostics.Conditional("DEBUG")]
+    internal sealed class ContractClassForAttribute : Attribute
+    {
+        /// <summary>
+        /// ContractClassForAttribute constructor
+        /// </summary>
+        /// <param name="typeContractsAreFor">The type that this code contract applies to</param>
+        public ContractClassForAttribute(Type typeContractsAreFor)
+        {
+            TypeContractsAreFor = typeContractsAreFor;
+        }
+        /// <summary>
+        /// Gets the type that this code contract applies to
+        /// </summary>
+        public Type TypeContractsAreFor { get; }
+    }
 }
