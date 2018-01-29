@@ -19,13 +19,6 @@ namespace Qoollo.Turbo.IoC.Associations
     {
         private readonly ConcurrentDictionary<TKey, LifetimeBase> _storage;
 
-
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_storage != null);
-        }
-
         /// <summary>
         /// ConcurrentGenericAssociationContainer constructor
         /// </summary>

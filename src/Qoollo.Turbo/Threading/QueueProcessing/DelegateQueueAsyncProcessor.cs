@@ -14,15 +14,6 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
     /// <typeparam name="T">Type of the elements processed by this <see cref="DelegateQueueAsyncProcessor{T}"/></typeparam>
     public class DelegateQueueAsyncProcessor<T> : QueueAsyncProcessor<T>
     {
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_processing != null);
-        }
-
         private readonly Action<T, CancellationToken> _processing;
         private readonly Action<Exception> _exceptionProc;
 

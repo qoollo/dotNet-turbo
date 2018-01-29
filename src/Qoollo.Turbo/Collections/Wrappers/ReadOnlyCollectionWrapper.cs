@@ -37,15 +37,6 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_collection != null);
-        }
-
-        /// <summary>
         /// ReadOnlyCollectionWrapper constructor
         /// </summary>
         /// <param name="collection">The collection to wrap</param>

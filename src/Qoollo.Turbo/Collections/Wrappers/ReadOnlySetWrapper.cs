@@ -36,15 +36,6 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_set != null);
-        }
-
-        /// <summary>
         /// ReadOnlySetWrapper constructor
         /// </summary>
         /// <param name="set">Set to be wrapped</param>

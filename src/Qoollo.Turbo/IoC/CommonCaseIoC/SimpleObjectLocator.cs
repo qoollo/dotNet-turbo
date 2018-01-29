@@ -19,24 +19,12 @@ namespace Qoollo.Turbo.IoC
     {
         private readonly IInjectionResolver _resolver;
 
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_resolver != null);
-        }
-
         /// <summary>
         /// Injection resolver for SimpleObjectLocator
         /// </summary>
         private class InnerInjectionResolver : IInjectionResolver
         {
             private readonly SimpleObjectLocator _locator;
-
-            [ContractInvariantMethod]
-            private void Invariant()
-            {
-                TurboContract.Invariant(_locator != null);
-            }
 
             /// <summary>
             /// InnerInjectionResolver constructor

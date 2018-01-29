@@ -18,15 +18,6 @@ namespace Qoollo.Turbo.Collections
         private readonly CircularList<T> _circularList;
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_circularList != null);
-        }
-
-        /// <summary>
         /// OutOfTurnQueue constructor
         /// </summary>
         public OutOfTurnQueue()

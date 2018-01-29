@@ -16,21 +16,6 @@ namespace Qoollo.Turbo.IoC
     /// </summary>
     public static class LifetimeFactories
     {
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private static void Invariant()
-        {
-            TurboContract.Invariant(Singleton != null);
-            TurboContract.Invariant(DeferedSingleton != null);
-            TurboContract.Invariant(PerThread != null);
-            TurboContract.Invariant(PerCall != null);
-            TurboContract.Invariant(PerCallInlinedParams != null); 
-        }
-
-
-
         private static readonly SingletonLifetimeFactory _singleton = new SingletonLifetimeFactory();
         /// <summary>
         /// Gets a SingletonLifetimeFactory instance

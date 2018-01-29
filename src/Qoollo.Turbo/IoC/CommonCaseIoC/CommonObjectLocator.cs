@@ -25,14 +25,6 @@ namespace Qoollo.Turbo.IoC
         private readonly DirectTypeAssociationContainer _association;
         private readonly TypeStrictInjectionContainer _injection;
 
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_resolver != null);
-            TurboContract.Invariant(_association != null);
-            TurboContract.Invariant(_injection != null);
-        }
-
         /// <summary>
         /// Association container
         /// </summary>
@@ -65,13 +57,6 @@ namespace Qoollo.Turbo.IoC
         {
             private readonly TypeStrictInjectionContainer _sourceInj;
             private readonly CommonObjectLocator _curLocator;
-
-            [ContractInvariantMethod]
-            private void Invariant()
-            {
-                TurboContract.Invariant(_sourceInj != null);
-                TurboContract.Invariant(_curLocator != null);
-            }
 
             /// <summary>
             /// InjectionThenAssociationResolver constructor

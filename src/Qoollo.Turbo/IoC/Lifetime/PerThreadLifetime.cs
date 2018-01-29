@@ -35,16 +35,6 @@ namespace Qoollo.Turbo.IoC.Lifetime
         private readonly Func<IInjectionResolver, object> _createInstFunc;
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_obj != null);
-            TurboContract.Invariant(_createInstFunc != null);
-        }
-
-        /// <summary>
         /// PerThreadLifetime constructor
         /// </summary>
         /// <param name="createInstFunc">Instance creation method</param>

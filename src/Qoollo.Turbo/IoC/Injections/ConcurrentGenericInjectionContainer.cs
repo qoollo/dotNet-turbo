@@ -17,12 +17,6 @@ namespace Qoollo.Turbo.IoC.Injections
         private readonly ConcurrentDictionary<TKey, object> _injections;
         private readonly bool _disposeInjectionsWithBuiler;
 
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_injections != null);
-        }
-
         /// <summary>
         /// ConcurrentGenericInjectionContainer constructor
         /// </summary>

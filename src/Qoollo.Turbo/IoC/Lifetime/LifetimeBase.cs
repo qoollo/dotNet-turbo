@@ -16,15 +16,6 @@ namespace Qoollo.Turbo.IoC.Lifetime
         private readonly Type _outputType;
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(OutputType != null);
-        }
-
-        /// <summary>
         /// LifetimeBase constructor
         /// </summary>
         /// <param name="outType">The type of the object to be stored in the current Lifetime container</param>

@@ -19,12 +19,6 @@ namespace Qoollo.Turbo.IoC.Associations
     {
         private readonly Dictionary<TKey, LifetimeBase> _storage;
 
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_storage != null);
-        }
-
         /// <summary>
         /// FreezeRequiredGenericAssociationContainer constructor
         /// </summary>
