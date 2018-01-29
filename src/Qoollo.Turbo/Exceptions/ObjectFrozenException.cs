@@ -27,7 +27,8 @@ namespace Qoollo.Turbo
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public ObjectFrozenException(string message, Exception innerException) : base(message, innerException) { }
-#if HAS_SERIALIZABLE
+
+#if HAS_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// ObjectFrozenException constructor for deserialization
         /// </summary>

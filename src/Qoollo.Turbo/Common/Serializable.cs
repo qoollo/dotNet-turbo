@@ -1,4 +1,4 @@
-﻿#if !HAS_SERIALIZABLE
+﻿#if !HAS_SERIALIZABLE_ATTRIBUTE
 
 using System;
 

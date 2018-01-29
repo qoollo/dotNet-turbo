@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// <param name="innerException">Inner exception</param>
         public ItemCorruptedException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE
+#if HAS_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// ItemCorruptedException constructor
         /// </summary>

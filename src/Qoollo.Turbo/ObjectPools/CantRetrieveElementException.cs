@@ -27,7 +27,7 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="innerException">Inner exception</param>
         public CantRetrieveElementException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE
+#if HAS_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// CantRetrieveElementException constructor for deserialization
         /// </summary>
