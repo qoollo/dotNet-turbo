@@ -9,15 +9,6 @@ namespace System.Linq
     /// <summary>
     /// Additional LINQ to Object extension methods
     /// </summary>
-    [Obsolete("Class was renamed to TurboEnumerableExtensions", true)]
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public static class EnumerableExtensions
-    {
-    }
-
-    /// <summary>
-    /// Additional LINQ to Object extension methods
-    /// </summary>
     public static class TurboEnumerableExtensions
     {
         /// <summary>

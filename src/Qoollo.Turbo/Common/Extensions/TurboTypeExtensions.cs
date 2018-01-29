@@ -10,15 +10,6 @@ namespace System
     /// <summary>
     /// Extension methods for the Type objects
     /// </summary>
-    [Obsolete("Class was renamed to TurboTypeExtensions", true)]
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public static class TypeExtensions
-    {
-    }
-
-    /// <summary>
-    /// Extension methods for the Type objects
-    /// </summary>
     public static class TurboTypeExtensions
     {
         /// <summary>
