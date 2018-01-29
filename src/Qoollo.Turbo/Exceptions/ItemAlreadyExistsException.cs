@@ -10,7 +10,7 @@ namespace Qoollo.Turbo
     /// The exception that is thrown when item already exists in collection
     /// </summary>
     [Serializable]
-    public class ItemAlreadyExistsException: SystemException
+    public class ItemAlreadyExistsException: Exception
     {
         /// <summary>
         /// ItemAlreadyExistsException constructor

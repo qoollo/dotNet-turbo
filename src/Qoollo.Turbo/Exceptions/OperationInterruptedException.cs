@@ -10,7 +10,7 @@ namespace Qoollo.Turbo
     /// The exception that is thrown when blocking operation is interrupted by the external event (not by CancallationToken)
     /// </summary>
     [Serializable]
-    public class OperationInterruptedException : SystemException
+    public class OperationInterruptedException : Exception
     {
         /// <summary>
         /// OperationInterruptedException constructor

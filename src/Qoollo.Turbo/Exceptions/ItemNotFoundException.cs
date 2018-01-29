@@ -10,7 +10,7 @@ namespace Qoollo.Turbo
     /// The exception that is thrown when item is not found in collection
     /// </summary>
     [Serializable]
-    public class ItemNotFoundException: SystemException
+    public class ItemNotFoundException: Exception
     {
         /// <summary>
         /// ItemNotFoundException constructor
