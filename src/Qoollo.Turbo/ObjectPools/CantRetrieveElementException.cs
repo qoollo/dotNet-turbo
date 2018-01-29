@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Qoollo.Turbo
+namespace Qoollo.Turbo.ObjectPools
 {
     /// <summary>
     /// Exception thrown by ObjectPool when element can't be retrieved due to disposing or some other error
