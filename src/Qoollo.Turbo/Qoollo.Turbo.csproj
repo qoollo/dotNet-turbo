@@ -67,7 +67,9 @@
   </ItemGroup>
  
   
-  <ItemGroup Condition="'$(TargetFrameworkKind)' == 'netstandard'">   
+  <ItemGroup Condition="'$(TargetFrameworkKind)' == 'netstandard'">
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
   </ItemGroup>
 
 </Project>

@@ -654,7 +654,7 @@ namespace Qoollo.Turbo.IoC.Helpers
                 {
                     if (_dynamicModule == null)
                     {
-                        _dynamicAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(
+                        _dynamicAssembly = AssemblyBuilder.DefineDynamicAssembly(
                               new AssemblyName("IoCObjectInstAsm_" + Guid.NewGuid().ToString("N")),
                               System.Reflection.Emit.AssemblyBuilderAccess.Run);
 
@@ -844,8 +844,7 @@ namespace Qoollo.Turbo.IoC.Helpers
                 TurboContract.Assert(interfMethod != null, conditionString: "interfMethod != null");
                 EmitMethodWithResolver(interfMethod, objType, constructor, extInfoField);
 
-
-                return typeBuilder.CreateType();
+                return typeBuilder.CreateTypeInfo();
             }
         }
 
@@ -897,7 +896,7 @@ namespace Qoollo.Turbo.IoC.Helpers
                 EmitMethodWithInlinedParams(intefMethod, objType, constructor, allFields);
 
 
-                return typeBuilder.CreateType();
+                return typeBuilder.CreateTypeInfo();
             }
         }
 
