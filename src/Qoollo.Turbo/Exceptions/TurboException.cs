@@ -125,11 +125,14 @@ namespace Qoollo.Turbo
         {
             Throw(typeof(TException), null);
         }
+
+
+
         /// <summary>
         /// Throws TurboAssertionException with specified message
         /// </summary>
         /// <param name="message">Message, that will be passed to TurboException constructor (can be null)</param>
-        private static void Throw(string message)
+        private static void ThrowAssertionException(string message)
         {
             if (message == null)
                 throw new TurboAssertionException();
@@ -139,13 +142,10 @@ namespace Qoollo.Turbo
         /// <summary>
         /// Throws TurboAssertionException
         /// </summary>
-        private static void Throw()
+        private static void ThrowAssertionException()
         {
             throw new TurboAssertionException();
         }
-
-
-
         /// <summary>
         /// Checks for a condition. Throws Exception if the condition is false
         /// </summary>
@@ -179,7 +179,7 @@ namespace Qoollo.Turbo
         public static void Assert(bool condition, string message)
         {
             if (!condition)
-                Throw(message);
+                ThrowAssertionException(message);
         }
         /// <summary>
         /// Checks for a condition. Throws TurboAssertionException if the condition is false
@@ -189,7 +189,7 @@ namespace Qoollo.Turbo
         public static void Assert(bool condition)
         {
             if (!condition)
-                Throw();
+                ThrowAssertionException();
         }
     }
 }
