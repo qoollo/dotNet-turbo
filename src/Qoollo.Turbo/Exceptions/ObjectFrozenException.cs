@@ -27,13 +27,11 @@ namespace Qoollo.Turbo
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public ObjectFrozenException(string message, Exception innerException) : base(message, innerException) { }
-#if HAS_SERIALIZABLE
         /// <summary>
         /// ObjectFrozenException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected ObjectFrozenException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-#endif
     }
 }
