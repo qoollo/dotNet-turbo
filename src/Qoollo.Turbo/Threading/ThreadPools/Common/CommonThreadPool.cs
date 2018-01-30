@@ -3,6 +3,7 @@ using Qoollo.Turbo.Threading.ThreadPools.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -96,7 +97,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             {
                 ThreadPoolWorkItem poolItem = task.AsyncState as ThreadPoolWorkItem;
                 TurboContract.Assert(poolItem == null || 
-                                    (poolItem.GetType().IsGenericType && 
+                                    (poolItem.GetType().GetTypeInfo().IsGenericType && 
                                     (poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<>) || 
                                      poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>))), conditionString: "poolItem == null || \r\n                                    (poolItem.GetType().IsGenericType && \r\n                                    (poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<>) || \r\n                                     poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>)))");
 
@@ -732,7 +733,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             {
                 var exception = task.Exception;
                 if (exception == null)
-                    throw new ApplicationException("ThreadPool task was faulted by unknown reason. ThreadPool: " + this.Name);
+                    throw new ThreadPoolException("ThreadPool task was faulted by unknown reason. ThreadPool: " + this.Name);
                 if (exception.InnerExceptions.Count != 1)
                     throw exception;
 
@@ -1065,8 +1066,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         protected void PrepareWorkItem(ThreadPoolWorkItem item)
         {
             TurboContract.Requires(item != null, conditionString: "item != null");
+#if NETSTANDARD1_X
+            if (_restoreExecutionContext)
+                item.CaptureExecutionContext(!_useOwnSyncContext);
+#else
             if (_restoreExecutionContext && !ExecutionContext.IsFlowSuppressed())
                 item.CaptureExecutionContext(!_useOwnSyncContext);
+#endif
         }
         /// <summary>
         /// Запуск задания

@@ -61,6 +61,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
         // =========
 
+#if !NETSTANDARD1_X
         /// <summary>
         /// Gets or sets the maximum number of threads in system ThreadPool
         /// </summary>
@@ -94,6 +95,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                 System.Threading.ThreadPool.SetMinThreads(value, portCompTh);
             }
         }
+#endif
 
         private static readonly System.Threading.WaitCallback RunActionWaitCallback = new System.Threading.WaitCallback(RunAction);
 
@@ -200,10 +202,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
 
+#if NETSTANDARD1_X
+            System.Threading.ThreadPool.QueueUserWorkItem(RunActionWaitCallback, act);
+#else
             if (flowContext)
                 System.Threading.ThreadPool.QueueUserWorkItem(RunActionWaitCallback, act);
             else
                 System.Threading.ThreadPool.UnsafeQueueUserWorkItem(RunActionWaitCallback, act);
+#endif
         }
 
         /// <summary>
@@ -216,10 +222,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
 
+#if NETSTANDARD1_X
+            System.Threading.ThreadPool.QueueUserWorkItem(new System.Threading.WaitCallback(act), state);
+#else
             if (flowContext)
                 System.Threading.ThreadPool.QueueUserWorkItem(new System.Threading.WaitCallback(act), state);
             else
                 System.Threading.ThreadPool.UnsafeQueueUserWorkItem(new System.Threading.WaitCallback(act), state);
+#endif
         }
 
         /// <summary>
@@ -228,8 +238,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>Context switch awaitable object</returns>
         public sealed override ContextSwitchAwaitable SwitchToPool()
         {
+#if !NETSTANDARD1_X
             if (System.Threading.Thread.CurrentThread.IsThreadPoolThread)
                 return new ContextSwitchAwaitable();
+#endif
 
             return new ContextSwitchAwaitable(this);
         }
