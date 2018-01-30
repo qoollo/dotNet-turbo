@@ -33,7 +33,7 @@ namespace Qoollo.Turbo
         /// <param name="innerException">Inner exception</param>
         public InvalidTypeException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// InvalidTypeException constructor for deserialization
         /// </summary>

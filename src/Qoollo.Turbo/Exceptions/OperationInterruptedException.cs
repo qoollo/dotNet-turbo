@@ -28,7 +28,7 @@ namespace Qoollo.Turbo
         /// <param name="innerException">Inner exception</param>
         public OperationInterruptedException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// OperationInterruptedException constructor for deserialization
         /// </summary>

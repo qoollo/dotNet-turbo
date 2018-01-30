@@ -27,7 +27,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <param name="innerException">Inner exception</param>
         public QueueAsyncProcessorException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// QueueAsyncProcessorException constructor for deserialization
         /// </summary>

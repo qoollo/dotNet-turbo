@@ -35,17 +35,17 @@
   
   <PropertyGroup Condition="'$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46'">
     <TargetFrameworkKind>desktop</TargetFrameworkKind>
-    <DefineConstants>$(DefineConstants);HAS_SERIALIZABLE_ATTRIBUTE</DefineConstants>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <TargetFrameworkKind>netstandard</TargetFrameworkKind>
-    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <DefineConstants>$(DefineConstants);HAS_NO_SERIALIZABLE_ATTRIBUTE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <TargetFrameworkKind>netstandard</TargetFrameworkKind>
-    <DefineConstants>$(DefineConstants);HAS_SERIALIZABLE_ATTRIBUTE</DefineConstants>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   

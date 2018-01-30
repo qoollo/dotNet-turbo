@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.IoC
         /// <param name="innerException">Inner exception</param>
         public CommonIoCException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// CommonIoCException constructor for deserialization
         /// </summary>
@@ -61,7 +61,7 @@ namespace Qoollo.Turbo.IoC
         /// <param name="innerException">Inner exception</param>
         public AssociationIoCException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// AssociationIoCException constructor for deserialization
         /// </summary>
@@ -94,7 +94,7 @@ namespace Qoollo.Turbo.IoC
         /// <param name="innerException">Inner exception</param>
         public InjectionIoCException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// InjectionIoCException constructor for deserialization
         /// </summary>
@@ -127,7 +127,7 @@ namespace Qoollo.Turbo.IoC
         /// <param name="innerException">Inner exception</param>
         public ObjectCannotBeResolvedException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// ObjectCannotBeResolvedException constructor for deserialization
         /// </summary>
@@ -160,7 +160,7 @@ namespace Qoollo.Turbo.IoC
         /// <param name="innerException">Inner exception</param>
         public AssociationBadKeyForTypeException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// AssociationBadKeyForTypeException constructor for deserialization
         /// </summary>
@@ -193,7 +193,7 @@ namespace Qoollo.Turbo.IoC
         /// <param name="innerException">Inner exception</param>
         public InjectionBadKeyForItemException(string message, Exception innerException) : base(message, innerException) { }
 
-#if HAS_SERIALIZABLE_ATTRIBUTE
+#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
         /// <summary>
         /// InjectionBadKeyForItemException constructor for deserialization
         /// </summary>
