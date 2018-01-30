@@ -13,6 +13,10 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
     /// </summary>
     public abstract class ThreadSetManager : IDisposable
     {
+#if NETSTANDARD1_X
+        private enum ThreadPriority { Normal };
+#endif
+
         /// <summary>
         /// Code contracts
         /// </summary>
@@ -51,7 +55,11 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         /// <param name="isBackground">Whether or not threads are a background threads</param>
         /// <param name="priority">Indicates the scheduling priority of the threads</param>
         /// <param name="maxStackSize">The maximum stack size to be used by the thread</param>
+#if NETSTANDARD1_X
+        private ThreadSetManager(int threadCount, string name, bool isBackground, ThreadPriority priority, int maxStackSize)
+#else
         public ThreadSetManager(int threadCount, string name, bool isBackground, ThreadPriority priority, int maxStackSize)
+#endif
         {
             if (threadCount <= 0)
                 throw new ArgumentOutOfRangeException(nameof(threadCount));
@@ -69,9 +77,13 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
             for (int i = 0; i < _procThreads.Length; i++)
             {
-                _procThreads[i] = new Thread(ThreadProcFunc, _maxStackSize);
-                _procThreads[i].Name = string.Format("{0} (#{1})", _name, i);
+#if NETSTANDARD1_X
+                _procThreads[i] = new Thread(ThreadProcFunc);             
+#else
+                _procThreads[i] = new Thread(ThreadProcFunc, _maxStackSize);             
                 _procThreads[i].Priority = _priority;
+#endif
+                _procThreads[i].Name = string.Format("{0} (#{1})", _name, i);
                 _procThreads[i].IsBackground = _isBackground;
             }
 
@@ -164,6 +176,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
             }
         }
 
+#if !NETSTANDARD1_X
         /// <summary>
         /// Gets or sets a value indicating the scheduling priority of the threads
         /// </summary>
@@ -209,6 +222,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
                     th.CurrentUICulture = value;
             }
         }
+#endif
 
         /// <summary>
         /// Number of processing threads running right now
@@ -412,9 +426,13 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
             }
             catch (Exception ex)
             {
+#if NETSTANDARD1_X
+                if (ex.GetType() == typeof(OutOfMemoryException))
+                    throw;
+#else
                 if (ex.GetType() == typeof(ThreadAbortException) || ex.GetType() == typeof(ThreadInterruptedException) || ex.GetType() == typeof(StackOverflowException) || ex.GetType() == typeof(OutOfMemoryException))
                     throw;
-
+#endif
                 ProcessThreadException(ex);
                 throw;
             }
@@ -463,7 +481,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         {
             TurboContract.Requires(ex != null, conditionString: "ex != null");
 
-            throw new ThreadSetManagerException("Unhandled exception during processing in ThreadSetManager ('" + this.Name + "')", ex);
+            // It is better to rethrow original exception
+            //throw new ThreadSetManagerException("Unhandled exception during processing in ThreadSetManager ('" + this.Name + "')", ex);
         }
 
         /// <summary>
@@ -628,6 +647,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
             GC.SuppressFinalize(this);
         }
 
+
+#if DEBUG
         /// <summary>
         /// Finalizer
         /// </summary>
@@ -635,5 +656,6 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         {
             Dispose(false);
         }
+#endif
     }
 }
