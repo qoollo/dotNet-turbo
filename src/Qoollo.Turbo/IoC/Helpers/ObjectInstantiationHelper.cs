@@ -809,7 +809,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <returns>Built type</returns>
-        private static Type BuildTypeOfInstanceCreator(Type objType, ConstructorInfo constructor)
+        private static TypeInfo BuildTypeOfInstanceCreator(Type objType, ConstructorInfo constructor)
         {
             TurboContract.Requires(objType != null, conditionString: "objType != null");
             TurboContract.Requires(constructor != null, conditionString: "constructor != null");
@@ -855,7 +855,7 @@ namespace Qoollo.Turbo.IoC.Helpers
         /// <param name="objType">The type of the object</param>
         /// <param name="constructor">Constructor</param>
         /// <returns>Built type</returns>
-        private static Type BuildTypeOfInstanceCreatorNoParam(Type objType, ConstructorInfo constructor)
+        private static TypeInfo BuildTypeOfInstanceCreatorNoParam(Type objType, ConstructorInfo constructor)
         {
             TurboContract.Requires(objType != null, conditionString: "objType != null");
             TurboContract.Requires(constructor != null, conditionString: "constructor != null");
@@ -928,7 +928,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             var type = BuildTypeOfInstanceCreator(objType, constructor);
             TurboContract.Assert(type != null, conditionString: "type != null");
 
-            return Activator.CreateInstance(type, extData);
+            return Activator.CreateInstance(type.AsType(), extData);
         }
 
         /// <summary>
@@ -953,7 +953,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             var type = BuildTypeOfInstanceCreatorNoParam(objType, constructor);
             TurboContract.Assert(type != null, conditionString: "type != null");
 
-            return CreateObject(type, injection, extData);
+            return CreateObject(type.AsType(), injection, extData);
         }
 
 
@@ -1023,7 +1023,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             var method = instType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
             TurboContract.Assert(method != null, conditionString: "method != null");
 
-            var deleg = Delegate.CreateDelegate(typeof(Func<IInjectionResolver, object>), inst, method);
+            var deleg = method.CreateDelegate(typeof(Func<IInjectionResolver, object>), inst);
 
             return (Func<IInjectionResolver, object>)deleg;
         }
@@ -1055,7 +1055,7 @@ namespace Qoollo.Turbo.IoC.Helpers
             var method = instType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
             TurboContract.Assert(method != null, conditionString: "method != null");
 
-            var deleg = Delegate.CreateDelegate(typeof(Func<object>), inst, method);
+            var deleg = method.CreateDelegate(typeof(Func<object>), inst);
 
             return (Func<object>)deleg;
         }

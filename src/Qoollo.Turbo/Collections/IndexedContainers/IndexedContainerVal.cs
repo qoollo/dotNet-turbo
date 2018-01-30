@@ -216,7 +216,7 @@ namespace Qoollo.Turbo.Collections
                 lock (_lockObject)
                 {
                     localData[index].HasElement = false;
-                    System.Threading.Thread.MemoryBarrier();
+                    System.Threading.Interlocked.MemoryBarrier();
                     localData[index].Element = default(T);
                     return true;
                 }
