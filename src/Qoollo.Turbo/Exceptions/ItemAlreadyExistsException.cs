@@ -28,7 +28,7 @@ namespace Qoollo.Turbo
         /// <param name="innerException">Inner exception</param>
         public ItemAlreadyExistsException(string message, Exception innerException) : base(message, innerException) { }
 
-#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
+#if !NETSTANDARD1_X
         /// <summary>
         /// ItemAlreadyExistsException constructor for deserialization
         /// </summary>

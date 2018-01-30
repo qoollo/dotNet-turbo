@@ -27,7 +27,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         /// <param name="innerException">Inner exception</param>
         public ThreadSetManagerException(string message, Exception innerException) : base(message, innerException) { }
 
-#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
+#if !NETSTANDARD1_X
         /// <summary>
         /// ThreadSetManagerException constructor for deserialization
         /// </summary>

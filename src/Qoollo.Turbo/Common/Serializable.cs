@@ -1,4 +1,4 @@
-﻿#if HAS_NO_SERIALIZABLE_ATTRIBUTE
+﻿#if NETSTANDARD1_X
 
 using System;
 

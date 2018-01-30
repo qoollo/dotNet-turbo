@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="innerException">Inner exception</param>
         public CantInitThreadException(string message, Exception innerException) : base(message, innerException) { }
 
-#if !HAS_NO_SERIALIZABLE_ATTRIBUTE
+#if !NETSTANDARD1_X
         /// <summary>
         /// CantInitThreadException constructor for deserialization
         /// </summary>

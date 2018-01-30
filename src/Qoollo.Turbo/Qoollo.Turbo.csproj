@@ -34,13 +34,13 @@
 
   
   <PropertyGroup Condition="'$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46'">
-    <TargetFrameworkKind>desktop</TargetFrameworkKind>
-    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <TargetFrameworkKind>netframework</TargetFrameworkKind>
+    <DefineConstants>$(DefineConstants);NETFRAMEWORK</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <TargetFrameworkKind>netstandard</TargetFrameworkKind>
-    <DefineConstants>$(DefineConstants);HAS_NO_SERIALIZABLE_ATTRIBUTE</DefineConstants>
+    <DefineConstants>$(DefineConstants);NETSTANDARD1_X</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
@@ -80,7 +80,7 @@
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkKind)' == 'desktop'">
+  <ItemGroup Condition="'$(TargetFrameworkKind)' == 'netframework'">
   </ItemGroup>
 
 </Project>
