@@ -27,14 +27,11 @@ namespace Qoollo.Turbo
         /// <param name="message">Error message</param>
         /// <param name="innerException">Inner exception</param>
         public ItemAlreadyExistsException(string message, Exception innerException) : base(message, innerException) { }
-
-#if !NETSTANDARD1_X
         /// <summary>
         /// ItemAlreadyExistsException constructor for deserialization
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
         protected ItemAlreadyExistsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-#endif
     }
 }

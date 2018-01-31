@@ -6,7 +6,7 @@
     <AssemblyVersion>3.0.0</AssemblyVersion>
     <InformationalVersion>3.0.0</InformationalVersion>
 
-    <TargetFrameworks>net45;net46;netstandard1.3;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net45;net46;netstandard2.0</TargetFrameworks>
     <DefineConstants>SERVICE_CLASSES_PROFILING</DefineConstants>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -38,11 +38,6 @@
     <DefineConstants>$(DefineConstants);NETFRAMEWORK</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <TargetFrameworkKind>netstandard</TargetFrameworkKind>
-    <DefineConstants>$(DefineConstants);NETSTANDARD1_X</DefineConstants>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <TargetFrameworkKind>netstandard</TargetFrameworkKind>
     <DefineConstants>$(DefineConstants)</DefineConstants>
@@ -67,13 +62,7 @@
       <DependentUpon>AssociationContainerGenerator.tt</DependentUpon>
     </Compile>
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
-    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
-    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-    <PackageReference Include="System.Threading.ThreadPool" Version="4.3.0" />
-  </ItemGroup>
+  
   
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />

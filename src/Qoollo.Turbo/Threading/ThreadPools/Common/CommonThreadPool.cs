@@ -1066,13 +1066,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         protected void PrepareWorkItem(ThreadPoolWorkItem item)
         {
             TurboContract.Requires(item != null, conditionString: "item != null");
-#if NETSTANDARD1_X
-            if (_restoreExecutionContext)
-                item.CaptureExecutionContext(!_useOwnSyncContext);
-#else
             if (_restoreExecutionContext && !ExecutionContext.IsFlowSuppressed())
                 item.CaptureExecutionContext(!_useOwnSyncContext);
-#endif
         }
         /// <summary>
         /// Запуск задания
