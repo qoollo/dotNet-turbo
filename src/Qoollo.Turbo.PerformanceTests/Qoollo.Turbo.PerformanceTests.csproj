@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Title>Qoollo.Turbo.PerformanceTests</Title>
+    <AssemblyName>Qoollo.Turbo.PerformanceTests</AssemblyName>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;net45;net46</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
