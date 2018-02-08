@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class MonitorObjectTest
+    public class MonitorObjectTest : TestClassBase
     {
         [TestMethod]
         public void TestLockEnterExit()

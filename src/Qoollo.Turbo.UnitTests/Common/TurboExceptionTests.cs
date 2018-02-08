@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class TurboExceptionTests
+    public class TurboExceptionTests : TestClassBase
     {
         private void TestTypedExceptionWithMessage<TExc>() where TExc: Exception
         {

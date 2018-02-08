@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ExecutionTickers
 {
     [TestClass]
-    public class ExecutionQuantizerTest
+    public class ExecutionQuantizerTest : TestClassBase
     {
         [TestMethod]
         public void TestDefaultTick()

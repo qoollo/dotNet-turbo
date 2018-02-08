@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ExecutionTickers
 {
     [TestClass]
-    public class OnRequestExecutionQuantizerTest
+    public class OnRequestExecutionQuantizerTest : TestClassBase
     {
         [TestMethod]
         [Timeout(5000)]

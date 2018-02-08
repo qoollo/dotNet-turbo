@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class ManagementThreadControllerTest
+    public class ManagementThreadControllerTest : TestClassBase
     {
         [TestMethod]
         public void TestRegisterDeregister()

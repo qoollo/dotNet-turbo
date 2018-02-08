@@ -11,7 +11,7 @@ using System.Collections.Concurrent;
 namespace Qoollo.Turbo.UnitTests.Collections
 {
     [TestClass]
-    public class BlockingQueueTest
+    public class BlockingQueueTest: TestClassBase
     {
         [TestMethod]
         public void TestSimpleEnqueueDequeue()

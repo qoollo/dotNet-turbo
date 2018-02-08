@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
     [TestClass]
-    public class BunchElementStorageTest
+    public class BunchElementStorageTest : TestClassBase
     {
         private class PoolElementOperationSource<T> : IPoolElementOperationSource<T>
         {

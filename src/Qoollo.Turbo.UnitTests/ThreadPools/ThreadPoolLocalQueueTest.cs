@@ -8,7 +8,7 @@ using Qoollo.Turbo.Threading.ThreadPools.Common;
 namespace Qoollo.Turbo.UnitTests.ThreadPools
 {
     [TestClass]
-    public class ThreadPoolLocalQueueTest
+    public class ThreadPoolLocalQueueTest : TestClassBase
     {
         private class TestThreadPoolItem : ThreadPoolWorkItem, IEquatable<TestThreadPoolItem>
         {

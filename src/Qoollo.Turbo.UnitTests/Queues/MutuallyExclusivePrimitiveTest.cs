@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Queues
 {
     [TestClass]
-    public class MutuallyExclusivePrimitiveTest
+    public class MutuallyExclusivePrimitiveTest : TestClassBase
     {
         [TestMethod]
         [ExpectedException(typeof(ObjectDisposedException))]

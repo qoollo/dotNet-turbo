@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Queues
 {
     [TestClass]
-    public class PersistentDiskQueueSegmentTest
+    public class PersistentDiskQueueSegmentTest : TestClassBase
     {
         private class ItemSerializer : IDiskQueueItemSerializer<int>
         {

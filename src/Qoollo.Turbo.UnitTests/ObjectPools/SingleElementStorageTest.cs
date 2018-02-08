@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
     [TestClass]
-    public class SingleElementStorageTest
+    public class SingleElementStorageTest : TestClassBase
     {
         [TestMethod]
         public void TestCreation()

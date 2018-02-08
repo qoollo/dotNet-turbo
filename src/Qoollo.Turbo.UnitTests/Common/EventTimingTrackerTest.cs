@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class EventTimingTrackerTest
+    public class EventTimingTrackerTest : TestClassBase
     {
         [TestMethod]
         public void TestRegisterWork()

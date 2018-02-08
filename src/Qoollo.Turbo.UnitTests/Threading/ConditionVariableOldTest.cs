@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class ConditionVariableOldTest
+    public class ConditionVariableOldTest : TestClassBase
     {
         [TestMethod]
         public void TestAlwaysPositivePredicate()

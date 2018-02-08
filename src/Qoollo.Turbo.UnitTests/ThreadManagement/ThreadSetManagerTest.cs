@@ -10,21 +10,19 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ThreadManagement
 {
     [TestClass]
-    public class ThreadSetManagerTest
+    public class ThreadSetManagerTest : TestClassBase
     {
         [ClassInitialize]
         public static void Init(TestContext context)
         {
-            TestLoggingHelper.Subscribe(context, false);
+            SubscribeToUnhandledExceptions(context, false);
         }
         [ClassCleanup]
         public static void Cleanup()
         {
-            TestLoggingHelper.Unsubscribe();
+            UnsubscribeFromUnhandledExceptions();
         }
 
-
-        public TestContext TestContext { get; set; }
 
         //=============================
 

@@ -12,7 +12,7 @@ using Qoollo.Turbo.Queues.DiskQueueComponents;
 namespace Qoollo.Turbo.UnitTests.Queues
 {
     [TestClass]
-    public class QueueCombinationTest
+    public class QueueCombinationTest : TestClassBase
     {
         private class ItemSerializer : IDiskQueueItemSerializer<int>
         {

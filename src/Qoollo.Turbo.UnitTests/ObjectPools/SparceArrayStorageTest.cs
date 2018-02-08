@@ -10,7 +10,7 @@ using System.Threading;
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
     [TestClass]
-    public class SparceArrayStorageTest
+    public class SparceArrayStorageTest : TestClassBase
     {
         [TestMethod]
         public void TestAdd()

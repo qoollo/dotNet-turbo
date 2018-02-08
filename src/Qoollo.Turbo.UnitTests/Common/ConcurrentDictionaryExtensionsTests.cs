@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class ConcurrentDictionaryExtensionsTests
+    public class ConcurrentDictionaryExtensionsTests : TestClassBase
     {
         [TestMethod]
         public void EstimateCountCalculates()

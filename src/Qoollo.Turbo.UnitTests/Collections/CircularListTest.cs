@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Collections
 {
     [TestClass]
-    public class CircularListTest
+    public class CircularListTest : TestClassBase
     {
         private static void AreEqual<T>(List<T> expected, CircularList<T> actual, string info)
         {

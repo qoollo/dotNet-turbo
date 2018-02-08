@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Collections
 {
     [TestClass]
-    public class IndexedContainerTests
+    public class IndexedContainerTests : TestClassBase
     {
         [TestMethod]
         public void TestGetSetCreate()

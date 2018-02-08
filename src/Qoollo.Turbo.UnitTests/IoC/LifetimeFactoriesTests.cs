@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.IoC
 {
     [TestClass]
-    public class LifetimeFactoriesTests
+    public class LifetimeFactoriesTests : TestClassBase
     {
         public class TestBaseClass { }
         public class TestClassWithConstructor : TestBaseClass
