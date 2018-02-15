@@ -781,7 +781,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                 {
                     Task threadTask = new Task(ThreadStartUpInsideTask, rawData, TaskCreationOptions.LongRunning);
                     Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.SetTaskScheduler(threadTask, this.TaskScheduler);
-                    Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(threadTask, false);
+                    Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(threadTask);
                     if (threadTask.IsFaulted || threadTask.IsCanceled)
                         RethrowTaskException(threadTask);
                 }
@@ -803,6 +803,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private void ThreadStartUpInsideTask(object rawData)
         {
             TurboContract.Requires(rawData != null, conditionString: "rawData != null");
+            TurboContract.Assert(!_useOwnTaskScheduler || TaskScheduler.Current == this.TaskScheduler, conditionString: "!_useOwnTaskScheduler || TaskScheduler.Current == this.TaskScheduler");
 
             ThreadStartUpData startupData = (ThreadStartUpData)rawData;
 

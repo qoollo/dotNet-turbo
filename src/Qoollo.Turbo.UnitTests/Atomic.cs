@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,10 @@ namespace Qoollo.Turbo.UnitTests
             get { return _value != 0; }
             set { Interlocked.Exchange(ref _value, value ? 1 : 0); }
         }
+        public bool IsMatch(bool expected)
+        {
+            return Value == expected;
+        }
         
 
         public static explicit operator AtomicBool(bool val)
@@ -29,6 +34,76 @@ namespace Qoollo.Turbo.UnitTests
         public static implicit operator bool(AtomicBool val)
         {
             return val.Value;
+        }
+
+
+        private static uint GetTimestamp()
+        {
+            return (uint)Environment.TickCount;
+        }
+        public bool WaitForValue(bool expected, int timeout)
+        {
+            if (IsMatch(expected))
+                return true;
+
+            if (timeout == 0)
+                return IsMatch(expected);
+
+            if (timeout < 0)
+            {
+                while (!IsMatch(expected))
+                    Thread.Sleep(1);
+
+                return IsMatch(expected);
+            }
+
+            uint startTime = GetTimestamp();
+
+            while (!IsMatch(expected) && (GetTimestamp() - startTime) < timeout)
+                Thread.Sleep(1);
+
+            return IsMatch(expected);
+        }
+        public void AssertIsTrue()
+        {
+            Assert.IsTrue(Value);
+        }
+        public void AssertIsFalse()
+        {
+            Assert.IsFalse(Value);
+        }
+        public void AssertIsTrue(string message)
+        {
+            Assert.IsTrue(Value, message);
+        }
+        public void AssertIsFalse(string message)
+        {
+            Assert.IsFalse(Value, message);
+        }
+        public void AssertIsTrue(int timeout)
+        {
+            WaitForValue(true, timeout);
+            Assert.IsTrue(Value);
+        }
+        public void AssertIsFalse(int timeout)
+        {
+            WaitForValue(false, timeout);
+            Assert.IsFalse(Value);
+        }
+        public void AssertIsTrue(int timeout, string message)
+        {
+            WaitForValue(true, timeout);
+            Assert.IsTrue(Value, message);
+        }
+        public void AssertIsFalse(int timeout, string message)
+        {
+            WaitForValue(false, timeout);
+            Assert.IsFalse(Value, message);
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
         }
     }
 

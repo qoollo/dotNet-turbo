@@ -14,7 +14,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
     internal static class TaskHelper
     {
         private delegate void SetTaskSchedulerDelegate(Task task, TaskScheduler scheduler);
-        private delegate bool ExecuteTaskEntryDelegate(Task task, bool preventDoubleExecution);
+        private delegate bool ExecuteTaskEntryDelegate(Task task);
         private delegate bool CancelTaskDelegate(Task task, bool cancelNonExecutingOnly);
 
         private static SetTaskSchedulerDelegate _setTaskSchedulerDelegate;
@@ -51,14 +51,18 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// <returns>Delegate to execute Task</returns>
         private static ExecuteTaskEntryDelegate CreateExecuteTaskEntryMethod()
         {
-            var ExecuteEntryMethod = typeof(Task).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Single(o => o.Name == "ExecuteEntry" && o.GetParameters().Length == 1);
+            var ExecuteEntryMethod = typeof(Task).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Single(o => o.Name == "ExecuteEntry");
+            var ExecuteEntryMethodParameters = ExecuteEntryMethod.GetParameters();
+            if (ExecuteEntryMethodParameters.Length != 0 && !(ExecuteEntryMethodParameters.Length == 1 && ExecuteEntryMethodParameters[0].ParameterType == typeof(bool)))
+                throw new NotSupportedException("Task does not contains method 'ExecuteEntry'");
 
             var method = new DynamicMethod("Task_ExecuteTaskEntry_Internal_" + Guid.NewGuid().ToString("N"), typeof(bool),
-                new Type[] { typeof(Task), typeof(bool) }, true);
+                new Type[] { typeof(Task) }, true);
 
             var ilGen = method.GetILGenerator();
             ilGen.Emit(OpCodes.Ldarg_0);
-            ilGen.Emit(OpCodes.Ldarg_1);
+            if (ExecuteEntryMethodParameters.Length == 1)
+                ilGen.Emit(OpCodes.Ldc_I4_1);
             ilGen.Emit(OpCodes.Callvirt, ExecuteEntryMethod);
             ilGen.Emit(OpCodes.Ret);
 
@@ -107,10 +111,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// Executes work associated with Task synchronously
         /// </summary>
         /// <param name="task">Task</param>
-        /// <param name="preventDoubleExecution">Prevent double execution</param>
         /// <returns>Is executed successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool ExecuteTaskEntry(Task task, bool preventDoubleExecution)
+        public static bool ExecuteTaskEntry(Task task)
         {
             TurboContract.Requires(task != null, conditionString: "task != null");
 
@@ -120,7 +123,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
                 InitDynamicMethods();
                 action = _executeTaskEntryDelegate;
             }
-            return action(task, preventDoubleExecution);
+            return action(task);
         }
         /// <summary>
         /// Cancels Task
