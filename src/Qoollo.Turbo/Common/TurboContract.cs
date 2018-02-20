@@ -35,13 +35,16 @@ namespace Qoollo.Turbo
             {
             }
 
-            string assertText =
+            string assertTextShort =
                 methodName + " triggered failure." + Environment.NewLine +
                 "Condition: " + (conditionString ?? "") + Environment.NewLine +
-                "Description: " + (userMessage ?? "") + Environment.NewLine +
+                "Description: " + (userMessage ?? "");
+
+            string assertTextFull =
+                assertTextShort + Environment.NewLine +
                 "StackTrace:" + Environment.NewLine + stackTrace;
 
-            System.Diagnostics.Debug.WriteLine(assertText);
+            System.Diagnostics.Debug.WriteLine(assertTextFull);
 
             if (System.Diagnostics.Debugger.IsAttached)
             {
@@ -49,11 +52,10 @@ namespace Qoollo.Turbo
             }
             else
             {
-                var ex = new TurboAssertionException(assertText);
                 if (IsInUnitTests)
-                    throw ex;
+                    throw new TurboAssertionException(assertTextShort);
 
-                Environment.FailFast(ex.Message, ex);
+                Environment.FailFast(assertTextFull, new TurboAssertionException(assertTextShort));
             }
         }
 
