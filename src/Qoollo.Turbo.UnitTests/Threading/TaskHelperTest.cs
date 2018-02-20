@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class TaskHelperTest
+    public class TaskHelperTest : TestClassBase
     {
         class TestTaskScheduler : TaskScheduler
         {

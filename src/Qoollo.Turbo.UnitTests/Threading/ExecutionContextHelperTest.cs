@@ -8,7 +8,7 @@ using System.Threading;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class ExecutionContextHelperTest
+    public class ExecutionContextHelperTest: TestClassBase
     {
         class CustomSyncContext : SynchronizationContext
         {

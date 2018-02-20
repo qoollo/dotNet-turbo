@@ -116,12 +116,18 @@ namespace Qoollo.Turbo.UnitTests
 #endif
         }
 
+        protected static void ChangeTurboContractBehaviour()
+        {
+            TurboContract.IsInUnitTests = true;
+        }
+
         // =======================
 
 
         protected TestClassBase()
         {
             DisableCrashWindow();
+            ChangeTurboContractBehaviour();
         }
 
 

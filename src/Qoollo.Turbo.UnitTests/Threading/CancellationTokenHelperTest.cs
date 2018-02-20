@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class CancellationTokenHelperTest
+    public class CancellationTokenHelperTest : TestClassBase
     {
         class CustomSyncContext: SynchronizationContext
         {

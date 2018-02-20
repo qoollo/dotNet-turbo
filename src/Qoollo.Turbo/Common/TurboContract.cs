@@ -13,6 +13,52 @@ namespace Qoollo.Turbo
     internal static class TurboContract
     {
         /// <summary>
+        /// Allows to change triggering logic for UnitTests
+        /// </summary>
+        internal static bool IsInUnitTests { get; set; }
+
+        /// <summary>
+        /// Trigger failure processing logic
+        /// </summary>
+        /// <param name="userMessage">Message</param>
+        /// <param name="conditionString">Condition string</param>
+        /// <param name="methodName">Method name</param>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void TriggerFailure(string userMessage, string conditionString, [CallerMemberName] string methodName = "")
+        {
+            string stackTrace = string.Empty;
+            try
+            {
+                stackTrace = new System.Diagnostics.StackTrace(0, true).ToString();
+            }
+            catch
+            {
+            }
+
+            string assertText =
+                methodName + " triggered failure." + Environment.NewLine +
+                "Condition: " + (conditionString ?? "") + Environment.NewLine +
+                "Description: " + (userMessage ?? "") + Environment.NewLine +
+                "StackTrace:" + Environment.NewLine + stackTrace;
+
+            System.Diagnostics.Debug.WriteLine(assertText);
+
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
+            else
+            {
+                var ex = new TurboAssertionException(assertText);
+                if (IsInUnitTests)
+                    throw ex;
+
+                Environment.FailFast(ex.Message, ex);
+            }
+        }
+
+
+        /// <summary>
         /// Specifies a precondition contract
         /// </summary>
         /// <param name="condition">Condition</param>
@@ -20,7 +66,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Requires(bool condition)
         {
-            System.Diagnostics.Debug.Assert(condition);
+            if (!condition)
+                TriggerFailure(null, null);
         }
         /// <summary>
         /// Specifies a precondition contract
@@ -31,7 +78,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Requires(bool condition, string userMessage)
         {
-            System.Diagnostics.Debug.Assert(condition, userMessage);
+            if (!condition)
+                TriggerFailure(userMessage, null);
         }
         /// <summary>
         /// Specifies a precondition contract
@@ -43,7 +91,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void Requires(bool condition, string userMessage = null, string conditionString = null)
         {
-            System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
+            if (!condition)
+                TriggerFailure(userMessage, conditionString);
         }
 
 
@@ -55,7 +104,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Assert(bool condition)
         {
-            System.Diagnostics.Debug.Assert(condition);
+            if (!condition)
+                TriggerFailure(null, null);
         }
         /// <summary>
         /// Checks for a condition; if the condition is false, outputs a specified message and displays a message box that shows the call stack
@@ -66,7 +116,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Assert(bool condition, string userMessage)
         {
-            System.Diagnostics.Debug.Assert(condition, userMessage);
+            if (!condition)
+                TriggerFailure(userMessage, null);
         }
         /// <summary>
         /// Checks for a condition; if the condition is false, outputs a specified message and displays a message box that shows the call stack
@@ -78,7 +129,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void Assert(bool condition, string userMessage = null, string conditionString = null)
         {
-            System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
+            if (!condition)
+                TriggerFailure(userMessage, conditionString);
         }
 
 
@@ -90,7 +142,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Assume(bool condition)
         {
-            System.Diagnostics.Debug.Assert(condition);
+            if (!condition)
+                TriggerFailure(null, null);
         }
         /// <summary>
         /// Checks for a condition; if the condition is false, outputs a specified message and displays a message box that shows the call stack
@@ -101,7 +154,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Assume(bool condition, string userMessage)
         {
-            System.Diagnostics.Debug.Assert(condition, userMessage);
+            if (!condition)
+                TriggerFailure(userMessage, null);
         }
         /// <summary>
         /// Checks for a condition; if the condition is false, outputs a specified message and displays a message box that shows the call stack
@@ -113,7 +167,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void Assume(bool condition, string userMessage = null, string conditionString = null)
         {
-            System.Diagnostics.Debug.Assert(condition, conditionString, userMessage);
+            if (!condition)
+                TriggerFailure(userMessage, conditionString);
         }
 
         /// <summary>
@@ -124,7 +179,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Invariant(bool condition)
         {
-            System.Diagnostics.Debug.Assert(condition);
+            if (!condition)
+                TriggerFailure(null, null);
         }
         /// <summary>
         /// Specifies an invariant contract for the enclosing method or property
@@ -135,7 +191,8 @@ namespace Qoollo.Turbo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Invariant(bool condition, string userMessage)
         {
-            System.Diagnostics.Debug.Assert(condition, userMessage);
+            if (!condition)
+                TriggerFailure(userMessage, null);
         }
 
 
