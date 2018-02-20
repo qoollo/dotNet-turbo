@@ -70,7 +70,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             TaskHelper.SetTaskScheduler(tsk, sched);
             TaskHelper.ExecuteTaskEntry(tsk);
 
-            taskSchedullerSetted.AssertIsTrue(10000, "taskSchedullerSetted");
+            TimingAssert.IsTrue(10000, ref taskSchedullerSetted, "taskSchedullerSetted");
         }
 
         [TestMethod]

@@ -200,7 +200,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (captureSyncContext)
                 _сapturedContext = ExecutionContext.Capture();
             else
-                _сapturedContext = ExecutionContextHelper.CaptureContextNoSyncContext();
+                _сapturedContext = ExecutionContextHelper.CaptureContextNoSyncContextIfPossible();
         }
 
         /// <summary>

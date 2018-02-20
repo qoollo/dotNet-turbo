@@ -51,6 +51,14 @@ namespace Qoollo.Turbo.UnitTests
         {
             Assert.IsTrue(WaitUntil(cmp, timeout), message());
         }
+        public static void IsTrue(int timeout, ref AtomicBool atomicBool)
+        {
+            Assert.IsTrue(atomicBool.WaitForValue(true, timeout));
+        }
+        public static void IsTrue(int timeout, ref AtomicBool atomicBool, string message)
+        {
+            Assert.IsTrue(atomicBool.WaitForValue(true, timeout), message);
+        }
 
         public static void IsFalse(int timeout, Func<bool> cmp)
         {
@@ -59,6 +67,14 @@ namespace Qoollo.Turbo.UnitTests
         public static void IsFalse(int timeout, Func<bool> cmp, string message)
         {
             Assert.IsTrue(WaitUntil(() => !cmp(), timeout), message);
+        }
+        public static void IsFalse(int timeout, ref AtomicBool atomicBool)
+        {
+            Assert.IsTrue(atomicBool.WaitForValue(false, timeout));
+        }
+        public static void IsFalse(int timeout, ref AtomicBool atomicBool, string message)
+        {
+            Assert.IsTrue(atomicBool.WaitForValue(false, timeout), message);
         }
 
 

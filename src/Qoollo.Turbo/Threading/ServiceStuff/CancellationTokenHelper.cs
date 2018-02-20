@@ -28,7 +28,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// <param name="state">State for callback delegate</param>
         /// <returns>CancellationTokenRegistration that can be used to deregister the callback</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static CancellationTokenRegistration FallbackRegisterWithoutEC(ref CancellationToken token, Action<object> callback, object state)
+        private static CancellationTokenRegistration RegisterWithoutECMethodFallback(ref CancellationToken token, Action<object> callback, object state)
         {
             return token.Register(callback, state, false);
         }
@@ -37,7 +37,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// Attempts to generates dynamic method for RegisterWithoutEC
         /// </summary>
         /// <returns>Delegate for generated method if successful, otherwise null</returns>
-        private static RegisterWithoutECDelegate TryGenerateRegisterWithoutEC()
+        private static RegisterWithoutECDelegate TryGenerateRegisterWithoutECMethod()
         {
             var registerMethodCandidates = typeof(CancellationToken).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Where(o => o.Name == "Register" && o.GetParameters().Length == 4).ToList();
             if (registerMethodCandidates.Count != 1)
@@ -68,14 +68,14 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// </summary>
         /// <returns>Initialized delegate</returns>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static RegisterWithoutECDelegate InitRegisterWithoutEC()
+        private static RegisterWithoutECDelegate InitRegisterWithoutECMethod()
         {
             lock (_syncObj)
             {
                 var result = Volatile.Read(ref _registerWithoutECDelegate);
                 if (result == null)
                 {
-                    result = TryGenerateRegisterWithoutEC() ?? new RegisterWithoutECDelegate(FallbackRegisterWithoutEC);
+                    result = TryGenerateRegisterWithoutECMethod() ?? new RegisterWithoutECDelegate(RegisterWithoutECMethodFallback);
                     Volatile.Write(ref _registerWithoutECDelegate, result);
                 }
                 return result;
@@ -94,7 +94,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CancellationTokenRegistration RegisterWithoutECIfPossible(CancellationToken token, Action<object> callback, object state)
         {
-            var action = _registerWithoutECDelegate ?? InitRegisterWithoutEC();
+            var action = _registerWithoutECDelegate ?? InitRegisterWithoutECMethod();
             return action(ref token, callback, state);
         }
     }

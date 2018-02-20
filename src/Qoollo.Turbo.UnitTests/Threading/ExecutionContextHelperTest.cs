@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.UnitTests.Threading
 {
@@ -22,16 +23,22 @@ namespace Qoollo.Turbo.UnitTests.Threading
             try
             {
                 SynchronizationContext.SetSynchronizationContext(syncContext);
-                var eContext = ExecutionContextHelper.CaptureContextNoSyncContext();
+                var eContext = ExecutionContextHelper.CaptureContextNoSyncContextIfPossible();
                 Assert.IsNotNull(eContext);
 
-                bool isDefaulContext = false;
-                ExecutionContext.Run(eContext, (st) =>
+                AtomicBool isDefaulContext = new AtomicBool(false);
+                var task = Task.Run(() =>
                 {
-                    isDefaulContext = SynchronizationContext.Current == null;
-                }, null);
+                    SynchronizationContext.SetSynchronizationContext(null);
+                    ExecutionContextHelper.RunInContext(eContext, (st) =>
+                    {
+                        isDefaulContext.Value = SynchronizationContext.Current == null;
+                    }, null, true);
+                });
 
-                Assert.IsTrue(isDefaulContext, "Default context expected");
+
+                task.Wait();
+                TimingAssert.IsTrue(10000, ref isDefaulContext, "Default context expected");
             }
             finally
             {

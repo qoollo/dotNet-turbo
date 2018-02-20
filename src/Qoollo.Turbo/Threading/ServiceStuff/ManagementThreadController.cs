@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ServiceStuff
 {
     /// <summary>
-    /// Делегат для вызова из потока обслуживания
+    /// Management action delegate
     /// </summary>
-    /// <param name="elapsedMs">Прошедшее время с последнего успешного исполнения</param>
-    /// <returns>Произведено ли действие (true - сбрасывает счётчик времени)</returns>
+    /// <param name="elapsedMs">Elapsed time from last successful exection</param>
+    /// <returns>Wheter the management action completed (true - resets time counter)</returns>
     internal delegate bool ManagementThreadControllerCallback(int elapsedMs);
 
     /// <summary>
-    /// Контроллер потока обслуживания вспомогательных задач
+    /// Special management thread (single for whole Qoollo.Turbo)
     /// </summary>
     internal class ManagementThreadController
     {
@@ -36,7 +36,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         }
 
         /// <summary>
-        /// Инстанс синглтона
+        /// Single instance of management thread
         /// </summary>
         public static ManagementThreadController Instance
         {
@@ -50,18 +50,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 
         // =================
 
-        /// <summary>
-        /// Получить временной маркер в миллисекундах
-        /// </summary>
-        /// <returns>Временной маркер</returns>
-        private static uint GetTimestamp()
-        {
-            return (uint)Environment.TickCount;
-        }
-
 
         /// <summary>
-        /// Контейнер для данных подписчика
+        /// Data container for subscribers
         /// </summary>
         private class CallbackItem
         {
@@ -73,16 +64,16 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
                 TurboContract.Requires(callback != null, conditionString: "callback != null");
 
                 _callback = callback;
-                _startTimeMs = ManagementThreadController.GetTimestamp();
+                _startTimeMs = TimeoutHelper.GetTimestamp();
             }
 
             public ManagementThreadControllerCallback Callback { get { return _callback; } }
             public uint StartTime { get { return _startTimeMs; } }
 
             /// <summary>
-            /// Рассылает уведомление
+            /// Performs notification
             /// </summary>
-            /// <param name="currentTimestamp">Текущее время</param>
+            /// <param name="currentTimestamp">Current time stamp</param>
             public void Notify(uint currentTimestamp)
             {
                 uint elapsed = (currentTimestamp - _startTimeMs);
@@ -98,7 +89,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         // ============
 
         /// <summary>
-        /// Период рассылки уведомлений
+        /// Management period
         /// </summary>
         public const int SleepPeriod = 500;
         private const int ExtendedSleepPeriod = 2000;
@@ -109,7 +100,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         private readonly List<ManagementThreadControllerCallback> _pendingRemoveItems;
 
         /// <summary>
-        /// Конструктор ManagementThreadController
+        /// ManagementThreadController constructor
         /// </summary>
         private ManagementThreadController()
         {
@@ -126,9 +117,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         }
 
         /// <summary>
-        /// Зарегистрировать коллбэк для вызова в потоке менеджмента
+        /// Registers management callback
         /// </summary>
-        /// <param name="callback">Коллбэк</param>
+        /// <param name="callback">Callback delegate</param>
         public void RegisterCallback(ManagementThreadControllerCallback callback)
         {
             TurboContract.Requires(callback != null, conditionString: "callback != null");
@@ -139,9 +130,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             }
         }
         /// <summary>
-        /// Снять регистрацию колбэка
+        /// Deregisters callback
         /// </summary>
-        /// <param name="callback">Коллбэк</param>
+        /// <param name="callback">Callback delegate</param>
         public void UnregisterCallback(ManagementThreadControllerCallback callback)
         {
             TurboContract.Requires(callback != null, conditionString: "callback != null");
@@ -153,7 +144,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 
 
         /// <summary>
-        /// Обновление _items из _pendingAddItems и _pendingRemoveItems
+        /// Updates _items from _pendingAddItems and from _pendingRemoveItems
         /// </summary>
         private void UpdateItems()
         {
@@ -201,7 +192,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         }
 
         /// <summary>
-        /// Функция потока
+        /// Thread procedure
         /// </summary>
         private void ThreadFunc()
         {
@@ -209,7 +200,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             {
                 UpdateItems();
 
-                var timestamp = GetTimestamp();
+                var timestamp = TimeoutHelper.GetTimestamp();
                 foreach (var item in _items)
                     item.Notify(timestamp);
 

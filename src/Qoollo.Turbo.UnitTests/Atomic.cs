@@ -64,42 +64,6 @@ namespace Qoollo.Turbo.UnitTests
 
             return IsMatch(expected);
         }
-        public void AssertIsTrue()
-        {
-            Assert.IsTrue(Value);
-        }
-        public void AssertIsFalse()
-        {
-            Assert.IsFalse(Value);
-        }
-        public void AssertIsTrue(string message)
-        {
-            Assert.IsTrue(Value, message);
-        }
-        public void AssertIsFalse(string message)
-        {
-            Assert.IsFalse(Value, message);
-        }
-        public void AssertIsTrue(int timeout)
-        {
-            WaitForValue(true, timeout);
-            Assert.IsTrue(Value);
-        }
-        public void AssertIsFalse(int timeout)
-        {
-            WaitForValue(false, timeout);
-            Assert.IsFalse(Value);
-        }
-        public void AssertIsTrue(int timeout, string message)
-        {
-            WaitForValue(true, timeout);
-            Assert.IsTrue(Value, message);
-        }
-        public void AssertIsFalse(int timeout, string message)
-        {
-            WaitForValue(false, timeout);
-            Assert.IsFalse(Value, message);
-        }
 
         public override string ToString()
         {
