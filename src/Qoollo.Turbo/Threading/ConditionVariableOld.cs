@@ -125,7 +125,7 @@ namespace Qoollo.Turbo.Threading
             try
             {
                 if (token.CanBeCanceled)
-                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this);
 
                 try { }
                 finally
@@ -295,7 +295,7 @@ namespace Qoollo.Turbo.Threading
             try
             {
                 if (token.CanBeCanceled)
-                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this);
 
                 try { }
                 finally

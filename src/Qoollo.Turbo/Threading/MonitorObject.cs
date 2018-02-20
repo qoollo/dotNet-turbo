@@ -370,7 +370,7 @@ namespace Qoollo.Turbo.Threading
             {
                 try
                 {
-                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this);
                     Monitor.Enter(this); // Can be interrupted
                 }
                 catch

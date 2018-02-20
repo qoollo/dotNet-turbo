@@ -176,7 +176,7 @@ namespace Qoollo.Turbo.Threading
             }
 
 
-            using (CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this))
+            using (CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this))
             {
                 lock (_lockObj)
                 {

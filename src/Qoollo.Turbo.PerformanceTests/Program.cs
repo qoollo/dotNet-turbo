@@ -28,7 +28,8 @@ namespace Qoollo.Turbo.PerformanceTests
             //ThreadPoolTests.RunAllTests();
             //LevelingQueueTest.RunTest();
             //EntryCountingEventPerfTest.RunTest();
-            ProfilerInliningTest.RunTest();
+            //ProfilerInliningTest.RunTest();
+            CancellationTokenRegistrationTest.RunTest();
             Console.ReadLine();
         }
     }

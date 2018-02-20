@@ -27,7 +27,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                 AtomicBool isNoExecutionContext = new AtomicBool(false);
 
-                using (CancellationTokenHelper.RegisterWithoutEC(token, (st) =>
+                using (CancellationTokenHelper.RegisterWithoutECIfPossible(token, (st) =>
                 {
                     isNoExecutionContext.Value = SynchronizationContext.Current == null;
                 }, null))
