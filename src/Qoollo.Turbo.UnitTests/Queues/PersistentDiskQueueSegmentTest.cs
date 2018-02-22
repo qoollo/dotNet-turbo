@@ -443,7 +443,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
 
-
+#if !NETCOREAPP2_0
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
         public void WriteAbortTest()
@@ -451,6 +451,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
             for (int i = 0; i < 150; i++)
                 WriteAbortTestCore(100);
         }
+#endif
 
 
         private void ReadAbortTestCore(int itemCount)
@@ -492,6 +493,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
 
 
+#if !NETCOREAPP2_0
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
         public void ReadAbortTest()
@@ -499,6 +501,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
             for (int i = 0; i < 150; i++)
                 ReadAbortTestCore(100);
         }
+#endif
 
 
         // ===================
