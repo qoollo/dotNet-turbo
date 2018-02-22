@@ -45,7 +45,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                     barrier.SignalAndWait();
                     SynchronizationContext.SetSynchronizationContext(syncContext);
                     barrier2.SignalAndWait();
-                    TimingAssert.IsTrue(10000, ref isNoExecutionContext, "isNoExecutionContext");
+                    TimingAssert.IsTrue(10000, isNoExecutionContext, "isNoExecutionContext");
                 }
             }
             finally

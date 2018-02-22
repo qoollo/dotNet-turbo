@@ -325,6 +325,69 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             }
         }
 
+        [TestMethod]
+        public void TestTaskSchedulerSetted()
+        {
+            using (DynamicThreadPool testInst = new DynamicThreadPool(0, Environment.ProcessorCount, -1, "name", false, new DynamicThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
+            {
+                AtomicBool isPropperSceduller = new AtomicBool(false);
+
+                testInst.Run(() =>
+                {
+                    isPropperSceduller.Value = TaskScheduler.Current == testInst.TaskScheduler;
+                });
+
+                TimingAssert.IsTrue(10000, isPropperSceduller, "isPropperSceduller");
+                testInst.Dispose(true, true, false);
+            }
+        }
+
+        [TestMethod]
+        public void TestSyncContextSetted()
+        {
+            using (DynamicThreadPool testInst = new DynamicThreadPool(0, Environment.ProcessorCount, -1, "name", false, new DynamicThreadPoolOptions() { UseOwnTaskScheduler = true, UseOwnSyncContext = true }))
+            {
+                AtomicBool isPropperSyncContext = new AtomicBool(false);
+
+                testInst.Run(() =>
+                {
+                    if (SynchronizationContext.Current != null)
+                    {
+                        SynchronizationContext.Current.Post((st) =>
+                        {
+                            isPropperSyncContext.Value = testInst.IsThreadPoolThread;
+                        }, null);
+                    }
+                });
+
+                TimingAssert.IsTrue(10000, isPropperSyncContext, "isPropperSyncContext");
+                testInst.Dispose(true, true, false);
+            }
+        }
+
+        [TestMethod]
+        public void TestNoSyncContextAndTaskSchedullerWhenNotConfigurated()
+        {
+            using (DynamicThreadPool testInst = new DynamicThreadPool(0, Environment.ProcessorCount, -1, "name", false, new DynamicThreadPoolOptions() { UseOwnTaskScheduler = false, UseOwnSyncContext = false }))
+            {
+                var defSyncContext = SynchronizationContext.Current;
+                var defTaskScheduller = TaskScheduler.Current;
+
+                AtomicBool isDefaultSyncContext = new AtomicBool(false);
+                AtomicBool isDefaultTaskScheduller = new AtomicBool(false);
+
+                testInst.Run(() =>
+                {
+                    isDefaultSyncContext.Value = SynchronizationContext.Current == defSyncContext;
+                    isDefaultTaskScheduller.Value = TaskScheduler.Current == defTaskScheduller;
+                });
+
+                TimingAssert.IsTrue(10000, isDefaultSyncContext, "isDefaultSyncContext");
+                TimingAssert.IsTrue(10000, isDefaultTaskScheduller, "isDefaultTaskScheduller");
+                testInst.Dispose(true, true, false);
+            }
+        }
+
 
         private async Task AwaitThroughSyncContext()
         {

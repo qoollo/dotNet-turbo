@@ -8,9 +8,13 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.UnitTests
 {
-    public struct AtomicBool
+    public class AtomicBool
     {
         private volatile int _value;
+        public AtomicBool()
+        {
+            _value = 0;
+        }
         public AtomicBool(bool val)
         {
             _value = val ? 1 : 0;
@@ -71,9 +75,13 @@ namespace Qoollo.Turbo.UnitTests
         }
     }
 
-    public struct AtomicNullableBool
+    public class AtomicNullableBool
     {
         private volatile int _value;
+        public AtomicNullableBool()
+        {
+            _value = 0;
+        }
         public AtomicNullableBool(bool? val)
         {
             if (val.HasValue)
@@ -123,11 +131,20 @@ namespace Qoollo.Turbo.UnitTests
         {
             return val.Value;
         }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 
-    public struct AtomicInt
+    public class AtomicInt
     {
         private volatile int _value;
+        public AtomicInt()
+        {
+            _value = 0;
+        }
         public AtomicInt(int val)
         {
             _value = val;
@@ -150,6 +167,11 @@ namespace Qoollo.Turbo.UnitTests
         public static implicit operator int(AtomicInt val)
         {
             return val.Value;
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
         }
     }
 }

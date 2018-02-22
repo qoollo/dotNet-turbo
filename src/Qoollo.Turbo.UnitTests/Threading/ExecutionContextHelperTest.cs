@@ -38,7 +38,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
 
                 task.Wait();
-                TimingAssert.IsTrue(10000, ref isDefaulContext, "Default context expected");
+                TimingAssert.IsTrue(10000, isDefaulContext, "Default context expected");
             }
             finally
             {
