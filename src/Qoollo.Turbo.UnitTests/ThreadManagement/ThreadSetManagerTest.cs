@@ -149,26 +149,49 @@ namespace Qoollo.Turbo.UnitTests.ThreadManagement
             }))
             {
 
-                Assert.IsNotNull(testInst.CurrentCulture);
-                Assert.IsNotNull(testInst.CurrentUICulture);
                 Assert.IsTrue(testInst.IsBackground == false);
                 Assert.IsTrue(testInst.Priority == ThreadPriority.Normal);
 
-
-                testInst.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
-                testInst.CurrentUICulture = System.Globalization.CultureInfo.InvariantCulture;
                 testInst.IsBackground = true;
                 testInst.Priority = ThreadPriority.AboveNormal;
 
-                Assert.AreEqual(System.Globalization.CultureInfo.InvariantCulture, testInst.CurrentCulture);
-                Assert.AreEqual(System.Globalization.CultureInfo.InvariantCulture, testInst.CurrentUICulture);
                 Assert.IsTrue(testInst.IsBackground == true);
                 Assert.IsTrue(testInst.Priority == ThreadPriority.AboveNormal);
-
 
                 testInst.Stop();
             }
         }
 
-    }
+
+#pragma warning disable CS0618 // Type or member is obsolete
+#if NET45 || NET46
+        [TestMethod]
+        public void TestCultureProperties()
+        {
+            int threadExit = 0;
+
+            using (DelegateThreadSetManager testInst = new DelegateThreadSetManager(Environment.ProcessorCount, "name", (id, state, token) =>
+            {
+                Interlocked.Increment(ref threadExit);
+            }))
+            {
+
+                Assert.IsNotNull(testInst.CurrentCulture);
+                Assert.IsNotNull(testInst.CurrentUICulture);
+
+#if NET45
+                testInst.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+                testInst.CurrentUICulture = System.Globalization.CultureInfo.InvariantCulture;
+
+                Assert.AreEqual(System.Globalization.CultureInfo.InvariantCulture, testInst.CurrentCulture);
+                Assert.AreEqual(System.Globalization.CultureInfo.InvariantCulture, testInst.CurrentUICulture);
+#endif
+
+                testInst.Stop();
+            }
+        }
+#endif
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            }
 }
