@@ -104,7 +104,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         private const int WorkItemPerThreadLimit = 32;
         private const int NoWorkItemPreventDeactivationPeriod = 2 * 1000;
         /// <summary>
-        /// Число потоков, до которого легко можно создавать новые
+        /// Upper limit of the number of threads until that the simplified thread spawning logic can be applied (see <see cref="TryRequestNewThreadOnAdd"/>)
         /// </summary>
         private static readonly int FastSpawnThreadCountLimit = Environment.ProcessorCount <= 2 ? Environment.ProcessorCount : Environment.ProcessorCount / 2;
         private static readonly int ReasonableThreadCount = Environment.ProcessorCount;
@@ -308,10 +308,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         private const int OneDieSlotForDieSlotActiveFullThreadCountCombination = (1 << 24);
 
         /// <summary>
-        /// Вытащить число потоков из DieSlotActiveFullThreadCount
+        /// Gets FullThreadCount component from DieSlotActiveFullThreadCount
         /// </summary>
-        /// <param name="val">Значени DieSlotActiveFullThreadCount</param>
-        /// <returns>Число потоков</returns>
+        /// <param name="val">DieSlotActiveFullThreadCount value</param>
+        /// <returns>Total number of threads stored in DieSlotActiveFullThreadCount</returns>
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetThreadCountFromCombination(int val)
@@ -319,10 +319,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return val & ((1 << 12) - 1);
         }
         /// <summary>
-        /// Вытащить число запросов на остановку из DieSlotActiveFullThreadCount
+        /// Gets ActiveThreadCount component from DieSlotActiveFullThreadCount
         /// </summary>
-        /// <param name="val">Значение DieSlotActiveFullThreadCount</param>
-        /// <returns>Число запросов на остановку</returns>
+        /// <param name="val">DieSlotActiveFullThreadCount value</param>
+        /// <returns>Number of active threads stored in DieSlotActiveFullThreadCount</returns>
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetActiveThreadCountFromCombination(int val)
@@ -330,10 +330,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return (val >> 12) & ((1 << 12) - 1);
         }
         /// <summary>
-        /// Вытащить число слотов завершения (число потоков, готовящихся к завершению) из DieSlotActiveFullThreadCount
+        /// Gets DieSlotCount component from DieSlotActiveFullThreadCount (number of threads that should be destroyed)
         /// </summary>
-        /// <param name="val">Значение DieSlotActiveFullThreadCount</param>
-        /// <returns>Число слотов завершения</returns>
+        /// <param name="val">DieSlotActiveFullThreadCount value</param>
+        /// <returns>Number of threads that should be destroyed</returns>
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetDieSlotCountFromCombination(int val)

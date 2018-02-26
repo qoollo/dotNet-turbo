@@ -11,34 +11,34 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools.Common
 {
     /// <summary>
-    /// Состояние задачи
+    /// Defines possible states of the <see cref="ThreadPoolWorkItem"/>
     /// </summary>
     internal enum ThreadPoolWorkItemState: int
     {
         /// <summary>
-        /// Состояние не отслеживается
+        /// State is not tracking
         /// </summary>
         NotTracked = -1,
         /// <summary>
-        /// Создана
+        /// Indicates that <see cref="ThreadPoolWorkItem"/> was created but not started
         /// </summary>
         Created = 0,
         /// <summary>
-        /// Запущена на исполнение
+        /// Indicates that <see cref="ThreadPoolWorkItem"/> was started
         /// </summary>
         Started = 1,
         /// <summary>
-        /// Завершена
+        /// Indicates that <see cref="ThreadPoolWorkItem"/> was completed
         /// </summary>
         Completed = 2,
         /// <summary>
-        /// Отменена
+        /// Indicates that <see cref="ThreadPoolWorkItem"/> was cancelled
         /// </summary>
         Cancelled = 3
     }
 
     /// <summary>
-    /// Единица работы для пула
+    /// Work item for the ThreadPool (provides methods to run work inside thread pool)
     /// </summary>
     public abstract class ThreadPoolWorkItem
     {
@@ -47,9 +47,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         internal static readonly Action<object> RunAction = new Action<object>(RunInnerHelper);
 
         /// <summary>
-        /// Выполнение действия
+        /// Helper method to run work item when state object is required
         /// </summary>
-        /// <param name="workItemState">Единица работы для исполнения</param>
+        /// <param name="workItemState"><see cref="ThreadPoolWorkItem"/> to be executed</param>
         private static void RunInnerHelper(object workItemState)
         {
             ThreadPoolWorkItem workItem = (ThreadPoolWorkItem)workItemState;
@@ -58,11 +58,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Допустимый ли переход состояний
+        /// Checks whether the state transition is acceptable
         /// </summary>
-        /// <param name="newState">Новое состояние</param>
-        /// <param name="oldState">Старое состояние</param>
-        /// <returns>Допустим переход</returns>
+        /// <param name="newState">Target state</param>
+        /// <param name="oldState">Original state</param>
+        /// <returns>Whether the state transition is acceptable</returns>
         private static bool IsValidStateTransition(ThreadPoolWorkItemState newState, ThreadPoolWorkItemState oldState)
         {
             switch (oldState)
@@ -82,7 +82,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         // =============
 
         /// <summary>
-        /// Захваченный контекст исполнения
+        /// Captured ExecutionContext
         /// </summary>
         private ExecutionContext _сapturedContext;
         private readonly bool _allowExecutionContextFlow;
@@ -97,10 +97,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 #endif
 
         /// <summary>
-        /// Конструктор ThreadPoolWorkItem
+        /// <see cref="TaskThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="allowExecutionContextFlow">Допустимо ли захватывать контекст исполнения</param>
-        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
+        /// <param name="preferFairness">Indicates whether this work item should alwayes be enqueued to the GlobalQueue</param>
         public ThreadPoolWorkItem(bool allowExecutionContextFlow, bool preferFairness) 
         {
             _allowExecutionContextFlow = allowExecutionContextFlow;
@@ -108,35 +108,35 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Допустимо ли захватывать контекст исполнения
+        /// Indicates whether the ExecutionContext should be captured
         /// </summary>
         public bool AllowExecutionContextFlow { get { return _allowExecutionContextFlow; } }
         /// <summary>
-        /// Требовать постановку в общую очередь
+        /// Indicates whether this work item should alwayes be enqueued to the GlobalQueue
         /// </summary>
         public bool PreferFairness { get { return _preferFairness; } }
         /// <summary>
-        /// Захваченный контекст исполнения
+        /// Captured ExecutionContext
         /// </summary>
         internal ExecutionContext CapturedContext { get { return _сapturedContext; } }
 
 #if DEBUG
         /// <summary>
-        /// Состояние задачи
+        /// Work item state
         /// </summary>
         internal ThreadPoolWorkItemState State { get { return (ThreadPoolWorkItemState)Volatile.Read(ref _state); } }
 #else
         /// <summary>
-        /// Состояние задачи
+        /// Work item state
         /// </summary>
         internal ThreadPoolWorkItemState State { get { return ThreadPoolWorkItemState.NotTracked; } }
 #endif
 
-       
+
         /// <summary>
-        /// Обновить состояние
+        /// Updates the state of the Work Item (for debugging purposes)
         /// </summary>
-        /// <param name="newState">Новое состояние</param>
+        /// <param name="newState">New state</param>
         [System.Diagnostics.Conditional("DEBUG")]
         private void UpdateState(ThreadPoolWorkItemState newState)
         {
@@ -188,9 +188,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Захватить контекст выполнения
+        /// Captures the current ExecutionContext
         /// </summary>
-        /// <param name="captureSyncContext">Захватывать ли контекст синхронизации</param>
+        /// <param name="captureSyncContext">Whether the synchronization context should be captured too</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CaptureExecutionContext(bool captureSyncContext = false)
         {
@@ -204,20 +204,20 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected abstract void RunInner();
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected virtual void CancelInner() { }
 
 
         /// <summary>
-        /// Запуск исполнения работы
+        /// Runs this work item  
         /// </summary>
-        /// <param name="restoreExecContext">Восстанавливать ли контекст исполнения</param>
-        /// <param name="preserveSyncContext">Сохранять ли текущий контекст исполнения</param>
+        /// <param name="restoreExecContext">Whether the ExecutionContext should be restored</param>
+        /// <param name="preserveSyncContext">Whether the current SynchronizationContext should be preserved</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Run(bool restoreExecContext, bool preserveSyncContext)
         {
@@ -236,7 +236,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Cancels the work item
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Cancel()
