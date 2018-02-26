@@ -124,8 +124,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         private volatile bool _wasSomeProcessByThreadsFlag;
 
         /// <summary>
-        /// Композитная переменная, хранящая DieSlot в старших 8 битах, ActiveThreadCount в следующих 12 битах и FullThreadCount в оставшихся 12 битах.
-        /// Нужна для возможности атомарного обновления этих 3-ёх значений.
+        /// Composite variable that stores multiple values inside. This is necessary for atomic updating of all values.
+        /// High 8 bit - DieSlot (number of requests to stop threads)
+        /// Next 12 bit - ActiveThreadCount (active number of threads)
+        /// Rest 12 bit - FullThreadCount (total number of threads (active and blocked))
         /// </summary>
         private int _dieSlotActiveFullThreadCountCombination;
 
@@ -579,9 +581,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Активировать поток
+        /// Activates one of the blocked threads
         /// </summary>
-        /// <returns>Успешность</returns>
+        /// <returns>Whether the thread was activated</returns>
         private bool ActivateThread()
         {
             if (EvaluatePausedThreadCountFromCombination(Volatile.Read(ref _dieSlotActiveFullThreadCountCombination)) == 0)
@@ -605,10 +607,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Деактивирует поток
+        /// Deactivates (blocks) one of the active thread
         /// </summary>
-        /// <param name="threadCountLowLimit">Минимальное число активных потоков</param>
-        /// <returns>Успешность</returns>
+        /// <param name="threadCountLowLimit">Mininal number of threads that should always be active</param>
+        /// <returns>Whether the thread was deactivated</returns>
         private bool DeactivateThread(int threadCountLowLimit)
         {
             if (GetActiveThreadCountFromCombination(Volatile.Read(ref _dieSlotActiveFullThreadCountCombination)) <= threadCountLowLimit)
@@ -633,10 +635,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Вспомогательный метод добавления нового потока в статический пул
+        /// Adds a new thread to the pool and updates requried fields (should be used instead of base AddNewThread method)
         /// </summary>
-        /// <param name="threadCountLimit">Дополнительное ограничение на число потоков</param>
-        /// <returns>Инициирован ли поток</returns>
+        /// <param name="threadCountLimit">Limits the maximum number of threads inside ThreadPool</param>
+        /// <returns>Whether the thread was created succesfully</returns>
         private bool AddNewThreadInner(int threadCountLimit)
         {
             if (State == ThreadPoolState.Stopped || (State == ThreadPoolState.StopRequested && !LetFinishedProcess) ||
@@ -683,10 +685,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Активировать поток, либо создать новый
+        /// Activates a blocked thread if possible, otherwise adds a new thread to thread pool
         /// </summary>
-        /// <param name="threadCountLimit">Дополнительное ограничение на число потоков</param>
-        /// <returns>Успешность</returns>
+        /// <param name="threadCountLimit">Limits the maximum number of threads inside ThreadPool</param>
+        /// <returns>Whether the number of active threads was succesfully increased</returns>
         private bool AddOrActivateThread(int threadCountLimit)
         {
             if (ActivateThread())
@@ -732,10 +734,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Метод обработки задач
+        /// Main processing method
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="token">Токен отмены (при остановке пула)</param>
+        /// <param name="privateData">Thread local data</param>
+        /// <param name="token">Cancellation token to stop the thread</param>
         [System.Diagnostics.DebuggerNonUserCode]
         private void UniversalThreadProc(ThreadPrivateData privateData, CancellationToken token)
         {
@@ -824,12 +826,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Функция для обслуживающего потока.
-        /// Создаём новые потоки при необходимости.
-        /// Отслеживаем ситуацию, когда пул завис и пытаемся решить вопрос расширением вместимости очереди и созданием потоков.
+        /// Management function. Tracks the state of the pool and attempts to change the number of active threads or the size of the task queue.
         /// </summary>
-        /// <param name="elapsedMs">Прошедшее с момента последней обработки время</param>
-        /// <returns>Сделана ли обработка</returns>
+        /// <param name="elapsedMs">Elapsed time interval from the previous call</param>
+        /// <returns>True - processing completed</returns>
         private bool ManagementThreadProc(int elapsedMs)
         {
             if (State == ThreadPoolState.Stopped)
@@ -920,7 +920,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Запрос быстрого создания потока при добавлении элементов в пул
+        /// Adds new thread to the pool up to the <see cref="_fastSpawnThreadCountLimit"/>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TryRequestNewThreadOnAdd()
