@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading
 {
     /// <summary>
-    /// Контекст синхронизации
+    /// Synchronization context that works through <see cref="ICustomSynchronizationContextSupplier"/> interface
     /// </summary>
     public class CustomSynchronizationContext: SynchronizationContext
     {
         private readonly ICustomSynchronizationContextSupplier _supplier;
 
         /// <summary>
-        /// Конструктор контекста синхронизации
+        /// <see cref="CustomSynchronizationContext"/> constructor
         /// </summary>
-        /// <param name="supplier">Объект-исполнитель действий</param>
+        /// <param name="supplier">Actual executor of the supplied actions</param>
         public CustomSynchronizationContext(ICustomSynchronizationContextSupplier supplier)
         {
             if (supplier == null)
@@ -27,27 +27,27 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Создание копии
+        /// Creates a copy of the synchronization context
         /// </summary>
-        /// <returns>Копия</returns>
+        /// <returns>Created copy of SynchronizationContext</returns>
         public override SynchronizationContext CreateCopy()
         {
             return new CustomSynchronizationContext(_supplier);
         }
         /// <summary>
-        /// Синхронный запуск задания
+        /// Dispatches a synchronous message to a synchronization context
         /// </summary>
-        /// <param name="d">Задание</param>
-        /// <param name="state">Параметр</param>
+        /// <param name="d">Delegate to be executed</param>
+        /// <param name="state">The object passed to the delegate</param>
         public override void Send(SendOrPostCallback d, object state)
         {
             _supplier.RunSync(d, state);
         }
         /// <summary>
-        /// Асинхронный запуск задания
+        /// Dispatches an asynchronous message to a synchronization context
         /// </summary>
-        /// <param name="d">Задание</param>
-        /// <param name="state">Параметр</param>
+        /// <param name="d">Delegate to be executed</param>
+        /// <param name="state">The object passed to the delegate</param>
         public override void Post(SendOrPostCallback d, object state)
         {
             _supplier.RunAsync(d, state);
@@ -56,36 +56,36 @@ namespace Qoollo.Turbo.Threading
 
 
     /// <summary>
-    /// Поставщик синхронизации
+    /// Provides the methods to run action in another SynchronizationContext
     /// </summary>
     [ContractClass(typeof(ICustomSynchronizationContextSupplierCodeContractCheck))]
     public interface ICustomSynchronizationContextSupplier
     {
         /// <summary>
-        /// Асинхронное выполнение задания
+        /// Runs an asynchronous action in another synchronization context
         /// </summary>
-        /// <param name="act">Задание</param>
-        /// <param name="state">Состояние</param>
+        /// <param name="act">Delegate to be executed</param>
+        /// <param name="state">The object passed to the delegate</param>
         void RunAsync(SendOrPostCallback act, object state);
         /// <summary>
-        /// Синхронное выполнение задание
+        /// Runs a synchronous action in another synchronization context
         /// </summary>
-        /// <param name="act">Задание</param>
-        /// <param name="state">Состояние</param>
+        /// <param name="act">Delegate to be executed</param>
+        /// <param name="state">The object passed to the delegate</param>
         void RunSync(SendOrPostCallback act, object state);
     }
 
 
     /// <summary>
-    /// Контракты
+    /// Code contracts
     /// </summary>
     [ContractClassFor(typeof(ICustomSynchronizationContextSupplier))]
     abstract class ICustomSynchronizationContextSupplierCodeContractCheck : ICustomSynchronizationContextSupplier
     {
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         private ICustomSynchronizationContextSupplierCodeContractCheck() { }
 
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public void RunAsync(SendOrPostCallback act, object state)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -93,7 +93,7 @@ namespace Qoollo.Turbo.Threading
             throw new NotImplementedException();
         }
 
-        /// <summary>Контракты</summary>
+        /// <summary>Code contracts</summary>
         public void RunSync(SendOrPostCallback act, object state)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");

@@ -8,23 +8,23 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
 {
     /// <summary>
-    /// Делегат смены контекста исполнения
+    /// Delegate that provides the ability to switch the context of execution
     /// </summary>
-    /// <param name="act">Действие, которое будет исполнено в новом контексте</param>
-    /// <param name="flowEContext">Протаскивать ли параметры текущего контекста</param>
+    /// <param name="act">Action that should be executed in another context</param>
+    /// <param name="flowEContext">Whether the current ExecutionContext should be flowed</param>
     public delegate void ContextSwitchDelegate(Action act, bool flowEContext);
 
     /// <summary>
-    /// Поставщик смены контекста по делегату, принимающему Action и flowContext
+    /// Context switch supplier that works through <see cref="ContextSwitchDelegate"/>
     /// </summary>
     public class SingleDelegateContextSwitchSupplier : IContextSwitchSupplier
     {
         private readonly ContextSwitchDelegate _switchDel;
 
         /// <summary>
-        /// Конструктор SingleDelegateContextSwitchSupplier
+        /// <see cref="SingleDelegateContextSwitchSupplier"/> constructor
         /// </summary>
-        /// <param name="switchDel">Делегат смены контекста</param>
+        /// <param name="switchDel">Delegate that provides the ability to switch the context of execution</param>
         public SingleDelegateContextSwitchSupplier(ContextSwitchDelegate switchDel)
         {
             if (switchDel == null)
@@ -34,10 +34,10 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void Run(Action act, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -45,11 +45,11 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
             _switchDel(act, flowContext);
         }
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="state">State object that will be passed to '<paramref name="act"/>' as argument</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -59,26 +59,28 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     }
 
 
+    // =======================================
+
     /// <summary>
-    /// Делегат смены контекста исполнения
+    /// Delegate that provides the ability to switch the context of execution
     /// </summary>
-    /// <param name="act">Действие, которое будет исполнено в новом контексте</param>
-    /// <param name="state">Состояние</param>
-    /// <param name="flowEContext">Протаскивать ли параметры текущего контекста</param>
+    /// <param name="act">Action that should be executed in another context</param>
+    /// <param name="state">State object that will be passed to action</param>
+    /// <param name="flowEContext">Whether the current ExecutionContext should be flowed</param>
     public delegate void ContextSwitchWithStateDelegate(Action<object> act, object state, bool flowEContext);
 
 
     /// <summary>
-    /// Поставщик смены контекста по делегату, принимающему Action, State и flowContext
+    /// Context switch supplier that works through <see cref="ContextSwitchWithStateDelegate"/>
     /// </summary>
     public class SingleDelegateWithStateContextSwitchSupplier : IContextSwitchSupplier
     {
         private readonly ContextSwitchWithStateDelegate _switchDel;
 
         /// <summary>
-        /// Конструктор SingleDelegateWithStateContextSwitchSupplier
+        /// <see cref="SingleDelegateWithStateContextSwitchSupplier"/> constructor
         /// </summary>
-        /// <param name="switchDel">Делегат смены контекста</param>
+        /// <param name="switchDel">Delegate that provides the ability to switch the context of execution</param>
         public SingleDelegateWithStateContextSwitchSupplier(ContextSwitchWithStateDelegate switchDel)
         {
             if (switchDel == null)
@@ -88,9 +90,9 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Выполнение действия переданного как состояние
+        /// Helper method to run action without state parameter
         /// </summary>
-        /// <param name="act">Действие</param>
+        /// <param name="act">Action</param>
         private static void RunAction(object act)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -99,10 +101,10 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void Run(Action act, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -111,11 +113,11 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="state">State object that will be passed to '<paramref name="act"/>' as argument</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -125,23 +127,25 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     }
 
 
+    // =======================================
+
     /// <summary>
-    /// Делегат смены контекста исполнения
+    /// Delegate that provides the ability to switch the context of execution
     /// </summary>
-    /// <param name="act">Действие, которое будет исполнено в новом контексте</param>
+    /// <param name="act">Action that should be executed in another context</param>
     public delegate void ContextSwitchNoFlowDelegate(Action act);
 
     /// <summary>
-    /// Поставщик смены контекста по делегату, принимающему Action
+    /// Context switch supplier that works through <see cref="ContextSwitchNoFlowDelegate"/>
     /// </summary>
     public class SingleDelegateNoFlowContextSwitchSupplier : IContextSwitchSupplier
     {
         private readonly ContextSwitchNoFlowDelegate _switchDel;
 
         /// <summary>
-        /// Конструктор SingleDelegateNoFlowContextSwitchSupplier
+        /// <see cref="SingleDelegateNoFlowContextSwitchSupplier"/> constructor
         /// </summary>
-        /// <param name="switchDel">Делегат смены контекста</param>
+        /// <param name="switchDel">Delegate that provides the ability to switch the context of execution</param>
         public SingleDelegateNoFlowContextSwitchSupplier(ContextSwitchNoFlowDelegate switchDel)
         {
             if (switchDel == null)
@@ -151,10 +155,10 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void Run(Action act, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -162,11 +166,11 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
             _switchDel(act);
         }
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="state">State object that will be passed to '<paramref name="act"/>' as argument</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -176,25 +180,27 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     }
 
 
+    // =======================================
+
     /// <summary>
-    /// Делегат смены контекста исполнения
+    /// Delegate that provides the ability to switch the context of execution
     /// </summary>
-    /// <param name="act">Действие, которое будет исполнено в новом контексте</param>
-    /// <param name="state">Состояние</param>
+    /// <param name="act">Action that should be executed in another context</param>
+    /// <param name="state">State object that will be passed to action</param>
     public delegate void ContextSwitchWithStateNoFlowDelegate(Action<object> act, object state);
 
 
     /// <summary>
-    /// Поставщик смены контекста по делегату, принимающему Action, State и flowContext
+    /// Context switch supplier that works through <see cref="ContextSwitchWithStateNoFlowDelegate"/>
     /// </summary>
     public class SingleDelegateWithStateNoFlowContextSwitchSupplier : IContextSwitchSupplier
     {
         private readonly ContextSwitchWithStateNoFlowDelegate _switchDel;
 
         /// <summary>
-        /// Конструктор SingleDelegateWithStateNoFlowContextSwitchSupplier
+        /// <see cref="SingleDelegateWithStateNoFlowContextSwitchSupplier"/> constructor
         /// </summary>
-        /// <param name="switchDel">Делегат смены контекста</param>
+        /// <param name="switchDel">Delegate that provides the ability to switch the context of execution</param>
         public SingleDelegateWithStateNoFlowContextSwitchSupplier(ContextSwitchWithStateNoFlowDelegate switchDel)
         {
             if (switchDel == null)
@@ -205,9 +211,9 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Выполнение действия переданного как состояние
+        /// Helper method to run action without state parameter
         /// </summary>
-        /// <param name="act">Действие</param>
+        /// <param name="act">Action</param>
         private static void RunAction(object act)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -216,10 +222,10 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void Run(Action act, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -228,11 +234,11 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="state">State object that will be passed to '<paramref name="act"/>' as argument</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -242,17 +248,19 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     }
 
 
+    // =======================================
+
     /// <summary>
-    /// Поставщик смены контекста по контексту синхронизации
+    /// Context switch supplier that works through <see cref="SynchronizationContext"/>
     /// </summary>
     public class ContextSwitchFromSynchroContextSupplier : IContextSwitchSupplier
     {
         private readonly SynchronizationContext _syncContext;
 
         /// <summary>
-        /// Конструктор ContextSwitchFromSynchroContextSupplier
+        /// <see cref="ContextSwitchFromSynchroContextSupplier"/> constructor
         /// </summary>
-        /// <param name="syncContext">Контекст синхронизации</param>
+        /// <param name="syncContext">Synchronization context</param>
         public ContextSwitchFromSynchroContextSupplier(SynchronizationContext syncContext)
         {
             if (syncContext == null)
@@ -262,9 +270,9 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Выполнение действия переданного как состояние
+        /// Helper method to run action without state parameter
         /// </summary>
-        /// <param name="act">Действие</param>
+        /// <param name="act">Action</param>
         private static void RunAction(object act)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -273,10 +281,10 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void Run(Action act, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");
@@ -285,11 +293,11 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="state">State object that will be passed to '<paramref name="act"/>' as argument</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         public void RunWithState(Action<object> act, object state, bool flowContext)
         {
             TurboContract.Requires(act != null, conditionString: "act != null");

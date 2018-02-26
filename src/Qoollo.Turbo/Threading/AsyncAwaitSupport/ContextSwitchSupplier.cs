@@ -8,23 +8,23 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading
 {
     /// <summary>
-    /// Поставщик смены контекста исполнения (смены потока, а не ExecutionContext)
+    /// Provide methods to switch the context of execution (usually switch a thread on which the code is executed)
     /// </summary>
     [ContractClass(typeof(IContextSwitchSupplierCodeContractCheck))]
     public interface IContextSwitchSupplier
     {
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         void Run(Action act, bool flowContext);
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="state">State object that will be passed to '<paramref name="act"/>' as argument</param>
+        /// <param name="flowContext">hether the ExecutionContext should be flowed</param>
         void RunWithState(Action<object> act, object state, bool flowContext);
     }
 
