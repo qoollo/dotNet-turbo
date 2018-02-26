@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class ConditionVariableAltTest
+    public class ConditionVariableAltTest : TestClassBase
     {
         [TestMethod]
         public void TestAlwaysPositivePredicate()
@@ -416,6 +416,15 @@ namespace Qoollo.Turbo.UnitTests.Threading
             }
         }
         [TestMethod]
+        public void TestWaitThrowsIfRecursiveEnterMultiple()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                Assert.ThrowsException<SynchronizationLockException>(() => TestWaitThrowsIfRecursiveEnter());
+            }
+        }
+
+        [TestMethod]
         public void TestPulseWorksWithoutLock()
         {
             object syncObj = new object();
@@ -442,6 +451,15 @@ namespace Qoollo.Turbo.UnitTests.Threading
             }
         }
         [TestMethod]
+        public void TestWaitThrowsIfExternalLockTakenRecursivelyMultiple()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                Assert.ThrowsException<SynchronizationLockException>(() => TestWaitThrowsIfExternalLockTakenRecursively());
+            }
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(SynchronizationLockException))]
         public void TestWaitWithPredicateThrowsIfExternalLockTakenRecursively()
         {
@@ -455,6 +473,14 @@ namespace Qoollo.Turbo.UnitTests.Threading
                         waiter.Wait(_ => false, (object)null);
                     }
                 }
+            }
+        }
+        [TestMethod]
+        public void TestWaitWithPredicateThrowsIfExternalLockTakenRecursivelyMultiple()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                Assert.ThrowsException<SynchronizationLockException>(() => TestWaitWithPredicateThrowsIfExternalLockTakenRecursively());
             }
         }
 

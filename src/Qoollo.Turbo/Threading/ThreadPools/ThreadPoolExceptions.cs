@@ -7,10 +7,40 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools
 {
     /// <summary>
+    /// Indicates error happend in ThreadPool
+    /// </summary>
+    [Serializable]
+    public class ThreadPoolException : TurboException
+    {
+        /// <summary>
+        /// ThreadPoolException constructor
+        /// </summary>
+        public ThreadPoolException() : base("Error in ThreadPool") { }
+        /// <summary>
+        /// ThreadPoolException constructor with error message
+        /// </summary>
+        /// <param name="message">Error message</param>
+        public ThreadPoolException(string message) : base(message) { }
+        /// <summary>
+        /// ThreadPoolException constructor with error message and innerException
+        /// </summary>
+        /// <param name="message">Error message</param>
+        /// <param name="innerException">Inner exception</param>
+        public ThreadPoolException(string message, Exception innerException) : base(message, innerException) { }
+        /// <summary>
+        /// ThreadPoolException constructor for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
+        protected ThreadPoolException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+
+    /// <summary>
     /// Indicates error during a thread initialization in ThreadPool
     /// </summary>
     [Serializable]
-    public class CantInitThreadException : TurboException
+    public class CantInitThreadException : ThreadPoolException
     {
         /// <summary>
         /// CantInitThreadException constructor

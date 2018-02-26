@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class SignalEventSignalWaiterTest
+    public class SignalEventSignalWaiterTest : TestClassBase
     {
         [TestMethod]
         public void TestSignalReceived()

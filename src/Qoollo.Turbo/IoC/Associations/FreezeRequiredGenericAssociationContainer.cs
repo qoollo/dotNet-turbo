@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -19,12 +18,6 @@ namespace Qoollo.Turbo.IoC.Associations
     public abstract class FreezeRequiredGenericAssociationContainer<TKey> : GenericAssociationContainerBase<TKey>, IAssociationSource<TKey>
     {
         private readonly Dictionary<TKey, LifetimeBase> _storage;
-
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_storage != null);
-        }
 
         /// <summary>
         /// FreezeRequiredGenericAssociationContainer constructor

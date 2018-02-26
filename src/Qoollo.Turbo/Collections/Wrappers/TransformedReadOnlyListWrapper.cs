@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,15 +31,6 @@ namespace Qoollo.Turbo.Collections
         private readonly IList<TIn> _list;
         private readonly Func<TIn, TOut> _transformer; 
 
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_list != null);
-            TurboContract.Invariant(_transformer != null);
-        }
 
         /// <summary>
         /// TransformedReadOnlyListWrapper constructor

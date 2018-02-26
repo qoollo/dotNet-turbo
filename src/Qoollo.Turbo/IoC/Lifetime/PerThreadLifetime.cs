@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -34,16 +33,6 @@ namespace Qoollo.Turbo.IoC.Lifetime
 
         private readonly ThreadLocal<ThreadLocalSlot> _obj;
         private readonly Func<IInjectionResolver, object> _createInstFunc;
-
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_obj != null);
-            TurboContract.Invariant(_createInstFunc != null);
-        }
 
         /// <summary>
         /// PerThreadLifetime constructor

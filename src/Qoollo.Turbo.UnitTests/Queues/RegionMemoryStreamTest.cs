@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Queues
 {
     [TestClass]
-    public class RegionMemoryStreamTest
+    public class RegionMemoryStreamTest : TestClassBase
     {
         [TestMethod]
         public void TestReadWrite()

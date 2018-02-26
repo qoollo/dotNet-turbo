@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -177,7 +176,7 @@ namespace Qoollo.Turbo.Threading
             }
 
 
-            using (CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this))
+            using (CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this))
             {
                 lock (_lockObj)
                 {

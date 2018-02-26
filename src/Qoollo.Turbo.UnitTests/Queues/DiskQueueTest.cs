@@ -14,7 +14,7 @@ using System.IO;
 namespace Qoollo.Turbo.UnitTests.Queues
 {
     [TestClass]
-    public class DiskQueueTest
+    public class DiskQueueTest : TestClassBase
     {
         public class MemorySegment<T> : DiskQueueSegment<T>
         {

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.IoC
 {
     [TestClass]
-    public class TurboContainerTests
+    public class TurboContainerTests : TestClassBase
     {
         public interface ITestInterface { }
         public class TestImplementation : ITestInterface { }

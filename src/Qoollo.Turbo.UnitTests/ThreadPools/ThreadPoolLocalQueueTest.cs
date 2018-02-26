@@ -8,7 +8,7 @@ using Qoollo.Turbo.Threading.ThreadPools.Common;
 namespace Qoollo.Turbo.UnitTests.ThreadPools
 {
     [TestClass]
-    public class ThreadPoolLocalQueueTest
+    public class ThreadPoolLocalQueueTest : TestClassBase
     {
         private class TestThreadPoolItem : ThreadPoolWorkItem, IEquatable<TestThreadPoolItem>
         {
@@ -210,9 +210,9 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             RunLocalThreadQueueAddTakeTest(q, int.MaxValue / 200 + 13, 32);
         }
 
-        [TestMethod]
-        [Timeout(20 * 60 * 1000)]
-        [Ignore]
+        //[TestMethod]
+        //[Timeout(20 * 60 * 1000)]
+        //[Ignore]
         public void TestAddTakeManyElementsManyRun()
         {
             ThreadPoolLocalQueue q = new ThreadPoolLocalQueue();
@@ -276,9 +276,9 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             RunLocalThreadQueueAddStealTest(q, int.MaxValue / 200 + 13, 32);
         }
 
-        [TestMethod]
-        [Timeout(20 * 60 * 1000)]
-        [Ignore]
+        //[TestMethod]
+        //[Timeout(20 * 60 * 1000)]
+        //[Ignore]
         public void TestAddStealManyElementsManyRun()
         {
             ThreadPoolLocalQueue q = new ThreadPoolLocalQueue();
@@ -409,9 +409,9 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
             RunLocalThreadQueuePrimaryScenario(q, int.MaxValue / 400 + 13, Environment.ProcessorCount, 32);
         }
 
-        [TestMethod]
-        [Timeout(30 * 60 * 1000)]
-        [Ignore]
+        //[TestMethod]
+        //[Timeout(30 * 60 * 1000)]
+        //[Ignore]
         public void TestLocalThreadQueuePrimaryScenarioManyRun()
         {
             ThreadPoolLocalQueue q = new ThreadPoolLocalQueue();

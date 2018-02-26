@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,15 +35,6 @@ namespace Qoollo.Turbo.Collections
         [NonSerialized]
         private object _syncRoot;
 
-
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_collection != null);
-        }
 
         /// <summary>
         /// ReadOnlyCollectionWrapper constructor

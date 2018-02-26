@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Threading.ServiceStuff
@@ -15,7 +15,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
     internal static class TaskHelper
     {
         private delegate void SetTaskSchedulerDelegate(Task task, TaskScheduler scheduler);
-        private delegate bool ExecuteTaskEntryDelegate(Task task, bool preventDoubleExecution);
+        private delegate bool ExecuteTaskEntryDelegate(Task task);
         private delegate bool CancelTaskDelegate(Task task, bool cancelNonExecutingOnly);
 
         private static SetTaskSchedulerDelegate _setTaskSchedulerDelegate;
@@ -30,9 +30,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// <returns>Delegate to set TaskScheduler</returns>
         private static SetTaskSchedulerDelegate CreateSetTaskSchedulerMethod()
         {
-            var TaskSchedulerField = typeof(Task).GetField("m_taskScheduler", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (TaskSchedulerField == null)
-                throw new InvalidProgramException("Field 'm_taskScheduler' not found in task.");
+            var taskSchedulerField = typeof(Task).GetField("m_taskScheduler", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (taskSchedulerField == null)
+                throw new NotSupportedException("Field 'm_taskScheduler' not found in Task");
 
             var method = new DynamicMethod("Task_SetTaskScheduler_Internal_" + Guid.NewGuid().ToString("N"),
                 typeof(void), new Type[] { typeof(Task), typeof(TaskScheduler) }, true);
@@ -40,10 +40,29 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             var ilGen = method.GetILGenerator();
             ilGen.Emit(OpCodes.Ldarg_0);
             ilGen.Emit(OpCodes.Ldarg_1);
-            ilGen.Emit(OpCodes.Stfld, TaskSchedulerField);
+            ilGen.Emit(OpCodes.Stfld, taskSchedulerField);
             ilGen.Emit(OpCodes.Ret);
 
             return (SetTaskSchedulerDelegate)method.CreateDelegate(typeof(SetTaskSchedulerDelegate));
+        }
+
+        /// <summary>
+        /// Initialize SetTaskScheduler dynamic method
+        /// </summary>
+        /// <returns>Delegate to initialized method</returns>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static SetTaskSchedulerDelegate InitSetTaskSchedulerMethod()
+        {
+            lock (_syncObj)
+            {
+                var result = Volatile.Read(ref _setTaskSchedulerDelegate);
+                if (result == null)
+                {
+                    result = CreateSetTaskSchedulerMethod();
+                    Volatile.Write(ref _setTaskSchedulerDelegate, result);
+                }
+                return result;
+            }
         }
 
         /// <summary>
@@ -52,18 +71,45 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// <returns>Delegate to execute Task</returns>
         private static ExecuteTaskEntryDelegate CreateExecuteTaskEntryMethod()
         {
-            var ExecuteEntryMethod = typeof(Task).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Single(o => o.Name == "ExecuteEntry" && o.GetParameters().Length == 1);
+            var executeEntryMethodCandidates = typeof(Task).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Where(o => o.Name == "ExecuteEntry").ToList();
+            if (executeEntryMethodCandidates.Count != 1)
+                throw new NotSupportedException("Task does not contains method 'ExecuteEntry'");
+
+            var executeEntryMethod = executeEntryMethodCandidates[0];
+            var executeEntryMethodParameters = executeEntryMethod.GetParameters();
+            if (executeEntryMethodParameters.Length != 0 && !(executeEntryMethodParameters.Length == 1 && executeEntryMethodParameters[0].ParameterType == typeof(bool)))
+                throw new NotSupportedException("Task does not contains method 'ExecuteEntry'");
 
             var method = new DynamicMethod("Task_ExecuteTaskEntry_Internal_" + Guid.NewGuid().ToString("N"), typeof(bool),
-                new Type[] { typeof(Task), typeof(bool) }, true);
+                new Type[] { typeof(Task) }, true);
 
             var ilGen = method.GetILGenerator();
             ilGen.Emit(OpCodes.Ldarg_0);
-            ilGen.Emit(OpCodes.Ldarg_1);
-            ilGen.Emit(OpCodes.Callvirt, ExecuteEntryMethod);
+            if (executeEntryMethodParameters.Length == 1)
+                ilGen.Emit(OpCodes.Ldc_I4_1);
+            ilGen.Emit(OpCodes.Callvirt, executeEntryMethod);
             ilGen.Emit(OpCodes.Ret);
 
             return (ExecuteTaskEntryDelegate)method.CreateDelegate(typeof(ExecuteTaskEntryDelegate));
+        }
+
+        /// <summary>
+        /// Initialize ExecuteTaskEntry dynamic method
+        /// </summary>
+        /// <returns>Delegate to initialized method</returns>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ExecuteTaskEntryDelegate InitExecuteTaskEntryMethod()
+        {
+            lock (_syncObj)
+            {
+                var result = Volatile.Read(ref _executeTaskEntryDelegate);
+                if (result == null)
+                {
+                    result = CreateExecuteTaskEntryMethod();
+                    Volatile.Write(ref _executeTaskEntryDelegate, result);
+                }
+                return result;
+            }
         }
 
         /// <summary>
@@ -72,7 +118,9 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// <returns>Delegate to cancel Task</returns>
         private static CancelTaskDelegate CreateCancelTaskMethod()
         {
-            var InternalCancelMethod = typeof(Task).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Single(o => o.Name == "InternalCancel" && o.GetParameters().Length == 1);
+            var internalCancelMethodCandidates = typeof(Task).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Where(o => o.Name == "InternalCancel" && o.GetParameters().Length == 1).ToList();
+            if (internalCancelMethodCandidates.Count != 1)
+                throw new NotSupportedException("'InternalCancel' method not found in Task");
 
             var method = new DynamicMethod("Task_InternalCancel_Internal_" + Guid.NewGuid().ToString("N"), typeof(bool),
                 new Type[] { typeof(Task), typeof(bool) }, true);
@@ -80,26 +128,28 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             var ilGen = method.GetILGenerator();
             ilGen.Emit(OpCodes.Ldarg_0);
             ilGen.Emit(OpCodes.Ldarg_1);
-            ilGen.Emit(OpCodes.Callvirt, InternalCancelMethod);
+            ilGen.Emit(OpCodes.Callvirt, internalCancelMethodCandidates[0]);
             ilGen.Emit(OpCodes.Ret);
 
             return (CancelTaskDelegate)method.CreateDelegate(typeof(CancelTaskDelegate));
         }
 
         /// <summary>
-        /// Initialize dynamic methods
+        /// Initialize CancelTask dynamic method
         /// </summary>
+        /// <returns>Delegate to initialized method</returns>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void InitDynamicMethods()
+        private static CancelTaskDelegate InitCancelTaskMethod()
         {
             lock (_syncObj)
             {
-                if (_setTaskSchedulerDelegate == null || _executeTaskEntryDelegate == null || _cancelTaskDelegate == null)
+                var result = Volatile.Read(ref _cancelTaskDelegate);
+                if (result == null)
                 {
-                    _setTaskSchedulerDelegate = CreateSetTaskSchedulerMethod();
-                    _executeTaskEntryDelegate = CreateExecuteTaskEntryMethod();
-                    _cancelTaskDelegate = CreateCancelTaskMethod();
+                    result = CreateCancelTaskMethod();
+                    Volatile.Write(ref _cancelTaskDelegate, result);
                 }
+                return result;
             }
         }
 
@@ -108,20 +158,14 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// Executes work associated with Task synchronously
         /// </summary>
         /// <param name="task">Task</param>
-        /// <param name="preventDoubleExecution">Prevent double execution</param>
         /// <returns>Is executed successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool ExecuteTaskEntry(Task task, bool preventDoubleExecution)
+        public static bool ExecuteTaskEntry(Task task)
         {
             TurboContract.Requires(task != null, conditionString: "task != null");
 
-            var action = _executeTaskEntryDelegate;
-            if (action == null)
-            {
-                InitDynamicMethods();
-                action = _executeTaskEntryDelegate;
-            }
-            return action(task, preventDoubleExecution);
+            var action = _executeTaskEntryDelegate ?? InitExecuteTaskEntryMethod();
+            return action(task);
         }
         /// <summary>
         /// Cancels Task
@@ -134,12 +178,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         {
             TurboContract.Requires(task != null, conditionString: "task != null");
 
-            var action = _cancelTaskDelegate;
-            if (action == null)
-            {
-                InitDynamicMethods();
-                action = _cancelTaskDelegate;
-            }
+            var action = _cancelTaskDelegate ?? InitCancelTaskMethod();
             return action(task, cancelNonExecutingOnly);
         }
         /// <summary>
@@ -152,13 +191,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         {
             TurboContract.Requires(task != null, conditionString: "task != null");
 
-            var action = _setTaskSchedulerDelegate;
-            if (action == null)
-            {
-                InitDynamicMethods();
-                action = _setTaskSchedulerDelegate;
-            }
-
+            var action = _setTaskSchedulerDelegate ?? InitSetTaskSchedulerMethod();
             action(task, scheduler);
         }
     }

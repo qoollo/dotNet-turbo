@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,15 +16,6 @@ namespace Qoollo.Turbo.Collections
     public class OutOfTurnQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ICollection, IEnumerable
     {
         private readonly CircularList<T> _circularList;
-
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_circularList != null);
-        }
 
         /// <summary>
         /// OutOfTurnQueue constructor

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Collections.Concurrent;
 using Qoollo.Turbo.Queues;
@@ -15,15 +14,6 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
     /// <typeparam name="T">Type of the elements processed by this <see cref="InterfaceQueueAsyncProcessor{T}"/></typeparam>
     public class InterfaceQueueAsyncProcessor<T> : QueueAsyncProcessor<T>
     {
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_logic != null);
-        }
-
         private readonly IQueueAsyncProcessorLogic<T> _logic;
 
 

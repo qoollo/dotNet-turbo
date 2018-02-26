@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -20,16 +19,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     /// </summary>
     public class SingleDelegateContextSwitchSupplier : IContextSwitchSupplier
     {
-        /// <summary>
-        /// Контракты
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_switchDel != null);
-        }
-
-        private ContextSwitchDelegate _switchDel;
+        private readonly ContextSwitchDelegate _switchDel;
 
         /// <summary>
         /// Конструктор SingleDelegateContextSwitchSupplier
@@ -37,7 +27,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="switchDel">Делегат смены контекста</param>
         public SingleDelegateContextSwitchSupplier(ContextSwitchDelegate switchDel)
         {
-            TurboContract.Requires(switchDel != null, conditionString: "switchDel != null");
+            if (switchDel == null)
+                throw new ArgumentNullException(nameof(switchDel));
 
             _switchDel = switchDel;
         }
@@ -82,16 +73,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     /// </summary>
     public class SingleDelegateWithStateContextSwitchSupplier : IContextSwitchSupplier
     {
-        /// <summary>
-        /// Контракты
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_switchDel != null);
-        }
-
-        private ContextSwitchWithStateDelegate _switchDel;
+        private readonly ContextSwitchWithStateDelegate _switchDel;
 
         /// <summary>
         /// Конструктор SingleDelegateWithStateContextSwitchSupplier
@@ -99,7 +81,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="switchDel">Делегат смены контекста</param>
         public SingleDelegateWithStateContextSwitchSupplier(ContextSwitchWithStateDelegate switchDel)
         {
-            TurboContract.Requires(switchDel != null, conditionString: "switchDel != null");
+            if (switchDel == null)
+                throw new ArgumentNullException(nameof(switchDel));
 
             _switchDel = switchDel;
         }
@@ -153,16 +136,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     /// </summary>
     public class SingleDelegateNoFlowContextSwitchSupplier : IContextSwitchSupplier
     {
-        /// <summary>
-        /// Контракты
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_switchDel != null);
-        }
-
-        private ContextSwitchNoFlowDelegate _switchDel;
+        private readonly ContextSwitchNoFlowDelegate _switchDel;
 
         /// <summary>
         /// Конструктор SingleDelegateNoFlowContextSwitchSupplier
@@ -170,7 +144,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="switchDel">Делегат смены контекста</param>
         public SingleDelegateNoFlowContextSwitchSupplier(ContextSwitchNoFlowDelegate switchDel)
         {
-            TurboContract.Requires(switchDel != null, conditionString: "switchDel != null");
+            if (switchDel == null)
+                throw new ArgumentNullException(nameof(switchDel));
 
             _switchDel = switchDel;
         }
@@ -214,16 +189,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     /// </summary>
     public class SingleDelegateWithStateNoFlowContextSwitchSupplier : IContextSwitchSupplier
     {
-        /// <summary>
-        /// Контракты
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_switchDel != null);
-        }
-
-        private ContextSwitchWithStateNoFlowDelegate _switchDel;
+        private readonly ContextSwitchWithStateNoFlowDelegate _switchDel;
 
         /// <summary>
         /// Конструктор SingleDelegateWithStateNoFlowContextSwitchSupplier
@@ -231,7 +197,9 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="switchDel">Делегат смены контекста</param>
         public SingleDelegateWithStateNoFlowContextSwitchSupplier(ContextSwitchWithStateNoFlowDelegate switchDel)
         {
-            TurboContract.Requires(switchDel != null, conditionString: "switchDel != null");
+            if (switchDel == null)
+                throw new ArgumentNullException(nameof(switchDel));
+
 
             _switchDel = switchDel;
         }
@@ -279,16 +247,7 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
     /// </summary>
     public class ContextSwitchFromSynchroContextSupplier : IContextSwitchSupplier
     {
-        /// <summary>
-        /// Контракты
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_syncContext != null);
-        }
-
-        private SynchronizationContext _syncContext;
+        private readonly SynchronizationContext _syncContext;
 
         /// <summary>
         /// Конструктор ContextSwitchFromSynchroContextSupplier
@@ -296,7 +255,8 @@ namespace Qoollo.Turbo.Threading.AsyncAwaitSupport
         /// <param name="syncContext">Контекст синхронизации</param>
         public ContextSwitchFromSynchroContextSupplier(SynchronizationContext syncContext)
         {
-            TurboContract.Requires(syncContext != null, conditionString: "syncContext != null");
+            if (syncContext == null)
+                throw new ArgumentNullException(nameof(syncContext));
 
             _syncContext = syncContext;
         }

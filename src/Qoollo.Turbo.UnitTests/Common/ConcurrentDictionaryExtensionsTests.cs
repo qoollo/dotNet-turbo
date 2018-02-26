@@ -9,8 +9,9 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class ConcurrentDictionaryExtensionsTests
+    public class ConcurrentDictionaryExtensionsTests : TestClassBase
     {
+#pragma warning disable CS0618 // Type or member is obsolete
         [TestMethod]
         public void EstimateCountCalculates()
         {
@@ -26,5 +27,6 @@ namespace Qoollo.Turbo.UnitTests.Common
 
             Assert.AreEqual(dict.Count, dict.GetEstimateCount());
         }
+#pragma warning restore CS0618 // Type or member is obsolete
     }
 }

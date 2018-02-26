@@ -127,7 +127,7 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Registration info</returns>
         internal CancellationTokenRegistration RegisterNotificationOnCancellation(CancellationToken token)
         {
-            return CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+            return CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this);
         }
 
 
@@ -158,7 +158,7 @@ namespace Qoollo.Turbo.Threading
             try
             {
                 if (token.CanBeCanceled)
-                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this);
 
                 // Waiting for signal
                 if (!Monitor.Wait(this, timeout))
@@ -311,7 +311,7 @@ namespace Qoollo.Turbo.Threading
             try
             {
                 if (token.CanBeCanceled)
-                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this);
 
                 if (WaitUntilPredicate(predicate, state, startTime, timeout, token))
                     return true;

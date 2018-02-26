@@ -2,20 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Diagnostics.Contracts;
 using Qoollo.Turbo;
 
 namespace System
 {
-    /// <summary>
-    /// Extension methods for Exception objects
-    /// </summary>
-    [Obsolete("Class was renamed to TurboExceptionExtensions", true)]
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public static class ExceptionExtensions
-    {
-    }
-
     /// <summary>
     /// Extension methods for Exception objects
     /// </summary>

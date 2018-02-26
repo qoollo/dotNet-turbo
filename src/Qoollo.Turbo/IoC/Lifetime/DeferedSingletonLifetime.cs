@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,15 +19,6 @@ namespace Qoollo.Turbo.IoC.Lifetime
         private readonly object _lockObj = new object();
         private volatile bool _isInited;
 
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_createInstanceFunc != null);
-            TurboContract.Invariant(_lockObj != null);
-        }
 
         /// <summary>
         /// DeferedSingletonLifetime constructor

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -70,9 +69,9 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
             for (int i = 0; i < _procThreads.Length; i++)
             {
-                _procThreads[i] = new Thread(ThreadProcFunc, _maxStackSize);
-                _procThreads[i].Name = string.Format("{0} (#{1})", _name, i);
+                _procThreads[i] = new Thread(ThreadProcFunc, _maxStackSize);             
                 _procThreads[i].Priority = _priority;
+                _procThreads[i].Name = string.Format("{0} (#{1})", _name, i);
                 _procThreads[i].IsBackground = _isBackground;
             }
 
@@ -184,30 +183,56 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         /// <summary>
         /// Gets or sets the culture for the managed threads
         /// </summary>
+        [Obsolete("Non-portable property. It will be removed in the next version", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public System.Globalization.CultureInfo CurrentCulture
         {
-            get { return _procThreads[0].CurrentCulture; }
+            get
+            {
+                var currentThread = Thread.CurrentThread;
+                if (Array.IndexOf(_procThreads, currentThread) >= 0)
+                    return currentThread.CurrentCulture;
+
+                return _procThreads[0].CurrentCulture;
+            }
             set
             {
+#if NET45
                 CheckPendingDisposeOrDisposed();
 
                 foreach (var th in _procThreads)
                     th.CurrentCulture = value;
+#else
+                throw new PlatformNotSupportedException("CurrentCulture setting is not supported");
+#endif
             }
         }
 
         /// <summary>
         /// Gets or sets the current culture used by the Resource Manager to look up culture-specific resources
         /// </summary>
+        [Obsolete("Not portable property. It will be removed in the next version", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public System.Globalization.CultureInfo CurrentUICulture
         {
-            get { return _procThreads[0].CurrentUICulture; }
+            get
+            {
+                var currentThread = Thread.CurrentThread;
+                if (Array.IndexOf(_procThreads, currentThread) >= 0)
+                    return currentThread.CurrentUICulture;
+
+                return _procThreads[0].CurrentUICulture;
+            }
             set
             {
+#if NET45
                 CheckPendingDisposeOrDisposed();
 
                 foreach (var th in _procThreads)
                     th.CurrentUICulture = value;
+#else
+                throw new PlatformNotSupportedException("CurrentUICulture setting is not supported");
+#endif
             }
         }
 
@@ -464,7 +489,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         {
             TurboContract.Requires(ex != null, conditionString: "ex != null");
 
-            throw new ThreadSetManagerException("Unhandled exception during processing in ThreadSetManager ('" + this.Name + "')", ex);
+            // It is better to rethrow original exception
+            //throw new ThreadSetManagerException("Unhandled exception during processing in ThreadSetManager ('" + this.Name + "')", ex);
         }
 
         /// <summary>
@@ -629,6 +655,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
             GC.SuppressFinalize(this);
         }
 
+
+#if DEBUG
         /// <summary>
         /// Finalizer
         /// </summary>
@@ -636,5 +664,6 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         {
             Dispose(false);
         }
+#endif
     }
 }

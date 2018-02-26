@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Diagnostics.Contracts;
 using System.Diagnostics;
 
 namespace Qoollo.Turbo
@@ -11,17 +10,7 @@ namespace Qoollo.Turbo
     /// </summary>
     /// <typeparam name="T">Type of the original delegate</typeparam>
     public class MulticastWeakDelegate<T> where T : class
-    {
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_locker != null);
-            TurboContract.Invariant(_handlers != null);
-        }
- 
+    { 
         private readonly object _locker;
         private readonly List<WeakDelegate> _handlers;
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -583,7 +582,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (Interlocked.Exchange(ref _taskProcessFlag, 1) != 0)
                 throw new InvalidOperationException("Can't execute TaskEntryExecutionThreadPoolWorkItem cause it was already executed or cancelled");
 
-            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(_task, true);
+            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(_task);
         }
 
         /// <summary>
@@ -691,7 +690,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (Interlocked.Exchange(ref _taskProcessFlag, 1) != 0)
                 throw new InvalidOperationException("Can't execute TaskEntryExecutionWithClosureThreadPoolWorkItem cause it was already executed or cancelled");
 
-            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(_task, true);
+            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(_task);
             _task = null;
         }
 
@@ -805,7 +804,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (Interlocked.Exchange(ref _taskProcessFlag, 1) != 0)
                 throw new InvalidOperationException("Can't execute TaskEntryExecutionWithClosureThreadPoolWorkItem cause it was already executed or cancelled");
 
-            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(_task, true);
+            Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(_task);
             _task = null;
         }
 

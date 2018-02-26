@@ -11,21 +11,18 @@ using Qoollo.Turbo.Queues;
 namespace Qoollo.Turbo.UnitTests.QueueProcessing
 {
     [TestClass]
-    public class QueueAsyncProcessorTest
+    public class QueueAsyncProcessorTest : TestClassBase
     {
         [ClassInitialize]
         public static void Init(TestContext context)
         {
-            TestLoggingHelper.Subscribe(context, true);
+            SubscribeToUnhandledExceptions(context, true);
         }
         [ClassCleanup]
         public static void Cleanup()
         {
-            TestLoggingHelper.Unsubscribe();
+            UnsubscribeFromUnhandledExceptions();
         }
-
-
-        public TestContext TestContext { get; set; }
 
         //=============================
 

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -201,7 +200,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (captureSyncContext)
                 _сapturedContext = ExecutionContext.Capture();
             else
-                _сapturedContext = ExecutionContextHelper.CaptureContextNoSyncContext();
+                _сapturedContext = ExecutionContextHelper.CaptureContextNoSyncContextIfPossible();
         }
 
         /// <summary>

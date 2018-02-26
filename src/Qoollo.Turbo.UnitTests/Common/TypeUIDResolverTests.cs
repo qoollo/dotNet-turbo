@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class TypeUIDResolverTests
+    public class TypeUIDResolverTests : TestClassBase
     {
         [TestMethod]
         public void GenericTypeIdGeneration()

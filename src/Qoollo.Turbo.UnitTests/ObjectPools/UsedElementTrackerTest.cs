@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
     [TestClass]
-    public class UsedElementTrackerTest
+    public class UsedElementTrackerTest : TestClassBase
     {
         [TestMethod]
         public void TestInitialPreset()

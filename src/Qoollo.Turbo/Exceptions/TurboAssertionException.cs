@@ -10,7 +10,7 @@ namespace Qoollo.Turbo
     /// The exception that is thrown when some assertion is incorrect
     /// </summary>
     [Serializable]
-    public class TurboAssertionException: TurboException
+    internal class TurboAssertionException: Exception
     {
         /// <summary>
         /// TurboAssertionException constructor

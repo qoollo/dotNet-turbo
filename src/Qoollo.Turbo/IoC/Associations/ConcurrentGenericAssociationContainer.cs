@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -19,13 +18,6 @@ namespace Qoollo.Turbo.IoC.Associations
     public abstract class ConcurrentGenericAssociationContainer<TKey> : GenericAssociationContainerBase<TKey>, IAssociationSource<TKey>
     {
         private readonly ConcurrentDictionary<TKey, LifetimeBase> _storage;
-
-
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_storage != null);
-        }
 
         /// <summary>
         /// ConcurrentGenericAssociationContainer constructor

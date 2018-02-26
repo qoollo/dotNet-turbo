@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,9 +8,13 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.UnitTests
 {
-    public struct AtomicBool
+    public class AtomicBool
     {
         private volatile int _value;
+        public AtomicBool()
+        {
+            _value = 0;
+        }
         public AtomicBool(bool val)
         {
             _value = val ? 1 : 0;
@@ -19,6 +24,10 @@ namespace Qoollo.Turbo.UnitTests
         {
             get { return _value != 0; }
             set { Interlocked.Exchange(ref _value, value ? 1 : 0); }
+        }
+        public bool IsMatch(bool expected)
+        {
+            return Value == expected;
         }
         
 
@@ -30,11 +39,49 @@ namespace Qoollo.Turbo.UnitTests
         {
             return val.Value;
         }
+
+
+        private static uint GetTimestamp()
+        {
+            return (uint)Environment.TickCount;
+        }
+        public bool WaitForValue(bool expected, int timeout)
+        {
+            if (IsMatch(expected))
+                return true;
+
+            if (timeout == 0)
+                return IsMatch(expected);
+
+            if (timeout < 0)
+            {
+                while (!IsMatch(expected))
+                    Thread.Sleep(1);
+
+                return IsMatch(expected);
+            }
+
+            uint startTime = GetTimestamp();
+
+            while (!IsMatch(expected) && (GetTimestamp() - startTime) < timeout)
+                Thread.Sleep(1);
+
+            return IsMatch(expected);
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 
-    public struct AtomicNullableBool
+    public class AtomicNullableBool
     {
         private volatile int _value;
+        public AtomicNullableBool()
+        {
+            _value = 0;
+        }
         public AtomicNullableBool(bool? val)
         {
             if (val.HasValue)
@@ -84,11 +131,20 @@ namespace Qoollo.Turbo.UnitTests
         {
             return val.Value;
         }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 
-    public struct AtomicInt
+    public class AtomicInt
     {
         private volatile int _value;
+        public AtomicInt()
+        {
+            _value = 0;
+        }
         public AtomicInt(int val)
         {
             _value = val;
@@ -111,6 +167,11 @@ namespace Qoollo.Turbo.UnitTests
         public static implicit operator int(AtomicInt val)
         {
             return val.Value;
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
         }
     }
 }

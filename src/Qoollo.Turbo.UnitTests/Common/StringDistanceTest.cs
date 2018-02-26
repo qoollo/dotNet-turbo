@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class StringDistanceTest
+    public class StringDistanceTest : TestClassBase
     {
         [TestMethod]
         public void HammingStringDistance()

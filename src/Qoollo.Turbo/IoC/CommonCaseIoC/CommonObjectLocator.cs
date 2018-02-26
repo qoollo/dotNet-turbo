@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -25,14 +24,6 @@ namespace Qoollo.Turbo.IoC
         private readonly IInjectionResolver _resolver;
         private readonly DirectTypeAssociationContainer _association;
         private readonly TypeStrictInjectionContainer _injection;
-
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_resolver != null);
-            TurboContract.Invariant(_association != null);
-            TurboContract.Invariant(_injection != null);
-        }
 
         /// <summary>
         /// Association container
@@ -66,13 +57,6 @@ namespace Qoollo.Turbo.IoC
         {
             private readonly TypeStrictInjectionContainer _sourceInj;
             private readonly CommonObjectLocator _curLocator;
-
-            [ContractInvariantMethod]
-            private void Invariant()
-            {
-                TurboContract.Invariant(_sourceInj != null);
-                TurboContract.Invariant(_curLocator != null);
-            }
 
             /// <summary>
             /// InjectionThenAssociationResolver constructor

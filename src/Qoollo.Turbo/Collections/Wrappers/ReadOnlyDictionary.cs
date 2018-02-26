@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,14 +32,6 @@ namespace Qoollo.Turbo.Collections
 
         private Dictionary<TKey, TValue> _dictionary;
 
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_dictionary != null);
-        }
 
         /// <summary>
         /// ReadOnlyDictionary constructor

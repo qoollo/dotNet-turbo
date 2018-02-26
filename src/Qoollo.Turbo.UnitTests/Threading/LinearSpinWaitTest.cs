@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Threading
 {
     [TestClass]
-    public class LinearSpinWaitTest
+    public class LinearSpinWaitTest : TestClassBase
     {
         [TestMethod]
         public void YieldThresholdCalculateCorrectly()

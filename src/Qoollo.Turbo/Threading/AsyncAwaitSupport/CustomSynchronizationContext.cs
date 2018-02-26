@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -13,16 +12,7 @@ namespace Qoollo.Turbo.Threading
     /// </summary>
     public class CustomSynchronizationContext: SynchronizationContext
     {
-        /// <summary>
-        /// Контракты
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_supplier != null);
-        }
-
-        private ICustomSynchronizationContextSupplier _supplier;
+        private readonly ICustomSynchronizationContextSupplier _supplier;
 
         /// <summary>
         /// Конструктор контекста синхронизации
@@ -30,7 +20,8 @@ namespace Qoollo.Turbo.Threading
         /// <param name="supplier">Объект-исполнитель действий</param>
         public CustomSynchronizationContext(ICustomSynchronizationContextSupplier supplier)
         {
-            TurboContract.Requires(supplier != null, conditionString: "supplier != null");
+            if (supplier == null)
+                throw new ArgumentNullException(nameof(supplier));
 
             _supplier = supplier;
         }

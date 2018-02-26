@@ -1,22 +1,12 @@
 ﻿using Qoollo.Turbo;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace System
 {
-    /// <summary>
-    /// Extension methods for the Type objects
-    /// </summary>
-    [Obsolete("Class was renamed to TurboTypeExtensions", true)]
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public static class TypeExtensions
-    {
-    }
-
     /// <summary>
     /// Extension methods for the Type objects
     /// </summary>

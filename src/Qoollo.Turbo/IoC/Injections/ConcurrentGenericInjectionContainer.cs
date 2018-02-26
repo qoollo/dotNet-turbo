@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -17,12 +16,6 @@ namespace Qoollo.Turbo.IoC.Injections
     {
         private readonly ConcurrentDictionary<TKey, object> _injections;
         private readonly bool _disposeInjectionsWithBuiler;
-
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            TurboContract.Invariant(_injections != null);
-        }
 
         /// <summary>
         /// ConcurrentGenericInjectionContainer constructor

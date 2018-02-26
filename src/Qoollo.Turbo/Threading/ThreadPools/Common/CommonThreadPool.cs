@@ -2,8 +2,8 @@
 using Qoollo.Turbo.Threading.ThreadPools.ServiceStuff;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -97,7 +97,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             {
                 ThreadPoolWorkItem poolItem = task.AsyncState as ThreadPoolWorkItem;
                 TurboContract.Assert(poolItem == null || 
-                                    (poolItem.GetType().IsGenericType && 
+                                    (poolItem.GetType().GetTypeInfo().IsGenericType && 
                                     (poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<>) || 
                                      poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>))), conditionString: "poolItem == null || \r\n                                    (poolItem.GetType().IsGenericType && \r\n                                    (poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<>) || \r\n                                     poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>)))");
 
@@ -733,7 +733,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             {
                 var exception = task.Exception;
                 if (exception == null)
-                    throw new ApplicationException("ThreadPool task was faulted by unknown reason. ThreadPool: " + this.Name);
+                    throw new ThreadPoolException("ThreadPool task was faulted by unknown reason. ThreadPool: " + this.Name);
                 if (exception.InnerExceptions.Count != 1)
                     throw exception;
 
@@ -781,7 +781,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                 {
                     Task threadTask = new Task(ThreadStartUpInsideTask, rawData, TaskCreationOptions.LongRunning);
                     Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.SetTaskScheduler(threadTask, this.TaskScheduler);
-                    Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(threadTask, false);
+                    Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(threadTask);
                     if (threadTask.IsFaulted || threadTask.IsCanceled)
                         RethrowTaskException(threadTask);
                 }
@@ -803,6 +803,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private void ThreadStartUpInsideTask(object rawData)
         {
             TurboContract.Requires(rawData != null, conditionString: "rawData != null");
+            TurboContract.Assert(!_useOwnTaskScheduler || TaskScheduler.Current == this.TaskScheduler, conditionString: "!_useOwnTaskScheduler || TaskScheduler.Current == this.TaskScheduler");
 
             ThreadStartUpData startupData = (ThreadStartUpData)rawData;
 

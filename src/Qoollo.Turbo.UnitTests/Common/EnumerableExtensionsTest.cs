@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class EnumerableExtensionsTest
+    public class EnumerableExtensionsTest : TestClassBase
     {
         public class EnumerableWrapper<T>: IEnumerable<T>
         {

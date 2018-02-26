@@ -3,22 +3,12 @@ using Qoollo.Turbo.Collections;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Collections.Generic
 {
-    /// <summary>
-    /// Extension methods for BCL collections
-    /// </summary>
-    [Obsolete("Class was renamed to TurboCollectionExtensions", true)]
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public static class CollectionExtensions
-    {
-    }
-
     /// <summary>
     /// Extension methods for BCL collections
     /// </summary>
