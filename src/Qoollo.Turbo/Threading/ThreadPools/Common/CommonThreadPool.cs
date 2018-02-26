@@ -405,7 +405,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool
+        /// Enqueues a method for exection inside the current ThreadPool
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <param name="preferFairness">When true places work item directly to the global queue, otherwise can place work item to the thread local queue</param>
@@ -418,7 +418,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             AddWorkItem(new ActionThreadPoolWorkItem(action, true, preferFairness));
         }
         /// <summary>
-        /// Attempts to queue a method for exection inside the current ThreadPool
+        /// Attempts to enqueue a method for exection inside the current ThreadPool
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <param name="preferFairness">When true places work item directly to the global queue, otherwise can place work item to the thread local queue</param>
@@ -433,7 +433,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool
+        /// Enqueues a method for exection inside the current ThreadPool
         /// </summary>
         /// <typeparam name="T">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -449,7 +449,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Attempts to queue a method for exection inside the current ThreadPool
+        /// Attempts to enqueue a method for exection inside the current ThreadPool
         /// </summary>
         /// <typeparam name="T">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -467,7 +467,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <returns>Create Task</returns>
@@ -477,7 +477,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return this.RunAsTask(action, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <param name="creationOptions">Task creation options</param>
@@ -503,7 +503,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -515,7 +515,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return this.RunAsTask(action, state, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -546,7 +546,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
         /// <param name="func">Representing the method to execute</param>
@@ -557,7 +557,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return this.RunAsTask<TRes>(func, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
         /// <param name="func">Representing the method to execute</param>
@@ -584,7 +584,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
@@ -597,7 +597,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return this.RunAsTask<TState, TRes>(func, state, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
