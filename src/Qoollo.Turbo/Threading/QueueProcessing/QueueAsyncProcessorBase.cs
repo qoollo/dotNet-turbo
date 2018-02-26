@@ -11,7 +11,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
     /// Asynchronous items processor with queue (base methods)
     /// </summary>
     /// <typeparam name="T">Type of the elements processed by this <see cref="QueueAsyncProcessorBase{T}"/></typeparam>
-    public abstract class QueueAsyncProcessorBase<T>: IConsumer<T>, IDisposable
+    public abstract class QueueAsyncProcessorBase<T>: IQueueAsyncProcessor<T>, IConsumer<T>, IDisposable
     {
         /// <summary>
         /// Attempts to add new item to processing queue
