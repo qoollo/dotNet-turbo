@@ -974,7 +974,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
 
-
+#if DEBUG
         /// <summary>
         /// Finalizer
         /// </summary>
@@ -982,5 +982,6 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         {
             Dispose(false);
         }
+#endif
     }
 }
