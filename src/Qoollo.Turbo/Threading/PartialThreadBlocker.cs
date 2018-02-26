@@ -10,10 +10,8 @@ using System.Threading.Tasks;
 
 namespace Qoollo.Turbo.Threading
 {
-#pragma warning disable 0420
-
     /// <summary>
-    /// Останавливает указанное число потоков
+    /// Primitive that limits the number of simultaniously executing threads (transfers specified number of threads to Wait state)
     /// </summary>
     [DebuggerDisplay("RealWaiterCount = {RealWaiterCount}, ExpectedWaiterCount = {ExpectedWaiterCount}")]
     internal class PartialThreadBlocker
@@ -22,9 +20,9 @@ namespace Qoollo.Turbo.Threading
 
         private static readonly Action<object> _cancellationTokenCanceledEventHandler = new Action<object>(CancellationTokenCanceledEventHandler);
         /// <summary>
-        /// Обработчик отмены токена
+        /// CancellationToken cancellation handler
         /// </summary>
-        /// <param name="obj">Объект PartialThreadBlocker</param>
+        /// <param name="obj"><see cref="PartialThreadBlocker"/> instance</param>
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             PartialThreadBlocker blocker = obj as PartialThreadBlocker;
@@ -45,9 +43,9 @@ namespace Qoollo.Turbo.Threading
         private readonly object _lockObj = new object();
 
         /// <summary>
-        /// Конструктор PartialThreadBlocker
+        /// <see cref="PartialThreadBlocker"/> constructor
         /// </summary>
-        /// <param name="expectedWaiterCount">Число потоков для блокировки</param>
+        /// <param name="expectedWaiterCount">Number of threads to be blocked</param>
         public PartialThreadBlocker(int expectedWaiterCount)
         {
             if (expectedWaiterCount < 0)
@@ -57,7 +55,7 @@ namespace Qoollo.Turbo.Threading
             _realWaiterCount = 0;
         }
         /// <summary>
-        /// Конструктор PartialThreadBlocker
+        /// <see cref="PartialThreadBlocker"/> constructor
         /// </summary>
         public PartialThreadBlocker()
             : this(0)
@@ -65,19 +63,19 @@ namespace Qoollo.Turbo.Threading
         }
         
         /// <summary>
-        /// Число потоков для блокировки
+        /// Gets the number of threads that should be blocked
         /// </summary>
         public int ExpectedWaiterCount { get { return _expectedWaiterCount; } }
         /// <summary>
-        /// Реальное число заблокированных потоков
+        /// Gets the number of threads that already was blocked
         /// </summary>
         public int RealWaiterCount { get { return _realWaiterCount; } }
 
 
         /// <summary>
-        /// Пробудить ожидающих
+        /// Notifies waiting threads that several of them can continue execution
         /// </summary>
-        /// <param name="diff">На сколько изменилось число потоков для блокировки</param>
+        /// <param name="diff">The number of threads that potentially should be unblocked</param>
         private void WakeUpWaiters(int diff)
         {
             if (diff >= 0)
@@ -93,10 +91,10 @@ namespace Qoollo.Turbo.Threading
         }
 
         /// <summary>
-        /// Задать число потоков для блокировки
+        /// Sets the number of threads that should be blocked (<see cref="ExpectedWaiterCount"/>)
         /// </summary>
-        /// <param name="newValue">Новое значение</param>
-        /// <returns>Предыдущее значение числа потоков для блокировки</returns>
+        /// <param name="newValue">New value</param>
+        /// <returns>Previous value that was stored in <see cref="ExpectedWaiterCount"/></returns>
         public int SetExpectedWaiterCount(int newValue)
         {
             TurboContract.Requires(newValue >= 0, conditionString: "newValue >= 0");
@@ -106,10 +104,10 @@ namespace Qoollo.Turbo.Threading
             return prevValue;
         }
         /// <summary>
-        /// Увеличить число потоков для блокировки
+        /// Increases the number of threads that should be blocked
         /// </summary>
-        /// <param name="addValue">Величина увеличения</param>
-        /// <returns>Новое значение</returns>
+        /// <param name="addValue">The value by which it is necessary to increase the number of blocked threads</param>
+        /// <returns>Updated value stored in <see cref="ExpectedWaiterCount"/></returns>
         public int AddExpectedWaiterCount(int addValue)
         {
             SpinWait sw = new SpinWait();
@@ -129,10 +127,10 @@ namespace Qoollo.Turbo.Threading
             return newExpectedWaiterCount;
         }
         /// <summary>
-        /// Уменьшить число потоков для блокировки
+        /// Decreases the number of threads that should be blocked
         /// </summary>
-        /// <param name="subValue">Величина уменьшения</param>
-        /// <returns>Новое значение</returns>
+        /// <param name="subValue">The value by which it is necessary to decrease the number of blocked threads</param>
+        /// <returns>Updated value stored in <see cref="ExpectedWaiterCount"/></returns>
         public int SubstractExpectedWaiterCount(int subValue)
         {
             return AddExpectedWaiterCount(-subValue);
@@ -142,11 +140,11 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Заблокироваться, если требуется
+        /// Blocks the current thread if it is required
         /// </summary>
-        /// <param name="timeout">Таймаут в миллисекундах</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Успешность (false - выход по таймауту)</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the current thread successfully passed the <see cref="PartialThreadBlocker"/> (false - exited by timeout)</returns>
         public bool Wait(int timeout, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
@@ -214,7 +212,7 @@ namespace Qoollo.Turbo.Threading
 
 
         /// <summary>
-        /// Заблокироваться, если требуется
+        /// Blocks the current thread if it is required
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Wait()
@@ -223,9 +221,9 @@ namespace Qoollo.Turbo.Threading
             TurboContract.Assert(semaphoreSlotTaken, conditionString: "semaphoreSlotTaken");
         }
         /// <summary>
-        /// Заблокироваться, если требуется
+        /// Blocks the current thread if it is required
         /// </summary>
-        /// <param name="token">Токен отмены</param>
+        /// <param name="token">Cancellation token</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Wait(CancellationToken token)
         {
@@ -233,10 +231,10 @@ namespace Qoollo.Turbo.Threading
             TurboContract.Assert(semaphoreSlotTaken, conditionString: "semaphoreSlotTaken");
         }
         /// <summary>
-        /// Заблокироваться, если требуется
+        /// Blocks the current thread if it is required
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>Успешность (false - выход по таймауту)</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <returns>True if the current thread successfully passed the <see cref="PartialThreadBlocker"/> (false - exited by timeout)</returns>
         public bool Wait(TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -246,11 +244,11 @@ namespace Qoollo.Turbo.Threading
             return Wait((int)timeoutMs, new CancellationToken());
         }
         /// <summary>
-        /// Заблокироваться, если требуется
+        /// Blocks the current thread if it is required
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns>Успешность (false - выход по таймауту)</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if the current thread successfully passed the <see cref="PartialThreadBlocker"/> (false - exited by timeout)</returns>
         public bool Wait(TimeSpan timeout, CancellationToken token)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -260,16 +258,14 @@ namespace Qoollo.Turbo.Threading
             return Wait((int)timeoutMs, token);
         }
         /// <summary>
-        /// Заблокироваться, если требуется
+        /// Blocks the current thread if it is required
         /// </summary>
-        /// <param name="timeout">Таймаут</param>
-        /// <returns>Успешность (false - выход по таймауту)</returns>
+        /// <param name="timeout">Waiting timeout in milliseconds</param>
+        /// <returns>True if the current thread successfully passed the <see cref="PartialThreadBlocker"/> (false - exited by timeout)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Wait(int timeout)
         {
             return Wait(timeout, new CancellationToken());
         }
     }
-
-#pragma warning restore 0420
 }
