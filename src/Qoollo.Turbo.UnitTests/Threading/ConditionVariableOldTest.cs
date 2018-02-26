@@ -438,6 +438,16 @@ namespace Qoollo.Turbo.UnitTests.Threading
             }
         }
         [TestMethod]
+        public void TestWaitThrowsIfExternalLockTakenRecursivelyMultiple()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                Assert.ThrowsException<SynchronizationLockException>(() => TestWaitThrowsIfExternalLockTakenRecursively());
+            }
+        }
+
+
+        [TestMethod]
         [ExpectedException(typeof(SynchronizationLockException))]
         public void TestWaitWithPredicateThrowsIfExternalLockTakenRecursively()
         {
@@ -451,6 +461,15 @@ namespace Qoollo.Turbo.UnitTests.Threading
                         testInst.Wait(_ => false, (object)null,10);
                     }
                 }
+            }
+        }
+
+        [TestMethod]
+        public void TestWaitWithPredicateThrowsIfExternalLockTakenRecursivelyMultiple()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                Assert.ThrowsException<SynchronizationLockException>(() => TestWaitWithPredicateThrowsIfExternalLockTakenRecursively());
             }
         }
 
