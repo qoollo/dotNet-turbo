@@ -341,10 +341,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return (val >> 24) & ((1 << 8) - 1);
         }
         /// <summary>
-        /// Получить число потоков после выполнения всех операций завершения
+        /// Gets total thread count that will be in the pool after termination of all threads according to DieSlot count
         /// </summary>
-        /// <param name="val">Значение DieSlotActiveFullThreadCount</param>
-        /// <returns>Оценочное число потоков</returns>
+        /// <param name="val">DieSlotActiveFullThreadCount value</param>
+        /// <returns>Estimated alive thread count</returns>
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int EvaluateThreadCountFromCombination(int val)
@@ -352,10 +352,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return GetThreadCountFromCombination(val) - GetDieSlotCountFromCombination(val);
         }
         /// <summary>
-        /// Получить число потоков на паузе
+        /// Gets the number of inactive (blocked) threads
         /// </summary>
-        /// <param name="val">Значение DieSlotActiveFullThreadCount</param>
-        /// <returns>Оценочное число потоков на паузе</returns>
+        /// <param name="val">DieSlotActiveFullThreadCount value</param>
+        /// <returns>Number of inactive (blocked) threads</returns>
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int EvaluatePausedThreadCountFromCombination(int val)
@@ -364,9 +364,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Получить число потоков после выполнения всех операций завершения
+        /// Gets total thread count that will be in the pool after termination of all threads according to DieSlot count
         /// </summary>
-        /// <returns>Оценочное число потоков</returns>
+        /// <returns>Estimated alive thread count</returns>
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int EvaluateThreadCountFromCombination()
@@ -374,9 +374,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return EvaluateThreadCountFromCombination(Volatile.Read(ref _dieSlotActiveFullThreadCountCombination));
         }
         /// <summary>
-        /// Получить число потоков на паузе
+        /// Gets the number of inactive (blocked) threads
         /// </summary>
-        /// <returns>Оценочное число потоков на паузе</returns>
+        /// <returns>Number of inactive (blocked) threads</returns>
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int EvaluatePausedThreadCountFromCombination()
@@ -385,10 +385,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Увеличить число потоков
+        /// Attempts to increment the number of threads stored in <see cref="_dieSlotActiveFullThreadCountCombination"/>.
+        /// Verifies that the result number of threads is less than <see cref="_maxThreadCount"/>.
         /// </summary>
-        /// <param name="newThreadCount">Обновлённое или последнее значение числа потоков</param>
-        /// <returns>Успешность</returns>
+        /// <param name="newThreadCount">Number of threads stored in <see cref="_dieSlotActiveFullThreadCountCombination"/> after this operation completed</param>
+        /// <returns>Whether the increment was succesfull (false - number of threads exceeded the <see cref="_maxThreadCount"/>)</returns>
         private bool IncrementThreadCount(out int newThreadCount)
         {
             TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
@@ -404,6 +405,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                         dieSlotActiveFullThreadCountTracker) == dieSlotActiveFullThreadCountTracker)
                 {
                     newThreadCount = GetThreadCountFromCombination(dieSlotActiveFullThreadCountTracker + OneThreadForDieSlotActiveFullThreadCountCombination);
+                    TurboContract.Assert(EvaluateThreadCountFromCombination() >= 0, conditionString: "EvaluateThreadCountFromCombination() >= 0");
+                    TurboContract.Assert(EvaluatePausedThreadCountFromCombination() >= 0, conditionString: "EvaluatePausedThreadCountFromCombination() >= 0");
                     return true;
                 }
 
@@ -416,10 +419,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Уменьшить число потоков
+        /// Attempts to decrement the number of threads stored in <see cref="_dieSlotActiveFullThreadCountCombination"/>
         /// </summary>
-        /// <param name="minThreadCount">Минимально допустимое число потоков</param>
-        /// <returns>Успешность</returns>
+        /// <param name="minThreadCount">Minimum thread count that always should be presented</param>
+        /// <returns>Whether the decrement was succesfull</returns>
         private bool DecremenetThreadCount(int minThreadCount = 0)
         {
             TurboContract.Requires(minThreadCount >= 0, conditionString: "minThreadCount >= 0");
@@ -434,7 +437,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                         ref _dieSlotActiveFullThreadCountCombination,
                         dieSlotActiveFullThreadCountTracker - OneThreadForDieSlotActiveFullThreadCountCombination,
                         dieSlotActiveFullThreadCountTracker) == dieSlotActiveFullThreadCountTracker)
+                {
+                    TurboContract.Assert(EvaluateThreadCountFromCombination() >= 0, conditionString: "EvaluateThreadCountFromCombination() >= 0");
+                    TurboContract.Assert(EvaluatePausedThreadCountFromCombination() >= 0, conditionString: "EvaluatePausedThreadCountFromCombination() >= 0");
                     return true;
+                }
 
                 sw.SpinOnce();
                 dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -444,11 +451,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Пересчитать новое значени DieSlotActiveFullThreadCount при уменьшении числа потоков
+        /// Recalculates ActiveThreadCount, FullThreadCount and DieSlotCount for DieSlotActiveFullThreadCount when one thread is terminating
         /// </summary>
-        /// <param name="val">Исходное значение DieSlotActiveFullThreadCount</param>
-        /// <param name="wasActiveThreadCountDecremented">Было ли уменьшено число активных потоков</param>
-        /// <returns>Перерасчитанное значение DieSlotActiveFullThreadCount</returns>
+        /// <param name="val">Original value of DieSlotActiveFullThreadCount</param>
+        /// <param name="wasActiveThreadCountDecremented">Whether the number of active threads was decreased</param>
+        /// <returns>Recalculated value of DieSlotActiveFullThreadCount</returns>
         private int CalculateValueForDecrementThreadCountCascade(int val, out bool wasActiveThreadCountDecremented)
         {
             wasActiveThreadCountDecremented = false;
@@ -463,10 +470,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return val - OneThreadForDieSlotActiveFullThreadCountCombination;
         }
         /// <summary>
-        /// Уменьшить число потоков (также забирает с собой DieSlot и ActiveThreadCount, если нужно)
+        /// Attempts to reduce the thread count stored in <see cref="_dieSlotActiveFullThreadCountCombination"/> also affects DieSlot and ActiveThreadCount when necessary)
         /// </summary>
-        /// <param name="wasActiveThreadCountDecremented">Было ли уменьшено число активных потоков</param>
-        /// <returns>Успешность</returns>
+        /// <param name="wasActiveThreadCountDecremented">Whether the number of active threads was decreased</param>
+        /// <returns>Whether the operation was successful</returns>
         private bool DecrementThreadCountCascade(out bool wasActiveThreadCountDecremented)
         {
             TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
@@ -480,6 +487,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                         CalculateValueForDecrementThreadCountCascade(dieSlotActiveFullThreadCountTracker, out wasActiveThreadCountDecremented),
                         dieSlotActiveFullThreadCountTracker) == dieSlotActiveFullThreadCountTracker)
                 {
+                    TurboContract.Assert(EvaluateThreadCountFromCombination() >= 0, conditionString: "EvaluateThreadCountFromCombination() >= 0");
+                    TurboContract.Assert(EvaluatePausedThreadCountFromCombination() >= 0, conditionString: "EvaluatePausedThreadCountFromCombination() >= 0");
                     return true;
                 }
 
@@ -492,9 +501,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Увеличить число активных потоков
+        /// Attempts to increment active thread count stored in <see cref="_dieSlotActiveFullThreadCountCombination"/>
         /// </summary>
-        /// <returns>Успешность</returns>
+        /// <returns>Whether the number of active threads was incremented</returns>
         private bool IncrementActiveThreadCount()
         {
             TurboContract.Ensures(EvaluateThreadCountFromCombination() >= 0);
@@ -507,7 +516,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                 if (Interlocked.CompareExchange(ref _dieSlotActiveFullThreadCountCombination,
                         dieSlotActiveFullThreadCountTracker + OneActiveThreadForDieSlotActiveFullThreadCountCombination,
                         dieSlotActiveFullThreadCountTracker) == dieSlotActiveFullThreadCountTracker)
+                {
+                    TurboContract.Assert(EvaluateThreadCountFromCombination() >= 0, conditionString: "EvaluateThreadCountFromCombination() >= 0");
+                    TurboContract.Assert(EvaluatePausedThreadCountFromCombination() >= 0, conditionString: "EvaluatePausedThreadCountFromCombination() >= 0");
                     return true;
+                }
 
                 sw.SpinOnce();
                 dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -517,10 +530,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Уменьшить число активных потоков
+        /// Attempts to decrement the number of active thread count stored in <see cref="_dieSlotActiveFullThreadCountCombination"/>
         /// </summary>
-        /// <param name="activeThreadCountLowLimit">Минимальное число активных потоков</param>
-        /// <returns>Успешность</returns>
+        /// <param name="activeThreadCountLowLimit">Minimum number of active thread that should be presented in pool</param>
+        /// <returns>Whether the number of active threads was decremented</returns>
         private bool DecrementActiveThreadCount(int activeThreadCountLowLimit = 0)
         {
             TurboContract.Requires(activeThreadCountLowLimit >= 0, conditionString: "activeThreadCountLowLimit >= 0");
@@ -534,7 +547,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                 if (Interlocked.CompareExchange(ref _dieSlotActiveFullThreadCountCombination,
                         dieSlotActiveFullThreadCountTracker - OneActiveThreadForDieSlotActiveFullThreadCountCombination,
                         dieSlotActiveFullThreadCountTracker) == dieSlotActiveFullThreadCountTracker)
+                {
+                    TurboContract.Assert(EvaluateThreadCountFromCombination() >= 0, conditionString: "EvaluateThreadCountFromCombination() >= 0");
+                    TurboContract.Assert(EvaluatePausedThreadCountFromCombination() >= 0, conditionString: "EvaluatePausedThreadCountFromCombination() >= 0");
                     return true;
+                }
 
                 sw.SpinOnce();
                 dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
@@ -545,11 +562,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Запросить начало завершения потока (также выдёргивает StopRequest, если он есть)
+        /// Attempts to request the die slot (increments DieSlotCount stored in <see cref="_dieSlotActiveFullThreadCountCombination"/>)
         /// </summary>
-        /// <param name="threadCountLowLimit">Минимальное число потоков</param>
-        /// <param name="curThreadCountMax">Уменьшение делается только если число потоков меньше данного значения</param>
-        /// <returns>Успешность</returns>
+        /// <param name="threadCountLowLimit">Minimum number of threads that should be presented in pool</param>
+        /// <param name="curThreadCountMax">Upper limit to the total thread count when this operation can be performed</param>
+        /// <returns>Whether the request was successful</returns>
         private bool RequestDieSlot(int threadCountLowLimit, int curThreadCountMax = int.MaxValue)
         {
             TurboContract.Requires(threadCountLowLimit >= 0, conditionString: "threadCountLowLimit >= 0");
@@ -566,7 +583,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                 if (Interlocked.CompareExchange(ref _dieSlotActiveFullThreadCountCombination,
                         dieSlotActiveFullThreadCountTracker + OneDieSlotForDieSlotActiveFullThreadCountCombination,
                         dieSlotActiveFullThreadCountTracker) == dieSlotActiveFullThreadCountTracker)
+                {
+                    TurboContract.Assert(EvaluateThreadCountFromCombination() >= 0, conditionString: "EvaluateThreadCountFromCombination() >= 0");
+                    TurboContract.Assert(EvaluatePausedThreadCountFromCombination() >= 0, conditionString: "EvaluatePausedThreadCountFromCombination() >= 0");
                     return true;
+                }
 
                 sw.SpinOnce();
                 dieSlotActiveFullThreadCountTracker = Volatile.Read(ref _dieSlotActiveFullThreadCountCombination);
