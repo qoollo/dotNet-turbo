@@ -11,7 +11,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
     /// Interface for asynchronous items processor with queue
     /// </summary>
     /// <typeparam name="T">Type of the elements processed by this <see cref="IQueueAsyncProcessor{T}"/></typeparam>
-    public interface IQueueAsyncProcessor<T>: IDisposable
+    internal interface IQueueAsyncProcessor<T>: IDisposable
     {
         /// <summary>
         /// Attempts to add new item to processing queue
