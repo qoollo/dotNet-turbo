@@ -1089,7 +1089,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             Profiling.Profiler.ThreadPoolWorkProcessed(this.Name, timer.StopTime());
         }
         /// <summary>
-        /// Cancelles ThreadPoolWorkItem
+        /// Transfers ThreadPoolWorkItem to cancelled state
         /// </summary>
         /// <param name="item">Work item</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1115,9 +1115,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Добавить работу в очередь пула потоков
+        /// Enqueues ThreadPoolWorkItem. 
+        /// First it attempts to enqueue work item to thread local queue. If it is not possible, it enqueues to the global queue.
+        /// When <see cref="ThreadPoolWorkItem.PreferFairness"/> setted to True, it alway enqueues to global queue.
         /// </summary>
-        /// <param name="item">Работа</param>
+        /// <param name="item">Work item</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void AddWorkItemToQueue(ThreadPoolWorkItem item)
         {
@@ -1130,10 +1132,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             Profiling.Profiler.ThreadPoolWorkItemsCountIncreased(this.Name, this.GlobalQueueWorkItemCount, this.QueueCapacity);
         }
         /// <summary>
-        /// Попробовать добавить работу в очередь пула потоков
+        /// Attempts to enqueues ThreadPoolWorkItem. 
+        /// First it attempts to enqueue work item to thread local queue. If it is not possible, it attempts to enqueue to the global queue.
+        /// When <see cref="ThreadPoolWorkItem.PreferFairness"/> setted to True, it alway attempts to enqueue to global queue.
         /// </summary>
-        /// <param name="item">Работа</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="item">Work item</param>
+        /// <returns>Whether the work item was enqueued successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryAddWorkItemToQueue(ThreadPoolWorkItem item)
         {
@@ -1150,11 +1154,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Взять очередной элемент из очереди
+        /// Takes work item from ThreadPool queue.
+        /// First it attempts to take item from local thread queue. If it is not possible, it deques work item from the global queue.
+        /// Additionally it can steal work item from local queues of other ThreadPool threads.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns></returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Taken work item</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected ThreadPoolWorkItem TakeWorkItemFromQueue(ThreadPrivateData privateData, CancellationToken token)
         {
@@ -1168,11 +1174,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Попробовать взять очередной элемент из очереди
+        /// Attempts to take work item from ThreadPool queue.
+        /// First it attempts to take item from local thread queue. If it is not possible, it attempts to take work item from the global queue.
+        /// Additionally it can steal work item from local queues of other ThreadPool threads.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="item">Полученный элемент</param>
-        /// <returns>Успешность</returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="item">Taken work item</param>
+        /// <returns>Whether the work item was taken successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryTakeWorkItemFromQueue(ThreadPrivateData privateData, out ThreadPoolWorkItem item)
         {
@@ -1189,14 +1197,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Попробовать взять очередной элемент из очереди
+        /// Attempts to take work item from ThreadPool queue.
+        /// First it attempts to take item from local thread queue. If it is not possible, it attempts to take work item from the global queue.
+        /// Additionally it can steal work item from local queues of other ThreadPool threads.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="item">Полученный элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
-        /// <returns>Успешность</returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="item">Taken work item (when successful)</param>
+        /// <param name="timeout">Timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Whether the <see cref="OperationCanceledException"/> should be thrown on Cancellation</param>
+        /// <returns>Whether the work item was taken successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryTakeWorkItemFromQueue(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
@@ -1213,14 +1223,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Попробовать взять очередной элемент из очереди (без похищения у других потоков)
+        /// Attempts to take work item from ThreadPool queue.
+        /// First it attempts to take item from local thread queue. If it is not possible, it attempts to take work item from the global queue.
+        /// Stealing from local queues of other ThreadPool threads is not performed.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="item">Полученный элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
-        /// <returns>Успешность</returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="item">Taken work item (when successful)</param>
+        /// <param name="timeout">Timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Whether the <see cref="OperationCanceledException"/> should be thrown on Cancellation</param>
+        /// <returns>Whether the work item was taken successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryTakeWorkItemFromQueueWithoutSteal(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
@@ -1237,14 +1249,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Попробовать взять очередной элемент из очереди без поиска в локально очереди
+        /// Attempts to take work item from ThreadPool queue.
+        /// It does not attempt to take item from local queue. 
+        /// It attempts to take item from global queue or steals it from local queues of other ThreadPool threads.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="item">Полученный элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
-        /// <returns>Успешность</returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="item">Taken work item (when successful)</param>
+        /// <param name="timeout">Timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Whether the <see cref="OperationCanceledException"/> should be thrown on Cancellation</param>
+        /// <returns>Whether the work item was taken successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryTakeWorkItemFromQueueWithoutLocalSearch(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
