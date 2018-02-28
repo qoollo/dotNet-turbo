@@ -9,18 +9,18 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ThreadPools.Common
 {
     /// <summary>
-    /// Единица работы пула для Action
+    /// Thread pool work item that wraps <see cref="Action"/>
     /// </summary>
     public sealed class ActionThreadPoolWorkItem: ThreadPoolWorkItem
     {
         private readonly Action _action;
 
         /// <summary>
-        /// Конструктор ActionThreadPoolWorkItem
+        /// <see cref="ActionThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="allowExecutionContextFlow">Допустимо ли захватывать контекст исполнения</param>
-        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
+        /// <param name="preferFairness">Indicates whether this work item should alwayes be enqueued to the GlobalQueue</param>
         public ActionThreadPoolWorkItem(Action action, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
@@ -28,16 +28,16 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _action = action;
         }
         /// <summary>
-        /// Конструктор ActionThreadPoolWorkItem
+        /// <see cref="ActionThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
+        /// <param name="action">Delegate to execute work</param>
         public ActionThreadPoolWorkItem(Action action)
             : this(action, true, false)
         {
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -46,21 +46,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     }
 
     /// <summary>
-    /// Единица работы пула для Action с одним параметром
+    /// Thread pool work item that wraps <see cref="Action{T}"/>
     /// </summary>
-    /// <typeparam name="T">Тип параметра</typeparam>
+    /// <typeparam name="T">Type of the state object passed to delegate</typeparam>
     public sealed class ActionThreadPoolWorkItem<T> : ThreadPoolWorkItem
     {
         private readonly Action<T> _action;
         private readonly T _state;
 
         /// <summary>
-        /// Конструктор ActionWithStateThreadPoolWorkItem
+        /// <see cref="ActionThreadPoolWorkItem{T}"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Параметр</param>
-        /// <param name="allowExecutionContextFlow">Допустимо ли захватывать контекст исполнения</param>
-        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
+        /// <param name="preferFairness">Indicates whether this work item should alwayes be enqueued to the GlobalQueue</param>
         public ActionThreadPoolWorkItem(Action<T> action, T state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
@@ -69,9 +69,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _state = state;
         }
         /// <summary>
-        /// Конструктор ActionWithStateThreadPoolWorkItem
+        /// <see cref="ActionThreadPoolWorkItem{T}"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
+        /// <param name="action">Delegate to execute work</param>
         /// <param name="state">Параметр</param>
         public ActionThreadPoolWorkItem(Action<T> action, T state)
             : this(action, state, true, false)
@@ -80,7 +80,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -90,7 +90,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
     /// <summary>
-    /// Единица работы пула для Action, которая управляет Task'ом
+    /// Thread pool work item that wraps <see cref="Action"/> and additionally maintains <see cref="System.Threading.Tasks.Task"/>
     /// </summary>
     public sealed class TaskThreadPoolWorkItem : ThreadPoolWorkItem
     {
@@ -98,10 +98,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private readonly TaskCompletionSource<object> _completionSource;
 
         /// <summary>
-        /// Конструктор TaskThreadPoolWorkItem
+        /// <see cref="TaskThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="creationOptions">Task creation options</param>
         public TaskThreadPoolWorkItem(Action action, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
@@ -110,21 +110,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _completionSource = new TaskCompletionSource<object>(creationOptions);
         }
         /// <summary>
-        /// Конструктор TaskThreadPoolWorkItem
+        /// <see cref="TaskThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
+        /// <param name="action">Delegate to execute work</param>
         public TaskThreadPoolWorkItem(Action action)
             : this(action, TaskCreationOptions.None)
         {
         }
 
         /// <summary>
-        /// Task
+        /// Encapsulated Task
         /// </summary>
         public Task Task { get { return _completionSource.Task; } }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -140,7 +140,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected sealed override void CancelInner()
         {
@@ -149,9 +149,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     }
 
     /// <summary>
-    /// Единица работы пула для Action, которая управляет Task'ом с параметром состояния
+    /// Thread pool work item that wraps <see cref="Action{T}"/> and additionally maintains <see cref="System.Threading.Tasks.Task{T}"/>
     /// </summary>
-    /// <typeparam name="TState">Тип параметра состояния</typeparam>
+    /// <typeparam name="TState">Type of the state object passed to delegate</typeparam>
     public sealed class TaskThreadPoolWorkItem<TState> : ThreadPoolWorkItem
     {
         private readonly Action<TState> _action;
@@ -159,11 +159,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private readonly TaskCompletionSource<object> _completionSource;
 
         /// <summary>
-        /// Конструктор TaskThreadPoolWorkItem
+        /// <see cref="TaskThreadPoolWorkItem{TState}"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Параметр</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="creationOptions">Task creation options</param>
         public TaskThreadPoolWorkItem(Action<TState> action, TState state, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
@@ -173,22 +173,22 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _completionSource = new TaskCompletionSource<object>(creationOptions);
         }
         /// <summary>
-        /// Конструктор TaskThreadPoolWorkItem
+        /// <see cref="TaskThreadPoolWorkItem{TState}"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Параметр</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
         public TaskThreadPoolWorkItem(Action<TState> action, TState state)
             : this(action, state, TaskCreationOptions.None)
         {
         }
 
         /// <summary>
-        /// Task
+        /// Encapsulated Task
         /// </summary>
         public Task Task { get { return _completionSource.Task; } }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -204,7 +204,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected sealed override void CancelInner()
         {
@@ -212,21 +212,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
     }
 
- 
+
     /// <summary>
-    /// Единица работы пула для Func, которая управляет Task'ом
+    /// Thread pool work item that wraps <see cref="Func{TResult}"/> and additionally maintains <see cref="System.Threading.Tasks.Task{T}"/>
     /// </summary>
-    /// <typeparam name="TRes">Тип результата задачи</typeparam>
+    /// <typeparam name="TRes">Type of the result</typeparam>
     public sealed class TaskFuncThreadPoolWorkItem<TRes> : ThreadPoolWorkItem
     {
         private readonly Func<TRes> _action;
         private readonly TaskCompletionSource<TRes> _completionSource;
 
         /// <summary>
-        /// Конструктор TaskFuncThreadPoolWorkItem
+        /// <see cref="TaskFuncThreadPoolWorkItem{TRes}"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="creationOptions">Task creation options</param>
         public TaskFuncThreadPoolWorkItem(Func<TRes> action, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
@@ -235,9 +235,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _completionSource = new TaskCompletionSource<TRes>(creationOptions);
         }
         /// <summary>
-        /// Конструктор TaskFuncThreadPoolWorkItem
+        /// <see cref="TaskFuncThreadPoolWorkItem{TRes}"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
+        /// <param name="action">Delegate to execute work</param>
         public TaskFuncThreadPoolWorkItem(Func<TRes> action)
             : this(action, TaskCreationOptions.None)
         {
@@ -245,12 +245,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Task
+        /// Encapsulated Task
         /// </summary>
         public Task<TRes> Task { get { return _completionSource.Task; } }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -266,7 +266,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected sealed override void CancelInner()
         {
@@ -275,10 +275,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     }
 
     /// <summary>
-    /// Единица работы пула для Func, которая управляет Task'ом
+    /// Thread pool work item that wraps <see cref="Func{T, TResult}"/> and additionally maintains <see cref="System.Threading.Tasks.Task{T}"/>
     /// </summary>
-    /// <typeparam name="TState">Тип параметра состояния</typeparam>
-    /// <typeparam name="TRes">Тип результата задачи</typeparam>
+    /// <typeparam name="TState">Type of the state object passed to delegate</typeparam>
+    /// <typeparam name="TRes">Type of the result</typeparam>
     public sealed class TaskFuncThreadPoolWorkItem<TState, TRes> : ThreadPoolWorkItem
     {
         private readonly Func<TState, TRes> _action;
@@ -286,11 +286,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private readonly TaskCompletionSource<TRes> _completionSource;
 
         /// <summary>
-        /// Конструктор TaskFuncThreadPoolWorkItem
+        /// <see cref="TaskFuncThreadPoolWorkItem{TState, TRes}"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="creationOptions">Task creation options</param>
         public TaskFuncThreadPoolWorkItem(Func<TState, TRes> action, TState state, TaskCreationOptions creationOptions)
             : base(true, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
@@ -300,10 +300,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _completionSource = new TaskCompletionSource<TRes>(creationOptions);
         }
         /// <summary>
-        /// Конструктор TaskFuncThreadPoolWorkItem
+        /// <see cref="TaskFuncThreadPoolWorkItem{TState, TRes}"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Параметр состояния</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
         public TaskFuncThreadPoolWorkItem(Func<TState, TRes> action, TState state)
             : this(action, state, TaskCreationOptions.None)
         {
@@ -311,12 +311,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Task
+        /// Encapsulated Task
         /// </summary>
         public Task<TRes> Task { get { return _completionSource.Task; } }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -332,7 +332,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected sealed override void CancelInner()
         {
@@ -342,7 +342,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     
 
     /// <summary>
-    /// Единица работы пула для SendOrPostCallback
+    /// Thread pool work item that wraps <see cref="SendOrPostCallback"/>
     /// </summary>
     public sealed class SendOrPostCallbackThreadPoolWorkItem : ThreadPoolWorkItem
     {
@@ -350,12 +350,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private readonly object _state;
 
         /// <summary>
-        /// Конструктор SendOrPostCallbackThreadPoolWorkItem
+        /// <see cref="SendOrPostCallbackThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="allowExecutionContextFlow">Можно ли захватывать контекст исполнения</param>
-        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
+        /// <param name="preferFairness">Indicates whether this work item should alwayes be enqueued to the GlobalQueue</param>
         public SendOrPostCallbackThreadPoolWorkItem(SendOrPostCallback action, object state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
@@ -364,17 +364,17 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _state = state;
         }
         /// <summary>
-        /// Конструктор SendOrPostCallbackThreadPoolWorkItem
+        /// <see cref="SendOrPostCallbackThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Состояние</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
         public SendOrPostCallbackThreadPoolWorkItem(SendOrPostCallback action, object state)
             : this(action, state, true, false)
         {
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -383,7 +383,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     }
 
     /// <summary>
-    /// Единица работы пула для SendOrPostCallback с поддержкой синхронизации
+    /// Thread pool work item that wraps <see cref="SendOrPostCallback"/> and has the possiblity to wait for completion.
+    /// Required to implement <see cref="SynchronizationContext.Send(SendOrPostCallback, object)"/>
     /// </summary>
     public sealed class SendOrPostCallbackSyncThreadPoolWorkItem : ThreadPoolWorkItem
     {
@@ -398,12 +399,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private int _taskProcessFlag;
 
         /// <summary>
-        /// Конструктор SendOrPostCallbackSyncThreadPoolWorkItem
+        /// <see cref="SendOrPostCallbackSyncThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="allowExecutionContextFlow">Можно ли захватывать контекст исполнения</param>
-        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
+        /// <param name="preferFairness">Indicates whether this work item should alwayes be enqueued to the GlobalQueue</param>
         public SendOrPostCallbackSyncThreadPoolWorkItem(SendOrPostCallback action, object state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
@@ -417,17 +418,17 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _taskProcessFlag = 0;
         }
         /// <summary>
-        /// Конструктор SendOrPostCallbackSyncThreadPoolWorkItem
+        /// <see cref="SendOrPostCallbackSyncThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Состояние</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
         public SendOrPostCallbackSyncThreadPoolWorkItem(SendOrPostCallback action, object state)
             : this(action, state, true, true)
         {
         }
 
         /// <summary>
-        /// Подождать завершение задачи
+        /// Waits until the completion of this work item
         /// </summary>
         public void Wait()
         {
@@ -453,7 +454,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -479,7 +480,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected sealed override void CancelInner()
         {
@@ -503,7 +504,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     }
 
     /// <summary>
-    /// Единица работы пула для WaitCallback
+    /// Thread pool work item that wraps <see cref="WaitCallback"/>
     /// </summary>
     public sealed class WaitCallbackThreadPoolWorkItem : ThreadPoolWorkItem
     {
@@ -511,12 +512,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private readonly object _state;
 
         /// <summary>
-        /// Конструктор WaitCallbackThreadPoolWorkItem
+        /// <see cref="WaitCallbackThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="allowExecutionContextFlow">Можно ли захватывать контекст исполнения</param>
-        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
+        /// <param name="preferFairness">Indicates whether this work item should alwayes be enqueued to the GlobalQueue</param>
         public WaitCallbackThreadPoolWorkItem(WaitCallback action, object state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
@@ -525,17 +526,17 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _state = state;
         }
         /// <summary>
-        /// Конструктор WaitCallbackThreadPoolWorkItem
+        /// <see cref="WaitCallbackThreadPoolWorkItem"/> constructor
         /// </summary>
-        /// <param name="action">Исполняемое действие</param>
-        /// <param name="state">Состояние</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
         public WaitCallbackThreadPoolWorkItem(WaitCallback action, object state)
             : this(action, state, true, false)
         {
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -545,18 +546,18 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
     /// <summary>
-    /// Единица работы пула для исполнения Task
+    /// Thread pool work item that wraps already created <see cref="Task"/>
     /// </summary>
     public sealed class TaskEntryExecutionThreadPoolWorkItem: ThreadPoolWorkItem
     {
         private readonly Task _task;
         private int _taskProcessFlag;
-        
+
         /// <summary>
-        /// Конструктор TaskEntryExecutionThreadPoolWorkItem
+        /// <see cref="TaskEntryExecutionThreadPoolWorkItem"/> constructor
         /// </summary>
         /// <param name="task">Task</param>
-        /// <param name="allowExecutionContextFlow">Можно ли захватывать контекст исполнения</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
         public TaskEntryExecutionThreadPoolWorkItem(Task task, bool allowExecutionContextFlow)
             : base(allowExecutionContextFlow, (task.CreationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
@@ -565,7 +566,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _taskProcessFlag = 0;
         }
         /// <summary>
-        /// Конструктор TaskEntryExecutionThreadPoolWorkItem
+        /// <see cref="TaskEntryExecutionThreadPoolWorkItem"/> constructor
         /// </summary>
         /// <param name="task">Task</param>
         public TaskEntryExecutionThreadPoolWorkItem(Task task)
@@ -575,7 +576,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -586,7 +587,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected sealed override void CancelInner()
         {
@@ -599,20 +600,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
     /// <summary>
-    /// Единица работы пула для исполнения Task
+    /// Thread pool work item that wraps <see cref="Action{T}"/> and <see cref="Task"/> for that action.
+    /// Required to execute work within <see cref="TaskScheduler"/>
     /// </summary>
-    /// <typeparam name="TState">Тип параметра состояния</typeparam>
+    /// <typeparam name="TState">Type of the state object</typeparam>
     internal sealed class TaskEntryExecutionWithClosureThreadPoolWorkItem<TState> : ThreadPoolWorkItem
     {
         /// <summary>
-        /// Заранее созданный делегат на RunRaw
+        /// Preallocated delegate object
         /// </summary>
         internal static readonly Action<object> RunRawAction = new Action<object>(RunRaw);
 
         /// <summary>
-        /// Запустить внутренний Action на выполнение
+        /// Executes Action from <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState}"/> passed as parameter
         /// </summary>
-        /// <param name="closure">Объект TaskEntryExecutionWithClosureThreadPoolWorkItem</param>
+        /// <param name="closure">Instance of <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState}"/></param>
         private static void RunRaw(object closure)
         {
             var extractedClosure = (TaskEntryExecutionWithClosureThreadPoolWorkItem<TState>)closure;
@@ -629,12 +631,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private int _taskProcessFlag;
 
         /// <summary>
-        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState}"/> constructor
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <param name="allowExecutionContextFlow">Допустимо ли захватывать контекст исполнения</param>
-        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
+        /// <param name="preferFairness">Indicates whether this work item should alwayes be enqueued to the GlobalQueue</param>
         public TaskEntryExecutionWithClosureThreadPoolWorkItem(Action<TState> action, TState state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
@@ -644,21 +646,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _taskProcessFlag = 0;
         }
         /// <summary>
-        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState}"/> constructor
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="creationOptions">Task creation options</param>
         public TaskEntryExecutionWithClosureThreadPoolWorkItem(Action<TState> action, TState state, TaskCreationOptions creationOptions)
             : this(action, state, false, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
 
         }
         /// <summary>
-        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState}"/> constructor
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
         public TaskEntryExecutionWithClosureThreadPoolWorkItem(Action<TState> action, TState state)
             : this(action, state, false, false)
         {
@@ -666,7 +668,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Установить таск
+        /// Sets externally created task for passed action
         /// </summary>
         /// <param name="task">Task</param>
         public void SetTask(Task task)
@@ -681,7 +683,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -695,7 +697,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected sealed override void CancelInner()
         {
@@ -711,22 +713,22 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
     /// <summary>
-    /// Единица работы пула для исполнения Task
+    /// Thread pool work item that wraps <see cref="Func{T, TResult}"/> and <see cref="Task{T}"/> for that action.
+    /// Required to execute work within <see cref="TaskScheduler"/>
     /// </summary>
-    /// <typeparam name="TState">Тип параметра состояния</typeparam>
-    /// <typeparam name="TRes">Тип результата</typeparam>
+    /// <typeparam name="TState">Type of the state object</typeparam>
+    /// <typeparam name="TRes">Type of the work item result</typeparam>
     internal sealed class TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes> : ThreadPoolWorkItem
     {
         /// <summary>
-        /// Заранее созданный делегат на RunRaw
+        /// Preallocated delegate object
         /// </summary>
         internal static readonly Func<object, TRes> RunRawAction = new Func<object, TRes>(RunRaw);
 
         /// <summary>
-        /// Запустить внутренний Action на выполнение
+        /// Executes Action from <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState, TRes}"/> passed as parameter
         /// </summary>
-        /// <param name="closure">Объект TaskEntryExecutionWithClosureThreadPoolWorkItem</param>
-        /// <returns>Результат исполнения</returns>
+        /// <param name="closure">Instance of <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState, TRes}"/></param>
         private static TRes RunRaw(object closure)
         {
             var extractedClosure = (TaskEntryExecutionWithClosureThreadPoolWorkItem<TState, TRes>)closure;
@@ -743,12 +745,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private int _taskProcessFlag;
 
         /// <summary>
-        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState, TRes}"/> constructor
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <param name="allowExecutionContextFlow">Допустимо ли захватывать контекст исполнения</param>
-        /// <param name="preferFairness">Требовать постановку в общую очередь</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="allowExecutionContextFlow">Indicates whether the ExecutionContext should be captured</param>
+        /// <param name="preferFairness">Indicates whether this work item should alwayes be enqueued to the GlobalQueue</param>
         public TaskEntryExecutionWithClosureThreadPoolWorkItem(Func<TState, TRes> action, TState state, bool allowExecutionContextFlow, bool preferFairness)
             : base(allowExecutionContextFlow, preferFairness)
         {
@@ -758,21 +760,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             _taskProcessFlag = 0;
         }
         /// <summary>
-        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState, TRes}"/> constructor
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
-        /// <param name="creationOptions">Параметры создания таска</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
+        /// <param name="creationOptions">Task creation options</param>
         public TaskEntryExecutionWithClosureThreadPoolWorkItem(Func<TState, TRes> action, TState state, TaskCreationOptions creationOptions)
             : this(action, state, false, (creationOptions & TaskCreationOptions.PreferFairness) != 0)
         {
 
         }
         /// <summary>
-        /// Конструктор TaskEntryExecutionWithClosureThreadPoolWorkItem
+        /// <see cref="TaskEntryExecutionWithClosureThreadPoolWorkItem{TState, TRes}"/> constructor
         /// </summary>
-        /// <param name="action">Действие</param>
-        /// <param name="state">Параметр состояния</param>
+        /// <param name="action">Delegate to execute work</param>
+        /// <param name="state">State object that will be passed to delegate</param>
         public TaskEntryExecutionWithClosureThreadPoolWorkItem(Func<TState, TRes> action, TState state)
             : this(action, state, false, false)
         {
@@ -780,7 +782,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Установить таск
+        /// Sets externally created task for passed action
         /// </summary>
         /// <param name="task">Task</param>
         public void SetTask(Task<TRes> task)
@@ -795,7 +797,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Метод исполнения задачи
+        /// Runs this work item (internal method)
         /// </summary>
         protected sealed override void RunInner()
         {
@@ -809,7 +811,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Уведомление об отмене операции
+        /// Notifies that work item was cancelled (internal method)
         /// </summary>
         protected sealed override void CancelInner()
         {
