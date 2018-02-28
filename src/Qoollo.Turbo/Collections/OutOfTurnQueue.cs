@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,15 +18,6 @@ namespace Qoollo.Turbo.Collections
         private readonly CircularList<T> _circularList;
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            Contract.Invariant(_circularList != null);
-        }
-
-        /// <summary>
         /// OutOfTurnQueue constructor
         /// </summary>
         public OutOfTurnQueue()
@@ -41,7 +31,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="capacity">Initial capacity</param>
         public OutOfTurnQueue(int capacity)
         {
-            Contract.Requires<ArgumentException>(capacity >= 0);
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity), "capacity cannot be negative");
 
             _circularList = new CircularList<T>(capacity);
         }
@@ -52,7 +43,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="collection">The collection whose elements are copied to the new queue</param>
         public OutOfTurnQueue(IEnumerable<T> collection)
         {
-            Contract.Requires<ArgumentNullException>(collection != null);
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             _circularList = new CircularList<T>(collection);
         }
@@ -88,9 +80,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="index">Starting index</param>
         public void CopyTo(T[] array, int index)
         {
-            Contract.Requires(array != null);
-            Contract.Requires(index >= 0);
-            Contract.Requires(index <= array.Length - this.Count);
+            TurboContract.Requires(array != null, conditionString: "array != null");
+            TurboContract.Requires(index >= 0, conditionString: "index >= 0");
+            TurboContract.Requires(index <= array.Length - this.Count, conditionString: "index <= array.Length - this.Count");
 
             _circularList.CopyTo(array, index);
         }
@@ -117,7 +109,8 @@ namespace Qoollo.Turbo.Collections
         /// Adds an object to the head of the queue
         /// </summary>
         /// <param name="item">The item to add to the queue</param>
-        [Obsolete("Method was renamed. Consider to use 'EnqueueFirst' instead")]
+        [Obsolete("Method was renamed. Consider to use 'EnqueueFirst' instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void EnqueueToFront(T item)
         {
             _circularList.AddFirst(item);
@@ -141,7 +134,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The item that is removed from the head of the queue</returns>
         public T Dequeue()
         {
-            Contract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
 
             return _circularList.RemoveFirst();
         }
@@ -163,7 +156,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>A new array containing elements copied from the queue</returns>
         public T[] ToArray()
         {
-            Contract.Ensures(Contract.Result<T[]>() != null);
+            TurboContract.Ensures(TurboContract.Result<T[]>() != null);
 
             return _circularList.ToArray();
         }

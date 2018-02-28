@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -277,9 +276,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Сделать пометку, что данный поток должен удалиться
+        /// Attempts to mark thread as ready for termination (resere die slot)
         /// </summary>
-        /// <returns>true - удалось, false - условие удаления было нарушено</returns>
+        /// <returns>true - termination slot was reserved sucessfully, false - reserving conditions are violated</returns>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private bool TryRequestDieSlot()
         {
@@ -298,9 +297,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return false;
         }
         /// <summary>
-        /// Вернуть пометку, что поток должен удалиться (когда уже удалён)
+        /// Returns die slot after thread termination
         /// </summary>
-        /// <returns>Успешность</returns>
+        /// <returns>Was successful</returns>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private bool TryReturnDieSlot()
         {
@@ -321,11 +320,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Хэндлер удаления потока из пула
+        /// Handles thread removing event and performs required action
         /// </summary>
-        /// <param name="elem">Удаляемый элемент</param>
+        /// <param name="elem">Thread to be removed</param>
         protected override void OnThreadRemove(Thread elem)
         {
+            TurboContract.Requires(elem != null, conditionString: "elem != null");
+
             base.OnThreadRemove(elem);
 
             if (Volatile.Read(ref _waitForDestroyThreadCount) > 0)
@@ -334,9 +335,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Проверяет, должен ли поток завершится и уменьшает счётчик ожидающих завершение потоков
+        /// Checks, whether the current thread should be terminated and if so it is request a dia slot
         /// </summary>
-        /// <returns>Должен ли завершиться</returns>
+        /// <returns>True - current thread should be terminated (should exit processing loop)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool ShouldIDie()
         {
@@ -378,7 +379,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
                     }
                     else
                     {
-                        Debug.Assert(token.IsCancellationRequested);
+                        TurboContract.Assert(token.IsCancellationRequested, conditionString: "token.IsCancellationRequested");
                     }
                 }
             }
@@ -405,11 +406,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Функция для обслуживающего потока.
-        /// Отслеживаем ситуацию, когда пул завис и пытаемся решить вопрос расширением вместимости очереди.
+        /// Management function. Tracks the condition when the pool is dead-locked and attempts to increase the capacity of the work queue
         /// </summary>
-        /// <param name="elapsedMs">Прошедшее с момента последней обработки время</param>
-        /// <returns>Сделана ли обработка</returns>
+        /// <param name="elapsedMs">Elapsed time interval from the previous call</param>
+        /// <returns>True - processing completed</returns>
         private bool ManagementThreadProc(int elapsedMs)
         {
             if (State == ThreadPoolState.Stopped)
@@ -438,6 +438,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <param name="item">Thread pool work item</param>
         protected sealed override void AddWorkItem(ThreadPoolWorkItem item)
         {
+            TurboContract.Requires(item != null, conditionString: "item != null");
+
             CheckDisposed();
             if (IsAddingCompleted)
                 throw new InvalidOperationException("Adding was completed for ThreadPool: " + Name);
@@ -452,6 +454,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <returns>True if work item was added to the queue, otherwise false</returns>
         protected sealed override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
+            TurboContract.Requires(item != null, conditionString: "item != null");
+
             if (State == ThreadPoolState.Stopped || IsAddingCompleted)
                 return false;
 
@@ -463,6 +467,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
 
+#if DEBUG
         /// <summary>
         /// Finalizer
         /// </summary>
@@ -470,5 +475,6 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         {
             Dispose(false);
         }
+#endif
     }
 }

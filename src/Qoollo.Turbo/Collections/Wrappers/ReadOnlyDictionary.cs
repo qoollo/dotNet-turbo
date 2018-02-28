@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,14 +32,6 @@ namespace Qoollo.Turbo.Collections
 
         private Dictionary<TKey, TValue> _dictionary;
 
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            Contract.Invariant(_dictionary != null);
-        }
 
         /// <summary>
         /// ReadOnlyDictionary constructor
@@ -56,7 +47,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="dict">The dictionary to wrap</param>
         public ReadOnlyDictionary(Dictionary<TKey, TValue> dict)
         {
-            Contract.Requires<ArgumentNullException>(dict != null);
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
 
             _dictionary = dict;
         }
@@ -67,7 +59,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="srcDict">The source of elements to the newly created read-only dictionary (elements will be copied)</param>
         public ReadOnlyDictionary(IDictionary<TKey, TValue> srcDict)
         {
-            Contract.Requires<ArgumentNullException>(srcDict != null);
+            if (srcDict == null)
+                throw new ArgumentNullException(nameof(srcDict));
 
             _dictionary = new Dictionary<TKey,TValue>(srcDict);
         }
@@ -79,8 +72,10 @@ namespace Qoollo.Turbo.Collections
         /// <param name="keyComparer">Key comparer</param>
         public ReadOnlyDictionary(IDictionary<TKey, TValue> srcDict, IEqualityComparer<TKey> keyComparer)
         {
-            Contract.Requires<ArgumentNullException>(srcDict != null);
-            Contract.Requires<ArgumentNullException>(keyComparer != null);
+            if (srcDict == null)
+                throw new ArgumentNullException(nameof(srcDict));
+            if (keyComparer == null)
+                throw new ArgumentNullException(nameof(keyComparer));
 
             _dictionary = new Dictionary<TKey, TValue>(srcDict, keyComparer);
         }

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -43,7 +42,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             /// <param name="parent">Очередь - владелец сегмента</param>
             public Segment(ThreadPoolConcurrentQueue parent)
             {
-                Contract.Requires(parent != null);
+                TurboContract.Requires(parent != null, conditionString: "parent != null");
 
                 _parent = parent;
                 _data = new ThreadPoolWorkItem[SegmentSize];
@@ -74,9 +73,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             private void Grow()
             {
                 var tmp = new Segment(_parent);
-                Debug.Assert(_next == null);
+                TurboContract.Assert(_next == null, conditionString: "_next == null");
                 _next = tmp;
-                Debug.Assert(_parent._tail == this);
+                TurboContract.Assert(_parent._tail == this, conditionString: "_parent._tail == this");
                 _parent._tail = tmp;
             }
 
@@ -88,7 +87,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             /// <returns>Удалось ли добавить</returns>
             public bool TryAdd(ThreadPoolWorkItem item)
             {
-                Contract.Requires(item != null);
+                TurboContract.Requires(item != null, conditionString: "item != null");
 
                 if (!HasFreeSpace(_tail))
                     return false;
@@ -118,7 +117,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             /// <returns>Удалось ли сделать выборку</returns>
             public bool TryTake(out ThreadPoolWorkItem item)
             {
-                Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
+                TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
 
                 SpinWait sw = new SpinWait();
                 int head = _head;
@@ -162,8 +161,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_head != null);
-            Contract.Invariant(_tail != null);
+            TurboContract.Invariant(_head != null);
+            TurboContract.Invariant(_tail != null);
         }
 
         /// <summary>
@@ -214,7 +213,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="item">Элемент</param>
         public void Add(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             SpinWait sw = new SpinWait();
             Segment tail = _tail;
@@ -233,7 +232,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Удалось ли выбрать</returns>
         public bool TryTake(out ThreadPoolWorkItem item)
         {
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
 
             while (this.HasElements())
             {

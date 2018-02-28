@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,7 +37,7 @@ namespace Qoollo.Turbo.Collections
         public ReadOnlyListWrapper(IList<T> list)
             : base(list)
         {
-            Contract.Requires<ArgumentNullException>(list != null);
+            TurboContract.Requires(list != null, conditionString: "list != null");
         }
 
 
@@ -67,7 +66,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="action">Action</param>
         public void ForEach(Action<T> action)
         {
-            Contract.Requires<ArgumentNullException>(action != null);
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
 
             for (int i = 0; i < Items.Count; i++)
                 action(Items[i]);
@@ -82,7 +82,8 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool Exists(Predicate<T> match)
         {
-            Contract.Requires<ArgumentNullException>(match != null);
+            if (match == null)
+                throw new ArgumentNullException(nameof(match));
 
             for (int i = 0; i < Items.Count; i++)
                 if (match(Items[i]))
@@ -99,7 +100,8 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public T Find(Predicate<T> match)
         {
-            Contract.Requires<ArgumentNullException>(match != null);
+            if (match == null)
+                throw new ArgumentNullException(nameof(match));
 
             for (int i = 0; i < Items.Count; i++)
             {
@@ -120,7 +122,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>Created TransformedReadOnlyListWrapper</returns>
         public TransformedReadOnlyListWrapper<T, TOut> AsTransformedReadOnlyList<TOut>(Func<T, TOut> selector)
         {
-            Contract.Requires(selector != null);
+            TurboContract.Requires(selector != null, conditionString: "selector != null");
 
             return new TransformedReadOnlyListWrapper<T, TOut>(Items, selector);
         }

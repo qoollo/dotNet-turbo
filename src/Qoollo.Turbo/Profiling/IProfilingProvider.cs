@@ -7,196 +7,196 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Profiling
 {
     /// <summary>
-    /// Интерфейс профилировщика для сервисных классов
+    /// Interface to profile Turbo classes
     /// </summary>
     public interface IProfilingProvider
     {
         /// <summary>
-        /// Создан объектный пул
+        /// Notifies about creation of Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
+        /// <param name="poolName">Name of the created Object Pool</param>
         void ObjectPoolCreated(string poolName);
         /// <summary>
-        /// Уничтожен объектный пул
+        /// Notifies about destruction of Object Pool
         /// </summary>
-        /// <param name="poolName">Имя</param>
-        /// <param name="fromFinalizer">Из финализатора</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="fromFinalizer">Is destruction called from finalizer</param>
         void ObjectPoolDisposed(string poolName, bool fromFinalizer);
         /// <summary>
-        /// Оценка числа арендованных элементов (вызывается при аренде нового элемента)
+        /// Notifies about renting an element from Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentRentedCount">Текущее число арендованных элементов</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentRentedCount">Number of rented element</param>
         void ObjectPoolElementRented(string poolName, int currentRentedCount);
         /// <summary>
-        /// Оценка числа арендованных элементов (вызывается при освобождении арендованного элемента)
+        /// Notifies about releasing an element back to the Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentRentedCount">Текущее число арендованных элементов</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentRentedCount">Number of rented element</param>
         void ObjectPoolElementReleased(string poolName, int currentRentedCount);
         /// <summary>
-        /// Уведомление о том, что элемент пула перешёл в непригодное для использования состояние
+        /// Notifies about faulting of element (element has changed its state and cannot be used anymore)
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentElementCount">Текущее число элементов в пуле</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentElementCount">Number of elements stored in Object Pool</param>
         void ObjectPoolElementFaulted(string poolName, int currentElementCount);
         /// <summary>
-        /// Создан новый элемент в пуле
+        /// Notifies about adding new element to the Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentElementCount">Текущее число элементов в пуле</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentElementCount">Number of elements stored in Object Pool</param>
         void ObjectPoolElementCreated(string poolName, int currentElementCount);
         /// <summary>
-        /// Элемент пула уничтожен
+        /// Notifies about destruction of the element inside Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentElementCount">Текущее число элементов в пуле</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentElementCount">Number of elements stored in Object Pool</param>
         void ObjectPoolElementDestroyed(string poolName, int currentElementCount);
         /// <summary>
-        /// Оценка времени, в течение которого элемент пула был арендован
+        /// Measures the time element was rented
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="time">Время удержания</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="time">Period of time when element was rented</param>
         void ObjectPoolElementRentedTime(string poolName, TimeSpan time);
 
 
 
 
         /// <summary>
-        /// Создан асинхронный обработчик
+        /// Notifies about QueueAsyncProcessor creation
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
+        /// <param name="queueProcName">Name of created QueueAsyncProcessor</param>
         void QueueAsyncProcessorCreated(string queueProcName);
         /// <summary>
-        /// Асинхронный обработчик остановлен
+        /// Notifies about stopping of QueueAsyncProcessor
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="fromFinalizer">Остановка из финализатора</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="fromFinalizer">Is stopped from finalizer</param>
         void QueueAsyncProcessorDisposed(string queueProcName, bool fromFinalizer);
         /// <summary>
-        /// Запустился поток в асинхронном обработчике
+        /// Notifies about starting of thread inside QueueAsyncProcessor
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
-        /// <param name="expectedThreadCount">Ожидаемое число потоков</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="curThreadCount">Current number of active threads</param>
+        /// <param name="expectedThreadCount">Expected total number of threads</param>
         void QueueAsyncProcessorThreadStart(string queueProcName, int curThreadCount, int expectedThreadCount);
         /// <summary>
-        /// Остановился поток в асинхронном обработчике (либо по завершению, либо из-за ошибки)
+        /// Notifies about stopping of thread inside QueueAsyncProcessor (due to normal stopping procedure or due to unhandled exception)
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
-        /// <param name="expectedThreadCount">Ожидаемое число потоков</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="curThreadCount">Current number of active threads</param>
+        /// <param name="expectedThreadCount">Expected total number of threads</param>
         void QueueAsyncProcessorThreadStop(string queueProcName, int curThreadCount, int expectedThreadCount);
         /// <summary>
-        /// Оценка времени обработки элемента в асинхронном обработчике
+        /// Measures the time of single element processing
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="time">Время обработки</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="time">Processing period</param>
         void QueueAsyncProcessorElementProcessed(string queueProcName, TimeSpan time);
         /// <summary>
-        /// Оценка числа элементов в очереди на обработку внутри асинхронного обработчика
+        /// Notifies about adding new element to the queue of QueueAsyncProcessor
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="newElementCount">Число элементов в очереди</param>
-        /// <param name="maxElementCount">Максимальное число элементов</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="newElementCount">Number of elements inside queue</param>
+        /// <param name="maxElementCount">Maximum number of elements inside queue (negative means unbounded)</param>
         void QueueAsyncProcessorElementCountIncreased(string queueProcName, int newElementCount, int maxElementCount);
         /// <summary>
-        /// Оценка числа элементов в очереди на обработку внутри асинхронного обработчика
+        /// Notifies about taking element from the queue of QueueAsyncProcessor
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="newElementCount">Число элементов в очереди</param>
-        /// <param name="maxElementCount">Максимальное число элементов</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="newElementCount">Number of elements inside queue</param>
+        /// <param name="maxElementCount">Maximum number of elements inside queue (negative means unbounded)</param>
         void QueueAsyncProcessorElementCountDecreased(string queueProcName, int newElementCount, int maxElementCount);
         /// <summary>
-        /// Вызывается при отбрасывании элемента в TryAdd в случае переполненности очереди
+        /// Notifies that element was not added to the queue by <see cref="Qoollo.Turbo.Threading.QueueProcessing.QueueAsyncProcessorBase{T}.TryAdd(T)"/> 
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="currentElementCount">Число элементов в очереди</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="currentElementCount">Number of elements inside queue</param>
         void QueueAsyncProcessorElementRejectedInTryAdd(string queueProcName, int currentElementCount);
 
 
 
         /// <summary>
-        /// Пул потоков создан
+        /// Notifies about creation of ThreadPool
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
+        /// <param name="threadPoolName">Name of the created Thread Pool</param>
         void ThreadPoolCreated(string threadPoolName);
         /// <summary>
-        /// Пул потоков остановлен
+        /// Notifies about stopping of ThreadPool
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="fromFinalizer">Остановка из финализатора</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="fromFinalizer">Is stoping from finalizer</param>
         void ThreadPoolDisposed(string threadPoolName, bool fromFinalizer);
         /// <summary>
-        /// Изменилось число потоков в пуле
+        /// Notifies about changing of number of threads inside ThreadPool
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="curThreadCount">Current number of threads inside ThreadPool</param>
         void ThreadPoolThreadCountChange(string threadPoolName, int curThreadCount);
         /// <summary>
-        /// Оценка времени ожидания выполнения задачи в пуле потоков (время нахождения в очереди)
+        /// Measures the time when work item was waiting inside queue
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="time">Время нахождения в очереди</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="time">Period of waiting</param>
         void ThreadPoolWaitingInQueueTime(string threadPoolName, TimeSpan time);
         /// <summary>
-        /// Оценка времени выполнения задачи в пуле потоков
+        /// Measures the exection time of work item inside ThreadPool
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="time">Время исполнения</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="time">Period of execution</param>
         void ThreadPoolWorkProcessed(string threadPoolName, TimeSpan time);
         /// <summary>
-        /// Сигнал об отмене задачи в пуле
+        /// Notifies about cancellation of work item
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
         void ThreadPoolWorkCancelled(string threadPoolName);
         /// <summary>
-        /// Изменилось число задач в очереди на обработку в пуле потоков
+        /// Notifies about adding new work item to the Thread Pool queue
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="globalQueueItemCount">Текущее число задач в общей очереди</param>
-        /// <param name="maxItemCount">Максимальное число задач в очереди</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="globalQueueItemCount">Current number of work items inside queue</param>
+        /// <param name="maxItemCount">Maximum number of work items inside queue</param>
         void ThreadPoolWorkItemsCountIncreased(string threadPoolName, int globalQueueItemCount, int maxItemCount);
         /// <summary>
         /// Изменилось число задач в очереди на обработку в пуле потоков
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="globalQueueItemCount">Текущее число задач в общей очереди</param>
-        /// <param name="maxItemCount">Максимальное число задач в очереди</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="globalQueueItemCount">Current number of work items inside queue</param>
+        /// <param name="maxItemCount">Maximum number of work items inside queue</param>
         void ThreadPoolWorkItemsCountDecreased(string threadPoolName, int globalQueueItemCount, int maxItemCount);
         /// <summary>
-        /// Вызывается при отбрасывании задачи в TryAdd в случае переполненности очереди
+        /// Notifies that work item was not enqueued by <see cref="Qoollo.Turbo.Threading.ThreadPools.ThreadPoolBase.TryRun(Action)"/> 
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
         void ThreadPoolWorkItemRejectedInTryAdd(string threadPoolName);
 
 
 
         /// <summary>
-        /// Создан менеджер группы потоков
+        /// Notifies about creation of ThreadSetManager
         /// </summary>
-        /// <param name="threadSetManagerName">Имя менеджера</param>
-        /// <param name="initialThreadCount">Указанное число потоков</param>
+        /// <param name="threadSetManagerName">Name of the created ThreadSetManager</param>
+        /// <param name="initialThreadCount">Number of managed threads</param>
         void ThreadSetManagerCreated(string threadSetManagerName, int initialThreadCount);
         /// <summary>
-        /// Менеджер группы потоков остановлен
+        /// Notifies about stopping of ThreadSetManager
         /// </summary>
-        /// <param name="threadSetManagerName">Имя менеджера</param>
-        /// <param name="fromFinalizer">Остановка из финализатора</param>
+        /// <param name="threadSetManagerName">Name of the ThreadSetManager</param>
+        /// <param name="fromFinalizer">Is stopping from finalizer</param>
         void ThreadSetManagerDisposed(string threadSetManagerName, bool fromFinalizer);
         /// <summary>
-        /// Запустился поток в менеджере группы потоков
+        /// Notifies about thread starting inside ThreadSetManager
         /// </summary>
-        /// <param name="threadSetManagerName">Имя менеджера</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
-        /// <param name="expectedThreadCount">Ожидаемое число потоков</param>
+        /// <param name="threadSetManagerName">Name of the ThreadSetManager</param>
+        /// <param name="curThreadCount">Current number of threads inside ThreadSetManager</param>
+        /// <param name="expectedThreadCount">Expected number of threads</param>
         void ThreadSetManagerThreadStart(string threadSetManagerName, int curThreadCount, int expectedThreadCount);
         /// <summary>
-        /// Остановился поток в менеджере группы потоков (либо по завершению, либо из-за ошибки)
+        /// Notifies about stopping of thread inside ThreadSetManager
         /// </summary>
-        /// <param name="threadSetManagerName">Имя менеджера</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
-        /// <param name="expectedThreadCount">Ожидаемое число потоков</param>
+        /// <param name="threadSetManagerName">Name of the ThreadSetManager</param>
+        /// <param name="curThreadCount">Current number of threads inside ThreadSetManager</param>
+        /// <param name="expectedThreadCount">Expected number of threads</param>
         void ThreadSetManagerThreadStop(string threadSetManagerName, int curThreadCount, int expectedThreadCount);
     }
 }

@@ -7,27 +7,27 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Profiling
 {
     /// <summary>
-    /// Обёртка над внешним IProfilingProvider, перехватывающая исключения и закрывающий процесс
+    /// Wrapper for IProfilingProvider that catches all exception
     /// </summary>
     public class ProfilingProviderWrapper : IProfilingProvider
     {
         private readonly IProfilingProvider _wrappedProvider;
 
         /// <summary>
-        /// Конструктор ProfilingProviderWrapper
+        /// ProfilingProviderWrapper constructor
         /// </summary>
-        /// <param name="wrappedProvider">Оборачиваемый профайлер</param>
+        /// <param name="wrappedProvider">Profiler to be wrapped</param>
         public ProfilingProviderWrapper(IProfilingProvider wrappedProvider)
         {
             if (wrappedProvider == null)
-                throw new ArgumentNullException("wrappedProvider");
+                throw new ArgumentNullException(nameof(wrappedProvider));
 
             _wrappedProvider = wrappedProvider;
         }
         /// <summary>
-        /// Обработчик исключения
+        /// Exception handling procedure
         /// </summary>
-        /// <param name="ex">Исключение (может быть null)</param>
+        /// <param name="ex">Exception (can be null)</param>
         protected virtual void ProcessException(Exception ex)
         {
             if (ex != null)
@@ -39,79 +39,79 @@ namespace Qoollo.Turbo.Profiling
 
 
         /// <summary>
-        /// Создан объектный пул
+        /// Notifies about creation of Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
+        /// <param name="poolName">Name of the created Object Pool</param>
         public void ObjectPoolCreated(string poolName)
         {
             try { _wrappedProvider.ObjectPoolCreated(poolName); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Уничтожен объектный пул
+        /// Notifies about destruction of Object Pool
         /// </summary>
-        /// <param name="poolName">Имя</param>
-        /// <param name="fromFinalizer">Из финализатора</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="fromFinalizer">Is destruction called from finalizer</param>
         public void ObjectPoolDisposed(string poolName, bool fromFinalizer)
         {
             try { _wrappedProvider.ObjectPoolDisposed(poolName, fromFinalizer); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Оценка числа арендованных элементов (вызывается при аренде нового элемента)
+        /// Notifies about renting an element from Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentRentedCount">Текущее число арендованных элементов</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentRentedCount">Number of rented element</param>
         public void ObjectPoolElementRented(string poolName, int currentRentedCount)
         {
             try { _wrappedProvider.ObjectPoolElementRented(poolName, currentRentedCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Оценка числа арендованных элементов (вызывается при освобождении арендованного элемента)
+        /// Notifies about releasing an element back to the Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentRentedCount">Текущее число арендованных элементов</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentRentedCount">Number of rented element</param>
         public void ObjectPoolElementReleased(string poolName, int currentRentedCount)
         {
             try { _wrappedProvider.ObjectPoolElementReleased(poolName, currentRentedCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Уведомление о том, что элемент пула перешёл в непригодное для использования состояние
+        /// Notifies about faulting of element (element has changed its state and cannot be used anymore)
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentElementCount">Текущее число элементов в пуле</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentElementCount">Number of elements stored in Object Pool</param>
         public void ObjectPoolElementFaulted(string poolName, int currentElementCount)
         {
             try { _wrappedProvider.ObjectPoolElementFaulted(poolName, currentElementCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Создан новый элемент в пуле
+        /// Notifies about adding new element to the Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentElementCount">Текущее число элементов в пуле</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentElementCount">Number of elements stored in Object Pool</param>
         public void ObjectPoolElementCreated(string poolName, int currentElementCount)
         {
             try { _wrappedProvider.ObjectPoolElementCreated(poolName, currentElementCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Элемент пула уничтожен
+        /// Notifies about destruction of the element inside Object Pool
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="currentElementCount">Текущее число элементов в пуле</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="currentElementCount">Number of elements stored in Object Pool</param>
         public void ObjectPoolElementDestroyed(string poolName, int currentElementCount)
         {
             try { _wrappedProvider.ObjectPoolElementDestroyed(poolName, currentElementCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Оценка времени, в течение которого элемент пула был арендован
+        /// Measures the time element was rented
         /// </summary>
-        /// <param name="poolName">Имя пула</param>
-        /// <param name="time">Время удержания</param>
+        /// <param name="poolName">Name of the Object Pool</param>
+        /// <param name="time">Period of time when element was rented</param>
         public void ObjectPoolElementRentedTime(string poolName, TimeSpan time)
         {
             try { _wrappedProvider.ObjectPoolElementRentedTime(poolName, time); }
@@ -121,83 +121,83 @@ namespace Qoollo.Turbo.Profiling
 
 
         /// <summary>
-        /// Создан асинхронный обработчик
+        /// Notifies about QueueAsyncProcessor creation
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
+        /// <param name="queueProcName">Name of created QueueAsyncProcessor</param>
         public void QueueAsyncProcessorCreated(string queueProcName)
         {
             try { _wrappedProvider.QueueAsyncProcessorCreated(queueProcName); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Асинхронный обработчик остановлен
+        /// Notifies about stopping of QueueAsyncProcessor
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="fromFinalizer">Остановка из финализатора</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="fromFinalizer">Is stopped from finalizer</param>
         public void QueueAsyncProcessorDisposed(string queueProcName, bool fromFinalizer)
         {
             try { _wrappedProvider.QueueAsyncProcessorDisposed(queueProcName, fromFinalizer); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Запустился поток в асинхронном обработчике
+        /// Notifies about starting of thread inside QueueAsyncProcessor
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
-        /// <param name="expectedThreadCount">Ожидаемое число потоков</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="curThreadCount">Current number of active threads</param>
+        /// <param name="expectedThreadCount">Expected total number of threads</param>
         public void QueueAsyncProcessorThreadStart(string queueProcName, int curThreadCount, int expectedThreadCount)
         {
             try { _wrappedProvider.QueueAsyncProcessorThreadStart(queueProcName, curThreadCount, expectedThreadCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Остановился поток в асинхронном обработчике (либо по завершению, либо из-за ошибки)
+        /// Notifies about stopping of thread inside QueueAsyncProcessor (due to normal stopping procedure or due to unhandled exception)
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
-        /// <param name="expectedThreadCount">Ожидаемое число потоков</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="curThreadCount">Current number of active threads</param>
+        /// <param name="expectedThreadCount">Expected total number of threads</param>
         public void QueueAsyncProcessorThreadStop(string queueProcName, int curThreadCount, int expectedThreadCount)
         {
             try { _wrappedProvider.QueueAsyncProcessorThreadStop(queueProcName, curThreadCount, expectedThreadCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Оценка времени обработки элемента в асинхронном обработчике
+        /// Measures the time of single element processing
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="time">Время обработки</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="time">Processing period</param>
         public void QueueAsyncProcessorElementProcessed(string queueProcName, TimeSpan time)
         {
             try { _wrappedProvider.QueueAsyncProcessorElementProcessed(queueProcName, time); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Оценка числа элементов в очереди на обработку внутри асинхронного обработчика
+        /// Notifies about adding new element to the queue of QueueAsyncProcessor
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="newElementCount">Число элементов в очереди</param>
-        /// <param name="maxElementCount">Максимальное число элементов</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="newElementCount">Number of elements inside queue</param>
+        /// <param name="maxElementCount">Maximum number of elements inside queue (negative means unbounded)</param>
         public void QueueAsyncProcessorElementCountIncreased(string queueProcName, int newElementCount, int maxElementCount)
         {
             try { _wrappedProvider.QueueAsyncProcessorElementCountIncreased(queueProcName, newElementCount, maxElementCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Оценка числа элементов в очереди на обработку внутри асинхронного обработчика
+        /// Notifies about taking element from the queue of QueueAsyncProcessor
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="newElementCount">Число элементов в очереди</param>
-        /// <param name="maxElementCount">Максимальное число элементов</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="newElementCount">Number of elements inside queue</param>
+        /// <param name="maxElementCount">Maximum number of elements inside queue (negative means unbounded)</param>
         public void QueueAsyncProcessorElementCountDecreased(string queueProcName, int newElementCount, int maxElementCount)
         {
             try { _wrappedProvider.QueueAsyncProcessorElementCountDecreased(queueProcName, newElementCount, maxElementCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Вызывается при отбрасывании элемента в TryAdd в случае переполненности очереди
+        /// Notifies that element was not added to the queue by <see cref="Qoollo.Turbo.Threading.QueueProcessing.QueueAsyncProcessorBase{T}.TryAdd(T)"/> 
         /// </summary>
-        /// <param name="queueProcName">Имя обработчика</param>
-        /// <param name="currentElementCount">Число элементов в очереди</param>
+        /// <param name="queueProcName">Name of QueueAsyncProcessor</param>
+        /// <param name="currentElementCount">Number of elements inside queue</param>
         public void QueueAsyncProcessorElementRejectedInTryAdd(string queueProcName, int currentElementCount)
         {
             try { _wrappedProvider.QueueAsyncProcessorElementRejectedInTryAdd(queueProcName, currentElementCount); }
@@ -207,69 +207,69 @@ namespace Qoollo.Turbo.Profiling
 
 
         /// <summary>
-        /// Пул потоков создан
+        /// Notifies about creation of ThreadPool
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
+        /// <param name="threadPoolName">Name of the created Thread Pool</param>
         public void ThreadPoolCreated(string threadPoolName)
         {
             try { _wrappedProvider.ThreadPoolCreated(threadPoolName); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Пул потоков остановлен
+        /// Notifies about stopping of ThreadPool
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="fromFinalizer">Остановка из финализатора</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="fromFinalizer">Is stoping from finalizer</param>
         public void ThreadPoolDisposed(string threadPoolName, bool fromFinalizer)
         {
             try { _wrappedProvider.ThreadPoolDisposed(threadPoolName, fromFinalizer); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Изменилось число потоков в пуле
+        /// Notifies about changing of number of threads inside ThreadPool
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="curThreadCount">Current number of threads inside ThreadPool</param>
         public void ThreadPoolThreadCountChange(string threadPoolName, int curThreadCount)
         {
             try { _wrappedProvider.ThreadPoolThreadCountChange(threadPoolName, curThreadCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Оценка времени ожидания выполнения задачи в пуле потоков (время нахождения в очереди)
+        /// Measures the time when work item was waiting inside queue
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="time">Время нахождения в очереди</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="time">Period of waiting</param>
         public void ThreadPoolWaitingInQueueTime(string threadPoolName, TimeSpan time)
         {
             try { _wrappedProvider.ThreadPoolWaitingInQueueTime(threadPoolName, time); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Оценка времени выполнения задачи в пуле потоков
+        /// Measures the exection time of work item inside ThreadPool
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="time">Время исполнения</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="time">Period of execution</param>
         public void ThreadPoolWorkProcessed(string threadPoolName, TimeSpan time)
         {
             try { _wrappedProvider.ThreadPoolWorkProcessed(threadPoolName, time); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Сигнал об отмене задачи в пуле
+        /// Notifies about cancellation of work item
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
         public void ThreadPoolWorkCancelled(string threadPoolName)
         {
             try { _wrappedProvider.ThreadPoolWorkCancelled(threadPoolName); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Изменилось число задач в очереди на обработку в пуле потоков
+        /// Notifies about adding new work item to the Thread Pool queue
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="globalQueueItemCount">Текущее число задач в общей очереди</param>
-        /// <param name="maxItemCount">Максимальное число задач в очереди</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="globalQueueItemCount">Current number of work items inside queue</param>
+        /// <param name="maxItemCount">Maximum number of work items inside queue</param>
         public void ThreadPoolWorkItemsCountIncreased(string threadPoolName, int globalQueueItemCount, int maxItemCount)
         {
             try { _wrappedProvider.ThreadPoolWorkItemsCountIncreased(threadPoolName, globalQueueItemCount, maxItemCount); }
@@ -278,18 +278,18 @@ namespace Qoollo.Turbo.Profiling
         /// <summary>
         /// Изменилось число задач в очереди на обработку в пуле потоков
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
-        /// <param name="globalQueueItemCount">Текущее число задач в общей очереди</param>
-        /// <param name="maxItemCount">Максимальное число задач в очереди</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
+        /// <param name="globalQueueItemCount">Current number of work items inside queue</param>
+        /// <param name="maxItemCount">Maximum number of work items inside queue</param>
         public void ThreadPoolWorkItemsCountDecreased(string threadPoolName, int globalQueueItemCount, int maxItemCount)
         {
             try { _wrappedProvider.ThreadPoolWorkItemsCountDecreased(threadPoolName, globalQueueItemCount, maxItemCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Вызывается при отбрасывании задачи в TryAdd в случае переполненности очереди
+        /// Notifies that work item was not enqueued by <see cref="Qoollo.Turbo.Threading.ThreadPools.ThreadPoolBase.TryRun(Action)"/> 
         /// </summary>
-        /// <param name="threadPoolName">Имя пула потоков</param>
+        /// <param name="threadPoolName">Name of the Thread Pool</param>
         public void ThreadPoolWorkItemRejectedInTryAdd(string threadPoolName)
         {
             try { _wrappedProvider.ThreadPoolWorkItemRejectedInTryAdd(threadPoolName); }
@@ -300,42 +300,42 @@ namespace Qoollo.Turbo.Profiling
 
 
         /// <summary>
-        /// Создан менеджер группы потоков
+        /// Notifies about creation of ThreadSetManager
         /// </summary>
-        /// <param name="threadSetManagerName">Имя менеджера</param>
-        /// <param name="initialThreadCount">Указанное число потоков</param>
+        /// <param name="threadSetManagerName">Name of the created ThreadSetManager</param>
+        /// <param name="initialThreadCount">Number of managed threads</param>
         public void ThreadSetManagerCreated(string threadSetManagerName, int initialThreadCount)
         {
             try { _wrappedProvider.ThreadSetManagerCreated(threadSetManagerName, initialThreadCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Менеджер группы потоков остановлен
+        /// Notifies about stopping of ThreadSetManager
         /// </summary>
-        /// <param name="threadSetManagerName">Имя менеджера</param>
-        /// <param name="fromFinalizer">Остановка из финализатора</param>
+        /// <param name="threadSetManagerName">Name of the ThreadSetManager</param>
+        /// <param name="fromFinalizer">Is stopping from finalizer</param>
         public void ThreadSetManagerDisposed(string threadSetManagerName, bool fromFinalizer)
         {
             try { _wrappedProvider.ThreadSetManagerDisposed(threadSetManagerName, fromFinalizer); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Запустился поток в менеджере группы потоков
+        /// Notifies about thread starting inside ThreadSetManager
         /// </summary>
-        /// <param name="threadSetManagerName">Имя менеджера</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
-        /// <param name="expectedThreadCount">Ожидаемое число потоков</param>
+        /// <param name="threadSetManagerName">Name of the ThreadSetManager</param>
+        /// <param name="curThreadCount">Current number of threads inside ThreadSetManager</param>
+        /// <param name="expectedThreadCount">Expected number of threads</param>
         public void ThreadSetManagerThreadStart(string threadSetManagerName, int curThreadCount, int expectedThreadCount)
         {
             try { _wrappedProvider.ThreadSetManagerThreadStart(threadSetManagerName, curThreadCount, expectedThreadCount); }
             catch (Exception ex) { ProcessException(ex); }
         }
         /// <summary>
-        /// Остановился поток в менеджере группы потоков (либо по завершению, либо из-за ошибки)
+        /// Notifies about stopping of thread inside ThreadSetManager
         /// </summary>
-        /// <param name="threadSetManagerName">Имя менеджера</param>
-        /// <param name="curThreadCount">Текущее число потоков</param>
-        /// <param name="expectedThreadCount">Ожидаемое число потоков</param>
+        /// <param name="threadSetManagerName">Name of the ThreadSetManager</param>
+        /// <param name="curThreadCount">Current number of threads inside ThreadSetManager</param>
+        /// <param name="expectedThreadCount">Expected number of threads</param>
         public void ThreadSetManagerThreadStop(string threadSetManagerName, int curThreadCount, int expectedThreadCount)
         {
             try { _wrappedProvider.ThreadSetManagerThreadStop(threadSetManagerName, curThreadCount, expectedThreadCount); }

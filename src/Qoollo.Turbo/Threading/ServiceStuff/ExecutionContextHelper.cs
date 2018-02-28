@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -11,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Threading.ServiceStuff
 {
     /// <summary>
-    /// Помошник в работе с контекстом исполнения
+    /// Helper to execute private methods of ExecutionContext
     /// </summary>
     internal static class ExecutionContextHelper
     {
@@ -23,35 +22,93 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 
         private static readonly object _syncObj = new object();
 
+
         /// <summary>
-        /// Создаёт динамчисекий метод для захвата ExecutionContext по ускоренному сценарию
+        /// Fallback method for CaptureContextNoSyncContext
         /// </summary>
-        /// <returns>Делегат для вызова динамического метода</returns>
-        private static CaptureContextDelegate CreateCaptureContextMethod()
+        /// <returns>Captured context</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ExecutionContext CaptureContextMethodFallback()
         {
-            var ExecContextMethod = typeof(ExecutionContext).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Single(o => o.Name == "Capture" && o.GetParameters().Length == 2);
+            return ExecutionContext.Capture();
+        }
+
+        /// <summary>
+        /// Attempts to generate dynamic method to capture ExecutionContext without SynchronizationContext
+        /// </summary>
+        /// <returns>Delegate for generated method</returns>
+        private static CaptureContextDelegate TryCreateCaptureContextMethod()
+        {
+            var execContextMethodCandidates = typeof(ExecutionContext).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Where(o => o.Name == "Capture" && o.GetParameters().Length == 2).ToList();
+            if (execContextMethodCandidates.Count != 1)
+            {
+#if NET45 || NET46
+                TurboContract.Assert(false, "ExecutionContextHelper.TryCreateCaptureContextMethod should be successful for known runtimes");
+#endif
+                return null;
+            }
 
             var method = new DynamicMethod("ExecutionContext_Capture_Internal_" + Guid.NewGuid().ToString("N"), typeof(ExecutionContext), Type.EmptyTypes, true);
-
+    
             var ilGen = method.GetILGenerator();
             var stackMark = ilGen.DeclareLocal(typeof(int));
             ilGen.Emit(OpCodes.Ldc_I4_1);
             ilGen.Emit(OpCodes.Stloc_0);
             ilGen.Emit(OpCodes.Ldloca_S, stackMark);
             ilGen.Emit(OpCodes.Ldc_I4_3);
-            ilGen.Emit(OpCodes.Call, ExecContextMethod);
+            ilGen.Emit(OpCodes.Call, execContextMethodCandidates[0]);
             ilGen.Emit(OpCodes.Ret);
 
             return (CaptureContextDelegate)method.CreateDelegate(typeof(CaptureContextDelegate));
         }
 
         /// <summary>
-        /// Создаёт динамический метод для выполнения задачи в рамках ExecutionContext
+        /// Initialize CaptureContext delegate
         /// </summary>
-        /// <returns>Делегат для вызова динамического метода</returns>
-        private static RunInContextDelegate CreateRunInContextMethod()
+        /// <returns>Initialized delegate</returns>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static CaptureContextDelegate InitCaptureContextMethod()
         {
-            var RunContextMethod = typeof(ExecutionContext).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Single(o => o.Name == "RunInternal" && o.GetParameters().Length == 4);
+            lock (_syncObj)
+            {
+                var result = Volatile.Read(ref _captureContextDelegate);
+                if (result == null)
+                {
+                    result = TryCreateCaptureContextMethod() ?? new CaptureContextDelegate(CaptureContextMethodFallback);
+                    Volatile.Write(ref _captureContextDelegate, result);
+                }
+                return result;
+            }
+        }
+
+
+        /// <summary>
+        /// Fallback for RunInContext
+        /// </summary>
+        /// <param name="context">Context</param>
+        /// <param name="callback">Callback</param>
+        /// <param name="state">State object</param>
+        /// <param name="preserveSyncCtx">Whether the current synchronization context should be preserved</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void RunInContextMethodFallback(ExecutionContext context, ContextCallback callback, object state, bool preserveSyncCtx)
+        {
+            ExecutionContext.Run(context, callback, state);
+        }
+
+        /// <summary>
+        /// Attempts to generate dynamic method to run in action in ExceutionContext
+        /// </summary>
+        /// <returns>Delegate for generated method</returns>
+        private static RunInContextDelegate TryCreateRunInContextMethod()
+        {
+            var runContextMethodCandidates = typeof(ExecutionContext).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Where(o => o.Name == "RunInternal" && o.GetParameters().Length == 4).ToList();
+            if (runContextMethodCandidates.Count != 1)
+            {
+#if NET45 || NET46
+                TurboContract.Assert(false, "ExecutionContextHelper.TryCreateRunInContextMethod should be successful for known runtimes");
+#endif
+                return null;
+            }
 
             var method = new DynamicMethod("ExecutionContext_Run_Internal_" + Guid.NewGuid().ToString("N"), typeof(void), 
                 new Type[] { typeof(ExecutionContext), typeof(ContextCallback), typeof(object), typeof(bool) }, true);
@@ -61,62 +118,56 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             ilGen.Emit(OpCodes.Ldarg_1);
             ilGen.Emit(OpCodes.Ldarg_2);
             ilGen.Emit(OpCodes.Ldarg_3);
-            ilGen.Emit(OpCodes.Call, RunContextMethod);
+            ilGen.Emit(OpCodes.Call, runContextMethodCandidates[0]);
             ilGen.Emit(OpCodes.Ret);
 
             return (RunInContextDelegate)method.CreateDelegate(typeof(RunInContextDelegate));
         }
 
         /// <summary>
-        /// Выполнить инициализацию динамчиеских методов
+        /// Initialize RunInContext delegate
         /// </summary>
+        /// <returns>Initialized delegate</returns>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void InitDynamicMethods()
+        private static RunInContextDelegate InitRunInContextMethod()
         {
             lock (_syncObj)
             {
-                if (_captureContextDelegate == null || _runInContextDelegate == null)
+                var result = Volatile.Read(ref _runInContextDelegate);
+                if (result == null)
                 {
-                    _captureContextDelegate = CreateCaptureContextMethod();
-                    _runInContextDelegate = CreateRunInContextMethod();
+                    result = TryCreateRunInContextMethod() ?? new RunInContextDelegate(RunInContextMethodFallback);
+                    Volatile.Write(ref _runInContextDelegate, result);
                 }
+                return result;
             }
         }
 
+
         /// <summary>
-        /// Захватить контекст исполнения без проброса контекста синхронизации
+        /// Captures the execution context from the current thread without synchronization context if possible
         /// </summary>
-        /// <returns>Захваченный контекст исполнения</returns>
+        /// <returns>Captured ExecutionContext</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ExecutionContext CaptureContextNoSyncContext()
+        public static ExecutionContext CaptureContextNoSyncContextIfPossible()
         {
-            var action = _captureContextDelegate;
-            if (action == null)
-            {
-                InitDynamicMethods();
-                action = _captureContextDelegate;
-            }
+            var action = _captureContextDelegate?? InitCaptureContextMethod();
             return action();
         }
         /// <summary>
-        /// Запустить делегат в ExecutionContext 
+        /// Runs a method in a specified execution context on the current thread
         /// </summary>
-        /// <param name="context">Контекст</param>
-        /// <param name="callback">Исполняемый делегат</param>
-        /// <param name="state">Объект состояния</param>
-        /// <param name="preserveSyncCtx">Сохранять ли текущий контекст синхронизации</param>
+        /// <param name="context">Execution Context</param>
+        /// <param name="callback">Delegate for method that will be run in the provided execution context</param>
+        /// <param name="state">The object to pass to the callback method.</param>
+        /// <param name="preserveSyncCtx">Whether the current synchronization context should be preserved</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RunInContext(ExecutionContext context, ContextCallback callback, object state, bool preserveSyncCtx)
         {
-            Contract.Requires(context != null);
-            Contract.Requires(callback != null);
+            TurboContract.Requires(context != null, conditionString: "context != null");
+            TurboContract.Requires(callback != null, conditionString: "callback != null");
 
-            var action = _runInContextDelegate;
-            if (action == null)
-            {
-                InitDynamicMethods();
-                action = _runInContextDelegate;
-            }
+            var action = _runInContextDelegate ?? InitRunInContextMethod();
             action(context, callback, state, preserveSyncCtx);
         }
     }

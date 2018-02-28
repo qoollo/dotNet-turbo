@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -78,7 +77,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// </summary>
         public void MarkElementDestroyed()
         {
-            Debug.Assert(!this.IsElementDestroyed, "Can't destroy element 2 times");
+            TurboContract.Assert(!this.IsElementDestroyed, "Can't destroy element 2 times");
             _isElementdDestroyed = true;
         }
         /// <summary>
@@ -86,8 +85,8 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// </summary>
         public void MarkRemoved()
         {
-            Debug.Assert(this.IsElementDestroyed, "Trying to remove Pool Element that was not destroyed");
-            Debug.Assert(!this.IsRemoved, "Can't remove element 2 times");
+            TurboContract.Assert(this.IsElementDestroyed, "Trying to remove Pool Element that was not destroyed");
+            TurboContract.Assert(!this.IsRemoved, "Can't remove element 2 times");
             _isRemoved = true;
         }
 
@@ -133,7 +132,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         protected internal void MakeBusyAtomic()
         {
             int prevIsBusy = Interlocked.Exchange(ref _isBusy, 1);
-            Debug.Assert(prevIsBusy == 0, "Pool Element is already busy");
+            TurboContract.Assert(prevIsBusy == 0, "Pool Element is already busy");
         }
         /// <summary>
         /// Forcibly marks the element as not Busy (concurrent version)
@@ -141,7 +140,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         protected internal void MakeAvailableAtomic()
         {
             int prevIsBusy = Interlocked.Exchange(ref _isBusy, 0);
-            Debug.Assert(prevIsBusy == 1, "Pool Element is already available");
+            TurboContract.Assert(prevIsBusy == 1, "Pool Element is already available");
         }
 
 #if DEBUG
@@ -170,7 +169,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
             }
             else
             {
-                Debug.Assert(this.IsElementDestroyed, "Element should be destroyed before removing the PoolElementWrapper. Probably you forget to call Dispose on the owner pool. Info: " + this.CollectDiagnosticInfo());
+                TurboContract.Assert(this.IsElementDestroyed, "Element should be destroyed before removing the PoolElementWrapper. Probably you forget to call Dispose on the owner pool. Info: " + this.CollectDiagnosticInfo());
             }
         }
 #endif
@@ -208,7 +207,8 @@ namespace Qoollo.Turbo.ObjectPools.Common
         public PoolElementWrapper(T element, IPoolElementOperationSource<T> operations, object owner)
             : base(owner)
         {
-            Contract.Requires<ArgumentNullException>(operations != null);
+            if (operations == null)
+                throw new ArgumentNullException(nameof(operations));
 
             _element = element;
             _operations = operations;
@@ -272,7 +272,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
         /// <param name="name">Name of the owner ObjectPool</param>
         internal void SetPoolName(string name)
         {
-            Contract.Requires(name != null);
+            TurboContract.Requires(name != null, conditionString: "name != null");
             _sourcePoolName = name;
         }
         /// <summary>

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Collections.Concurrent;
-using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Qoollo.Turbo.Queues;
@@ -23,11 +22,11 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_procThreads != null);
-            Contract.Invariant(_queue != null);
-            Contract.Invariant(_name != null);
-            Contract.Invariant(_activeThreadCount >= 0);
-            Contract.Invariant(Enum.IsDefined(typeof(QueueAsyncProcessorState), (QueueAsyncProcessorState)_state));
+            TurboContract.Invariant(_procThreads != null);
+            TurboContract.Invariant(_queue != null);
+            TurboContract.Invariant(_name != null);
+            TurboContract.Invariant(_activeThreadCount >= 0);
+            TurboContract.Invariant(Enum.IsDefined(typeof(QueueAsyncProcessorState), (QueueAsyncProcessorState)_state));
         }
 
 
@@ -427,7 +426,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                     _procThreads[i].Start();
 
                 bool changeStateToRunningSuccess = ChangeStateSafe(QueueAsyncProcessorState.Running, out prevState);
-                Debug.Assert(changeStateToRunningSuccess && prevState == QueueAsyncProcessorState.StartRequested);
+                TurboContract.Assert(changeStateToRunningSuccess && prevState == QueueAsyncProcessorState.StartRequested, conditionString: "changeStateToRunningSuccess && prevState == QueueAsyncProcessorState.StartRequested");
             }
             catch
             {
@@ -531,7 +530,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                             }
                             else
                             {
-                                Debug.Assert(stopRequestedToken.IsCancellationRequested);
+                                TurboContract.Assert(stopRequestedToken.IsCancellationRequested, conditionString: "stopRequestedToken.IsCancellationRequested");
                             }
                         }
                     }
@@ -606,7 +605,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
                         QueueAsyncProcessorState prevState;
                         if (ChangeStateSafe(QueueAsyncProcessorState.Stopped, out prevState))
                         {
-                            Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
+                            TurboContract.Assert(prevState == QueueAsyncProcessorState.StopRequested, conditionString: "prevState == QueueAsyncProcessorState.StopRequested");
                             _stoppedEvent.Set();
                             this.DisposeQueue(); // Can throw exception
                             Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
@@ -627,7 +626,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         /// <returns>Whether the current exception can be safely skipped (false - the thread will retrow the exception)</returns>
         protected virtual bool ProcessThreadException(Exception ex)
         {
-            Contract.Requires(ex != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
 
             throw new QueueAsyncProcessorException("Unhandled exception during processing in QueueAsyncProcessor ('" + this.Name + "')", ex);
         }
@@ -749,8 +748,8 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             _completeAdding = completeAdding;
             _letFinishProcess = letFinishProcess;
 
-            Debug.Assert(_stopRequestedCancelation != null || prevState == QueueAsyncProcessorState.Created);
-            Debug.Assert(_stoppedCancelation != null || prevState == QueueAsyncProcessorState.Created);
+            TurboContract.Assert(_stopRequestedCancelation != null || prevState == QueueAsyncProcessorState.Created, conditionString: "_stopRequestedCancelation != null || prevState == QueueAsyncProcessorState.Created");
+            TurboContract.Assert(_stoppedCancelation != null || prevState == QueueAsyncProcessorState.Created, conditionString: "_stoppedCancelation != null || prevState == QueueAsyncProcessorState.Created");
 
             if (_stopRequestedCancelation != null)
                 _stopRequestedCancelation.Cancel();
@@ -773,15 +772,15 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
             {
                 if (ChangeStateSafe(QueueAsyncProcessorState.Stopped, out prevState))
                 {
-                    Debug.Assert(prevState == QueueAsyncProcessorState.StopRequested);
+                    TurboContract.Assert(prevState == QueueAsyncProcessorState.StopRequested, conditionString: "prevState == QueueAsyncProcessorState.StopRequested");
                     _stoppedEvent.Set();
                     this.DisposeQueue(); // Can throw exception
                     Profiling.Profiler.QueueAsyncProcessorDisposed(this.Name, false);
                 }
             }
 
-            Debug.Assert(State == QueueAsyncProcessorState.StopRequested || State == QueueAsyncProcessorState.Stopped);
-            Debug.Assert(!waitForStop || State == QueueAsyncProcessorState.Stopped);
+            TurboContract.Assert(State == QueueAsyncProcessorState.StopRequested || State == QueueAsyncProcessorState.Stopped, conditionString: "State == QueueAsyncProcessorState.StopRequested || State == QueueAsyncProcessorState.Stopped");
+            TurboContract.Assert(!waitForStop || State == QueueAsyncProcessorState.Stopped, conditionString: "!waitForStop || State == QueueAsyncProcessorState.Stopped");
             return true;
         }
 
@@ -823,7 +822,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         {
             if (!this.IsStopRequestedOrStopped)
             {
-                Debug.Assert(isUserCall, "QueueAsyncProcessor destructor: Better to dispose by user");
+                TurboContract.Assert(isUserCall, "QueueAsyncProcessor destructor: Better to dispose by user");
 
                 if (isUserCall)
                     StopProcessor(true, false, true);

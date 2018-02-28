@@ -1,3 +1,15 @@
+v3.0.1 (28.02.2018)
+- .NET Core 2.0 support through .NET Standard 2.0
+- Public surface comments translated to English
+- Base type in some exception changed from SystemException to Exception
+- TurboAssertionException became internal
+- CantRetrieveElementException moved from 'Qoollo.Turbo' to 'Qoollo.Turbo.ObjectPools' namespace
+- ThreadSetManager: CurrentCulture and CurrentUICulture properties marked as Obsolete as they are not portable
+- EntryCountingEvent: TerminateAndWait signature fixed
+- Many Obsolete methods now will result in compilation error
+- Some Obsolete classes have been removed
+- CodeContracts removed
+
 v2.3.0 Alpha (26.04.2017)
 - Queues infrastructure added (DiskQueue, MemoryQueue, TransformationQueue, LevelingQueue)
 - QueueAsyncProcessor now supported newly added Queues

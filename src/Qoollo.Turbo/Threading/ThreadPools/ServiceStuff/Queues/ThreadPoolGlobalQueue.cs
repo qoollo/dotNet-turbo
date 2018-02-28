@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -79,8 +78,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="extensionVal">Величина, на которую увеличиваем</param>
         private void UpdateExtendedCapacityRequestField(int extensionVal)
         {
-            Contract.Requires(extensionVal >= 0);
-            Debug.Assert(_boundedCapacity > 0);
+            TurboContract.Requires(extensionVal >= 0, conditionString: "extensionVal >= 0");
+            TurboContract.Assert(_boundedCapacity > 0, conditionString: "_boundedCapacity > 0");
 
             int maxExtensionValue = Math.Max(0, int.MaxValue - 1 - _boundedCapacity);
 
@@ -108,7 +107,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="extensionVal">Величиная расширения</param>
         public void RequestCapacityExtension(int extensionVal)
         {
-            Contract.Requires<ArgumentException>(extensionVal >= 0);
+            if (extensionVal < 0)
+                throw new ArgumentOutOfRangeException(nameof(extensionVal), "extensionVal should be greater or equal to 0");
 
             if (_freeNodes == null || extensionVal == 0)
                 return;
@@ -124,7 +124,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="item">Элемент</param>
         public void ForceAdd(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             _mainQueue.Add(item);
             if (_freeNodes != null)
@@ -142,7 +142,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryAdd(ThreadPoolWorkItem item, int timeout)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             bool freeNodesExist = true;
             if (_freeNodes != null)
@@ -171,7 +171,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Удалось ли добавить</returns>
         public bool TryAdd(ThreadPoolWorkItem item, int timeout, CancellationToken token)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
@@ -209,10 +209,10 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="item">Элемент</param>
         public void Add(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             bool result = TryAdd(item, Timeout.Infinite);
-            Debug.Assert(result, "Element was not added to ThreadPoolGlobalQueue due to unknown reason");
+            TurboContract.Assert(result, "Element was not added to ThreadPoolGlobalQueue due to unknown reason");
         }
 
 
@@ -231,7 +231,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Удалось ли получить</returns>
         public bool TryTake(out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
 
             item = null;
 
@@ -262,7 +262,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                     }
                     wasElementTaken = _mainQueue.TryTake(out item);
                     takePerformed = false;
-                    Debug.Assert(wasElementTaken, "Incorrect collection state. Can't take items from collection when they should be there");
+                    TurboContract.Assert(wasElementTaken, "Incorrect collection state. Can't take items from collection when they should be there");
                 }
                 finally
                 {
@@ -290,11 +290,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Полученный элемент</returns>
         public ThreadPoolWorkItem Take()
         {
-            Contract.Ensures(Contract.Result<ThreadPoolWorkItem>() != null);
+            TurboContract.Ensures(TurboContract.Result<ThreadPoolWorkItem>() != null);
 
             ThreadPoolWorkItem result = null;
             bool success = TryTake(out result, Timeout.Infinite, new CancellationToken(), true);
-            Debug.Assert(success, "Element was not taken from ThreadPoolGlobalQueue due to unknown reason");
+            TurboContract.Assert(success, "Element was not taken from ThreadPoolGlobalQueue due to unknown reason");
             return result;
         }
     }

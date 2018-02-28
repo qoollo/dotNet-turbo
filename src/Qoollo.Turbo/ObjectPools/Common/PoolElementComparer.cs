@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -53,8 +52,8 @@ namespace Qoollo.Turbo.ObjectPools.Common
     {
         public override int Compare(PoolElementWrapper<T> a, PoolElementWrapper<T> b, out bool stopHere)
         {
-            Contract.Requires(a != null);
-            Contract.Requires(b != null);
+            TurboContract.Requires(a != null, conditionString: "a != null");
+            TurboContract.Requires(b != null, conditionString: "b != null");
 
             throw new NotImplementedException();
         }

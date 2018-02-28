@@ -2,7 +2,6 @@
 using Qoollo.Turbo.Threading.ThreadPools.Common;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,7 +28,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool
+        /// Enqueues a method for exection inside the current ThreadPool
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <exception cref="ArgumentNullException">Action is null</exception>
@@ -41,7 +40,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             AddWorkItem(new ActionThreadPoolWorkItem(action));
         }
         /// <summary>
-        /// Attempts to queue a method for exection inside the current ThreadPool
+        /// Attempts to enqueue a method for exection inside the current ThreadPool
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <returns>True if work item was added to the queue, otherwise false</returns>
@@ -55,7 +54,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool
+        /// Enqueues a method for exection inside the current ThreadPool
         /// </summary>
         /// <typeparam name="T">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -87,7 +86,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
 
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <returns>Create Task</returns>
@@ -102,7 +101,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return item.Task;
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -120,7 +119,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         }
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
         /// <param name="func">Representing the method to execute</param>
@@ -136,7 +135,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
             return item.Task;
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
@@ -218,7 +217,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <summary>Code contracts</summary>
         protected override void AddWorkItem(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             throw new NotImplementedException();
         }
@@ -226,7 +225,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools
         /// <summary>Code contracts</summary>
         protected override bool TryAddWorkItem(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
 
             throw new NotImplementedException();
         }

@@ -103,7 +103,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
                 if (!long.TryParse(numberStr, out number))
                     continue;
 
-                Debug.Assert(fileName == GenerateFileName(namePrefix, number, extension));
+                TurboContract.Assert(fileName == GenerateFileName(namePrefix, number, extension), conditionString: "fileName == GenerateFileName(namePrefix, number, extension)");
                 fileInfos.Add(new SegmentFileInfo(files[i], number));
             }
 

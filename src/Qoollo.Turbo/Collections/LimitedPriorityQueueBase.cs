@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -31,9 +30,9 @@ namespace Qoollo.Turbo.Collections
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_innerQueue != null);
-            Contract.Invariant(_innerQueue.Length > 0);
-            Contract.Invariant(_count >= 0);
+            TurboContract.Invariant(_innerQueue != null);
+            TurboContract.Invariant(_innerQueue.Length > 0);
+            TurboContract.Invariant(_count >= 0);
         }
 
         /// <summary>
@@ -42,7 +41,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="priorityLevelsCount">The number of priority levels (the max value returned from MapPriority method)</param>
         public LimitedPriorityQueueBase(int priorityLevelsCount)
         {
-            Contract.Requires<ArgumentException>(priorityLevelsCount > 0);
+            if (priorityLevelsCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(priorityLevelsCount), "priorityLevelsCount should be positive");
 
             _innerQueue = new Queue<TElem>[priorityLevelsCount];
             for (int i = 0; i < _innerQueue.Length; i++)
@@ -56,8 +56,10 @@ namespace Qoollo.Turbo.Collections
         /// <param name="priorityLevelsCount">The number of priority levels (the max value returned from MapPriority method)</param>
         public LimitedPriorityQueueBase(IEnumerable<TElem> collection, int priorityLevelsCount)
         {
-            Contract.Requires<ArgumentNullException>(collection != null);
-            Contract.Requires<ArgumentException>(priorityLevelsCount > 0);
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
+            if (priorityLevelsCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(priorityLevelsCount), "priorityLevelsCount should be positive");
 
             _innerQueue = new Queue<TElem>[priorityLevelsCount];
             for (int i = 0; i < _innerQueue.Length - 1; i++)
@@ -93,7 +95,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         public void Clear()
         {
-            Contract.Ensures(this.Count == 0);
+            TurboContract.Ensures(this.Count == 0);
 
             for (int i = 0; i < _innerQueue.Length; i++)
                 _innerQueue[i].Clear();
@@ -109,9 +111,12 @@ namespace Qoollo.Turbo.Collections
         /// <param name="index">Index in array at which copying begins</param>
         public void CopyTo(TElem[] array, int index)
         {
-            Contract.Requires<ArgumentNullException>(array != null);
-            Contract.Requires<ArgumentOutOfRangeException>(index >= 0 && index < array.Length);
-            Contract.Requires<ArgumentException>(index <= array.Length - this.Count);
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (index < 0 || index >= array.Length)
+                throw new ArgumentOutOfRangeException(nameof(index));
+            if (index > array.Length - this.Count)
+                throw new ArgumentException(nameof(index));
 
             int curIndex = index;
             for (int i = 0; i < _innerQueue.Length; i++)
@@ -128,7 +133,7 @@ namespace Qoollo.Turbo.Collections
         /// <param name="priority">Priority marker</param>
         public void Enqueue(TElem item, TPriority priority)
         {
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) + 1);
 
             int map = MapPriority(priority);
             _innerQueue[map].Enqueue(item);
@@ -142,7 +147,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The item at the head of the queue</returns>
         public TElem Peek()
         {
-            Contract.Requires(this.Count > 0);
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
 
             if (Count == 0)
                 throw new InvalidOperationException("Collection is empty");
@@ -162,8 +167,8 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The item that is removed from the head of the queue</returns>
         public TElem Dequeue()
         {
-            Contract.Requires(this.Count > 0);
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count) - 1);
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) - 1);
 
             if (Count == 0)
                 throw new InvalidOperationException("Collection is empty");
@@ -206,8 +211,8 @@ namespace Qoollo.Turbo.Collections
         /// <returns>A new array containing elements copied from the queue</returns>
         public TElem[] ToArray()
         {
-            Contract.Ensures(Contract.Result<TElem[]>() != null);
-            Contract.Ensures(Contract.Result<TElem[]>().Length == this.Count);
+            TurboContract.Ensures(TurboContract.Result<TElem[]>() != null);
+            TurboContract.Ensures(TurboContract.Result<TElem[]>().Length == this.Count);
 
             TElem[] array = new TElem[this._count];
             this.CopyTo(array, 0);
@@ -255,11 +260,11 @@ namespace Qoollo.Turbo.Collections
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
-                throw new ArgumentException("Array rank not equal to 1", "array");
+                throw new ArgumentException("Array rank not equal to 1", nameof(array));
             if (index < 0 || index > array.Length)
-                throw new ArgumentOutOfRangeException("index", "index < 0 || index > array.Length");
+                throw new ArgumentOutOfRangeException(nameof(index), "index < 0 || index > array.Length");
             if (array.Length - index < this._count)
                 throw new ArgumentException("array has not enough space");
 
@@ -313,8 +318,8 @@ namespace Qoollo.Turbo.Collections
 
         protected override int MapPriority(TPriority prior)
         {
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() < this.PriorityLevelsCount);
+            TurboContract.Ensures(TurboContract.Result<int>() >= 0);
+            TurboContract.Ensures(TurboContract.Result<int>() < this.PriorityLevelsCount);
 
             throw new NotImplementedException();
         }

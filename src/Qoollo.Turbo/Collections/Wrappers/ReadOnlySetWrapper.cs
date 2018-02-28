@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,21 +36,13 @@ namespace Qoollo.Turbo.Collections
 
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            Contract.Invariant(_set != null);
-        }
-
-        /// <summary>
         /// ReadOnlySetWrapper constructor
         /// </summary>
         /// <param name="set">Set to be wrapped</param>
         public ReadOnlySetWrapper(ISet<T> set)
         {
-            Contract.Requires<ArgumentNullException>(set != null);
+            if (set == null)
+                throw new ArgumentNullException(nameof(set));
 
             _set = set;
         }
@@ -69,7 +60,7 @@ namespace Qoollo.Turbo.Collections
         /// <exception cref="System.ArgumentNullException"></exception>
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            Contract.Requires(other != null);
+            TurboContract.Requires(other != null, conditionString: "other != null");
 
             return _set.IsProperSubsetOf(other);
         }
@@ -81,7 +72,7 @@ namespace Qoollo.Turbo.Collections
         /// <exception cref="System.ArgumentNullException"></exception>
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            Contract.Requires(other != null);
+            TurboContract.Requires(other != null, conditionString: "other != null");
 
             return _set.IsProperSupersetOf(other);
         }
@@ -94,7 +85,7 @@ namespace Qoollo.Turbo.Collections
         /// <exception cref="System.ArgumentNullException"></exception>
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            Contract.Requires(other != null);
+            TurboContract.Requires(other != null, conditionString: "other != null");
 
             return _set.IsSubsetOf(other);
         }
@@ -106,7 +97,7 @@ namespace Qoollo.Turbo.Collections
         /// <exception cref="System.ArgumentNullException"></exception>
         public bool IsSupersetOf(IEnumerable<T> other)
         {
-            Contract.Requires(other != null);
+            TurboContract.Requires(other != null, conditionString: "other != null");
 
             return _set.IsSupersetOf(other);
         }
@@ -118,7 +109,7 @@ namespace Qoollo.Turbo.Collections
         /// <exception cref="System.ArgumentNullException"></exception>
         public bool Overlaps(IEnumerable<T> other)
         {
-            Contract.Requires(other != null);
+            TurboContract.Requires(other != null, conditionString: "other != null");
 
             return _set.Overlaps(other);
         }
@@ -130,7 +121,7 @@ namespace Qoollo.Turbo.Collections
         /// <exception cref="System.ArgumentNullException"></exception>
         public bool SetEquals(IEnumerable<T> other)
         {
-            Contract.Requires(other != null);
+            TurboContract.Requires(other != null, conditionString: "other != null");
 
             return _set.SetEquals(other);
         }
@@ -154,9 +145,9 @@ namespace Qoollo.Turbo.Collections
         /// <param name="arrayIndex">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
-            Contract.Requires(array != null);
-            Contract.Requires(arrayIndex >= 0);
-            Contract.Requires(arrayIndex <= array.Length - this.Count);
+            TurboContract.Requires(array != null, conditionString: "array != null");
+            TurboContract.Requires(arrayIndex >= 0, conditionString: "arrayIndex >= 0");
+            TurboContract.Requires(arrayIndex <= array.Length - this.Count, conditionString: "arrayIndex <= array.Length - this.Count");
 
             _set.CopyTo(array, arrayIndex);
         }
@@ -401,8 +392,7 @@ namespace Qoollo.Turbo.Collections
             {
                 if (this._syncRoot == null)
                 {
-                    ICollection collection = this._set as ICollection;
-                    if (collection != null)
+                    if (this._set is ICollection collection)
                     {
                         this._syncRoot = collection.SyncRoot;
                     }

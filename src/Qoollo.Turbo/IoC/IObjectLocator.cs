@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -48,22 +47,22 @@ namespace Qoollo.Turbo.IoC
 
         public object Resolve(T key)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         public bool TryResolve(T key, out object val)
         {
-            Contract.Requires(key != null);
-            Contract.Ensures(Contract.Result<bool>() == true || (Contract.Result<bool>() == false && Contract.ValueAtReturn<object>(out val) == null));
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Ensures(TurboContract.Result<bool>() == true || (TurboContract.Result<bool>() == false && TurboContract.ValueAtReturn<object>(out val) == null));
 
             throw new NotImplementedException();
         }
 
         public bool CanResolve(T key)
         {
-            Contract.Requires(key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }

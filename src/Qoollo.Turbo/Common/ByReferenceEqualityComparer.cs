@@ -20,9 +20,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (_default == null)
-                    _default = new ByReferenceEqualityComparer<T>();
-                return _default;
+                return _default ?? (_default = new ByReferenceEqualityComparer<T>());
             }
         }
 

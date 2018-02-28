@@ -2,8 +2,8 @@
 using Qoollo.Turbo.Threading.ThreadPools.ServiceStuff;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -18,45 +18,45 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
     public abstract class CommonThreadPool : ThreadPoolBase, ICustomSynchronizationContextSupplier, IContextSwitchSupplier
     {
         /// <summary>
-        /// Контекст синхронизации для CommonThreadPool
+        /// SynchronizationContext implementation for CommonThreadPool
         /// </summary>
         private class CommonThreadPoolSynchronizationContext : SynchronizationContext
         {
             private readonly CommonThreadPool _srcPool;
 
             /// <summary>
-            /// Конструктор CommonThreadPoolSynchronizationContext
+            /// <see cref="CommonThreadPoolSynchronizationContext"/> constructor
             /// </summary>
-            /// <param name="srcPool">Пул</param>
+            /// <param name="srcPool">Owner</param>
             public CommonThreadPoolSynchronizationContext(CommonThreadPool srcPool)
             {
-                Contract.Requires(srcPool != null);
+                TurboContract.Requires(srcPool != null, conditionString: "srcPool != null");
                 _srcPool = srcPool;
             }
 
             /// <summary>
-            /// Создание копии
+            /// Creates a copy of the synchronization context
             /// </summary>
-            /// <returns>Копия</returns>
+            /// <returns>Created copy of SynchronizationContext</returns>
             public override SynchronizationContext CreateCopy()
             {
                 return new CommonThreadPoolSynchronizationContext(_srcPool);
             }
             /// <summary>
-            /// Асинхронный запуск задания
+            /// Dispatches an asynchronous message to a synchronization context
             /// </summary>
-            /// <param name="d">Задание</param>
-            /// <param name="state">Параметр</param>
+            /// <param name="d">Delegate to be executed</param>
+            /// <param name="state">The object passed to the delegate</param>
             public override void Post(SendOrPostCallback d, object state)
             {
                 var item = new SendOrPostCallbackThreadPoolWorkItem(d, state, true, false);
                 _srcPool.AddWorkItem(item);
             }
             /// <summary>
-            /// Синхронный запуск задания
+            /// Dispatches a synchronous message to a synchronization context
             /// </summary>
-            /// <param name="d">Задание</param>
-            /// <param name="state">Параметр</param>
+            /// <param name="d">Delegate to be executed</param>
+            /// <param name="state">The object passed to the delegate</param>
             public override void Send(SendOrPostCallback d, object state)
             {
                 var item = new SendOrPostCallbackSyncThreadPoolWorkItem(d, state, true, true);
@@ -68,38 +68,38 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         // =====================
 
         /// <summary>
-        /// Шедулер для пула потоков
+        /// TaskScheduler implementation for CommonThreadPool
         /// </summary>
         private class CommonThreadPoolTaskScheduler: TaskScheduler
         {
             private readonly CommonThreadPool _srcPool;
             /// <summary>
-            /// Конструктор CommonThreadPoolTaskScheduller
+            /// <see cref="CommonThreadPoolTaskScheduler"/> constructor
             /// </summary>
-            /// <param name="srcPool">Пул потоков</param>
+            /// <param name="srcPool">Owner</param>
             public CommonThreadPoolTaskScheduler(CommonThreadPool srcPool)
             {
-                Contract.Requires(srcPool != null);
+                TurboContract.Requires(srcPool != null, conditionString: "srcPool != null");
                 _srcPool = srcPool;
             }
             /// <summary>
-            /// Список задач для отладки
+            /// Returns the list of tasks in queue for debug purposes
             /// </summary>
             protected override IEnumerable<Task> GetScheduledTasks()
             {
                 return null;
             }
             /// <summary>
-            /// Добавить задачу в очередь
+            /// Adds task to the ThreadPool queue
             /// </summary>
-            /// <param name="task">Задача</param>
+            /// <param name="task">Task</param>
             protected override void QueueTask(Task task)
             {
                 ThreadPoolWorkItem poolItem = task.AsyncState as ThreadPoolWorkItem;
-                Debug.Assert(poolItem == null || 
-                                    (poolItem.GetType().IsGenericType && 
+                TurboContract.Assert(poolItem == null || 
+                                    (poolItem.GetType().GetTypeInfo().IsGenericType && 
                                     (poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<>) || 
-                                     poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>))));
+                                     poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>))), conditionString: "poolItem == null || \r\n                                    (poolItem.GetType().IsGenericType && \r\n                                    (poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<>) || \r\n                                     poolItem.GetType().GetGenericTypeDefinition() == typeof(TaskEntryExecutionWithClosureThreadPoolWorkItem<,>)))");
 
                 if (poolItem != null)
                     _srcPool.AddWorkItem(poolItem);
@@ -107,11 +107,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                     _srcPool.AddWorkItem(new TaskEntryExecutionThreadPoolWorkItem(task, false));
             }
             /// <summary>
-            /// Попробовать запустить синхронно
+            /// Attempts to exectue Task synchronously in the current thread (successful only if the current thread is from ThreadPool)
             /// </summary>
-            /// <param name="task">Задача</param>
-            /// <param name="taskWasPreviouslyQueued">Была ли задача добавлена</param>
-            /// <returns>Успешность</returns>
+            /// <param name="task">Task to be executed</param>
+            /// <param name="taskWasPreviouslyQueued">Task was taken from queue</param>
+            /// <returns>True if the task can be executed synchronously in the current thread</returns>
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
             {
                 return !taskWasPreviouslyQueued && _srcPool.IsThreadPoolThread && base.TryExecuteTask(task);
@@ -128,12 +128,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         {
             internal ThreadPrivateData(ThreadPoolThreadLocals localData)
             {
-                Contract.Requires(localData != null);
+                TurboContract.Requires(localData != null, conditionString: "localData != null");
                 LocalData = localData;
             }
 
             /// <summary>
-            /// Локальные данные потока
+            /// Local data for thread
             /// </summary>
             internal readonly ThreadPoolThreadLocals LocalData;
         }
@@ -142,14 +142,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Данные для запуска потока
+        /// All data necessary to perform initial initialization within a newly created thread
         /// </summary>
         private class ThreadStartUpData
         {
             public ThreadStartUpData(Action<ThreadPrivateData, CancellationToken> threadProc, ThreadStartControllingToken startController, bool createThreadLocalQueue)
             {
-                Contract.Requires(threadProc != null);
-                Contract.Requires(startController != null);
+                TurboContract.Requires(threadProc != null, conditionString: "threadProc != null");
+                TurboContract.Requires(startController != null, conditionString: "startController != null");
 
                 ThreadProcedure = threadProc;
                 StartController = startController;
@@ -165,7 +165,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         // =====================
 
 
-        // Число ядер
+        // Number of processor cores
         private static readonly int ProcessorCount = Environment.ProcessorCount;
 
         // =============
@@ -177,7 +177,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Список всех активных потоков
+        /// List of all threads in ThreadPool
         /// </summary>
         private readonly List<Thread> _activeThread;
         private int _activeThreadCount;
@@ -190,7 +190,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         private readonly CommonThreadPoolTaskScheduler _taskScheduler;
 
         /// <summary>
-        /// Общие данные для пула потоков (очередь там же)
+        /// Global data for ThreadPool (global and local queues, ThreadStatic fields)
         /// </summary>
         private readonly ThreadPoolGlobals _threadPoolGlobals;
 
@@ -395,9 +395,9 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         /// </summary>
         private void OnGoToStoppedState()
         {
-            Debug.Assert(State == ThreadPoolState.Stopped);
+            TurboContract.Assert(State == ThreadPoolState.Stopped, conditionString: "State == ThreadPoolState.Stopped");
 
-            Debug.Assert(_stopWaiter.IsSet == false);
+            TurboContract.Assert(_stopWaiter.IsSet == false, conditionString: "_stopWaiter.IsSet == false");
             _stopWaiter.Set();
             _threadPoolGlobals.Dispose();
             Profiling.Profiler.ThreadPoolDisposed(Name, false);
@@ -405,7 +405,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool
+        /// Enqueues a method for exection inside the current ThreadPool
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <param name="preferFairness">When true places work item directly to the global queue, otherwise can place work item to the thread local queue</param>
@@ -418,7 +418,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             AddWorkItem(new ActionThreadPoolWorkItem(action, true, preferFairness));
         }
         /// <summary>
-        /// Attempts to queue a method for exection inside the current ThreadPool
+        /// Attempts to enqueue a method for exection inside the current ThreadPool
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <param name="preferFairness">When true places work item directly to the global queue, otherwise can place work item to the thread local queue</param>
@@ -433,7 +433,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool
+        /// Enqueues a method for exection inside the current ThreadPool
         /// </summary>
         /// <typeparam name="T">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -449,7 +449,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Attempts to queue a method for exection inside the current ThreadPool
+        /// Attempts to enqueue a method for exection inside the current ThreadPool
         /// </summary>
         /// <typeparam name="T">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -467,7 +467,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <returns>Create Task</returns>
@@ -477,7 +477,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return this.RunAsTask(action, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <param name="action">Representing the method to execute</param>
         /// <param name="creationOptions">Task creation options</param>
@@ -503,7 +503,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -515,7 +515,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return this.RunAsTask(action, state, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <param name="action">Representing the method to execute</param>
@@ -546,7 +546,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
         /// <param name="func">Representing the method to execute</param>
@@ -557,7 +557,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return this.RunAsTask<TRes>(func, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
         /// <param name="func">Representing the method to execute</param>
@@ -584,7 +584,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
@@ -597,7 +597,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return this.RunAsTask<TState, TRes>(func, state, TaskCreationOptions.None);
         }
         /// <summary>
-        /// Queues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
+        /// Enqueues a method for exection inside the current ThreadPool and returns a <see cref="Task{TRes}"/> that represents queued operation
         /// </summary>
         /// <typeparam name="TState">Type of the user state object</typeparam>
         /// <typeparam name="TRes">The type of the operation result</typeparam>
@@ -648,7 +648,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             if (State == ThreadPoolState.Stopped)
                 return;
             _stopWaiter.Wait();
-            Debug.Assert(State == ThreadPoolState.Stopped);
+            TurboContract.Assert(State == ThreadPoolState.Stopped, conditionString: "State == ThreadPoolState.Stopped");
         }
 
         /// <summary>
@@ -719,12 +719,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Выбрасывает исключение из task, если он оказался в состояние Cancelled или Faulted
+        /// Rethrows the exception stored inside Task, when it is in Cancelled or Faulted state
         /// </summary>
         /// <param name="task">Task</param>
         private void RethrowTaskException(Task task)
         {
-            Contract.Requires(task != null);
+            TurboContract.Requires(task != null, conditionString: "task != null");
 
             if (task.IsCanceled)
                 throw new TaskCanceledException("ThreadPool task was cancelled by unknown reason. ThreadPool: " + this.Name);
@@ -733,7 +733,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             {
                 var exception = task.Exception;
                 if (exception == null)
-                    throw new ApplicationException("ThreadPool task was faulted by unknown reason. ThreadPool: " + this.Name);
+                    throw new ThreadPoolException("ThreadPool task was faulted by unknown reason. ThreadPool: " + this.Name);
                 if (exception.InnerExceptions.Count != 1)
                     throw exception;
 
@@ -743,13 +743,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Процедура для потоков, выполняющая начальную инициализацию и завершение
+        /// Thread start-up procedure. The first procedure that executed within the thread. 
+        /// Here the initial initialization is performed
         /// </summary>
-        /// <param name="rawData">Данные для запуска</param>
+        /// <param name="rawData">Start-up data (instance of <see cref="ThreadStartUpData"/>)</param>
         [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadStartUpProc(object rawData)
         {
-            Contract.Requires(rawData != null);
+            TurboContract.Requires(rawData != null, conditionString: "rawData != null");
 
             ThreadStartUpData startupData = (ThreadStartUpData)rawData;
 
@@ -781,7 +782,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                 {
                     Task threadTask = new Task(ThreadStartUpInsideTask, rawData, TaskCreationOptions.LongRunning);
                     Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.SetTaskScheduler(threadTask, this.TaskScheduler);
-                    Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(threadTask, false);
+                    Qoollo.Turbo.Threading.ServiceStuff.TaskHelper.ExecuteTaskEntry(threadTask);
                     if (threadTask.IsFaulted || threadTask.IsCanceled)
                         RethrowTaskException(threadTask);
                 }
@@ -796,13 +797,14 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Исполнение цикла потока внутри Task (для установки taskScheduler)
+        /// Initialization of thread within Task (when <see cref="_useOwnTaskScheduler"/> setted to True)
         /// </summary>
-        /// <param name="rawData">Данные для запуска</param>
+        /// <param name="rawData">Start-up data (instance of <see cref="ThreadStartUpData"/>)</param>
         [System.Diagnostics.DebuggerNonUserCode]
         private void ThreadStartUpInsideTask(object rawData)
         {
-            Contract.Requires(rawData != null);
+            TurboContract.Requires(rawData != null, conditionString: "rawData != null");
+            TurboContract.Assert(!_useOwnTaskScheduler || TaskScheduler.Current == this.TaskScheduler, conditionString: "!_useOwnTaskScheduler || TaskScheduler.Current == this.TaskScheduler");
 
             ThreadStartUpData startupData = (ThreadStartUpData)rawData;
 
@@ -812,13 +814,13 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Создание нового потока
+        /// Creates a new Thread (does not start that Thread)
         /// </summary>
-        /// <param name="customName">Дополнительное имя для потока</param>
-        /// <returns>Созданный поток</returns>
+        /// <param name="customName">Specific name for thread</param>
+        /// <returns>Created thread</returns>
         private Thread CreateNewThread(string customName)
         {
-            Contract.Ensures(Contract.Result<Thread>() != null);
+            TurboContract.Ensures(TurboContract.Result<Thread>() != null);
 
             Thread res = new Thread(ThreadStartUpProc);
             int threadNum = Interlocked.Increment(ref _currentThreadNum);
@@ -833,15 +835,15 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Добавить новый поток в пул потоков
+        /// Adds a new thread to the ThreadPool
         /// </summary>
-        /// <param name="threadProc">Процедура исполнения потока</param>
-        /// <param name="customName">Дополнительное имя для потока</param>
-        /// <param name="createThreadLocalQueue">Создавать ли локальную очередь потока</param>
-        /// <returns>Добавленный поток (null, если не удалось)</returns>
+        /// <param name="threadProc">Delegate to the main thread procedure</param>
+        /// <param name="customName">Specific name of the thread</param>
+        /// <param name="createThreadLocalQueue">Whether the local queue should be created</param>
+        /// <returns>Created and started thread (null, when some error happened)</returns>
         protected Thread AddNewThread(Action<ThreadPrivateData, CancellationToken> threadProc, string customName = null, bool createThreadLocalQueue = true)
         {
-            Contract.Requires(threadProc != null);
+            TurboContract.Requires(threadProc != null, conditionString: "threadProc != null");
 
             if (State == ThreadPoolState.Stopped)
                 return null;
@@ -868,7 +870,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                         success = true;
                     }
 
-                    Debug.Assert(_activeThread.Count == _activeThreadCount);
+                    TurboContract.Assert(_activeThread.Count == _activeThreadCount, conditionString: "_activeThread.Count == _activeThreadCount");
                 }
             }
             catch (Exception ex)
@@ -894,21 +896,21 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Хук на удаление потока
+        /// Virtual method that allows to handle thread termination in child classes
         /// </summary>
-        /// <param name="elem">Удаляемый поток</param>
+        /// <param name="elem">Instance of the thread that is during the termination process</param>
         protected virtual void OnThreadRemove(Thread elem)
         {
-            Contract.Requires(elem != null);
+            TurboContract.Requires(elem != null, conditionString: "elem != null");
         }
 
         /// <summary>
-        /// Выполнить удаление завершающегося потока
+        /// Removes the thread from ThreadPool (removes it from <see cref="_activeThread"/> list and performs additional processes)
         /// </summary>
-        /// <param name="elem">Поток, который удаляем</param>
+        /// <param name="elem">Thread to be removed</param>
         private void RemoveStoppedThread(Thread elem)
         {
-            Contract.Requires(elem != null);
+            TurboContract.Requires(elem != null, conditionString: "elem != null");
 
             bool removeResult = false;
             lock (_activeThread)
@@ -926,36 +928,36 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
                         {
                             ThreadPoolState prevState;
                             bool stateChanged = ChangeStateSafe(ThreadPoolState.Stopped, out prevState);
-                            Debug.Assert(stateChanged || prevState == ThreadPoolState.Stopped, "State was not changed to stopped");
+                            TurboContract.Assert(stateChanged || prevState == ThreadPoolState.Stopped, "State was not changed to stopped");
                             if (stateChanged)
                                 OnGoToStoppedState();
                         }
                     }
-                    Debug.Assert(_activeThread.Count == _activeThreadCount);
+                    TurboContract.Assert(_activeThread.Count == _activeThreadCount, conditionString: "_activeThread.Count == _activeThreadCount");
                 }
             }
 
-            Debug.Assert(removeResult, "Remove Thread in Pool failed");
+            TurboContract.Assert(removeResult, "Remove Thread in Pool failed");
             if (removeResult)
                 OnThreadRemove(elem);
         }
 
         /// <summary>
-        /// Хук на остановку пула потоков
+        /// Virtual method that allows to handle ThreadPool termination in child classes
         /// </summary>
-        /// <param name="waitForStop">Ожидать остановки</param>
-        /// <param name="letFinishProcess">Позволить обработать всю очередь</param>
-        /// <param name="completeAdding">Запретить добавление новых элементов</param>
+        /// <param name="waitForStop">Whether the current thread should be blocked until all processing threads are be completed</param>
+        /// <param name="letFinishProcess">Whether all items that have already been added must be processed before stopping</param>
+        /// <param name="completeAdding">Marks that new items cannot be added to work items queue</param>
         protected virtual void OnThreadPoolStop(bool waitForStop, bool letFinishProcess, bool completeAdding)
         {
         }
 
         /// <summary>
-        /// Очистить основную очередь после остановки
+        /// Clears the global queue after stopping
         /// </summary>
         private void CleanUpMainQueueAfterStop()
         {
-            Debug.Assert(State == ThreadPoolState.Stopped);
+            TurboContract.Assert(State == ThreadPoolState.Stopped, conditionString: "State == ThreadPoolState.Stopped");
 
             ThreadPoolWorkItem item = null;
             while (_threadPoolGlobals.TryTakeItemSafeFromGlobalQueue(out item))
@@ -973,11 +975,11 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
         }
 
         /// <summary>
-        /// Внутренняя остановка пула
+        /// Stops ThreadPool and changes state to <see cref="ThreadPoolState.StopRequested"/> (core logic)
         /// </summary>
-        /// <param name="waitForStop">Ожидать остановки</param>
-        /// <param name="letFinishProcess">Позволить обработать всю очередь</param>
-        /// <param name="completeAdding">Запретить добавление новых элементов</param>
+        /// <param name="waitForStop">Whether the current thread should be blocked until all processing threads are be completed</param>
+        /// <param name="letFinishProcess">Whether all items that have already been added must be processed before stopping</param>
+        /// <param name="completeAdding">Marks that new items cannot be added to work items queue</param>
         protected void StopThreadPool(bool waitForStop, bool letFinishProcess, bool completeAdding)
         {
             if (this.IsStopRequestedOrStopped)
@@ -1010,12 +1012,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
                     ThreadPoolState prevState;
                     bool stateChangedToStopRequested = ChangeStateSafe(ThreadPoolState.StopRequested, out prevState);
-                    Debug.Assert(stateChangedToStopRequested || prevState == ThreadPoolState.Stopped);
+                    TurboContract.Assert(stateChangedToStopRequested || prevState == ThreadPoolState.Stopped, conditionString: "stateChangedToStopRequested || prevState == ThreadPoolState.Stopped");
                     if (_activeThread.Count == 0 && prevState != ThreadPoolState.Stopped)
                     {
                         // Если потоков нет, то переходим в состояние "остановлено"
                         bool stateChanged = ChangeStateSafe(ThreadPoolState.Stopped, out prevState);
-                        Debug.Assert(stateChanged || prevState == ThreadPoolState.Stopped, "State was not changed to stopped");
+                        TurboContract.Assert(stateChanged || prevState == ThreadPoolState.Stopped, "State was not changed to stopped");
                         if (stateChanged)
                             OnGoToStoppedState();
                     }
@@ -1059,25 +1061,25 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Обработка свежей задачи при поступлении
+        /// Processes new ThreadPoolWorkItem when it was just received from user and is still not in the queue
         /// </summary>
-        /// <param name="item">Задача</param>
+        /// <param name="item">Work item</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void PrepareWorkItem(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
             if (_restoreExecutionContext && !ExecutionContext.IsFlowSuppressed())
                 item.CaptureExecutionContext(!_useOwnSyncContext);
         }
         /// <summary>
-        /// Запуск задания
+        /// Executes the ThreadPoolWorkItem (should always be used to execute work items)
         /// </summary>
-        /// <param name="item">Задача</param>
+        /// <param name="item">Work item</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void RunWorkItem(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
-            Debug.Assert(!_useOwnSyncContext || (SynchronizationContext.Current == _synchroContext));
+            TurboContract.Requires(item != null, conditionString: "item != null");
+            TurboContract.Assert(!_useOwnSyncContext || (SynchronizationContext.Current == _synchroContext), conditionString: "!_useOwnSyncContext || (SynchronizationContext.Current == _synchroContext)");
 
             Profiling.ProfilingTimer timer = new Profiling.ProfilingTimer();
             timer.StartTime();
@@ -1087,57 +1089,61 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             Profiling.Profiler.ThreadPoolWorkProcessed(this.Name, timer.StopTime());
         }
         /// <summary>
-        /// Отмена задания
+        /// Transfers ThreadPoolWorkItem to cancelled state
         /// </summary>
-        /// <param name="item">Задача</param>
+        /// <param name="item">Work item</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void CancelWorkItem(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
+            TurboContract.Requires(item != null, conditionString: "item != null");
             item.Cancel();
             Profiling.Profiler.ThreadPoolWorkCancelled(this.Name);
         }
 
 
         /// <summary>
-        /// Расширить вместимость общей очереди на указанное значение
+        /// Extends the capacity of GlobalQueue by specified value
         /// </summary>
-        /// <param name="extensionVal">Величина расширения</param>
+        /// <param name="extensionVal">Value by which the increase is made</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ExtendGlobalQueueCapacity(int extensionVal)
         {
-            Contract.Requires(extensionVal >= 0);
-            Debug.Assert(State != ThreadPoolState.Stopped);
+            TurboContract.Requires(extensionVal >= 0, conditionString: "extensionVal >= 0");
+            TurboContract.Assert(State != ThreadPoolState.Stopped, conditionString: "State != ThreadPoolState.Stopped");
 
             _threadPoolGlobals.ExtendGlobalQueueCapacity(extensionVal);
         }
 
         /// <summary>
-        /// Добавить работу в очередь пула потоков
+        /// Enqueues ThreadPoolWorkItem. 
+        /// First it attempts to enqueue work item to thread local queue. If it is not possible, it enqueues to the global queue.
+        /// When <see cref="ThreadPoolWorkItem.PreferFairness"/> setted to True, it alway enqueues to global queue.
         /// </summary>
-        /// <param name="item">Работа</param>
+        /// <param name="item">Work item</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void AddWorkItemToQueue(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
-            Debug.Assert(!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null);
-            Debug.Assert(State != ThreadPoolState.Stopped);
+            TurboContract.Requires(item != null, conditionString: "item != null");
+            TurboContract.Assert(!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null, conditionString: "!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null");
+            TurboContract.Assert(State != ThreadPoolState.Stopped, conditionString: "State != ThreadPoolState.Stopped");
 
             item.StartStoreTimer();
             _threadPoolGlobals.AddItem(item, item.PreferFairness);
             Profiling.Profiler.ThreadPoolWorkItemsCountIncreased(this.Name, this.GlobalQueueWorkItemCount, this.QueueCapacity);
         }
         /// <summary>
-        /// Попробовать добавить работу в очередь пула потоков
+        /// Attempts to enqueues ThreadPoolWorkItem. 
+        /// First it attempts to enqueue work item to thread local queue. If it is not possible, it attempts to enqueue to the global queue.
+        /// When <see cref="ThreadPoolWorkItem.PreferFairness"/> setted to True, it alway attempts to enqueue to global queue.
         /// </summary>
-        /// <param name="item">Работа</param>
-        /// <returns>Удалось ли добавить</returns>
+        /// <param name="item">Work item</param>
+        /// <returns>Whether the work item was enqueued successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryAddWorkItemToQueue(ThreadPoolWorkItem item)
         {
-            Contract.Requires(item != null);
-            Debug.Assert(!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null);
-            Debug.Assert(State != ThreadPoolState.Stopped);
+            TurboContract.Requires(item != null, conditionString: "item != null");
+            TurboContract.Assert(!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null, conditionString: "!_restoreExecutionContext || !item.AllowExecutionContextFlow || item.CapturedContext != null");
+            TurboContract.Assert(State != ThreadPoolState.Stopped, conditionString: "State != ThreadPoolState.Stopped");
 
             item.StartStoreTimer();
             var result = _threadPoolGlobals.TryAddItem(item, item.PreferFairness);
@@ -1148,17 +1154,19 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Взять очередной элемент из очереди
+        /// Takes work item from ThreadPool queue.
+        /// First it attempts to take item from local thread queue. If it is not possible, it deques work item from the global queue.
+        /// Additionally it can steal work item from local queues of other ThreadPool threads.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="token">Токен отмены</param>
-        /// <returns></returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Taken work item</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected ThreadPoolWorkItem TakeWorkItemFromQueue(ThreadPrivateData privateData, CancellationToken token)
         {
-            Contract.Requires(privateData != null);
-            Contract.Ensures(Contract.Result<ThreadPoolWorkItem>() != null);
-            Debug.Assert(State != ThreadPoolState.Stopped);
+            TurboContract.Requires(privateData != null, conditionString: "privateData != null");
+            TurboContract.Ensures(TurboContract.Result<ThreadPoolWorkItem>() != null);
+            TurboContract.Assert(State != ThreadPoolState.Stopped, conditionString: "State != ThreadPoolState.Stopped");
 
             var result = _threadPoolGlobals.TakeItem(privateData.LocalData, token);
             Profiling.Profiler.ThreadPoolWaitingInQueueTime(this.Name, result.StopStoreTimer());
@@ -1166,17 +1174,19 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Попробовать взять очередной элемент из очереди
+        /// Attempts to take work item from ThreadPool queue.
+        /// First it attempts to take item from local thread queue. If it is not possible, it attempts to take work item from the global queue.
+        /// Additionally it can steal work item from local queues of other ThreadPool threads.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="item">Полученный элемент</param>
-        /// <returns>Успешность</returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="item">Taken work item</param>
+        /// <returns>Whether the work item was taken successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryTakeWorkItemFromQueue(ThreadPrivateData privateData, out ThreadPoolWorkItem item)
         {
-            Contract.Requires(privateData != null);
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Debug.Assert(State != ThreadPoolState.Stopped);
+            TurboContract.Requires(privateData != null, conditionString: "privateData != null");
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
+            TurboContract.Assert(State != ThreadPoolState.Stopped, conditionString: "State != ThreadPoolState.Stopped");
 
             var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, out item);
             if (result)
@@ -1187,20 +1197,22 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Попробовать взять очередной элемент из очереди
+        /// Attempts to take work item from ThreadPool queue.
+        /// First it attempts to take item from local thread queue. If it is not possible, it attempts to take work item from the global queue.
+        /// Additionally it can steal work item from local queues of other ThreadPool threads.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="item">Полученный элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
-        /// <returns>Успешность</returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="item">Taken work item (when successful)</param>
+        /// <param name="timeout">Timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Whether the <see cref="OperationCanceledException"/> should be thrown on Cancellation</param>
+        /// <returns>Whether the work item was taken successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryTakeWorkItemFromQueue(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
-            Contract.Requires(privateData != null);
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Debug.Assert(State != ThreadPoolState.Stopped);
+            TurboContract.Requires(privateData != null, conditionString: "privateData != null");
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
+            TurboContract.Assert(State != ThreadPoolState.Stopped, conditionString: "State != ThreadPoolState.Stopped");
 
             var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, true, true, out item, timeout, token, throwOnCancellation);
             if (result)
@@ -1211,20 +1223,22 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Попробовать взять очередной элемент из очереди (без похищения у других потоков)
+        /// Attempts to take work item from ThreadPool queue.
+        /// First it attempts to take item from local thread queue. If it is not possible, it attempts to take work item from the global queue.
+        /// Stealing from local queues of other ThreadPool threads is not performed.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="item">Полученный элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
-        /// <returns>Успешность</returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="item">Taken work item (when successful)</param>
+        /// <param name="timeout">Timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Whether the <see cref="OperationCanceledException"/> should be thrown on Cancellation</param>
+        /// <returns>Whether the work item was taken successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryTakeWorkItemFromQueueWithoutSteal(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
-            Contract.Requires(privateData != null);
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Debug.Assert(State != ThreadPoolState.Stopped);
+            TurboContract.Requires(privateData != null, conditionString: "privateData != null");
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
+            TurboContract.Assert(State != ThreadPoolState.Stopped, conditionString: "State != ThreadPoolState.Stopped");
 
             var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, true, false, out item, timeout, token, throwOnCancellation);
             if (result)
@@ -1235,20 +1249,22 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
             return result;
         }
         /// <summary>
-        /// Попробовать взять очередной элемент из очереди без поиска в локально очереди
+        /// Attempts to take work item from ThreadPool queue.
+        /// It does not attempt to take item from local queue. 
+        /// It attempts to take item from global queue or steals it from local queues of other ThreadPool threads.
         /// </summary>
-        /// <param name="privateData">Данные потока</param>
-        /// <param name="item">Полученный элемент</param>
-        /// <param name="timeout">Таймаут</param>
-        /// <param name="token">Токен отмены</param>
-        /// <param name="throwOnCancellation">Выбрасывать ли исключение при отмене по токену</param>
-        /// <returns>Успешность</returns>
+        /// <param name="privateData">Thread specific data</param>
+        /// <param name="item">Taken work item (when successful)</param>
+        /// <param name="timeout">Timeout in milliseconds</param>
+        /// <param name="token">Cancellation token</param>
+        /// <param name="throwOnCancellation">Whether the <see cref="OperationCanceledException"/> should be thrown on Cancellation</param>
+        /// <returns>Whether the work item was taken successfully</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TryTakeWorkItemFromQueueWithoutLocalSearch(ThreadPrivateData privateData, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
-            Contract.Requires(privateData != null);
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Debug.Assert(State != ThreadPoolState.Stopped);
+            TurboContract.Requires(privateData != null, conditionString: "privateData != null");
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
+            TurboContract.Assert(State != ThreadPoolState.Stopped, conditionString: "State != ThreadPoolState.Stopped");
 
             var result = _threadPoolGlobals.TryTakeItem(privateData.LocalData, false, true, out item, timeout, token, throwOnCancellation);
             if (result)
@@ -1262,45 +1278,49 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
 
         /// <summary>
-        /// Асинхронное выполнение задания
+        /// Runs an asynchronous action in another synchronization context
         /// </summary>
-        /// <param name="act">Задание</param>
-        /// <param name="state">Состояние</param>
+        /// <param name="act">Delegate to be executed</param>
+        /// <param name="state">The object passed to the delegate</param>
         void ICustomSynchronizationContextSupplier.RunAsync(System.Threading.SendOrPostCallback act, object state)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
             var item = new SendOrPostCallbackThreadPoolWorkItem(act, state, true, false);
             this.AddWorkItem(item);
         }
         /// <summary>
-        /// Синхронное выполнение задание
+        /// Runs a synchronous action in another synchronization context
         /// </summary>
-        /// <param name="act">Задание</param>
-        /// <param name="state">Состояние</param>
+        /// <param name="act">Delegate to be executed</param>
+        /// <param name="state">The object passed to the delegate</param>
         void ICustomSynchronizationContextSupplier.RunSync(System.Threading.SendOrPostCallback act, object state)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
             var item = new SendOrPostCallbackSyncThreadPoolWorkItem(act, state, true, true);
             this.AddWorkItem(item);
             item.Wait();
         }
 
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="flowContext">Whether the ExecutionContext should be flowed</param>
         void IContextSwitchSupplier.Run(Action act, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
             var item = new ActionThreadPoolWorkItem(act, flowContext, false);
             this.AddWorkItem(item);
         }
         /// <summary>
-        /// Запустить в другом контексте
+        /// Runs action in another context
         /// </summary>
-        /// <param name="act">Действие</param>
-        /// <param name="state">Состояние</param>
-        /// <param name="flowContext">Протаскивать ли ExecutionContext</param>
+        /// <param name="act">Delegate for action to be executed</param>
+        /// <param name="state">State object that will be passed to '<paramref name="act"/>' as argument</param>
+        /// <param name="flowContext">hether the ExecutionContext should be flowed</param>
         void IContextSwitchSupplier.RunWithState(Action<object> act, object state, bool flowContext)
         {
+            TurboContract.Requires(act != null, conditionString: "act != null");
             var item = new ActionThreadPoolWorkItem<object>(act, state, flowContext, false);
             this.AddWorkItem(item);
         }
@@ -1329,7 +1349,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.Common
 
             if (State != ThreadPoolState.StopRequested && State != ThreadPoolState.Stopped)
             {
-                Debug.Assert(isUserCall, "ThreadPool finalizer called. You should dispose ThreadPool by hand. ThreadPoolName: " + this.Name);
+                TurboContract.Assert(isUserCall, "ThreadPool finalizer called. You should dispose ThreadPool by hand. ThreadPoolName: " + this.Name);
 
                 if (isUserCall)
                     StopThreadPool(true, false, true);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,15 +31,6 @@ namespace Qoollo.Turbo.Collections
         private readonly IList<TIn> _list;
         private readonly Func<TIn, TOut> _transformer; 
 
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            Contract.Invariant(_list != null);
-            Contract.Invariant(_transformer != null);
-        }
 
         /// <summary>
         /// TransformedReadOnlyListWrapper constructor
@@ -49,8 +39,10 @@ namespace Qoollo.Turbo.Collections
         /// <param name="transformator">Transformation function that will be applied to source elements</param>
         public TransformedReadOnlyListWrapper(IList<TIn> list, Func<TIn, TOut> transformator)
         {
-            Contract.Requires<ArgumentNullException>(list != null);
-            Contract.Requires<ArgumentNullException>(transformator != null);
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
+            if (transformator == null)
+                throw new ArgumentNullException(nameof(transformator));
 
             _list = list;
             _transformer = transformator;
@@ -109,9 +101,13 @@ namespace Qoollo.Turbo.Collections
         /// <param name="arrayIndex">Index in array at which copying begins</param>
         private void CopyTo(TOut[] array, int arrayIndex)
         {
-            Contract.Requires<ArgumentNullException>(array != null);
-            Contract.Requires<ArgumentOutOfRangeException>(arrayIndex >= 0);
-            Contract.Requires<ArgumentOutOfRangeException>(arrayIndex <= array.Length - this.Count);
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (arrayIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+            if (arrayIndex > array.Length - this.Count)
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+
             for (int i = 0; i < _list.Count; i++)
                 array[i + arrayIndex] = _transformer(_list[i]);
         }
@@ -122,7 +118,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="action">Action</param>
         private void ForEach(Action<TOut> action)
         {
-            Contract.Requires<ArgumentNullException>(action != null);
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
 
             for (int i = 0; i < _list.Count; i++)
                 action(_transformer(_list[i]));
@@ -433,7 +430,7 @@ namespace Qoollo.Turbo.Collections
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException("array has wrong dimension");
             if (index < 0)
@@ -470,8 +467,7 @@ namespace Qoollo.Turbo.Collections
             {
                 if (this._syncRoot == null)
                 {
-                    ICollection collection = this._list as ICollection;
-                    if (collection != null)
+                    if (this._list is ICollection collection)
                     {
                         this._syncRoot = collection.SyncRoot;
                     }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -20,11 +19,11 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_procThreads != null);
-            Contract.Invariant(_name != null);
-            Contract.Invariant(_threadExitedEvent != null);
-            Contract.Invariant(_activeThreadCount >= 0);
-            Contract.Invariant(Enum.IsDefined(typeof(ThreadSetManagerState), (ThreadSetManagerState)_state));
+            TurboContract.Invariant(_procThreads != null);
+            TurboContract.Invariant(_name != null);
+            TurboContract.Invariant(_threadExitedEvent != null);
+            TurboContract.Invariant(_activeThreadCount >= 0);
+            TurboContract.Invariant(Enum.IsDefined(typeof(ThreadSetManagerState), (ThreadSetManagerState)_state));
         }
 
 
@@ -70,9 +69,9 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
             for (int i = 0; i < _procThreads.Length; i++)
             {
-                _procThreads[i] = new Thread(ThreadProcFunc, _maxStackSize);
-                _procThreads[i].Name = string.Format("{0} (#{1})", _name, i);
+                _procThreads[i] = new Thread(ThreadProcFunc, _maxStackSize);             
                 _procThreads[i].Priority = _priority;
+                _procThreads[i].Name = string.Format("{0} (#{1})", _name, i);
                 _procThreads[i].IsBackground = _isBackground;
             }
 
@@ -184,30 +183,56 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         /// <summary>
         /// Gets or sets the culture for the managed threads
         /// </summary>
+        [Obsolete("Non-portable property. It will be removed in the next version", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public System.Globalization.CultureInfo CurrentCulture
         {
-            get { return _procThreads[0].CurrentCulture; }
+            get
+            {
+                var currentThread = Thread.CurrentThread;
+                if (Array.IndexOf(_procThreads, currentThread) >= 0)
+                    return currentThread.CurrentCulture;
+
+                return _procThreads[0].CurrentCulture;
+            }
             set
             {
+#if NET45
                 CheckPendingDisposeOrDisposed();
 
                 foreach (var th in _procThreads)
                     th.CurrentCulture = value;
+#else
+                throw new PlatformNotSupportedException("CurrentCulture setting is not supported");
+#endif
             }
         }
 
         /// <summary>
         /// Gets or sets the current culture used by the Resource Manager to look up culture-specific resources
         /// </summary>
+        [Obsolete("Not portable property. It will be removed in the next version", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public System.Globalization.CultureInfo CurrentUICulture
         {
-            get { return _procThreads[0].CurrentUICulture; }
+            get
+            {
+                var currentThread = Thread.CurrentThread;
+                if (Array.IndexOf(_procThreads, currentThread) >= 0)
+                    return currentThread.CurrentUICulture;
+
+                return _procThreads[0].CurrentUICulture;
+            }
             set
             {
+#if NET45
                 CheckPendingDisposeOrDisposed();
 
                 foreach (var th in _procThreads)
                     th.CurrentUICulture = value;
+#else
+                throw new PlatformNotSupportedException("CurrentUICulture setting is not supported");
+#endif
             }
         }
 
@@ -356,7 +381,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
                     _procThreads[i].Start();
 
                 bool changeStateToRunningSuccess = ChangeStateSafe(ThreadSetManagerState.Running, out prevState);
-                Debug.Assert(changeStateToRunningSuccess && prevState == ThreadSetManagerState.StartRequested);
+                TurboContract.Assert(changeStateToRunningSuccess && prevState == ThreadSetManagerState.StartRequested, conditionString: "changeStateToRunningSuccess && prevState == ThreadSetManagerState.StartRequested");
             }
             catch
             {
@@ -425,8 +450,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
 
                 int activeThreadCount = Interlocked.Decrement(ref _activeThreadCount);
                 int exitedThreadCount = Interlocked.Increment(ref _exitedThreadCount);
-                Debug.Assert(activeThreadCount >= 0);
-                Debug.Assert(exitedThreadCount <= this.ThreadCount);
+                TurboContract.Assert(activeThreadCount >= 0, conditionString: "activeThreadCount >= 0");
+                TurboContract.Assert(exitedThreadCount <= this.ThreadCount, conditionString: "exitedThreadCount <= this.ThreadCount");
 
                 if (exitedThreadCount >= this.ThreadCount || (activeThreadCount == 0 && IsStopRequested))
                 {
@@ -438,12 +463,12 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
                     ThreadSetManagerState prevState;
                     if (ChangeStateSafe(ThreadSetManagerState.AllThreadsExited, out prevState))
                     {
-                        Debug.Assert(prevState == ThreadSetManagerState.Running);
+                        TurboContract.Assert(prevState == ThreadSetManagerState.Running, conditionString: "prevState == ThreadSetManagerState.Running");
                         _threadExitedEvent.Set();
                     }
                     else if (ChangeStateSafe(ThreadSetManagerState.Stopped, out prevState))
                     {
-                        Debug.Assert(prevState == ThreadSetManagerState.StopRequested);
+                        TurboContract.Assert(prevState == ThreadSetManagerState.StopRequested, conditionString: "prevState == ThreadSetManagerState.StopRequested");
                         _threadExitedEvent.Set();
                         Profiling.Profiler.ThreadSetManagerDisposed(this.Name, false);
                     }
@@ -462,9 +487,10 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         [System.Diagnostics.DebuggerNonUserCode]
         protected virtual void ProcessThreadException(Exception ex)
         {
-            Contract.Requires(ex != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
 
-            throw new ThreadSetManagerException("Unhandled exception during processing in ThreadSetManager ('" + this.Name + "')", ex);
+            // It is better to rethrow original exception
+            //throw new ThreadSetManagerException("Unhandled exception during processing in ThreadSetManager ('" + this.Name + "')", ex);
         }
 
         /// <summary>
@@ -572,8 +598,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
                 }
             }
 
-            Debug.Assert(State == ThreadSetManagerState.StopRequested || State == ThreadSetManagerState.Stopped);
-            Debug.Assert(!waitForStop || State == ThreadSetManagerState.Stopped);
+            TurboContract.Assert(State == ThreadSetManagerState.StopRequested || State == ThreadSetManagerState.Stopped, conditionString: "State == ThreadSetManagerState.StopRequested || State == ThreadSetManagerState.Stopped");
+            TurboContract.Assert(!waitForStop || State == ThreadSetManagerState.Stopped, conditionString: "!waitForStop || State == ThreadSetManagerState.Stopped");
         }
 
 
@@ -603,7 +629,7 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         {
             if (!this.IsStopRequestedOrStopped)
             {
-                Debug.Assert(isUserCall, "ThreadSetManager finalizer called. You should dispose ThreadSetManager explicitly. ThreadSetManagerName: " + this.Name);
+                TurboContract.Assert(isUserCall, "ThreadSetManager finalizer called. You should dispose ThreadSetManager explicitly. ThreadSetManagerName: " + this.Name);
 
                 if (isUserCall)
                     StopThreadManager(true);
@@ -629,6 +655,8 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
             GC.SuppressFinalize(this);
         }
 
+
+#if DEBUG
         /// <summary>
         /// Finalizer
         /// </summary>
@@ -636,5 +664,6 @@ namespace Qoollo.Turbo.Threading.ThreadManagement
         {
             Dispose(false);
         }
+#endif
     }
 }

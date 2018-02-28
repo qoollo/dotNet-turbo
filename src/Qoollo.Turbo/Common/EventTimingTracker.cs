@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
 
 namespace Qoollo.Turbo
 {
@@ -53,8 +51,10 @@ namespace Qoollo.Turbo
         public EventTimingTracker(TimeSpan period)
             : this((int)period.TotalMilliseconds)
         {
-			Contract.Requires<ArgumentException>(period >= TimeSpan.Zero);
-            Contract.Requires<ArgumentException>(period.TotalMilliseconds < int.MaxValue);
+            if (period < TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(period), nameof(period) + " cannot be negative");
+            if (period.TotalMilliseconds >= int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(period), nameof(period) + " should be less than int.MaxValue");
         }
         /// <summary>
         /// EventTimingTracker constructor
@@ -62,7 +62,8 @@ namespace Qoollo.Turbo
         /// <param name="periodMs">Time interval between reactions on the event</param>
         public EventTimingTracker(int periodMs)
         {
-            Contract.Requires<ArgumentException>(periodMs >= 0);
+            if (periodMs < 0)
+                throw new ArgumentOutOfRangeException(nameof(periodMs), nameof(periodMs) + " cannot be negative");
             
             _periodMs = periodMs;
             _registeredTimeStamp = 0;
@@ -127,7 +128,7 @@ namespace Qoollo.Turbo
 		public void Register(ActionOnPeriodPassed action)
 		{
 			if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
                 
             int newTimeStamp = GetTimeStamp();
             int registeredTimeStamp = Volatile.Read(ref _registeredTimeStamp);

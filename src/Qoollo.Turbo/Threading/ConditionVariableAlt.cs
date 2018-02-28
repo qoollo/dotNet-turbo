@@ -73,7 +73,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
-            Debug.Assert(_sourceWaiter.IsEntered());
+            TurboContract.Assert(_sourceWaiter.IsEntered(), conditionString: "_sourceWaiter.IsEntered()");
 
             bool timeouted = false;
 
@@ -144,7 +144,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
-            Debug.Assert(_sourceWaiter.IsEntered());
+            TurboContract.Assert(_sourceWaiter.IsEntered(), conditionString: "_sourceWaiter.IsEntered()");
 
             bool timeouted = false;
 
@@ -215,7 +215,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
-            Debug.Assert(_sourceWaiter.IsEntered());
+            TurboContract.Assert(_sourceWaiter.IsEntered(), conditionString: "_sourceWaiter.IsEntered()");
 
             if (predicate(state))
                 return true;
@@ -299,7 +299,7 @@ namespace Qoollo.Turbo.Threading
             if (_token.IsCancellationRequested)
                 throw new OperationCanceledException(_token);
 
-            Debug.Assert(_sourceWaiter.IsEntered());
+            TurboContract.Assert(_sourceWaiter.IsEntered(), conditionString: "_sourceWaiter.IsEntered()");
 
             if (predicate(ref state))
                 return true;
@@ -391,7 +391,7 @@ namespace Qoollo.Turbo.Threading
         private static void CancellationTokenCanceledEventHandler(object obj)
         {
             ConditionVariableAlt conditionVar = obj as ConditionVariableAlt;
-            Debug.Assert(conditionVar != null);
+            TurboContract.Assert(conditionVar != null, conditionString: "conditionVar != null");
             conditionVar.PulseAll();
         }
 
@@ -472,8 +472,8 @@ namespace Qoollo.Turbo.Threading
         /// <param name="waitingPrimitive">Waiting primitive</param>
         internal void AddWaiterToQueue(ManualResetEventSlim waitingPrimitive)
         {
-            Debug.Assert(waitingPrimitive != null);
-            Debug.Assert(this.IsEntered());
+            TurboContract.Assert(waitingPrimitive != null, conditionString: "waitingPrimitive != null");
+            TurboContract.Assert(this.IsEntered(), conditionString: "this.IsEntered()");
 
             _waiterQueue.AddLast(waitingPrimitive);
         }
@@ -484,8 +484,8 @@ namespace Qoollo.Turbo.Threading
         /// <returns>Was removed or not</returns>
         internal bool RemoveWaiterFromQueue(ManualResetEventSlim waitingPrimitive)
         {
-            Debug.Assert(waitingPrimitive != null);
-            Debug.Assert(this.IsEntered());
+            TurboContract.Assert(waitingPrimitive != null, conditionString: "waitingPrimitive != null");
+            TurboContract.Assert(this.IsEntered(), conditionString: "this.IsEntered()");
 
             return _waiterQueue.Remove(waitingPrimitive);
         }
@@ -530,7 +530,7 @@ namespace Qoollo.Turbo.Threading
             {
                 try
                 {
-                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutEC(token, _cancellationTokenCanceledEventHandler, this);
+                    cancellationTokenRegistration = CancellationTokenHelper.RegisterWithoutECIfPossible(token, _cancellationTokenCanceledEventHandler, this);
                     Monitor.Enter(_externalLock); // Can be interrupted
                 }
                 catch
@@ -604,7 +604,7 @@ namespace Qoollo.Turbo.Threading
             {
                 lock (_externalLock)
                 {
-                    Debug.Assert(_waiterCount >= _waiterQueue.Count);
+                    TurboContract.Assert(_waiterCount >= _waiterQueue.Count, conditionString: "_waiterCount >= _waiterQueue.Count");
                     for (int i = 0; i < count; i++)
                     {
                         if (_waiterQueue.Count == 0)
@@ -647,7 +647,7 @@ namespace Qoollo.Turbo.Threading
                 _isDisposed = true;
                 PulseAll();
 
-                Debug.Assert(_waiterQueue.Count == 0);
+                TurboContract.Assert(_waiterQueue.Count == 0, conditionString: "_waiterQueue.Count == 0");
                 _perThreadWaitEvent.Dispose();
             }
         }

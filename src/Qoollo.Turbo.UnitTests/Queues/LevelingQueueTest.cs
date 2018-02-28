@@ -10,7 +10,7 @@ using Qoollo.Turbo.Queues;
 namespace Qoollo.Turbo.UnitTests.Queues
 {
     [TestClass]
-    public class LevelingQueueTest
+    public class LevelingQueueTest : TestClassBase
     {
         private static void AtomicSet(ref int target, bool source)
         {

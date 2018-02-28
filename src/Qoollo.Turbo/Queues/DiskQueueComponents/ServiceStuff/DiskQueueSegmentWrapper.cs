@@ -16,7 +16,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         public static DiskQueueSegmentWrapper<T> CreateSegmentWrapped<T>(this DiskQueueSegmentFactory<T> factory, string path, long number)
         {
-            Debug.Assert(factory != null);
+            TurboContract.Requires(factory != null, conditionString: "factory != null");
+
             var segment = factory.CreateSegment(path, number);
             return new DiskQueueSegmentWrapper<T>(segment);
         }
@@ -25,7 +26,8 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         public static DiskQueueSegmentWrapper<T>[] DiscoverSegmentsWrapped<T>(this DiskQueueSegmentFactory<T> factory, string path)
         {
-            Debug.Assert(factory != null);
+            TurboContract.Requires(factory != null, conditionString: "factory != null");
+
             var discovered = factory.DiscoverSegments(path);
             if (discovered == null)
                 throw new InvalidOperationException("Existed segment discovery returned null");

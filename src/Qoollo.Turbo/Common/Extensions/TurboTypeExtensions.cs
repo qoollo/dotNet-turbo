@@ -1,20 +1,12 @@
-﻿using System;
+﻿using Qoollo.Turbo;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace System
 {
-    /// <summary>
-    /// Extension methods for the Type objects
-    /// </summary>
-    [Obsolete("Class was renamed to TurboTypeExtensions", true)]
-    public static class TypeExtensions
-    {
-    }
-
     /// <summary>
     /// Extension methods for the Type objects
     /// </summary>
@@ -28,7 +20,7 @@ namespace System
         [Pure]
         public static bool IsAssignableFromNull(this Type tp)
         {
-            Contract.Requires(tp != null);
+            TurboContract.Requires(tp != null, conditionString: "tp != null");
 
             return (!tp.IsValueType) || (tp.IsGenericType && tp.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
@@ -44,9 +36,8 @@ namespace System
         [Pure]
         private static string GetTypeName(Type type, string genericPrefix, string genericSuffix)
         {
-            Contract.Requires(type != null);
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             if (!type.IsGenericType)
                 return type.Name;
@@ -89,7 +80,7 @@ namespace System
         [Pure]
         private static string GetFullTypeName(Type type, string genericPrefix, string genericSuffix)
         {
-            Contract.Requires(type != null);
+            TurboContract.Requires(type != null, conditionString: "type != null");
 
             if (!type.IsNested)
                 return type.Namespace + "." + GetTypeName(type, genericPrefix, genericSuffix);
@@ -117,7 +108,7 @@ namespace System
         public static string GetCSName(this Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             return GetTypeName(type, "<", ">");
         }
@@ -130,7 +121,7 @@ namespace System
         public static string GetCSFullName(this Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             return GetFullTypeName(type, "<", ">");
         }
@@ -145,7 +136,7 @@ namespace System
         public static string GetVBName(this Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             return GetTypeName(type, "(Of ", ")");
 
@@ -159,7 +150,7 @@ namespace System
         public static string GetVBFullName(this Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             return GetFullTypeName(type, "(Of ", ")");
         }

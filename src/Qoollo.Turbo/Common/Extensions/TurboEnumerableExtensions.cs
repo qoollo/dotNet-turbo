@@ -2,18 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Diagnostics.Contracts;
+using Qoollo.Turbo;
 
 namespace System.Linq
 {
-    /// <summary>
-    /// Additional LINQ to Object extension methods
-    /// </summary>
-    [Obsolete("Class was renamed to TurboEnumerableExtensions", true)]
-    public static class EnumerableExtensions
-    {
-    }
-
     /// <summary>
     /// Additional LINQ to Object extension methods
     /// </summary>
@@ -27,7 +19,8 @@ namespace System.Linq
         /// <param name="predicate">Predicate</param>
         /// <returns>The index of element inside the collection, if found. -1 otherwise</returns>
         [Pure]
-        [Obsolete("Method was renamed. Consider to use FindIndex instead")]
+        [Obsolete("Method was renamed. Consider to use FindIndex instead", true)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static int FindPosition<T>(this IEnumerable<T> collection, Func<T, bool> predicate)
         {
             return FindIndex(collection, new Predicate<T>(predicate));
@@ -44,26 +37,19 @@ namespace System.Linq
         [Pure]
         public static int FindIndex<T>(this IEnumerable<T> collection, Predicate<T> predicate)
         {
-            Contract.Requires(collection != null);
-            Contract.Requires(predicate != null);
-
-            Contract.Ensures(Contract.Result<int>() >= -1);
+            TurboContract.Ensures(TurboContract.Result<int>() >= -1);
 
             if (collection == null)
-                throw new ArgumentNullException("collection");
-
+                throw new ArgumentNullException(nameof(collection));
             if (predicate == null)
-                throw new ArgumentNullException("predicate");
+                throw new ArgumentNullException(nameof(predicate));
 
-            IList<T> iList = collection as IList<T>;
-            if (iList != null)
+            if (collection is IList<T> iList)
             {
-                List<T> list = collection as List<T>;
-                if (list != null)
+                if (collection is List<T> list)
                     return list.FindIndex(predicate);
 
-                T[] array = collection as T[];
-                if (array != null)
+                if (collection is T[] array)
                     return Array.FindIndex(array, predicate);
 
                 int count = iList.Count;
@@ -96,13 +82,11 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence</returns>
         internal static TSource Max<TSource>(this IEnumerable<TSource> source, IComparer<TSource> comparer)
         {
-            Contract.Requires(source != null);
-
             if (comparer == null)
                 return Enumerable.Max(source);
 
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             using (var enumerator = source.GetEnumerator())
             {
@@ -132,13 +116,11 @@ namespace System.Linq
         /// <returns>The minimum value in the sequence</returns>
         internal static TSource Min<TSource>(this IEnumerable<TSource> source, IComparer<TSource> comparer)
         {
-            Contract.Requires(source != null);
-
             if (comparer == null)
                 return Enumerable.Min(source);
 
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             using (var enumerator = source.GetEnumerator())
             {
@@ -172,10 +154,8 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence</returns>
         public static TSource MaxBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
         {
-            Contract.Requires(source != null);
-
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             if (comparer == null)
                 comparer = Comparer<TKey>.Default;
@@ -228,10 +208,8 @@ namespace System.Linq
         /// <returns>The minimum value in the sequence</returns>
         public static TSource MinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
         {
-            Contract.Requires(source != null);
-
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             if (comparer == null)
                 comparer = Comparer<TKey>.Default;

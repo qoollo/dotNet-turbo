@@ -146,7 +146,7 @@ namespace Qoollo.Turbo.PerformanceTests
 
         private static void CapturePerfNew(int elemCount)
         {
-            ExecutionContext data = ExecutionContextHelper.CaptureContextNoSyncContext();
+            ExecutionContext data = ExecutionContextHelper.CaptureContextNoSyncContextIfPossible();
             ContextCallback clb = new ContextCallback(ExecutionMethod);
 
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
@@ -155,7 +155,7 @@ namespace Qoollo.Turbo.PerformanceTests
 
             for (int i = 0; i < elemCount; i++)
             {
-                data = ExecutionContextHelper.CaptureContextNoSyncContext();
+                data = ExecutionContextHelper.CaptureContextNoSyncContextIfPossible();
                 ExecutionContextHelper.RunInContext(data, clb, null, true);
                 //DoWithContext(data);
             }
@@ -172,7 +172,7 @@ namespace Qoollo.Turbo.PerformanceTests
             for (int i = 0; i < 10; i++)
             {
                 CapturePerfDefault(10000000);
-                CapturePerfInternal(10000000);
+                //CapturePerfInternal(10000000);
                 CapturePerfNew(10000000);
             }
         }

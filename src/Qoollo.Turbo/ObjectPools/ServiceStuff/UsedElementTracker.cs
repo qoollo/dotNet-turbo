@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -39,7 +38,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff
         /// <param name="checkPeriod">Период оценки минимального числа свободных элементов</param>
         public UsedElementTracker(int checkPeriod)
         {
-            Contract.Requires(checkPeriod > 0);
+            TurboContract.Requires(checkPeriod > 0, conditionString: "checkPeriod > 0");
 
             _checkPeriod = checkPeriod;
             _lastTestTime = GetTimestamp();
@@ -75,7 +74,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UpdateMinFreeElementCount(int curElementCount)
         {
-            Contract.Requires(curElementCount >= 0);
+            TurboContract.Requires(curElementCount >= 0, conditionString: "curElementCount >= 0");
 
             int minFreeElementsCount = Volatile.Read(ref _minFreeElementsCount);
             while (curElementCount < minFreeElementsCount)
@@ -113,7 +112,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff
                 return;
 
             int minFreeElementsCount = Interlocked.Exchange(ref _minFreeElementsCount, int.MaxValue);
-            Debug.Assert(minFreeElementsCount >= 0);
+            TurboContract.Assert(minFreeElementsCount >= 0, conditionString: "minFreeElementsCount >= 0");
 
             if (minFreeElementsCount == int.MaxValue)
                 Interlocked.Exchange(ref _elementToDestroy, 0);

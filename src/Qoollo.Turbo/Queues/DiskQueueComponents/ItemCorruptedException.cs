@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,6 +32,6 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
         /// </summary>
         /// <param name="info">SerializationInfo</param>
         /// <param name="context">StreamingContext</param>
-        protected ItemCorruptedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected ItemCorruptedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }

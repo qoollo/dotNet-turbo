@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,7 +44,7 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
 
         public object Resolve(Type reqObjectType, string paramName, Type forType, object extData)
         {
-            Contract.Requires(reqObjectType != null);
+            TurboContract.Requires(reqObjectType != null, conditionString: "reqObjectType != null");
 
             throw new NotImplementedException();
         }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -36,16 +35,6 @@ namespace Qoollo.Turbo.IoC.Lifetime
         private readonly Func<IInjectionResolver, object> _createInstFunc;
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            Contract.Invariant(_obj != null);
-            Contract.Invariant(_createInstFunc != null);
-        }
-
-        /// <summary>
         /// PerThreadLifetime constructor
         /// </summary>
         /// <param name="createInstFunc">Instance creation method</param>
@@ -53,7 +42,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         public PerThreadLifetime(Func<IInjectionResolver, object> createInstFunc, Type objType)
             : base(objType)
         {
-            Contract.Requires<ArgumentNullException>(createInstFunc != null, "createInstFunc");
+            if (createInstFunc == null)
+                throw new ArgumentNullException(nameof(createInstFunc));
 
             _obj = new ThreadLocal<ThreadLocalSlot>(true);
             _createInstFunc = createInstFunc;
@@ -80,6 +70,8 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <exception cref="CommonIoCException">Can be raised when injections not found</exception>
         public sealed override object GetInstance(IInjectionResolver resolver)
         {
+            TurboContract.Requires(resolver != null, conditionString: "resolver != null");
+
             var result = _obj.Value;
 
             if (!result.IsInitialized)
@@ -102,8 +94,7 @@ namespace Qoollo.Turbo.IoC.Lifetime
             {
                 if (inObj.IsInitialized)
                 {
-                    IDisposable inObjDisp = inObj.Object as IDisposable;
-                    if (inObjDisp != null)
+                    if (inObj.Object is IDisposable inObjDisp)
                         inObjDisp.Dispose();
                 }
             }

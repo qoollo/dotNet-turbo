@@ -2,18 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Diagnostics.Contracts;
+using Qoollo.Turbo;
 
 namespace System
 {
-    /// <summary>
-    /// Extension methods for Exception objects
-    /// </summary>
-    [Obsolete("Class was renamed to TurboExceptionExtensions", true)]
-    public static class ExceptionExtensions
-    {
-    }
-
     /// <summary>
     /// Extension methods for Exception objects
     /// </summary>
@@ -26,11 +18,11 @@ namespace System
         /// <returns>Full description for the exception</returns>
         public static string GetFullDescription(this Exception ex)
         {
-            Contract.Requires(ex != null);
-            Contract.Ensures(Contract.Result<string>() != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
+            TurboContract.Ensures(TurboContract.Result<string>() != null);
 
             if (ex == null)
-                throw new ArgumentNullException("ex");
+                throw new ArgumentNullException(nameof(ex));
 
             StringBuilder builder = new StringBuilder(1000);
             builder.Append(ex.GetType().Name).Append(": ").Append(ex.Message).AppendLine();
@@ -56,11 +48,11 @@ namespace System
         /// <returns>Full description for the exception</returns>
         public static string GetShortDescription(this Exception ex)
         {
-            Contract.Requires(ex != null);
-            Contract.Ensures(Contract.Result<string>() != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
+            TurboContract.Ensures(TurboContract.Result<string>() != null);
 
             if (ex == null)
-                throw new ArgumentNullException("ex");
+                throw new ArgumentNullException(nameof(ex));
 
             StringBuilder builder = new StringBuilder(256);
             builder.Append(ex.GetType().Name).Append(": ").Append(ex.Message).AppendLine();
@@ -85,7 +77,7 @@ namespace System
         /// <returns>True if the CodeContract exception</returns>
         public static bool IsCodeContractException(this Exception ex)
         {
-            Contract.Requires(ex != null);
+            TurboContract.Requires(ex != null, conditionString: "ex != null");
 
             return ex.GetType().FullName.StartsWith(CodeContractAssemblyName);
         }
@@ -99,8 +91,8 @@ namespace System
         /// <param name="message">Message, that will be passed to Exception constructor (can be null)</param>
         public static void ThrowException(Type exceptionType, string message)
         {
-            Contract.Requires(exceptionType != null);
-            Contract.Requires(exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception)));
+            TurboContract.Requires(exceptionType != null, conditionString: "exceptionType != null");
+            TurboContract.Requires(exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception)), conditionString: "exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception))");
 
             Qoollo.Turbo.TurboException.Throw(exceptionType, message);
         }

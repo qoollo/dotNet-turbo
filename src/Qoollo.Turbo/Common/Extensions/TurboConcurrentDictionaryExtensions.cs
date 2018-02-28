@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Qoollo.Turbo;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -58,7 +58,7 @@ namespace System.Collections.Concurrent
             /// <returns></returns>
             public static int GetEstimateCount(ConcurrentDictionary<TKey, TValue> dictionary)
             {
-                Contract.Requires(dictionary != null);
+                TurboContract.Requires(dictionary != null, conditionString: "dictionary != null");
 
                 if (_mCountField == null)
                     InitField();
@@ -95,11 +95,19 @@ namespace System.Collections.Concurrent
             {
                 var mTablesField = typeof(ConcurrentDictionary<TKey, TValue>).GetField("m_tables", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                 if (mTablesField == null)
-                    throw new InvalidOperationException("ConcurrentDictionary<,> does not contain 'm_tables' field");
+                {
+                    mTablesField = typeof(ConcurrentDictionary<TKey, TValue>).GetField("_tables", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    if (mTablesField == null)
+                        throw new InvalidOperationException("ConcurrentDictionary<,> does not contain 'm_tables' field");
+                }
 
                 var mCountField = mTablesField.FieldType.GetField("m_countPerLock", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | BindingFlags.Public);
                 if (mCountField == null)
-                    throw new InvalidOperationException("ConcurrentDictionary<,>.Tables does not contain 'm_countPerLock' field");
+                {
+                    mCountField = mTablesField.FieldType.GetField("_countPerLock", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | BindingFlags.Public);
+                    if (mCountField == null)
+                        throw new InvalidOperationException("ConcurrentDictionary<,>.Tables does not contain 'm_countPerLock' field");
+                }
 
                 var volatileReadMethod = typeof(Volatile).GetMethod("Read", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(int).MakeByRefType() }, null);
                 if (volatileReadMethod == null)
@@ -181,7 +189,7 @@ namespace System.Collections.Concurrent
             /// <returns></returns>
             public static int GetEstimateCount(ConcurrentDictionary<TKey, TValue> dictionary)
             {
-                Contract.Requires(dictionary != null);
+                TurboContract.Requires(dictionary != null, conditionString: "dictionary != null");
 
                 var func = _getEstimateCount;
                 if (func == null)
@@ -202,10 +210,12 @@ namespace System.Collections.Concurrent
         /// <typeparam name="TValue">The type of the values in the dictionary</typeparam>
         /// <param name="dictionary">ConcurrentDictionary</param>
         /// <returns>Estimate number of elements contained in the  ConcurrentDictionary</returns>
+        [Obsolete("Dangerous method. Consider to track EstimateCount explicitly", false)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static int GetEstimateCount<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             return GenericContainerCompiled<TKey, TValue>.GetEstimateCount(dictionary);
         }

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Queues
 {
     [TestClass]
-    public class MemoryQueueTests
+    public class MemoryQueueTests : TestClassBase
     {
         [TestMethod]
         public void AddTakeMultithreadTest()

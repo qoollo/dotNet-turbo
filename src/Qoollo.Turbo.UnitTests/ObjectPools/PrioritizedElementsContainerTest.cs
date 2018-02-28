@@ -11,21 +11,18 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
     [TestClass]
-    public class PrioritizedElementsContainerTest
+    public class PrioritizedElementsContainerTest : TestClassBase
     {
         [ClassInitialize]
         public static void Init(TestContext context)
         {
-            TestLoggingHelper.Subscribe(context, true);
+            SubscribeToUnhandledExceptions(context, true);
         }
         [ClassCleanup]
         public static void Cleanup()
         {
-            TestLoggingHelper.Unsubscribe();
+            UnsubscribeFromUnhandledExceptions();
         }
-
-
-        public TestContext TestContext { get; set; }
 
         //=============================
 

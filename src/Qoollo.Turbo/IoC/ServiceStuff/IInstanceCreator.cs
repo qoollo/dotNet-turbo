@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,8 +48,8 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
 
         public object CreateInstance(IInjectionResolver resolver)
         {
-            Contract.Requires(resolver != null);
-            Contract.Ensures(Contract.Result<object>() != null);
+            TurboContract.Requires(resolver != null, conditionString: "resolver != null");
+            TurboContract.Ensures(TurboContract.Result<object>() != null);
 
             throw new NotImplementedException();
         }
@@ -68,7 +67,7 @@ namespace Qoollo.Turbo.IoC.ServiceStuff
 
         public object CreateInstance()
         {
-            Contract.Ensures(Contract.Result<object>() != null);
+            TurboContract.Ensures(TurboContract.Result<object>() != null);
 
             throw new NotImplementedException();
         }

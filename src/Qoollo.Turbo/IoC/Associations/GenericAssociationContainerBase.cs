@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -139,7 +138,7 @@ namespace Qoollo.Turbo.IoC.Associations
                 case OverrideObjectInstantiationMode.None:
                     return src;
             }
-            Debug.Assert(false, "Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
+            TurboContract.Assert(false, "Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
             throw new AssociationIoCException("Unknown OverrideObjectInstantiationMode: " + overrideMod.ToString());
         }
 
@@ -150,14 +149,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Lifetime object container to add</param>
         protected void AddAssociation(TKey key, LifetimeBase val)
         {
-            Contract.Requires(key != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(this.ContainsInner(key));
-
-            if (key == null)
-                throw new ArgumentNullException("key");
-            if (val == null)
-                throw new ArgumentNullException("val");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
+            TurboContract.Ensures(this.ContainsInner(key));
 
             if (!IsGoodTypeForKey(key, val.OutputType))
                 throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for type ({1})", key, val.OutputType));
@@ -175,14 +169,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected bool TryAddAssociation(TKey key, LifetimeBase val)
         {
-            Contract.Requires(key != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
-
-            if (key == null)
-                throw new ArgumentNullException("key");
-            if (val == null)
-                throw new ArgumentNullException("val");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || this.ContainsInner(key));
 
             if (!IsGoodTypeForKey(key, val.OutputType))
                 throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, val.OutputType));
@@ -200,17 +189,10 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">Factory to create a lifetime container for the sepcified 'objType'</param>
         protected void AddAssociation(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires(key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(this.ContainsInner(key));
-
-            if (key == null)
-                throw new ArgumentNullException("key");
-            if (objType == null)
-                throw new ArgumentNullException("objType");
-            if (val == null)
-                throw new ArgumentNullException("val");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
+            TurboContract.Ensures(this.ContainsInner(key));
 
             if (!IsGoodTypeForKey(key, objType))
                 throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, objType));
@@ -229,17 +211,10 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if AssociationContainer not contains lifetime container with the same key; overwise false</returns>
         protected bool TryAddAssociation(TKey key, Type objType, Qoollo.Turbo.IoC.Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires(key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(Contract.Result<bool>() == false || this.ContainsInner(key));
-
-            if (key == null)
-                throw new ArgumentNullException("key");
-            if (objType == null)
-                throw new ArgumentNullException("objType");
-            if (val == null)
-                throw new ArgumentNullException("val");
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || this.ContainsInner(key));
 
             if (!IsGoodTypeForKey(key, objType))
                 throw new AssociationBadKeyForTypeException(string.Format("Bad key ({0}) for the type ({1})", key, objType));
@@ -257,11 +232,10 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <exception cref="ArgumentNullException"></exception>
         public bool RemoveAssociation(TKey key)
         {
-            Contract.Requires(key != null);
-            Contract.Ensures(!this.ContainsInner(key));
+            TurboContract.Ensures(!this.ContainsInner(key));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             CheckContainerState(true);
 
@@ -275,10 +249,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <exception cref="ArgumentNullException"></exception>
         public bool Contains(TKey key)
         {
-            Contract.Requires(key != null);
-
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (_isDisposed)
                 return false;
@@ -299,15 +271,17 @@ namespace Qoollo.Turbo.IoC.Associations
             Action<Type, TAttr> procAction, bool multiAttr = true)
             where TAttr : LocatorTargetObjectAttribute
         {
-            Contract.Requires<ArgumentNullException>(typeSource != null);
-            Contract.Requires<ArgumentNullException>(procAction != null);
+            if (typeSource == null)
+                throw new ArgumentNullException(nameof(typeSource));
+            if (procAction == null)
+                throw new ArgumentNullException(nameof(procAction));
 
             CheckContainerState(true);
 
             object[] attr = null;
             foreach (var curTp in typeSource)
             {
-                Debug.Assert(curTp != null);
+                TurboContract.Assert(curTp != null, conditionString: "curTp != null");
 
                 attr = curTp.GetCustomAttributes(false);
                 if (attr == null || attr.Length == 0)
@@ -315,7 +289,7 @@ namespace Qoollo.Turbo.IoC.Associations
 
                 foreach (var curAttr in attr.OfType<TAttr>())
                 {
-                    Debug.Assert(curAttr != null);
+                    TurboContract.Assert(curAttr != null, conditionString: "curAttr != null");
 
                     if (attrCmpPredicate == null || attrCmpPredicate(curAttr))
                     {
@@ -343,8 +317,10 @@ namespace Qoollo.Turbo.IoC.Associations
             OverrideObjectInstantiationMode modeOver = OverrideObjectInstantiationMode.None, bool multiAttr = true, bool combineIfPossible = true)
             where TAttr : LocatorTargetObjectAttribute
         {
-            Contract.Requires<ArgumentNullException>(typeSource != null);
-            Contract.Requires<ArgumentNullException>(keyGenerator != null);
+            if (typeSource == null)
+                throw new ArgumentNullException(nameof(typeSource));
+            if (keyGenerator == null)
+                throw new ArgumentNullException(nameof(keyGenerator));
 
 
             Type curAnalizeType = null;
@@ -407,12 +383,11 @@ namespace Qoollo.Turbo.IoC.Associations
         LifetimeBase IAssociationSource<TKey>.GetAssociation(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (_isDisposed)
                 throw new ObjectDisposedException(this.GetType().Name);
-            
-            LifetimeBase res = null;
-            if (!TryGetAssociationInner(key, out res))
+
+            if (!TryGetAssociationInner(key, out LifetimeBase res))
                 throw new KeyNotFoundException(string.Format("Key {0} not found in Association Container", key));
 
             return res;
@@ -427,7 +402,7 @@ namespace Qoollo.Turbo.IoC.Associations
         bool IAssociationSource<TKey>.TryGetAssociation(TKey key, out LifetimeBase val)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (_isDisposed)
             {
@@ -446,7 +421,7 @@ namespace Qoollo.Turbo.IoC.Associations
         bool IAssociationSource<TKey>.Contains(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (_isDisposed)
                 return false;
 
@@ -516,10 +491,10 @@ namespace Qoollo.Turbo.IoC.Associations
 
         protected override LifetimeBase ProduceResolveInfo(T key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
-            Contract.Ensures(Contract.Result<LifetimeBase>() != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
+            TurboContract.Ensures(TurboContract.Result<LifetimeBase>() != null);
 
             throw new NotImplementedException();
         }
@@ -527,65 +502,65 @@ namespace Qoollo.Turbo.IoC.Associations
 
         protected override bool IsGoodTypeForKey(T key, Type objType)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(objType != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             throw new NotImplementedException();
         }
 
         protected override void AddAssociationInner(T key, LifetimeBase val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(val != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool TryAddAssociationInner(T key, LifetimeBase val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(val != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             throw new NotImplementedException();
         }
 
         protected override void AddAssociationInner(T key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool TryAddAssociationInner(T key, Type objType, Lifetime.Factories.LifetimeFactory val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Requires(objType != null);
-            Contract.Requires(val != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(val != null, conditionString: "val != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool TryGetAssociationInner(T key, out LifetimeBase val)
         {
-            Contract.Requires((object)key != null);
-            Contract.Ensures((Contract.Result<bool>() == true && Contract.ValueAtReturn<LifetimeBase>(out val) != null) ||
-                (Contract.Result<bool>() == false && Contract.ValueAtReturn<LifetimeBase>(out val) == null));
+            TurboContract.Requires(key != null, conditionString: "key != null");
+            TurboContract.Ensures((TurboContract.Result<bool>() == true && TurboContract.ValueAtReturn<LifetimeBase>(out val) != null) ||
+                (TurboContract.Result<bool>() == false && TurboContract.ValueAtReturn<LifetimeBase>(out val) == null));
 
             throw new NotImplementedException();
         }
 
         protected override bool RemoveAssociationInner(T key)
         {
-            Contract.Requires((object)key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }
 
         protected override bool ContainsInner(T key)
         {
-            Contract.Requires((object)key != null);
+            TurboContract.Requires(key != null, conditionString: "key != null");
 
             throw new NotImplementedException();
         }

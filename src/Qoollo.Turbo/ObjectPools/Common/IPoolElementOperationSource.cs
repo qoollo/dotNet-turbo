@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,7 +29,7 @@ namespace Qoollo.Turbo.ObjectPools.Common
 
         public bool IsValid(PoolElementWrapper<T> container)
         {
-            Contract.Requires(container != null);
+            TurboContract.Requires(container != null, conditionString: "container != null");
 
             throw new NotImplementedException();
         }

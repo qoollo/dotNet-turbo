@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class WeakDelegateTests
+    public class WeakDelegateTests : TestClassBase
     {
         class TargetClass
         {

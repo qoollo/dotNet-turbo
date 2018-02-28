@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -12,7 +11,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
     /// Asynchronous items processor with queue (base methods)
     /// </summary>
     /// <typeparam name="T">Type of the elements processed by this <see cref="QueueAsyncProcessorBase{T}"/></typeparam>
-    public abstract class QueueAsyncProcessorBase<T>: IConsumer<T>, IDisposable
+    public abstract class QueueAsyncProcessorBase<T>: IQueueAsyncProcessor<T>, IConsumer<T>, IDisposable
     {
         /// <summary>
         /// Attempts to add new item to processing queue
@@ -29,7 +28,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         public void Add(T element)
         {
             bool result = Add(element, Timeout.Infinite, new CancellationToken());
-            Debug.Assert(result);
+            TurboContract.Assert(result, "Add returned false with infinite timeout");
         }
         /// <summary>
         /// Adds new item to processing queue
@@ -39,7 +38,7 @@ namespace Qoollo.Turbo.Threading.QueueProcessing
         public void Add(T element, CancellationToken token)
         {
             bool result = Add(element, Timeout.Infinite, token);
-            Debug.Assert(result);
+            TurboContract.Assert(result, "Add returned false with infinite timeout");
         }
         /// <summary>
         /// Attempts to add new item to processing queue

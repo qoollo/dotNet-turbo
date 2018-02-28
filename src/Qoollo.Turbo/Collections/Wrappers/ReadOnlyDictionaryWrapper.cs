@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,11 +31,11 @@ namespace Qoollo.Turbo.Collections
         /// <summary>
         /// ReadOnlyDictionaryWrapper constructor
         /// </summary>
-        /// <param name="dict">Wrapped dictionary</param>
-        public ReadOnlyDictionaryWrapper(IDictionary<TKey, TValue> dict)
-            : base(dict)
+        /// <param name="dictionary">Wrapped dictionary</param>
+        public ReadOnlyDictionaryWrapper(IDictionary<TKey, TValue> dictionary)
+            : base(dictionary)
         {
-            Contract.Requires<ArgumentNullException>(dict != null);
+            TurboContract.Requires(dictionary != null, conditionString: "dictionary != null");
         }
     }
 }

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.IoC
 {
     [TestClass]
-    public class ObjectInstantiationHelperTests
+    public class ObjectInstantiationHelperTests : TestClassBase
     {
         public class TestSimpleClass { }
 

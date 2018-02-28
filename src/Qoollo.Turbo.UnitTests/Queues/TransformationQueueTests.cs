@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Queues
 {
     [TestClass]
-    public class TransformationQueueTests
+    public class TransformationQueueTests : TestClassBase
     {
         private class TypeConverter : ITransformationQueueConverter<int, long>
         {

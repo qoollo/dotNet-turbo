@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Profiling
 {
     /// <summary>
-    /// Таймер для профилировки
+    /// Internal timer for profiling
     /// </summary>
     internal struct ProfilingTimer
     {

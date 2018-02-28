@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +23,9 @@ namespace Qoollo.Turbo.IoC.Associations
         [Obsolete("Do not use this method. If it is required, it should be implemented in the derived container.")]
         public void AddSingleton(Type key, object val)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
             base.AddAssociation(key, new Lifetime.SingletonLifetime(val));
         }
         /// <summary>
@@ -35,8 +37,10 @@ namespace Qoollo.Turbo.IoC.Associations
         [Obsolete("Do not use this method. If it is required, it should be implemented in the derived container.")]
         public void AddSingleton(Type key, object val, bool disposeWithContainer)
         {
-            Contract.Requires<ArgumentNullException>(key != null);
-            Contract.Requires<ArgumentNullException>(val != null);
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (val == null)
+                throw new ArgumentNullException(nameof(val));
 
             base.AddAssociation(key, new Lifetime.SingletonLifetime(val, disposeWithContainer));
         }
@@ -50,6 +54,9 @@ namespace Qoollo.Turbo.IoC.Associations
         [Obsolete("Do not use this method. If it is required, it should be implemented in the derived container.")]
         public bool TryAddSingleton(Type key, object val)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
             return base.TryAddAssociation(key, new Lifetime.SingletonLifetime(val));
         }
         /// <summary>
@@ -62,8 +69,10 @@ namespace Qoollo.Turbo.IoC.Associations
         [Obsolete("Do not use this method. If it is required, it should be implemented in the derived container.")]
         public bool TryAddSingleton(Type key, object val, bool disposeWithContainer)
         {
-            Contract.Requires<ArgumentNullException>(key != null);
-            Contract.Requires<ArgumentNullException>(val != null);
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (val == null)
+                throw new ArgumentNullException(nameof(val));
 
             return base.TryAddAssociation(key, new Lifetime.SingletonLifetime(val, disposeWithContainer));
         }
@@ -78,6 +87,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="lifetimeContainer">Lifetime object container to add</param>
         public new void AddAssociation(Type key, Lifetime.LifetimeBase lifetimeContainer)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (lifetimeContainer == null)
+                throw new ArgumentNullException(nameof(lifetimeContainer));
+
             base.AddAssociation(key, lifetimeContainer);
         }
         /// <summary>
@@ -88,6 +102,13 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="factory">Factory to create a lifetime container for the sepcified 'objType'</param>
         public new void AddAssociation(Type key, Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+            if (factory == null)
+                throw new ArgumentNullException(nameof(factory));
+
             base.AddAssociation(key, objType, factory);
         }
 
@@ -99,6 +120,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public new bool TryAddAssociation(Type key, Lifetime.LifetimeBase lifetimeContainer)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (lifetimeContainer == null)
+                throw new ArgumentNullException(nameof(lifetimeContainer));
+
             return base.TryAddAssociation(key, lifetimeContainer);
         }
         /// <summary>
@@ -110,6 +136,13 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public new bool TryAddAssociation(Type key, Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+            if (factory == null)
+                throw new ArgumentNullException(nameof(factory));
+
             return base.TryAddAssociation(key, objType, factory);
         }
 
@@ -122,6 +155,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the singleton lifetime container</param>
         public void AddSingleton(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             base.AddAssociation(key, objType, LifetimeFactories.Singleton);
         }
         /// <summary>
@@ -132,6 +170,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddSingleton(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             return base.TryAddAssociation(key, objType, LifetimeFactories.Singleton);
         }
 
@@ -144,6 +187,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the defered singleton lifetime container</param>
         public void AddDeferedSingleton(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             base.AddAssociation(key, objType, LifetimeFactories.DeferedSingleton);
         }
         /// <summary>
@@ -154,6 +202,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddDeferedSingleton(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             return base.TryAddAssociation(key, objType, LifetimeFactories.DeferedSingleton);
         }
 
@@ -166,6 +219,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the PerThread lifetime container</param>
         public void AddPerThread(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             base.AddAssociation(key, objType, LifetimeFactories.PerThread);
         }
         /// <summary>
@@ -176,6 +234,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerThread(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             return base.TryAddAssociation(key, objType, LifetimeFactories.PerThread);
         }
 
@@ -188,6 +251,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the PerCall lifetime container</param>
         public void AddPerCall(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             base.AddAssociation(key, objType, LifetimeFactories.PerCall);
         }
         /// <summary>
@@ -198,6 +266,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerCall(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             return base.TryAddAssociation(key, objType, LifetimeFactories.PerCall);
         }
 
@@ -210,6 +283,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the PerCallInlinedParams lifetime container</param>
         public void AddPerCallInlinedParams(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             base.AddAssociation(key, objType, LifetimeFactories.PerCallInlinedParams);
         }
         /// <summary>
@@ -220,6 +298,11 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public bool TryAddPerCallInlinedParams(Type key, Type objType)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (objType == null)
+                throw new ArgumentNullException(nameof(objType));
+
             return base.TryAddAssociation(key, objType, LifetimeFactories.PerCallInlinedParams);
         }
     }

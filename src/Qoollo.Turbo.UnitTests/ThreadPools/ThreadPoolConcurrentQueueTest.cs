@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ThreadPools
 {
     [TestClass]
-    public class ThreadPoolConcurrentQueueTest
+    public class ThreadPoolConcurrentQueueTest : TestClassBase
     {
         private class TestThreadPoolItem : ThreadPoolWorkItem, IEquatable<TestThreadPoolItem>
         {

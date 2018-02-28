@@ -2,7 +2,6 @@
 using Qoollo.Turbo.ObjectPools.ServiceStuff;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -282,7 +281,7 @@ namespace Qoollo.Turbo.ObjectPools
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
+                TurboContract.Ensures(TurboContract.Result<int>() >= 0);
 
                 throw new NotImplementedException();
             }
@@ -295,7 +294,7 @@ namespace Qoollo.Turbo.ObjectPools
 
         protected internal override void ReleaseElement(PoolElementWrapper<TElem> element)
         {
-            Contract.Requires(element != null);
+            TurboContract.Requires(element != null, conditionString: "element != null");
 
             throw new NotImplementedException();
         }

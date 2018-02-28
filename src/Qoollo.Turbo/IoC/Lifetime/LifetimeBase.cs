@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,21 +16,13 @@ namespace Qoollo.Turbo.IoC.Lifetime
         private readonly Type _outputType;
 
         /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private void Invariant()
-        {
-            Contract.Invariant(OutputType != null);
-        }
-
-        /// <summary>
         /// LifetimeBase constructor
         /// </summary>
         /// <param name="outType">The type of the object to be stored in the current Lifetime container</param>
         public LifetimeBase(Type outType)
         {
-            Contract.Requires<ArgumentNullException>(outType != null, "outType");
+            if (outType == null)
+                throw new ArgumentNullException(nameof(outType));
 
             _outputType = outType;
         }
@@ -53,11 +44,11 @@ namespace Qoollo.Turbo.IoC.Lifetime
         /// <returns>True if the object was successfully resolved</returns>
         public bool TryGetInstance(IInjectionResolver resolver, out object val)
         {
-            Contract.Requires(resolver != null);
-            Contract.Ensures((Contract.Result<bool>() == true && 
-                    ((Contract.ValueAtReturn<object>(out val) != null && Contract.ValueAtReturn<object>(out val).GetType() == this.OutputType) ||
-                     (Contract.ValueAtReturn<object>(out val) == null && this.OutputType.IsAssignableFromNull())))           
-                || (Contract.Result<bool>() == false && Contract.ValueAtReturn<object>(out val) == null));
+            TurboContract.Requires(resolver != null, conditionString: "resolver != null");
+            TurboContract.Ensures((TurboContract.Result<bool>() == true && 
+                    ((TurboContract.ValueAtReturn(out val) != null && TurboContract.ValueAtReturn(out val).GetType() == this.OutputType) ||
+                     (TurboContract.ValueAtReturn(out val) == null && this.OutputType.IsAssignableFromNull())))           
+                || (TurboContract.Result<bool>() == false && TurboContract.ValueAtReturn(out val) == null));
 
 
             try
@@ -117,9 +108,9 @@ namespace Qoollo.Turbo.IoC.Lifetime
 
         public override object GetInstance(IInjectionResolver resolver)
         {
-            Contract.Requires(resolver != null);
-            Contract.Ensures((Contract.Result<object>() != null && Contract.Result<object>().GetType() == this.OutputType) ||
-                             (Contract.Result<object>() == null && this.OutputType.IsAssignableFromNull()));
+            TurboContract.Requires(resolver != null, conditionString: "resolver != null");
+            TurboContract.Ensures((TurboContract.Result<object>() != null && TurboContract.Result<object>().GetType() == this.OutputType) ||
+                             (TurboContract.Result<object>() == null && this.OutputType.IsAssignableFromNull()));
 
             throw new NotImplementedException();
         }

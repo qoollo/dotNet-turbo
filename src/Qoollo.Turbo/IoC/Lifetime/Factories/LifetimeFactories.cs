@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -17,21 +16,6 @@ namespace Qoollo.Turbo.IoC
     /// </summary>
     public static class LifetimeFactories
     {
-        /// <summary>
-        /// Code contracts
-        /// </summary>
-        [ContractInvariantMethod]
-        private static void Invariant()
-        {
-            Contract.Invariant(Singleton != null);
-            Contract.Invariant(DeferedSingleton != null);
-            Contract.Invariant(PerThread != null);
-            Contract.Invariant(PerCall != null);
-            Contract.Invariant(PerCallInlinedParams != null); 
-        }
-
-
-
         private static readonly SingletonLifetimeFactory _singleton = new SingletonLifetimeFactory();
         /// <summary>
         /// Gets a SingletonLifetimeFactory instance
@@ -86,7 +70,7 @@ namespace Qoollo.Turbo.IoC
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LifetimeFactory GetLifetimeFactory(ObjectInstantiationMode instMode)
         {
-            Contract.Ensures(Contract.Result<LifetimeFactory>() != null);
+            TurboContract.Ensures(TurboContract.Result<LifetimeFactory>() != null);
 
             switch (instMode)
             {
@@ -101,8 +85,8 @@ namespace Qoollo.Turbo.IoC
                 case ObjectInstantiationMode.PerCallInlinedParams:
                     return LifetimeFactories.PerCallInlinedParams;
             }
-            Debug.Assert(false, "Unknown ObjectInstantiationMode");
-            throw new CommonIoCException("Unknown ObjectInstantiationMode");
+            
+            throw new CommonIoCException($"Unknown ObjectInstantiationMode: {instMode}");
         }
     }
 }

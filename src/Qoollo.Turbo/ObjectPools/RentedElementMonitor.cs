@@ -3,7 +3,6 @@ using Qoollo.Turbo.ObjectPools.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -64,7 +63,7 @@ namespace Qoollo.Turbo.ObjectPools
         /// <param name="sourcePool">Source object pool</param>
         internal RentedElementMonitor(PoolElementWrapper<TElem> element, ObjectPoolManager<TElem> sourcePool)
         {
-            Contract.Requires(element == null || (element != null && sourcePool != null));
+            TurboContract.Requires(element == null || (element != null && sourcePool != null), conditionString: "element == null || (element != null && sourcePool != null)");
 
             if (element == null)
             {
@@ -182,7 +181,7 @@ namespace Qoollo.Turbo.ObjectPools
             _elementWrapper = null;
             _sourcePool = null;
 
-            Debug.Assert((wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null));
+            TurboContract.Assert((wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null), conditionString: "(wrapperCopy == null && sourcePool == null) || (wrapperCopy != null && sourcePool != null)");
 
             if (wrapperCopy != null && sourcePool != null)
             {
@@ -224,7 +223,7 @@ namespace Qoollo.Turbo.ObjectPools
             if (rentedAt == "")
                 rentedAt = ". RentedAt: <unknown>";
 
-            Debug.Assert(false, "Rented element should be disposed by user call. Finalizer is not allowed. PoolName: " + poolName + rentedAt);
+            TurboContract.Assert(false, "Rented element should be disposed by user call. Finalizer is not allowed. PoolName: " + poolName + rentedAt);
 
             if (_elementWrapper != null && _sourcePool != null)
                 _sourcePool.ReleaseElement(_elementWrapper);

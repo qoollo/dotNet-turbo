@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -61,8 +60,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <returns>Данные потока</returns>
         public ThreadPoolThreadLocals GetOrCreateThisThreadData(bool createThreadLocalQueue = true)
         {
-            Contract.Ensures(Contract.Result<ThreadPoolThreadLocals>() != null);
-            Debug.Assert(!_isDisposed);
+            TurboContract.Ensures(TurboContract.Result<ThreadPoolThreadLocals>() != null);
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             ThreadPoolThreadLocals result = _perThreadData.Value;
             if (result == null)
@@ -102,8 +101,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ExtendGlobalQueueCapacity(int extensionVal)
         {
-            Contract.Requires(extensionVal >= 0);
-            Debug.Assert(!_isDisposed);
+            TurboContract.Requires(extensionVal >= 0, conditionString: "extensionVal >= 0");
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             _queues.ExtendGlobalQueueCapacity(extensionVal);
         }
@@ -116,8 +115,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddItem(ThreadPoolWorkItem item, bool forceGlobal)
         {
-            Contract.Requires(item != null);
-            Debug.Assert(!_isDisposed);
+            TurboContract.Requires(item != null, conditionString: "item != null");
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             ThreadPoolLocalQueue localQueue = null;
 
@@ -138,8 +137,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryAddItem(ThreadPoolWorkItem item, bool forceGlobal)
         {
-            Contract.Requires(item != null);
-            Debug.Assert(!_isDisposed);
+            TurboContract.Requires(item != null, conditionString: "item != null");
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             ThreadPoolLocalQueue localQueue = null;
 
@@ -160,8 +159,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ThreadPoolWorkItem TakeItem(ThreadPoolThreadLocals local, CancellationToken token)
         {        
-            Contract.Ensures(Contract.Result<ThreadPoolWorkItem>() != null);
-            Debug.Assert(!_isDisposed);
+            TurboContract.Ensures(TurboContract.Result<ThreadPoolWorkItem>() != null);
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             if (local != null)
                 return _queues.Take(local.LocalQueue, token);
@@ -177,8 +176,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryTakeItem(ThreadPoolThreadLocals local, out ThreadPoolWorkItem item)
         {
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Debug.Assert(!_isDisposed);
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             if (local != null)
                 return _queues.TryTake(local.LocalQueue, out item, 0, new CancellationToken(), true);
@@ -199,8 +198,8 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryTakeItem(ThreadPoolThreadLocals local, bool doLocalSearch, bool doWorkSteal, out ThreadPoolWorkItem item, int timeout, CancellationToken token, bool throwOnCancellation)
         {
-            Contract.Ensures(Contract.Result<bool>() == false || Contract.ValueAtReturn(out item) != null);
-            Debug.Assert(!_isDisposed);
+            TurboContract.Ensures(TurboContract.Result<bool>() == false || TurboContract.ValueAtReturn(out item) != null);
+            TurboContract.Assert(!_isDisposed, conditionString: "!_isDisposed");
 
             if (local != null)
                 return _queues.TryTake(local.LocalQueue, doLocalSearch, doWorkSteal, out item, timeout, token, throwOnCancellation);
@@ -230,12 +229,12 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
                 _isDisposed = true;
 
 
-                Debug.Assert(isUserCall, "Finalizer called for ThreadPoolGlobals. It should be disposed explicitly by calling Dispose on ThreadPool. ThreadPoolName: " + this.OwnerPoolName);
+                TurboContract.Assert(isUserCall, "Finalizer called for ThreadPoolGlobals. It should be disposed explicitly by calling Dispose on ThreadPool. ThreadPoolName: " + this.OwnerPoolName);
 
                 if (isUserCall)
                 {
                     var perThreadData = _perThreadData.Values.ToArray();
-                    Debug.Assert(Contract.ForAll(perThreadData, o => o == null), "ThreadPoolGlobals contains thread information on Dispose");
+                    TurboContract.Assert(perThreadData.All(o => o == null), "ThreadPoolGlobals contains thread information on Dispose");
                     if (perThreadData.Any(o => o != null))
                         throw new InvalidOperationException("ThreadPoolGlobals contains thread information on Dispose");
 

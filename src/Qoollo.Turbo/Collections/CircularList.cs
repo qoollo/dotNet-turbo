@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,7 +36,8 @@ namespace Qoollo.Turbo.Collections
             /// <param name="srcList">Source CircularList to enumerate</param>
             internal Enumerator(CircularList<T> srcList)
             {
-                Contract.Requires(srcList != null);
+                TurboContract.Requires(srcList != null, conditionString: "srcList != null");
+
                 _srcList = srcList;
                 _version = _srcList._version;
                 _index = -1;
@@ -172,13 +172,13 @@ namespace Qoollo.Turbo.Collections
         [ContractInvariantMethod]
         private void Invariant()
         {
-            Contract.Invariant(_elemArray != null);
-            Contract.Invariant(_head >= 0);
-            Contract.Invariant((_head < _elemArray.Length) || (_elemArray.Length == 0 && _head == 0));
-            Contract.Invariant(_tail >= 0);
-            Contract.Invariant((_tail < _elemArray.Length) || (_elemArray.Length == 0 && _tail == 0));
-            Contract.Invariant(_size >= 0);
-            Contract.Invariant(_elemArray.Length == 0 || (((_head + _size) % _elemArray.Length) == _tail));
+            TurboContract.Invariant(_elemArray != null);
+            TurboContract.Invariant(_head >= 0);
+            TurboContract.Invariant((_head < _elemArray.Length) || (_elemArray.Length == 0 && _head == 0));
+            TurboContract.Invariant(_tail >= 0);
+            TurboContract.Invariant((_tail < _elemArray.Length) || (_elemArray.Length == 0 && _tail == 0));
+            TurboContract.Invariant(_size >= 0);
+            TurboContract.Invariant(_elemArray.Length == 0 || (((_head + _size) % _elemArray.Length) == _tail));
         }
 
         /// <summary>
@@ -195,7 +195,8 @@ namespace Qoollo.Turbo.Collections
         /// <param name="capacity">Initial capacity</param>
 		public CircularList(int capacity)
 		{
-            Contract.Requires<ArgumentOutOfRangeException>(capacity >= 0);
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity), "capacity cannot be negative");
 
 			_elemArray = new T[capacity];
 			_head = 0;
@@ -209,10 +210,10 @@ namespace Qoollo.Turbo.Collections
         /// <param name="collection">The collection whose elements are copied to the new list</param>
         public CircularList(IEnumerable<T> collection)
 		{
-            Contract.Requires<ArgumentNullException>(collection != null);
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
-            var col = collection as ICollection<T>;
-            if (col != null)
+            if (collection is ICollection<T> col)
             {
                 _size = col.Count;
                 _elemArray = new T[_size + 1];
@@ -223,8 +224,7 @@ namespace Qoollo.Turbo.Collections
             }
             else
             {
-                var notStrictCol = collection as ICollection;
-                if (notStrictCol != null)
+                if (collection is ICollection notStrictCol)
                     _elemArray = new T[notStrictCol.Count];
                 else
                     _elemArray = new T[DefaultCapacity];
@@ -236,7 +236,7 @@ namespace Qoollo.Turbo.Collections
                 foreach (var elem in collection)
                     this.Add(elem);
             }
-		}
+        }
 
 
         /// <summary>
@@ -302,11 +302,11 @@ namespace Qoollo.Turbo.Collections
         public void CopyTo(T[] array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (index > array.Length - this.Count)
-                throw new ArgumentException("index");
+                throw new ArgumentException(nameof(index));
 
             if (this._size == 0)
                 return;
@@ -331,8 +331,8 @@ namespace Qoollo.Turbo.Collections
         /// <returns>A new array containing elements copied from the list</returns>
         public T[] ToArray()
         {
-            Contract.Ensures(Contract.Result<T[]>() != null);
-            Contract.Ensures(Contract.Result<T[]>().Length == this.Count);
+            TurboContract.Ensures(TurboContract.Result<T[]>() != null);
+            TurboContract.Ensures(TurboContract.Result<T[]>().Length == this.Count);
 
             T[] array = new T[_size];
             if (_size == 0)
@@ -372,9 +372,9 @@ namespace Qoollo.Turbo.Collections
         public int IndexOf(T item, int index, int count)
         {
             if (index < 0 || index > this.Count)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (count < 0 || count > this.Count - index)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             int curPos = (this._head + index) % this._elemArray.Length;
             int end = index + count;
@@ -425,15 +425,15 @@ namespace Qoollo.Turbo.Collections
         public int LastIndexOf(T item, int index, int count)
         {
             if (this.Count > 0 && index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (this.Count == 0 && index != -1)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (index >= this.Count)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             if (count > index + 1)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if (this.Count == 0)
                 return -1;
@@ -445,7 +445,7 @@ namespace Qoollo.Turbo.Collections
             {
                 for (int curIndex = index; curIndex > start; curIndex--)
                 {
-                    Debug.Assert(curIndex >= 0);
+                    TurboContract.Assert(curIndex >= 0, conditionString: "curIndex >= 0");
 
                     if (this._elemArray[curPos] == null)
                         return curIndex;
@@ -460,7 +460,7 @@ namespace Qoollo.Turbo.Collections
             EqualityComparer<T> comparer = EqualityComparer<T>.Default;
             for (int curIndex = index; curIndex > start; curIndex--)
             {
-                Debug.Assert(curIndex >= 0);
+                TurboContract.Assert(curIndex >= 0, conditionString: "curIndex >= 0");
 
                 if (this._elemArray[curPos] != null && comparer.Equals(this._elemArray[curPos], item))
                     return curIndex;
@@ -478,7 +478,7 @@ namespace Qoollo.Turbo.Collections
         public int FindIndex(Predicate<T> match)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
 
             int curPos = this._head;
 
@@ -501,7 +501,7 @@ namespace Qoollo.Turbo.Collections
         public int FindLastIndex(Predicate<T> match)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
 
             int curPos = (this._tail + this._elemArray.Length - 1) % this._elemArray.Length;
 
@@ -523,7 +523,7 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The first element that matches the condition, if found; otherwise, the default value for type T</returns>
         public T Find(Predicate<T> match)
         {
-            Contract.Requires(match != null);
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             int index = this.FindIndex(match);
             return index < 0 ? default(T) : this[index];
@@ -537,7 +537,7 @@ namespace Qoollo.Turbo.Collections
         [Pure]
         public bool Exists(Predicate<T> match)
         {
-            Contract.Requires(match != null);
+            TurboContract.Requires(match != null, conditionString: "match != null");
 
             return this.FindIndex(match) >= 0;
         }
@@ -549,7 +549,7 @@ namespace Qoollo.Turbo.Collections
         public void ForEach(Action<T> action)
         {
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             int version = this._version;
             int curPos = this._head;
@@ -572,10 +572,10 @@ namespace Qoollo.Turbo.Collections
         /// <param name="item">New element</param>
         public void Insert(int index, T item)
         {
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) + 1);
 
             if (index < 0 || index > _size)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             bool moveToBeginning = index <= this.Count / 2;
             
@@ -597,7 +597,7 @@ namespace Qoollo.Turbo.Collections
                         }
                         else
                         {
-                            Debug.Assert(_head == 0);
+                            TurboContract.Assert(_head == 0, conditionString: "_head == 0");
                             _elemArray[_elemArray.Length - 1] = _elemArray[0];
                             Array.Copy(_elemArray, 1, _elemArray, 0, insertPos);
                         }
@@ -650,7 +650,7 @@ namespace Qoollo.Turbo.Collections
         /// <param name="item">Element to add</param>
         public void AddFirst(T item)
         {
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) + 1);
 
             if (_size == _elemArray.Length)
                 this.EnsureCapacity(1, this.Count + 1);
@@ -667,7 +667,7 @@ namespace Qoollo.Turbo.Collections
         /// <param name="item">Element to add</param>
         public void AddLast(T item)
         {
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count) + 1);
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) + 1);
 
             if (_size == _elemArray.Length)
                 this.EnsureCapacity(0, this.Count + 1);
@@ -692,8 +692,8 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The element at the beginning of the list</returns>
         public T RemoveFirst()
         {
-            Contract.Requires(this.Count > 0);
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count) - 1);
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) - 1);
 
             if (this._size == 0)
                 throw new InvalidOperationException("Collection is empty");
@@ -712,8 +712,8 @@ namespace Qoollo.Turbo.Collections
         /// <returns>The element at the ending of the list</returns>
         public T RemoveLast()
         {
-            Contract.Requires(this.Count > 0);
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count) - 1);
+            TurboContract.Requires(this.Count > 0, conditionString: "this.Count > 0");
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) - 1);
 
             if (this._size == 0)
                 throw new InvalidOperationException("Collection is empty");
@@ -733,10 +733,10 @@ namespace Qoollo.Turbo.Collections
         /// <param name="index">Index of item to remove</param>
         public void RemoveAt(int index)
         {
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count) - 1);
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count) - 1);
 
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             bool moveFromBeginning = index < this.Count / 2;
             int removePos = (index + _head) % _elemArray.Length;
@@ -812,7 +812,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         public void Clear()
         {
-            Contract.Ensures(this.Count == 0);
+            TurboContract.Ensures(this.Count == 0);
 
             if (_head < _tail)
             {
@@ -835,7 +835,7 @@ namespace Qoollo.Turbo.Collections
         /// </summary>
         public void TrimExcess()
         {
-            Contract.Ensures(this.Count == Contract.OldValue(this.Count));
+            TurboContract.Ensures(this.Count == TurboContract.OldValue(this.Count));
 
             int minSize = (int)((double)_elemArray.Length * ShrinkRate);
             if (_size < minSize)
@@ -871,7 +871,7 @@ namespace Qoollo.Turbo.Collections
         /// <param name="capacity">Desired capacity</param>
         private void SetCapacity(int headOffset, int capacity)
         {
-            Contract.Requires(capacity >= this.Count);
+            TurboContract.Requires(capacity >= this.Count, conditionString: "capacity >= this.Count");
 
             if (headOffset < 0)
                 headOffset = (capacity - _size) / 2;
@@ -895,7 +895,7 @@ namespace Qoollo.Turbo.Collections
             _elemArray = array;
             _head = headOffset;
             _tail = _elemArray.Length > 0 ? ((_head + _size) % _elemArray.Length) : 0;
-            Debug.Assert(_tail == ((_size == capacity) ? 0 : this._size + headOffset));
+            TurboContract.Assert(_tail == ((_size == capacity) ? 0 : this._size + headOffset), conditionString: "_tail == ((_size == capacity) ? 0 : this._size + headOffset)");
 
             _version++;
         }
@@ -938,11 +938,11 @@ namespace Qoollo.Turbo.Collections
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
-                throw new ArgumentException("Array rank not equal to 1", "array");
+                throw new ArgumentException("Array rank not equal to 1", nameof(array));
             if (index < 0 || index > array.Length)
-                throw new ArgumentOutOfRangeException("index", "index < 0 || index > array.Length");
+                throw new ArgumentOutOfRangeException(nameof(index), "index < 0 || index > array.Length");
             if (array.Length - index < this._size)
                 throw new ArgumentException("array has not enough space");
 
@@ -1024,7 +1024,7 @@ namespace Qoollo.Turbo.Collections
         int IList.Add(object value)
         {
             if (value == null && default(T) != null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             try
             {
@@ -1032,7 +1032,7 @@ namespace Qoollo.Turbo.Collections
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), "value");
+                throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), nameof(value));
             }
             return this.Count - 1;
         }
@@ -1069,7 +1069,7 @@ namespace Qoollo.Turbo.Collections
         void IList.Insert(int index, object value)
         {
             if (value == null && default(T) != null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             try
             {
@@ -1077,7 +1077,7 @@ namespace Qoollo.Turbo.Collections
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), "value");
+                throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), nameof(value));
             }
         }
 
@@ -1116,7 +1116,7 @@ namespace Qoollo.Turbo.Collections
             set
             {
                 if (value == null && default(T) != null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 try
                 {
@@ -1124,7 +1124,7 @@ namespace Qoollo.Turbo.Collections
                 }
                 catch (InvalidCastException)
                 {
-                    throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), "value");
+                    throw new ArgumentException("Value has a wrong type. Expected type: " + typeof(T).ToString(), nameof(value));
                 }
             }
         }

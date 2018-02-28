@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.Common
 {
     [TestClass]
-    public class TurboExceptionTests
+    public class TurboExceptionTests : TestClassBase
     {
         private void TestTypedExceptionWithMessage<TExc>() where TExc: Exception
         {
@@ -120,6 +120,13 @@ namespace Qoollo.Turbo.UnitTests.Common
             {
                 Assert.IsTrue(ex.GetType() == typeof(ArgumentException));
             }
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestWithNonExceptionType()
+        {
+            TurboException.Throw(typeof(int), "message");
         }
     }
 }

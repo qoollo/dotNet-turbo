@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.UnitTests.ThreadPools
 {
     [TestClass]
-    public class ThreadPoolItemsTest
+    public class ThreadPoolItemsTest : TestClassBase
     {
         [TestMethod]
         public void TestSimpleCall()

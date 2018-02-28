@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,9 +44,10 @@ namespace Qoollo.Turbo
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         public static void Throw(Type exceptionType, string message)
         {
-            Contract.Requires<ArgumentNullException>(exceptionType != null);
-            Contract.Requires<ArgumentException>(exceptionType == typeof(Exception) || exceptionType.IsSubclassOf(typeof(Exception)));
-
+            if (exceptionType == null)
+                throw new ArgumentNullException(nameof(exceptionType));
+            if (exceptionType != typeof(Exception) && !exceptionType.IsSubclassOf(typeof(Exception)))
+                throw new ArgumentException(nameof(exceptionType) + " should be of type 'Exception'");
 
             Exception ex = null;
 
@@ -122,11 +122,14 @@ namespace Qoollo.Turbo
         {
             Throw(typeof(TException), null);
         }
+
+
+
         /// <summary>
         /// Throws TurboAssertionException with specified message
         /// </summary>
         /// <param name="message">Message, that will be passed to TurboException constructor (can be null)</param>
-        private static void Throw(string message)
+        private static void ThrowAssertionException(string message)
         {
             if (message == null)
                 throw new TurboAssertionException();
@@ -136,13 +139,10 @@ namespace Qoollo.Turbo
         /// <summary>
         /// Throws TurboAssertionException
         /// </summary>
-        private static void Throw()
+        private static void ThrowAssertionException()
         {
             throw new TurboAssertionException();
         }
-
-
-
         /// <summary>
         /// Checks for a condition. Throws Exception if the condition is false
         /// </summary>
@@ -176,7 +176,7 @@ namespace Qoollo.Turbo
         public static void Assert(bool condition, string message)
         {
             if (!condition)
-                Throw(message);
+                ThrowAssertionException(message);
         }
         /// <summary>
         /// Checks for a condition. Throws TurboAssertionException if the condition is false
@@ -186,7 +186,7 @@ namespace Qoollo.Turbo
         public static void Assert(bool condition)
         {
             if (!condition)
-                Throw();
+                ThrowAssertionException();
         }
     }
 }

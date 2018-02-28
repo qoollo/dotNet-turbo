@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,7 +29,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
         /// <param name="createLocalQueue">Создавать ли локальную очередь</param>
         public ThreadPoolThreadLocals(ThreadPoolGlobals globals, bool createLocalQueue)
         {
-            Contract.Requires(globals != null);
+            TurboContract.Requires(globals != null, conditionString: "globals != null");
 
             Globals = globals;
             if (createLocalQueue)
@@ -45,7 +44,7 @@ namespace Qoollo.Turbo.Threading.ThreadPools.ServiceStuff
             {
                 _isDisposed = true;
 
-                Debug.Assert(isUserCall, "ThreadPoolThreadLocals should be disposed explicitly by calling Dispose on ThreadPool. ThreadPoolName: " + (Globals != null ? Globals.OwnerPoolName : "unknown"));
+                TurboContract.Assert(isUserCall, "ThreadPoolThreadLocals should be disposed explicitly by calling Dispose on ThreadPool. ThreadPoolName: " + (Globals != null ? Globals.OwnerPoolName : "unknown"));
                 if (!isUserCall)
                     throw new InvalidOperationException("ThreadPoolThreadLocals should be disposed explicitly");
             }

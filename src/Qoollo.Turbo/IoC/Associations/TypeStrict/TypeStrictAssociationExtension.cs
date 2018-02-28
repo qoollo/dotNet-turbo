@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +20,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="val">The object that will be held by the singleton lifetime container</param>
         public static void AddSingleton<TSrc, TTarg>(this IDirectSingletonAssociationSupport<Type> obj, TTarg val)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             obj.AddSingleton(typeof(TSrc), (object)val);
         }
@@ -34,7 +33,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="obj">Association container to which the addition is performed</param>
         public static void AddSingleton<TSrc, TTarg>(this ISingletonAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             obj.AddSingleton(typeof(TSrc), typeof(TTarg));
         }
@@ -47,7 +46,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="obj">Association container to which the addition is performed</param>
         public static void AddDeferedSingleton<TSrc, TTarg>(this IDeferedSingletonAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             obj.AddDeferedSingleton(typeof(TSrc), typeof(TTarg));
         }
@@ -60,7 +59,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="obj">Association container to which the addition is performed</param>
         public static void AddPerThread<TSrc, TTarg>(this IPerThreadAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             obj.AddPerThread(typeof(TSrc), typeof(TTarg));
         }
@@ -73,7 +72,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="obj">Association container to which the addition is performed</param>
         public static void AddPerCall<TSrc, TTarg>(this IPerCallAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             obj.AddPerCall(typeof(TSrc), typeof(TTarg));
         }
@@ -86,7 +85,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="obj">Association container to which the addition is performed</param>
         public static void AddPerCallInlinedParams<TSrc, TTarg>(this IPerCallInlinedParamsAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             obj.AddPerCallInlinedParams(typeof(TSrc), typeof(TTarg));
         }
@@ -100,8 +99,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="lifetimeContainer">Lifetime object container to add</param>
         public static void AddAssociation<TSrc>(this ICustomAssociationSupport<Type> obj, Lifetime.LifetimeBase lifetimeContainer)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(lifetimeContainer != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(lifetimeContainer != null, conditionString: "lifetimeContainer != null");
 
             obj.AddAssociation(typeof(TSrc), lifetimeContainer);
         }
@@ -115,9 +114,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="factory">Lifetime object container to add</param>
         public static void AddAssociation<TSrc>(this ICustomAssociationSupport<Type> obj, Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
-            Contract.Requires<ArgumentNullException>(factory != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(factory != null, conditionString: "factory != null");
 
             obj.AddAssociation(typeof(TSrc), objType, factory);
         }
@@ -133,8 +132,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the singleton lifetime container</param>
         public static void AddSingleton<TSrc>(this ISingletonAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             obj.AddSingleton(typeof(TSrc), objType);
         }
@@ -147,8 +146,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the DeferedSingleton lifetime container</param>
         public static void AddDeferedSingleton<TSrc>(this IDeferedSingletonAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             obj.AddDeferedSingleton(typeof(TSrc), objType);
         }
@@ -161,8 +160,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the PerThread lifetime container</param>
         public static void AddPerThread<TSrc>(this IPerThreadAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             obj.AddPerThread(typeof(TSrc), objType);
         }
@@ -175,8 +174,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the PerCall lifetime container</param>
         public static void AddPerCall<TSrc>(this IPerCallAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             obj.AddPerCall(typeof(TSrc), objType);
         }
@@ -189,8 +188,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <param name="objType">The type of the object that will be held by the PerCallInlinedParams lifetime container</param>
         public static void AddPerCallInlinedParams<TSrc>(this IPerCallInlinedParamsAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             obj.AddPerCallInlinedParams(typeof(TSrc), objType);
         }
@@ -212,7 +211,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddSingleton<TSrc, TTarg>(this IDirectSingletonAssociationSupport<Type> obj, TTarg val)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             return obj.TryAddSingleton(typeof(TSrc), (object)val);
         }
@@ -226,7 +225,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddSingleton<TSrc, TTarg>(this ISingletonAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             return obj.TryAddSingleton(typeof(TSrc), typeof(TTarg));
         }
@@ -240,7 +239,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddDeferedSingleton<TSrc, TTarg>(this IDeferedSingletonAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             return obj.TryAddDeferedSingleton(typeof(TSrc), typeof(TTarg));
         }
@@ -254,7 +253,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddPerThread<TSrc, TTarg>(this IPerThreadAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             return obj.TryAddPerThread(typeof(TSrc), typeof(TTarg));
         }
@@ -268,7 +267,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddPerCall<TSrc, TTarg>(this IPerCallAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             return obj.TryAddPerCall(typeof(TSrc), typeof(TTarg));
         }
@@ -282,7 +281,7 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddPerCallInlinedParams<TSrc, TTarg>(this IPerCallInlinedParamsAssociationSupport<Type> obj)
         {
-            Contract.Requires(obj != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
 
             return obj.TryAddPerCallInlinedParams(typeof(TSrc), typeof(TTarg));
         }
@@ -297,8 +296,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddAssociation<TSrc>(this ICustomAssociationSupport<Type> obj, Lifetime.LifetimeBase lifetimeContainer)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(lifetimeContainer != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(lifetimeContainer != null, conditionString: "lifetimeContainer != null");
 
             return obj.TryAddAssociation(typeof(TSrc), lifetimeContainer);
         }
@@ -313,9 +312,9 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddAssociation<TSrc>(this ICustomAssociationSupport<Type> obj, Type objType, Lifetime.Factories.LifetimeFactory factory)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
-            Contract.Requires<ArgumentNullException>(factory != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
+            TurboContract.Requires(factory != null, conditionString: "factory != null");
 
             return obj.TryAddAssociation(typeof(TSrc), objType, factory);
         }
@@ -331,8 +330,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddSingleton<TSrc>(this ISingletonAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             return obj.TryAddSingleton(typeof(TSrc), objType);
         }
@@ -346,8 +345,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddDeferedSingleton<TSrc>(this IDeferedSingletonAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             return obj.TryAddDeferedSingleton(typeof(TSrc), objType);
         }
@@ -361,8 +360,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddPerThread<TSrc>(this IPerThreadAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             return obj.TryAddPerThread(typeof(TSrc), objType);
         }
@@ -376,8 +375,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddPerCall<TSrc>(this IPerCallAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             return obj.TryAddPerCall(typeof(TSrc), objType);
         }
@@ -391,8 +390,8 @@ namespace Qoollo.Turbo.IoC.Associations
         /// <returns>True if the association was added successfully (that is AssociationContainer did not contained lifetime container with the same key); overwise false</returns>
         public static bool TryAddPerCallInlinedParams<TSrc>(this IPerCallInlinedParamsAssociationSupport<Type> obj, Type objType)
         {
-            Contract.Requires(obj != null);
-            Contract.Requires<ArgumentNullException>(objType != null);
+            TurboContract.Requires(obj != null, conditionString: "obj != null");
+            TurboContract.Requires(objType != null, conditionString: "objType != null");
 
             return obj.TryAddPerCallInlinedParams(typeof(TSrc), objType);
         }
