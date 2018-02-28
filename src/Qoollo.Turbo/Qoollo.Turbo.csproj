@@ -3,8 +3,8 @@
   <PropertyGroup>
     <Title>Qoollo.Turbo</Title>
     <AssemblyName>Qoollo.Turbo</AssemblyName>
-    <AssemblyVersion>3.0.0</AssemblyVersion>
-    <InformationalVersion>3.0.0</InformationalVersion>
+    <AssemblyVersion>3.0.1</AssemblyVersion>
+    <InformationalVersion>3.0.1</InformationalVersion>
 
     <TargetFrameworks>net45;net46;netstandard2.0</TargetFrameworks>
     <DefineConstants>SERVICE_CLASSES_PROFILING</DefineConstants>
@@ -15,7 +15,7 @@
   
   <PropertyGroup>
     <PackageId>Qoollo.Turbo</PackageId>
-    <PackageVersion>3.0.0</PackageVersion>
+    <PackageVersion>3.0.1</PackageVersion>
     <Authors>Qoollo</Authors>
     <PackageLicenseUrl>https://github.com/qoollo/dotNet-turbo/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/qoollo/dotNet-turbo</PackageProjectUrl>
@@ -30,6 +30,7 @@
     <Copyright>Copyright 2015</Copyright>
     <PackageTags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance CircularList Disk DiskQueue MemoryQueue</PackageTags>
     <NoPackageAnalysis>true</NoPackageAnalysis>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   
