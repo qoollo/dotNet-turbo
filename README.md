@@ -1,4 +1,4 @@
-Qoollo Turbo [![NuGet](https://img.shields.io/nuget/v/Qoollo.Turbo.svg?style=flat-square)](https://www.nuget.org/packages/Qoollo.Turbo/)
+Qoollo Turbo [![NuGet](https://img.shields.io/nuget/v/Qoollo.Turbo.svg?style=flat-square)](https://www.nuget.org/packages/Qoollo.Turbo/) [![Build status](https://ci.appveyor.com/api/projects/status/76axgtpcrm411whk/branch/master?svg=true)](https://ci.appveyor.com/project/agend/dotnet-turbo/branch/master) ![.NET Core supported](https://img.shields.io/badge/.NET%20Core-supported-brightgreen.svg?style=flat-square)
 ===============
 
 Collection of useful classes for your .NET application.
