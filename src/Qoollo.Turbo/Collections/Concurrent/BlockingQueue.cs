@@ -1195,11 +1195,6 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index));
-
  
             T[] localArray = _innerQueue.ToArray();
             if (array.Length - index < localArray.Length)

@@ -10,26 +10,38 @@ using System.Threading.Tasks;
 namespace Qoollo.Turbo.Collections.Concurrent
 {
 #pragma warning disable 420
-
+    /// <summary>
+    /// Thread-safe queue (FIFO collection) with batch aggregation. Items enqueued one-by-one, but dequeued in batches
+    /// </summary>
+    /// <typeparam name="T">The type of elements in collection</typeparam>
     [DebuggerDisplay("Count = {Count}")]
-    public class ConcurrentBatchQueue<T>: ICollection, IEnumerable<T>
+    public class ConcurrentBatchingQueue<T>: ICollection, IEnumerable<T>
     {
         private volatile int _itemsCount;
-        private volatile BatchQueueSegment<T> _head;
-        private volatile BatchQueueSegment<T> _tail;
+        private volatile BatchingQueueSegment<T> _head;
+        private volatile BatchingQueueSegment<T> _tail;
 
-        public ConcurrentBatchQueue(int batchSize)
+
+        /// <summary>
+        /// <see cref="ConcurrentBatchingQueue{T}"/> constructor
+        /// </summary>
+        /// <param name="batchSize">Size of the batch</param>
+        public ConcurrentBatchingQueue(int batchSize)
         {
             if (batchSize <= 0 || batchSize > int.MaxValue / 2)
                 throw new ArgumentOutOfRangeException(nameof(batchSize), $"'{nameof(batchSize)}' should be positive and less than {int.MaxValue / 2}");
 
-            _head = new BatchQueueSegment<T>(batchSize);
+            _head = new BatchingQueueSegment<T>(batchSize);
             _tail = _head;
             _itemsCount = 0;
         }
 
-
-        private void GetHeadTailAtomic(out BatchQueueSegment<T> head, out BatchQueueSegment<T> tail)
+        /// <summary>
+        /// Reads 'head' and 'tail' atomically
+        /// </summary>
+        /// <param name="head">Current head of the queue</param>
+        /// <param name="tail">Current tail of the queue</param>
+        private void GetHeadTailAtomic(out BatchingQueueSegment<T> head, out BatchingQueueSegment<T> tail)
         {
             head = _head;
             tail = _tail;
@@ -42,20 +54,40 @@ namespace Qoollo.Turbo.Collections.Concurrent
             }
         }
 
-
+        /// <summary>
+        /// Number of items inside the queue
+        /// </summary>
         public int Count { get { return _itemsCount; } }
 
+        /// <summary>
+        /// Number of batches inside the queue
+        /// </summary>
         public int BatchCount
         {
             get
             {
-                GetHeadTailAtomic(out BatchQueueSegment<T> head, out BatchQueueSegment<T> tail);
+                GetHeadTailAtomic(out BatchingQueueSegment<T> head, out BatchingQueueSegment<T> tail);
                 return unchecked((int)(tail.BatchId - head.BatchId + 1));
             }
         }
 
-        public int CompletedBatchCount { get { return BatchCount - 1; } }
+        /// <summary>
+        /// Number of completed batches inside the queue (these batches can be dequeued)
+        /// </summary>
+        public int CompletedBatchCount
+        {
+            get
+            {
+                GetHeadTailAtomic(out BatchingQueueSegment<T> head, out BatchingQueueSegment<T> tail);
+                return unchecked((int)(tail.BatchId - head.BatchId));
+            }
+        }
 
+        /// <summary>
+        /// Adds the item to the tail of the queue
+        /// </summary>
+        /// <param name="item">New item</param>
+        /// <param name="batchCountIncreased">Number of new batches appeared during this enqueue</param>
         public void Enqueue(T item, out int batchCountIncreased)
         {
             batchCountIncreased = 0;
@@ -63,7 +95,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             SpinWait spinWait = new SpinWait();
             while (true)
             {
-                BatchQueueSegment<T> tail = _tail;
+                BatchingQueueSegment<T> tail = _tail;
 
                 if (tail.TryAdd(item))
                 {
@@ -81,18 +113,27 @@ namespace Qoollo.Turbo.Collections.Concurrent
             }
         }
 
+        /// <summary>
+        /// Adds the item to the tail of the queue
+        /// </summary>
+        /// <param name="item">New item</param>
         public void Enqueue(T item)
         {
             Enqueue(item, out _);
         }
 
-        internal bool TryDequeue(out BatchQueueSegment<T> segment)
+        /// <summary>
+        /// Attempts to remove batch from the head of the queue
+        /// </summary>
+        /// <param name="segment">Removed batch</param>
+        /// <returns>True if the batch was removed</returns>
+        internal bool TryDequeue(out BatchingQueueSegment<T> segment)
         {
             SpinWait spinWait = new SpinWait();
 
             while (true)
             {
-                BatchQueueSegment<T> head = _head;
+                BatchingQueueSegment<T> head = _head;
                 if (head == _tail)
                 {
                     segment = null;
@@ -116,9 +157,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
             }
         }
 
+        /// <summary>
+        /// Attempts to remove batch from the head of the queue
+        /// </summary>
+        /// <param name="items">Removed batch</param>
+        /// <returns>True if the batch was removed</returns>
         public bool TryDequeue(out T[] items)
         {
-            if (TryDequeue(out BatchQueueSegment<T> segment))
+            if (TryDequeue(out BatchingQueueSegment<T> segment))
             {
                 items = segment.ExtractArray();
                 return true;
@@ -128,10 +174,13 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return false;
         }
 
-
-        public bool TryCompleteCurrentBatch()
+        /// <summary>
+        /// Mark active batch as completed so that it can be removed from the queue even if it is not full
+        /// </summary>
+        /// <returns>True when active batch is not empty, otherwise false</returns>
+        public bool CompleteCurrentBatch()
         {
-            BatchQueueSegment<T> tail = _tail;
+            BatchingQueueSegment<T> tail = _tail;
             if (_tail.Count == 0)
                 return false;
 
@@ -145,20 +194,57 @@ namespace Qoollo.Turbo.Collections.Concurrent
         }
 
 
+        /// <summary>
+        /// Reads 'head' and 'tail' atomically and mark all the segments in between for observation.
+        /// This ensures that the arrays inside the segments will not be exposed directly to the user
+        /// </summary>
+        /// <param name="head">Current head of the queue</param>
+        /// <param name="tail">Current tail of the queue</param>
+        /// <returns>True if the queue slice for observation is not empty, otherwise false</returns>
+        private bool GetHeadTailForObservation(out BatchingQueueSegment<T> head, out BatchingQueueSegment<T> tail)
+        {
+            GetHeadTailAtomic(out head, out tail);
 
+            // Mark for observation
+            for (var current = head; current != tail; current = current.Next)
+                current.MarkForObservation();
+
+            tail.MarkForObservation();
+
+            // move head forward to the current head position
+            while (head != _head)
+            {
+                // All segments up to the tail was dequeued => nothing to enumerate
+                if (head == tail)
+                    return false;
+
+                head = head.Next;
+            }
+
+            return true;
+        }
+
+
+        /// <summary>
+        /// Copies all items from queue into a new <see cref="List{T}"/>
+        /// </summary>
+        /// <returns>List</returns>
         private List<T> ToList()
         {
+            if (!GetHeadTailForObservation(out BatchingQueueSegment<T> head, out BatchingQueueSegment<T> tail))
+                return new List<T>();
+
             List<T> result = new List<T>(Count);
 
-            BatchQueueSegment<T> current = _head;
-
-            while (current != null)
+            for (var current = head; current != tail; current = current.Next)
             {
                 foreach (var elem in current)
                     result.Add(elem);
-
-                current = current.Next;
             }
+
+            // Iterate tail
+            foreach (var elem in tail)
+                result.Add(elem);
 
             return result;
         }
@@ -184,8 +270,10 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="index">Index in array at which copying begins</param>
         public void CopyTo(T[] array, int index)
         {
-            TurboContract.Assert(array != null, conditionString: "array != null");
-            TurboContract.Assert(index >= 0 && index < array.Length, conditionString: "index >= 0 && index < array.Length");
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (index < 0 || index >= array.Length)
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             ToList().CopyTo(array, index);
         }
@@ -196,15 +284,18 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>Enumerator</returns>
         public IEnumerator<T> GetEnumerator()
         {
-            BatchQueueSegment<T> current = _head;
+            if (!GetHeadTailForObservation(out BatchingQueueSegment<T> head, out BatchingQueueSegment<T> tail))
+                yield break;
 
-            while (current != null)
+            for (var current = head; current != tail; current = current.Next)
             {
                 foreach (var elem in current)
                     yield return elem;
-
-                current = current.Next;
             }
+
+            // Iterate tail
+            foreach (var elem in tail)
+                yield return elem;
         }
 
         /// <summary>
@@ -244,18 +335,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index));
-
-
-            T[] localArray = this.ToArray();
-            if (array.Length - index < localArray.Length)
-                throw new ArgumentException("Not enough space in target array");
-
-
-            Array.Copy(localArray, 0, array, index, localArray.Length);
+            ((ICollection)(this.ToList())).CopyTo(array, index);
         }
     }
 
