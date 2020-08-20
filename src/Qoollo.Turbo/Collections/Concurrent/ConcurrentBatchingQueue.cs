@@ -234,7 +234,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (!GetHeadTailForObservation(out BatchingQueueSegment<T> head, out BatchingQueueSegment<T> tail))
                 return new List<T>();
 
-            List<T> result = new List<T>(Count);
+            List<T> result = new List<T>(Math.Max(0, unchecked(tail.BatchId - head.BatchId + 1)) * head.Capacity);
 
             for (var current = head; current != tail; current = current.Next)
             {

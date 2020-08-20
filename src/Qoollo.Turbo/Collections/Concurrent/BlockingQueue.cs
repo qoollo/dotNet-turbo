@@ -885,6 +885,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="timeout">Removing timeout in milliseconds</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the item was removed</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryTake(out T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
