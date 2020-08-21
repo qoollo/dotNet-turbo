@@ -361,6 +361,75 @@ namespace Qoollo.Turbo.UnitTests.Collections
             Assert.IsFalse(queue.TryAdd(3));
         }
 
+        [TestMethod]
+        public void TestDisposeInterruptWaitersOnTake()
+        {
+            BlockingQueue<int> queue = new BlockingQueue<int>(10);
+            Barrier bar = new Barrier(2);
+
+            Task disposeTask = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                Thread.Sleep(10);
+                queue.Dispose();
+            });
+
+            try
+            {
+                bar.SignalAndWait();
+                bool taken = queue.TryTake(out int val, 10000);
+                Assert.Fail();
+            }
+            catch (OperationInterruptedException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (Exception)
+            {
+                Assert.Fail("Unexpected exception");
+            }
+
+
+            disposeTask.Wait();
+        }
+
+        [TestMethod]
+        public void TestDisposeInterruptWaitersOnAdd()
+        {
+            BlockingQueue<int> queue = new BlockingQueue<int>(2);
+            queue.Add(1);
+            queue.Add(2);
+            Barrier bar = new Barrier(2);
+
+            Task disposeTask = Task.Run(() =>
+            {
+                bar.SignalAndWait();
+                Thread.Sleep(10);
+                queue.Dispose();
+            });
+
+            try
+            {
+                bar.SignalAndWait();
+                bool added = queue.TryAdd(3, 10000);
+                Assert.Fail();
+            }
+            catch (OperationInterruptedException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (Exception)
+            {
+                Assert.Fail("Unexpected exception");
+            }
+
+
+            disposeTask.Wait();
+        }
 
         private void RunComplexTest(BlockingQueue<int> q, int elemCount, int thCount)
         {

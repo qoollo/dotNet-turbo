@@ -93,14 +93,15 @@ namespace Qoollo.Turbo.Collections.Concurrent
             batchCountIncreased = 0;
 
             SpinWait spinWait = new SpinWait();
-            while (true)
+            bool success = false;
+            while (!success)
             {
                 BatchingQueueSegment<T> tail = _tail;
 
                 if (tail.TryAdd(item))
                 {
                     Interlocked.Increment(ref _itemsCount);
-                    return;
+                    success = true;
                 }
 
                 if (tail.Next != null)
@@ -109,7 +110,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
                         batchCountIncreased++;
                 }
 
-                spinWait.SpinOnce();
+                if (!success)
+                    spinWait.SpinOnce();
             }
         }
 
