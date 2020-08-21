@@ -15,12 +15,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
     /// </summary>
     /// <typeparam name="T">The type of elements in collection</typeparam>
     [DebuggerDisplay("Count = {Count}")]
-    public class BlockingBatchingQueue<T>: ICollection, IEnumerable<T>
+    public class BlockingBatchingQueue<T>: ICollection, IEnumerable<T>, IDisposable
     {
         private readonly ConcurrentBatchingQueue<T> _innerQueue;
         private readonly int _boundedCapacityInBatches;
         private readonly SemaphoreLight _freeNodes;
         private readonly SemaphoreLight _occupiedBatches;
+
+        private volatile bool _isDisposed;
 
         /// <summary>
         /// <see cref="BlockingBatchingQueue{T}"/> constructor
@@ -40,6 +42,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (boundedCapacityInBatches > 0)
                 _freeNodes = new SemaphoreLight(boundedCapacityInBatches * batchSize);
             _occupiedBatches = new SemaphoreLight(0);
+
+            _isDisposed = false;
         }
         /// <summary>
         /// <see cref="BlockingBatchingQueue{T}"/> constructor
@@ -72,8 +76,11 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="token">Cancellation token</param>
         /// <returns>Was added sucessufully</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         private bool TryAddInner(T item, int timeout, CancellationToken token)
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
@@ -108,6 +115,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// Adds the item to the tail of the queue
         /// </summary>
         /// <param name="item">New item</param>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public void Add(T item)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, new CancellationToken());
@@ -119,6 +127,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="item">New item</param>
         /// <param name="token">Cancellation token</param>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public void Add(T item, CancellationToken token)
         {
             bool addResult = TryAddInner(item, Timeout.Infinite, token);
@@ -130,6 +139,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// </summary>
         /// <param name="item">New item</param>
         /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryAdd(T item)
         {
             return TryAddInner(item, 0, new CancellationToken());
@@ -140,6 +150,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="item">New item</param>
         /// <param name="timeout">Adding timeout</param>
         /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryAdd(T item, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -156,6 +167,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="item">New item</param>
         /// <param name="timeout">Adding timeout</param>
         /// <returns>True if item was added, otherwise false</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryAdd(T item, int timeout)
         {
             if (timeout < 0)
@@ -170,6 +182,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="token">Cancellation token</param>
         /// <returns>True if item was added, otherwise false</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryAdd(T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -188,8 +201,11 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the batch was removed</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         private bool TryTakeInner(out T[] batch, int timeout, CancellationToken token)
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
@@ -226,6 +242,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// Removes completed batch from the head of the queue
         /// </summary>
         /// <returns>The batch removed from queue</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T[] Take()
         {
             bool takeResult = TryTakeInner(out T[] result, Timeout.Infinite, new CancellationToken());
@@ -239,6 +256,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="token">Cancellation token</param>
         /// <returns>The batch removed from queue</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public T[] Take(CancellationToken token)
         {
             bool takeResult = TryTakeInner(out T[] result, Timeout.Infinite, token);
@@ -252,6 +270,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// </summary>
         /// <param name="batch">The batch removed from queue</param>
         /// <returns>True if the batch was removed</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryTake(out T[] batch)
         {
             return TryTakeInner(out batch, 0, CancellationToken.None);
@@ -262,6 +281,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="batch">The batch removed from queue</param>
         /// <param name="timeout">Removing timeout</param>
         /// <returns>True if the batch was removed</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryTake(out T[] batch, TimeSpan timeout)
         {
             long timeoutMs = (long)timeout.TotalMilliseconds;
@@ -278,6 +298,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="batch">The batch removed from queue</param>
         /// <param name="timeout">Removing timeout in milliseconds</param>
         /// <returns>True if the batch was removed</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryTake(out T[] batch, int timeout)
         {
             if (timeout < 0)
@@ -292,6 +313,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the item was removed</returns>
         /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryTake(out T[] batch, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -304,8 +326,12 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// Mark active batch as completed so that it can be removed from the queue even if it is not full
         /// </summary>
         /// <returns>True when active batch is not empty, otherwise false</returns>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool CompleteCurrentBatch()
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetType().Name);
+
             bool bucketCountIncreased = false;
 
             try
@@ -386,6 +412,31 @@ namespace Qoollo.Turbo.Collections.Concurrent
         void ICollection.CopyTo(Array array, int index)
         {
             ((ICollection)_innerQueue).CopyTo(array, index);
+        }
+
+
+
+        /// <summary>
+        /// Clean-up all resources
+        /// </summary>
+        /// <param name="isUserCall">Was called by user</param>
+        protected virtual void Dispose(bool isUserCall)
+        {
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+                _freeNodes?.Dispose();
+                _occupiedBatches.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Clean-up all resources
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

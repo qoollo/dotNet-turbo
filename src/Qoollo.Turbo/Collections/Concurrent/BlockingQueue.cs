@@ -1217,6 +1217,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (!_isDisposed)
             {
                 _isDisposed = true;
+                _freeNodes?.Dispose();
+                _occupiedNodes.Dispose();
             }
         }
 
