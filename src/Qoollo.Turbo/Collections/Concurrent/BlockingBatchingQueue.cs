@@ -59,6 +59,10 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// </summary>
         public int BoundedCapacityInBatches { get { return _boundedCapacityInBatches; } }
         /// <summary>
+        /// Size of the batch
+        /// </summary>
+        public int BatchSize { get { return _innerQueue.BatchSize; } }
+        /// <summary>
         /// Number of items inside the queue
         /// </summary>
         public int Count { get { return _innerQueue.Count; } }

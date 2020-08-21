@@ -16,6 +16,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
         {
             const int batchSize = 10;
             ConcurrentBatchingQueue<int> col = new ConcurrentBatchingQueue<int>(batchSize: batchSize);
+            Assert.AreEqual(batchSize, col.BatchSize);
 
             for (int i = 0; i < 100; i++)
             {

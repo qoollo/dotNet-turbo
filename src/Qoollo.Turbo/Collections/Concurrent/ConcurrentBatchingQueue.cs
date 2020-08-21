@@ -17,6 +17,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
     [DebuggerDisplay("Count = {Count}")]
     public class ConcurrentBatchingQueue<T>: ICollection, IEnumerable<T>
     {
+        private readonly int _batchSize;
         private volatile int _itemsCount;
         private volatile BatchingQueueSegment<T> _head;
         private volatile BatchingQueueSegment<T> _tail;
@@ -31,6 +32,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (batchSize <= 0 || batchSize > int.MaxValue / 2)
                 throw new ArgumentOutOfRangeException(nameof(batchSize), $"'{nameof(batchSize)}' should be positive and less than {int.MaxValue / 2}");
 
+            _batchSize = batchSize;
             _head = new BatchingQueueSegment<T>(batchSize);
             _tail = _head;
             _itemsCount = 0;
@@ -53,6 +55,11 @@ namespace Qoollo.Turbo.Collections.Concurrent
                 tail = _tail;
             }
         }
+
+        /// <summary>
+        /// Size of the batch
+        /// </summary>
+        public int BatchSize { get { return _batchSize; } }
 
         /// <summary>
         /// Number of items inside the queue
