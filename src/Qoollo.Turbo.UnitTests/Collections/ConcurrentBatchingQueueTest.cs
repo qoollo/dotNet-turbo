@@ -283,6 +283,38 @@ namespace Qoollo.Turbo.UnitTests.Collections
 
 
         [TestMethod]
+        public void BatchIdOverflowTest()
+        {
+            ConcurrentBatchingQueue<long> col = new ConcurrentBatchingQueue<long>(batchSize: 1);
+            var head = col.GetType().GetField("_head", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(col);
+            var batchIdField = head.GetType().GetField("_batchId", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            batchIdField.SetValue(head, int.MaxValue - 1);
+
+            for (long i = 0; i < 100; i++)
+            {
+                Assert.AreEqual(0, col.Count);
+                Assert.AreEqual(1, col.BatchCount);
+                Assert.AreEqual(0, col.CompletedBatchCount);
+
+                col.Enqueue(i);
+
+                Assert.AreEqual(1, col.Count);
+                Assert.AreEqual(2, col.BatchCount);
+                Assert.AreEqual(1, col.CompletedBatchCount);
+
+                Assert.IsTrue(col.TryDequeue(out long[] items));
+                Assert.AreEqual(1, items.Length);
+                Assert.AreEqual(i, items[0]);
+
+                Assert.AreEqual(0, col.Count);
+                Assert.AreEqual(1, col.BatchCount);
+                Assert.AreEqual(0, col.CompletedBatchCount);
+            }
+        }
+
+
+
+        [TestMethod]
         public void SimpleConcurrentTest()
         {
             const int batchSize = 10;

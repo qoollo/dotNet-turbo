@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -94,11 +95,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
 
         // =============
 
+        private const int RESERVED_INDEX_MASK = int.MaxValue;
+        private const int FINALIZATION_MASK = int.MinValue;
+
         private readonly T[] _array;
         private readonly int _batchId;
         private volatile bool _markedForObservation;
 
-        private volatile int _reservedIndex;
+        private volatile int _reservedIndexWithFinalizationMark;
         private volatile int _actualCount;
 
         private volatile BatchingQueueSegment<T> _next;
@@ -116,7 +120,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             _batchId = batchId;
             _markedForObservation = false;
 
-            _reservedIndex = -1;
+            _reservedIndexWithFinalizationMark = 0;
             _actualCount = 0;
 
             _next = null;
@@ -128,6 +132,37 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public BatchingQueueSegment(int capacity)
             : this(capacity, 0)
         {
+        }
+
+        /// <summary>
+        /// Checks whether the <paramref name="reservedIndexWithFinalizationMark"/> has finalization mark
+        /// </summary>
+        /// <param name="reservedIndexWithFinalizationMark">Value of reservedIndexWithFinalizationMark</param>
+        /// <returns>True if finalization mark is setted</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsSegmentFinalized(int reservedIndexWithFinalizationMark)
+        {
+            return reservedIndexWithFinalizationMark < 0;
+        }
+        /// <summary>
+        /// Set segment finalization mark into <paramref name="reservedIndexWithFinalizationMark"/>
+        /// </summary>
+        /// <param name="reservedIndexWithFinalizationMark">Value of reservedIndexWithFinalizationMark</param>
+        /// <returns>Updated value of reservedIndexWithFinalizationMark</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int SetSegmentFinalized(int reservedIndexWithFinalizationMark)
+        {
+            return reservedIndexWithFinalizationMark | FINALIZATION_MASK;
+        }
+        /// <summary>
+        /// Extracts ReservedIndex from <paramref name="reservedIndexWithFinalizationMark"/>
+        /// </summary>
+        /// <param name="reservedIndexWithFinalizationMark">Value of reservedIndexWithFinalizationMark</param>
+        /// <returns>Reserved index value</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ExtractReservedIndex(int reservedIndexWithFinalizationMark)
+        {
+            return reservedIndexWithFinalizationMark & RESERVED_INDEX_MASK;
         }
 
         /// <summary>
@@ -149,7 +184,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <summary>
         /// 'true' if the segment is complete or no parallel incomplete inserts are currently in progress
         /// </summary>
-        public bool IsNotInWork { get { return _actualCount == _array.Length || _actualCount == _reservedIndex + 1; } }
+        public bool IsNotInWork
+        {
+            get
+            {
+                int reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
+                return IsSegmentFinalized(reservedIndexWithFinalizationMark) && (_actualCount == _array.Length || _actualCount == ExtractReservedIndex(reservedIndexWithFinalizationMark));
+            }
+        }
 
         /// <summary>
         /// Mark this segment as being observed (ExtractArray will copy the result)
@@ -179,11 +221,30 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>true - segments created and can be read through <see cref="Next"/> property, false - no new segment created due to already created next segment</returns>
         internal bool Grow()
         {
-            if (_next != null)
+            int reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
+            if (IsSegmentFinalized(reservedIndexWithFinalizationMark))
                 return false;
 
-            var newBucket = new BatchingQueueSegment<T>(Capacity, unchecked(_batchId + 1));
-            return Interlocked.CompareExchange(ref _next, newBucket, null) == null;
+            bool result = false;
+            var newSegment = new BatchingQueueSegment<T>(Capacity, unchecked(_batchId + 1));
+
+            try { }
+            finally
+            {
+                reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
+                while (!IsSegmentFinalized(reservedIndexWithFinalizationMark))
+                {
+                    if (Interlocked.CompareExchange(ref _reservedIndexWithFinalizationMark, SetSegmentFinalized(reservedIndexWithFinalizationMark), reservedIndexWithFinalizationMark) == reservedIndexWithFinalizationMark)
+                    {
+                        result = Interlocked.CompareExchange(ref _next, newSegment, null) == null;
+                        TurboContract.Assert(result, "New segment update failed");
+                        break;
+                    }
+                    reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -198,16 +259,28 @@ namespace Qoollo.Turbo.Collections.Concurrent
             try { }
             finally
             {
-                int newPosition = Interlocked.Increment(ref _reservedIndex);
-                if (newPosition < _array.Length)
+                int reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
+                while (!IsSegmentFinalized(reservedIndexWithFinalizationMark) && ExtractReservedIndex(reservedIndexWithFinalizationMark) < _array.Length)
                 {
-                    _array[newPosition] = item;
-                    Interlocked.Increment(ref _actualCount);
-                    result = true;
+                    if (Interlocked.CompareExchange(ref _reservedIndexWithFinalizationMark, reservedIndexWithFinalizationMark + 1, reservedIndexWithFinalizationMark) == reservedIndexWithFinalizationMark)
+                        break;
+                    reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
                 }
-                // Grow, when current segment is full
-                if (newPosition == _array.Length - 1)
-                    Grow();
+
+
+                if (!IsSegmentFinalized(reservedIndexWithFinalizationMark))
+                {
+                    int newPosition = ExtractReservedIndex(reservedIndexWithFinalizationMark);
+                    if (newPosition < _array.Length)
+                    {
+                        _array[newPosition] = item;
+                        Interlocked.Increment(ref _actualCount);
+                        result = true;
+                    }
+                    // Grow, when current segment is full
+                    if (newPosition == _array.Length - 1)
+                        Grow();
+                }
             }
 
             return result;

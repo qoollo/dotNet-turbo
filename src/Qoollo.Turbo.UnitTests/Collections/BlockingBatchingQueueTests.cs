@@ -249,33 +249,6 @@ namespace Qoollo.Turbo.UnitTests.Collections
             disposeTask.Wait();
         }
 
-        [TestMethod]
-        public void BatchIdOverflowTest()
-        {
-            BlockingBatchingQueue<long> col = new BlockingBatchingQueue<long>(batchSize: 1, boundedCapacityInBatches: 10);
-            var innerQueue = col.GetType().GetField("_innerQueue", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(col);
-            var head = innerQueue.GetType().GetField("_head", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(innerQueue);
-            var batchIdField = head.GetType().GetField("_batchId", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            batchIdField.SetValue(head, int.MaxValue - 1);
-
-            for (long i = 0; i < 100; i++)
-            {
-                Assert.AreEqual(0, col.Count);
-                Assert.AreEqual(0, col.CompletedBatchCount);
-
-                col.Add(i);
-
-                Assert.AreEqual(1, col.Count);
-                Assert.AreEqual(1, col.CompletedBatchCount);
-
-                Assert.AreEqual(i, col.Take()[0]);
-
-                Assert.AreEqual(0, col.Count);
-                Assert.AreEqual(0, col.CompletedBatchCount);
-            }
-        }
-
-
         private void TestCancellationNotCorruptDataCore(int batchSize, int boundedCapacityInBatches)
         {
             BlockingBatchingQueue<long> col = new BlockingBatchingQueue<long>(batchSize: batchSize, boundedCapacityInBatches: boundedCapacityInBatches);
@@ -538,7 +511,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
 
             Action completeBatchAction = () =>
             {
-                Random rnd = new Random();
+                Random rnd = new Random(Environment.TickCount + Interlocked.Increment(ref atomicRandom) * thCount * 2);
                 while (Volatile.Read(ref addFinished) < thCount && !tokSrc.IsCancellationRequested)
                 {
                     q.CompleteCurrentBatch();
