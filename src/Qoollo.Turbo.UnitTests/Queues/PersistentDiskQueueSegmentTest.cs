@@ -443,7 +443,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
 
-#if !NETCOREAPP2_0
+#if NET45 || NET46 || NET462
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
         public void WriteAbortTest()
@@ -493,7 +493,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
 
 
-#if !NETCOREAPP2_0
+#if NET45 || NET46 || NET462
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
         public void ReadAbortTest()

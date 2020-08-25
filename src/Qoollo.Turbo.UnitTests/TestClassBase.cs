@@ -108,7 +108,7 @@ namespace Qoollo.Turbo.UnitTests
 
         protected static void DisableCrashWindow()
         {
-#if NETCOREAPP2_0
+#if NETCOREAPP2_0 || NETCOREAPP3_1
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 ErrorModeInterop.DisableCrashWindow();
 #elif NET45 || NET46

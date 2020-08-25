@@ -164,7 +164,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadManagement
 
 
 #pragma warning disable CS0618 // Type or member is obsolete
-#if NET45 || NET46
+#if NET45 || NET46 || NET462
         [TestMethod]
         public void TestCultureProperties()
         {
@@ -193,5 +193,5 @@ namespace Qoollo.Turbo.UnitTests.ThreadManagement
 #endif
 #pragma warning restore CS0618 // Type or member is obsolete
 
-            }
+    }
 }
