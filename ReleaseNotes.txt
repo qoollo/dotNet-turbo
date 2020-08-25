@@ -1,3 +1,8 @@
+v3.1.0 (25.08.2020)
+- ConcurrentBatchingQueue and BlockingBatchingQueue added
+- SemaphoreLight marked as sealed
+- BlockingQueue proper dispose: now it interrupts all waiting threads
+
 v3.0.1 (28.02.2018)
 - .NET Core 2.0 support through .NET Standard 2.0
 - Public surface comments translated to English

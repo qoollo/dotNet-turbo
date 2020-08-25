@@ -22,7 +22,8 @@ Library contains a number of reuseful base classes:
 14. [Read only collections](https://github.com/qoollo/system-class-library/wiki/Read-only-collections) - a number of useful readonly collections (List, Dictionary, HashSet);
 15. [A bunch of extension methods](https://github.com/qoollo/system-class-library/wiki/Extension-Methods) for ```IEnumerable<T>```, ```Type```, ```Exception```;
 16. [MonitorObject](https://github.com/qoollo/dotNet-turbo/wiki/MonitorObject) - object oriented abstraction over BCL ```Monitor.Wait()```, ```Monitor.Pulse()```, ```Monitor.PulseAll()```;
-17. [Queues](https://github.com/qoollo/dotNet-turbo/wiki/Queues) - exposes 4 types of thread-safe blocking queues: ```MemoryQueue<T>```, ```DiskQueue<T>```, ```TransformationQueue<T>``` and ```LevelingQueue<T>```.
+17. [Queues](https://github.com/qoollo/dotNet-turbo/wiki/Queues) - exposes 4 types of thread-safe blocking queues: ```MemoryQueue<T>```, ```DiskQueue<T>```, ```TransformationQueue<T>``` and ```LevelingQueue<T>```;
+18. [BatchingQueue](https://github.com/qoollo/dotNet-turbo/wiki/BatchingQueue) - queue in which items are enqueued one-by-one and dequeued in batches. Exposes `ConcurrentBatchingQueue<T>` and `BlockingBatchingQueue<T>`.
 
 ## NuGet
 [Qoollo.Turbo](https://www.nuget.org/packages/Qoollo.Turbo/)
