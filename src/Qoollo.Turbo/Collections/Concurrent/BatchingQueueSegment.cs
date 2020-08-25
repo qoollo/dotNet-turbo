@@ -106,6 +106,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         private volatile int _actualCount;
 
         private volatile BatchingQueueSegment<T> _next;
+        private volatile BatchingQueueSegment<T> _preallocatedNext;
 
         /// <summary>
         /// <see cref="BatchingQueueSegment{T}"/> constructor
@@ -124,6 +125,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             _actualCount = 0;
 
             _next = null;
+            _preallocatedNext = null;
         }
         /// <summary>
         /// <see cref="BatchingQueueSegment{T}"/> constructor
@@ -215,6 +217,18 @@ namespace Qoollo.Turbo.Collections.Concurrent
             return result;
         }
 
+
+        /// <summary>
+        /// Preallocates next segment to prevent contention during segment grow
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void PreallocateNextSegment()
+        {
+            if (_preallocatedNext == null)
+                _preallocatedNext = new BatchingQueueSegment<T>(Capacity, unchecked(_batchId + 1));
+        }
+
+
         /// <summary>
         /// Attempts to create the next BatchingQueueSegment in the Linked List structure
         /// </summary>
@@ -226,7 +240,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
                 return false;
 
             bool result = false;
-            var newSegment = new BatchingQueueSegment<T>(Capacity, unchecked(_batchId + 1));
+            var newSegment = _preallocatedNext ?? new BatchingQueueSegment<T>(Capacity, unchecked(_batchId + 1));
+            SpinWait sw = new SpinWait();
 
             try { }
             finally
@@ -240,9 +255,13 @@ namespace Qoollo.Turbo.Collections.Concurrent
                         TurboContract.Assert(result, "New segment update failed");
                         break;
                     }
+                    sw.SpinOnce();
                     reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
                 }
             }
+
+            if (result && Capacity >= 4)
+                newSegment.PreallocateNextSegment();
 
             return result;
         }
@@ -259,18 +278,14 @@ namespace Qoollo.Turbo.Collections.Concurrent
             try { }
             finally
             {
-                int reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
-                while (!IsSegmentFinalized(reservedIndexWithFinalizationMark) && ExtractReservedIndex(reservedIndexWithFinalizationMark) < _array.Length)
+                int newReservedIndexWithFinalizationMark = Interlocked.Increment(ref _reservedIndexWithFinalizationMark); // Optimistic increment for better perf
+                if (IsSegmentFinalized(newReservedIndexWithFinalizationMark))
                 {
-                    if (Interlocked.CompareExchange(ref _reservedIndexWithFinalizationMark, reservedIndexWithFinalizationMark + 1, reservedIndexWithFinalizationMark) == reservedIndexWithFinalizationMark)
-                        break;
-                    reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
+                    Interlocked.Decrement(ref _reservedIndexWithFinalizationMark);
                 }
-
-
-                if (!IsSegmentFinalized(reservedIndexWithFinalizationMark))
+                else
                 {
-                    int newPosition = ExtractReservedIndex(reservedIndexWithFinalizationMark);
+                    int newPosition = ExtractReservedIndex(newReservedIndexWithFinalizationMark) - 1;
                     if (newPosition < _array.Length)
                     {
                         _array[newPosition] = item;
@@ -278,7 +293,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                         result = true;
                     }
                     // Grow, when current segment is full
-                    if (newPosition == _array.Length - 1)
+                    if (newPosition >= _array.Length - 1)
                         Grow();
                 }
             }
