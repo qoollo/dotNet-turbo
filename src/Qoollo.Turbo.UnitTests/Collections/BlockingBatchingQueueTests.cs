@@ -439,6 +439,105 @@ namespace Qoollo.Turbo.UnitTests.Collections
 
 
 
+        private void ConcurrentPackageWithTimeoutTestCore(int addThreads, int itemCount, int batchSize, int boundedCapacityInBatches)
+        {
+            int atomicRandom = 0;
+
+            BlockingBatchingQueue<int> col = new BlockingBatchingQueue<int>(batchSize: batchSize, boundedCapacityInBatches: boundedCapacityInBatches);
+            Barrier bar = new Barrier(1 + 1 + addThreads);
+            CancellationTokenSource cancelToken = new CancellationTokenSource();
+
+            Thread[] threadsAdd = new Thread[addThreads];
+            Thread[] threadsTake = new Thread[1];
+
+            List<int> takenItems = new List<int>();
+            int itemsCounter = itemCount;
+
+            Action addAction = () =>
+            {
+                Random rnd = new Random(Environment.TickCount + Interlocked.Increment(ref atomicRandom) * addThreads * 2);
+                bar.SignalAndWait();
+
+                while (true)
+                {
+                    int val = Interlocked.Decrement(ref itemsCounter);
+                    if (val < 0)
+                        break;
+
+                    col.Add(val);
+
+                    int delay = (int)(((double)val / itemCount) * 1000);
+                    if (delay > 0)
+                        Thread.SpinWait(rnd.Next(delay));
+                }
+            };
+
+            Action takeAction = () =>
+            {
+                var token = cancelToken.Token;
+                int[] items = null;
+                bar.SignalAndWait();
+
+
+                try
+                {
+                    while (!cancelToken.IsCancellationRequested)
+                    {
+                        if (col.TryTake(out items, 5, token))
+                            takenItems.AddRange(items);
+                        else
+                            col.CompleteCurrentBatch();
+                    }
+                }
+                catch (OperationCanceledException) { }
+
+                while (col.TryTake(out items))
+                    takenItems.AddRange(items);
+
+                col.CompleteCurrentBatch();
+                
+                if (col.TryTake(out items))
+                    takenItems.AddRange(items);
+            };
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i] = new Thread(new ThreadStart(takeAction));
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i] = new Thread(new ThreadStart(addAction));
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i].Start();
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i].Start();
+
+            bar.SignalAndWait();
+
+            for (int i = 0; i < threadsAdd.Length; i++)
+                threadsAdd[i].Join();
+
+            cancelToken.Cancel();
+
+            for (int i = 0; i < threadsTake.Length; i++)
+                threadsTake[i].Join();
+
+
+            takenItems.Sort();
+            for (int i = 0; i < takenItems.Count; i++)
+                Assert.AreEqual(i, takenItems[i]);
+        }
+
+        [TestMethod]
+        public void ConcurrentPackageWithTimeoutTest()
+        {
+            ConcurrentPackageWithTimeoutTestCore(addThreads: 2, itemCount: 2000000, batchSize: 16, boundedCapacityInBatches: 7);
+            ConcurrentPackageWithTimeoutTestCore(addThreads: 4, itemCount: 2000000, batchSize: 16, boundedCapacityInBatches: 7);
+            ConcurrentPackageWithTimeoutTestCore(addThreads: 2, itemCount: 1000000, batchSize: 20, boundedCapacityInBatches: 1);
+            ConcurrentPackageWithTimeoutTestCore(addThreads: 2, itemCount: 1000000, batchSize: 1, boundedCapacityInBatches: 1);
+            ConcurrentPackageWithTimeoutTestCore(addThreads: 2, itemCount: 1000000, batchSize: 100000, boundedCapacityInBatches: 1);
+        }
+
+
+
         private void RunComplexTest(BlockingBatchingQueue<int> q, int elemCount, int thCount)
         {
             int atomicRandom = 0;
