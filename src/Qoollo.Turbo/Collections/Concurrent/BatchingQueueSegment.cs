@@ -98,6 +98,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         private const int RESERVED_INDEX_MASK = int.MaxValue;
         private const int FINALIZATION_MASK = int.MinValue;
 
+        private const int SegmentPreallocationCapacityThreshold = 4;
+
         private readonly T[] _array;
         private readonly int _batchId;
         private volatile bool _markedForObservation;
@@ -260,7 +262,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                 }
             }
 
-            if (result && Capacity >= 4)
+            if (result && Capacity >= SegmentPreallocationCapacityThreshold)
                 newSegment.PreallocateNextSegment();
 
             return result;
@@ -274,18 +276,21 @@ namespace Qoollo.Turbo.Collections.Concurrent
         public bool TryAdd(T item)
         {
             bool result = false;
+            int reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
+            if (IsSegmentFinalized(reservedIndexWithFinalizationMark) || ExtractReservedIndex(reservedIndexWithFinalizationMark) > _array.Length)
+                return false;
 
             try { }
             finally
             {
-                int newReservedIndexWithFinalizationMark = Interlocked.Increment(ref _reservedIndexWithFinalizationMark); // Optimistic increment for better perf
-                if (IsSegmentFinalized(newReservedIndexWithFinalizationMark))
+                reservedIndexWithFinalizationMark = Interlocked.Increment(ref _reservedIndexWithFinalizationMark); // Optimistic increment for better perf
+                if (IsSegmentFinalized(reservedIndexWithFinalizationMark))
                 {
                     Interlocked.Decrement(ref _reservedIndexWithFinalizationMark);
                 }
                 else
                 {
-                    int newPosition = ExtractReservedIndex(newReservedIndexWithFinalizationMark) - 1;
+                    int newPosition = ExtractReservedIndex(reservedIndexWithFinalizationMark) - 1;
                     if (newPosition < _array.Length)
                     {
                         _array[newPosition] = item;
