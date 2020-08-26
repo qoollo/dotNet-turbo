@@ -1,4 +1,4 @@
-v3.1.0 (25.08.2020)
+v3.1.0 (26.08.2020)
 - ConcurrentBatchingQueue and BlockingBatchingQueue added
 - SemaphoreLight marked as sealed
 - BlockingQueue proper dispose: now it interrupts all waiting threads

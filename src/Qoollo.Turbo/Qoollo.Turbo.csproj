@@ -3,8 +3,8 @@
   <PropertyGroup>
     <Title>Qoollo.Turbo</Title>
     <AssemblyName>Qoollo.Turbo</AssemblyName>
-    <AssemblyVersion>3.0.1</AssemblyVersion>
-    <InformationalVersion>3.0.1</InformationalVersion>
+    <AssemblyVersion>3.1.0</AssemblyVersion>
+    <InformationalVersion>3.1.0</InformationalVersion>
 
     <TargetFrameworks>net45;net46;netstandard2.0</TargetFrameworks>
     <DefineConstants>SERVICE_CLASSES_PROFILING</DefineConstants>
@@ -15,7 +15,7 @@
   
   <PropertyGroup>
     <PackageId>Qoollo.Turbo</PackageId>
-    <PackageVersion>3.0.1</PackageVersion>
+    <PackageVersion>3.1.0</PackageVersion>
     <Authors>Qoollo</Authors>
     <PackageLicenseUrl>https://github.com/qoollo/dotNet-turbo/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/qoollo/dotNet-turbo</PackageProjectUrl>
@@ -24,20 +24,13 @@
     <Description>Collection of useful classes for your .NET application:
     Object Pool, Thread Pool, Queue Async Processor, BlockingQueue, DiskQueue, ThreadSetManager, Throttling, Semaphore, EntryCounteringEvent, Collections, ReadOnlyCollections, IoC, WeakEvent and other.
     </Description>
-    <PackageReleaseNotes>v3.0.1 (28.02.2018)
-      - .NET Core 2.0 support through .NET Standard 2.0
-      - Public surface comments translated to English
-      - Base type in some exception changed from SystemException to Exception
-      - TurboAssertionException became internal
-      - CantRetrieveElementException moved from 'Qoollo.Turbo' to 'Qoollo.Turbo.ObjectPools' namespace
-      - ThreadSetManager: CurrentCulture and CurrentUICulture properties marked as Obsolete as they are not portable
-      - EntryCountingEvent: TerminateAndWait signature fixed
-      - Many Obsolete methods now will result in compilation error
-      - Some Obsolete classes have been removed
-      - CodeContracts removed
+    <PackageReleaseNotes>v3.1.0 (26.08.2020)
+      - ConcurrentBatchingQueue and BlockingBatchingQueue added
+      - SemaphoreLight marked as sealed
+      - BlockingQueue proper dispose: now it interrupts all waiting threads
     </PackageReleaseNotes>
     <Copyright>Copyright 2015</Copyright>
-    <PackageTags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance CircularList Disk DiskQueue MemoryQueue</PackageTags>
+    <PackageTags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance CircularList Disk DiskQueue MemoryQueue BatchingQueue</PackageTags>
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
