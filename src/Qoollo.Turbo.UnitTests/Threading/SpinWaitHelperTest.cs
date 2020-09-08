@@ -44,6 +44,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
             int minMeasure = measureResults.Min();
             int maxMeasure = measureResults.Max();
+            TestContext.WriteLine($"MinMeasure: {minMeasure}, MaxMeasure: {maxMeasure}");
             Assert.IsTrue(maxMeasure - minMeasure <= 1);
         }
 
@@ -66,7 +67,8 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 SpinWaitHelper.SpinWait(37 * 1000);
             sw.Stop();
             TestContext.WriteLine($"Measured time: {sw.ElapsedMilliseconds}ms");
-            Assert.IsTrue(sw.ElapsedMilliseconds > 400 && sw.ElapsedMilliseconds < 800, "Measured time: " + sw.ElapsedMilliseconds.ToString());
+            // Expect 500ms (can be large due to context switch)
+            Assert.IsTrue(sw.ElapsedMilliseconds > 480 && sw.ElapsedMilliseconds < 800, "Measured time: " + sw.ElapsedMilliseconds.ToString());
         }
 
         [TestMethod]

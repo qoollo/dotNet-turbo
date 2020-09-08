@@ -25,6 +25,17 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         private static int _normalizationCoef = 1;
         private static volatile int _normalizationCalculated = NORM_COEF_NOT_CALCULATED;
 
+
+#if NETCOREAPP3_1
+        public static int NormalizationCoef { get { return 1; } }
+        internal static bool NormalizationCoefCalculated { get { return true; } }
+
+        public static void SpinWait(int iterations)
+        {
+            Thread.SpinWait(iterations);
+        }
+#else
+
         public static int NormalizationCoef
         {
             get
@@ -34,6 +45,13 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             }
         }
         internal static bool NormalizationCoefCalculated { get { return _normalizationCalculated == NORM_COEF_CALC_FINISHED; } }
+
+        public static void SpinWait(int iterations)
+        {
+            EnsureSpinWaitNormalizationCoefCalculated();
+            Thread.SpinWait(iterations * _normalizationCoef);
+        }
+#endif
 
         internal static double MeasureSpinWaitNormalizationCoefSinglePass()
         {
@@ -81,8 +99,20 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 
         private static void MeasureSpinWaitNormalizationCoefThreadFunc(object state)
         {
-            Interlocked.Exchange(ref _normalizationCoef, MeasureSpinWaitNormalizationCoef());
-            Interlocked.Exchange(ref _normalizationCalculated, NORM_COEF_CALC_FINISHED);
+            try
+            {
+                Interlocked.Exchange(ref _normalizationCoef, MeasureSpinWaitNormalizationCoef());
+            }
+            catch // Catch all exceptions to prevent runtime failure if something unexpected happened
+            {
+#if DEBUG
+                throw;
+#endif
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _normalizationCalculated, NORM_COEF_CALC_FINISHED);
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -99,13 +129,6 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         {
             if (_normalizationCalculated == NORM_COEF_NOT_CALCULATED)
                 EnsureSpinWaitNormalizationCoefCalculatedSlow();
-        }
-
-
-        public static void SpinWait(int iterations)
-        {
-            EnsureSpinWaitNormalizationCoefCalculated();
-            Thread.SpinWait(iterations * _normalizationCoef);
         }
     }
 }
