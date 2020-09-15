@@ -46,6 +46,11 @@
     <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <TargetFrameworkKind>netcore</TargetFrameworkKind>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
   
   <ItemGroup>
     <None Update="IoC\Associations\AssociationContainerGenerator.tt">

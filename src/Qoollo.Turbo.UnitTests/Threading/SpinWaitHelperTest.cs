@@ -30,7 +30,28 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 Thread.Sleep(1);
             }
         }
+
+        [TestMethod]
+        public void FrameworkSupportSpinWaitNormalization()
+        {
+            Assert.IsTrue(SpinWaitHelper.IsFrameworkSupportSpinWaitNormalization());
+        }
 #endif
+
+#if NET45 || NET46
+        [TestMethod]
+        public void FrameworkNotSupportSpinWaitNormalization()
+        {
+            Assert.IsFalse(SpinWaitHelper.IsFrameworkSupportSpinWaitNormalization());
+        }
+#endif
+
+        [TestMethod]
+        public void ProcessorDetectionIsNotFail()
+        {
+            TestContext.WriteLine(SpinWaitHelper.DetectProcessorKind().ToString());
+        }
+
 
         [TestMethod]
         public void SpinWaitSmallFluctuation()
@@ -39,7 +60,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             for (int i = 0; i < 10; i++)
             {
                 measureResults.Add(SpinWaitHelper.MeasureSpinWaitNormalizationCoef());
-                Thread.Sleep(1);
+                Thread.Sleep(100);
             }
 
             int minMeasure = measureResults.Min();
@@ -57,6 +78,8 @@ namespace Qoollo.Turbo.UnitTests.Threading
             {
                 SpinWaitHelper.SpinWait(100);
             }
+
+            this.TestContext.WriteLine($"Normalization coef: {SpinWaitHelper.NormalizationCoef}");
         }
 
 
@@ -64,11 +87,11 @@ namespace Qoollo.Turbo.UnitTests.Threading
         {
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < 500; i++)
-                SpinWaitHelper.SpinWait(37 * 1000);
+                SpinWaitHelper.SpinWait(1000 * 1000 / 37);
             sw.Stop();
             TestContext.WriteLine($"Measured time: {sw.ElapsedMilliseconds}ms");
             // Expect 500ms (can be large due to context switch)
-            Assert.IsTrue(sw.ElapsedMilliseconds > 480 && sw.ElapsedMilliseconds < 800, "Measured time: " + sw.ElapsedMilliseconds.ToString());
+            Assert.IsTrue(sw.ElapsedMilliseconds > 400 && sw.ElapsedMilliseconds < 600, "Measured time: " + sw.ElapsedMilliseconds.ToString());
         }
 
         [TestMethod]
