@@ -25,7 +25,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         {
             for (int i = 0; i < 10; i++)
             {
-                int normValue = SpinWaitHelper.MeasureSpinWaitNormalizationCoef();
+                int normValue = SpinWaitHelper.GetSpinWaitNormalizationCoef();
                 Assert.AreEqual(1, normValue);
                 Thread.Sleep(1);
             }
@@ -49,7 +49,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
         [TestMethod]
         public void ProcessorDetectionIsNotFail()
         {
-            TestContext.WriteLine(SpinWaitHelper.DetectProcessorKind().ToString());
+            TestContext.WriteLine(SpinWaitHelper.GetProcessorKind().ToString());
         }
 
 
@@ -59,7 +59,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
             List<int> measureResults = new List<int>();
             for (int i = 0; i < 10; i++)
             {
-                measureResults.Add(SpinWaitHelper.MeasureSpinWaitNormalizationCoef());
+                measureResults.Add(SpinWaitHelper.GetSpinWaitNormalizationCoef());
                 Thread.Sleep(100);
             }
 

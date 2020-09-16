@@ -35,7 +35,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         private static volatile int _normalizationCalculated = NORM_COEF_NOT_CALCULATED;
 
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 
         public static int NormalizationCoef
         {
@@ -65,7 +65,16 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 #endif
 
 
-        internal static ProcessorKind DetectProcessorKind()
+        private static bool TryParseProcessorIdentifierPart(string[] parts, string partName, out int value)
+        {
+            value = 0;
+            int partIndex = parts.FindIndex(o => string.Equals(o, partName, StringComparison.OrdinalIgnoreCase));
+            if (partIndex < 0 || partIndex + 1 >= parts.Length)
+                return false;
+
+            return int.TryParse(parts[partIndex + 1], out value);
+        }
+        internal static ProcessorKind GetProcessorKind()
         {
             var processorIdentifier = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER");
             if (string.IsNullOrWhiteSpace(processorIdentifier))
@@ -75,24 +84,17 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
                 return ProcessorKind.Other;
 
             var parts = processorIdentifier.Split();
-            int familyIndex = parts.FindIndex(o => string.Equals(o, "Family", StringComparison.OrdinalIgnoreCase));
-            int modelIndex = parts.FindIndex(o => string.Equals(o, "Model", StringComparison.OrdinalIgnoreCase));
-            if (familyIndex < 0 || familyIndex + 1 >= parts.Length)
+            if (!TryParseProcessorIdentifierPart(parts, "Family", out int processorFamily))
                 return ProcessorKind.Other;
-            if (modelIndex < 0 || modelIndex + 1 >= parts.Length)
+            if (!TryParseProcessorIdentifierPart(parts, "Model", out int processorModel))
                 return ProcessorKind.Other;
 
-            int familyNumber = 0;
-            int modelNumber = 0;
-            if (!int.TryParse(parts[familyIndex + 1], out familyNumber))
-                return ProcessorKind.Other;
-            if (!int.TryParse(parts[modelIndex + 1], out modelNumber))
+            // Only family 6 is known for us
+            if (processorFamily != 6)
                 return ProcessorKind.Other;
 
-            if (familyNumber != 6)
-                return ProcessorKind.Other;
-
-            if (modelNumber < 85)
+            // 85 is from CPUID list. Models with greater number is definetely after Skylake
+            if (processorModel < 85)
                 return ProcessorKind.IntelPreSkylake;
 
             return ProcessorKind.IntelPostSkylake;
@@ -105,81 +107,8 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         }
 
 
-
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long BurnCpu(int burnDurationMs)
-        {
-            long result = 1;
-            long count = 0;
-            long expectedDuration = Math.Max(1, burnDurationMs * Stopwatch.Frequency / 1000); // recalc duration from ms to ticks
-            long startTimeStamp = Stopwatch.GetTimestamp();
-            long elapsedTime;
-
-            do
-            {
-                result = (long)(result * Math.Sqrt(++count));
-                elapsedTime = unchecked(Stopwatch.GetTimestamp() - startTimeStamp);
-            } while (elapsedTime < expectedDuration);
-
-
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long MeasureSingleStepExpectedDuration()
-        {
-            long result = long.MaxValue;
-            for (int i = 0; i < 3; i++)
-            {
-                long start = Stopwatch.GetTimestamp();
-                Thread.SpinWait(SpinWaitCountPerStep);
-                result = Math.Min(result, unchecked(Stopwatch.GetTimestamp() - start));
-            }
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static double MeasureSpinWaitNormalizationCoefSinglePassAlt(int measureDurationMs)
-        {
-            long singleStepDuration = MeasureSingleStepExpectedDuration();
-            int spinCount = 0;
-            int outlineSpinCount = 0;
-            long expectedDuration = Math.Max(1, measureDurationMs * Stopwatch.Frequency / 1000); // recalc duration from ms to ticks
-            long outlineTicks = 0;
-
-            long startTimeStamp = Stopwatch.GetTimestamp();
-            long prevTimeStamp = startTimeStamp;
-            long curTimeStamp;
-
-            do
-            {
-                Thread.SpinWait(SpinWaitCountPerStep);
-                spinCount += SpinWaitCountPerStep;
-                curTimeStamp = Stopwatch.GetTimestamp();
-                if (unchecked(curTimeStamp - prevTimeStamp) > 2 * singleStepDuration)
-                {
-                    // outline
-                    outlineSpinCount += SpinWaitCountPerStep;
-                    outlineTicks += unchecked(curTimeStamp - prevTimeStamp);
-                }
-                else
-                {
-                    singleStepDuration = Math.Min(singleStepDuration, unchecked(curTimeStamp - prevTimeStamp));
-                }
-
-                prevTimeStamp = curTimeStamp;
-            } while (unchecked(curTimeStamp - startTimeStamp) < expectedDuration);
-
-            long elapsedTime = unchecked(curTimeStamp - startTimeStamp) - outlineTicks;
-            spinCount -= outlineSpinCount;
-
-            double nsPerSpin = (double)elapsedTime * NsPerSecond / ((double)spinCount * Stopwatch.Frequency);
-            return MinNsPerNormalizedSpin / nsPerSpin;
-        }
-
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static double MeasureSpinWaitNormalizationCoefSinglePass(int measureDurationMs)
+        private static double MeasureSpinWaitNormalizationCoef(int measureDurationMs)
         {
             int spinCount = 0;
             long expectedDuration = Math.Max(1, measureDurationMs * Stopwatch.Frequency / 1000); // recalc duration from ms to ticks
@@ -198,22 +127,37 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             return MinNsPerNormalizedSpin / nsPerSpin;
         }
 
-        internal static int MeasureSpinWaitNormalizationCoef()
+        internal static int GetSpinWaitNormalizationCoef()
         {
-            BurnCpu(60);
-            double mainMeasure = MeasureSpinWaitNormalizationCoefSinglePassAlt(measureDurationMs: 20);
+            // Check whether framework support normalization out of the box (for NETSTANDARD)
+            if (IsFrameworkSupportSpinWaitNormalization())
+                return 1;
 
-            // Validate it is within expected range
-            if (mainMeasure < 0.9 || mainMeasure > 1.1)
+            double mainMeasure;
+            if (Stopwatch.IsHighResolution && Stopwatch.Frequency > 1000 * 1000)
             {
-                // Suspicies result: repeat measurements and choose the largest one (larger coef -> larger spinCount in specified interval -> less probability of context switching)
+                // Perform 3 short measures
+                // Choose the largest one (larger coef -> larger spinCount in specified interval -> less probability of context switching)
+                mainMeasure = MeasureSpinWaitNormalizationCoef(measureDurationMs: 8);
+
                 Thread.Yield();
-                BurnCpu(60);
-                mainMeasure = Math.Max(mainMeasure, MeasureSpinWaitNormalizationCoefSinglePassAlt(measureDurationMs: 14));
+                mainMeasure = Math.Max(mainMeasure, MeasureSpinWaitNormalizationCoef(measureDurationMs: 8));
+
                 Thread.Yield();
-                BurnCpu(60);
-                mainMeasure = Math.Max(mainMeasure, MeasureSpinWaitNormalizationCoefSinglePassAlt(measureDurationMs: 8));
+                mainMeasure = Math.Max(mainMeasure, MeasureSpinWaitNormalizationCoef(measureDurationMs: 8));
             }
+            else
+            {
+                // Single long measure
+                mainMeasure = MeasureSpinWaitNormalizationCoef(measureDurationMs: 20);
+            }
+
+#if NETFRAMEWORK
+            // Correct measure for reduced cpu frequency
+            if (GetProcessorKind() == ProcessorKind.IntelPreSkylake && mainMeasure > 1.9 && mainMeasure < 4)
+                mainMeasure = 4;
+#endif
+
 
             if (mainMeasure < 1)
                 mainMeasure = 1;
@@ -228,7 +172,7 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         {
             try
             {
-                Interlocked.Exchange(ref _normalizationCoef, MeasureSpinWaitNormalizationCoef());
+                Interlocked.Exchange(ref _normalizationCoef, GetSpinWaitNormalizationCoef());
             }
             catch // Catch all exceptions to prevent runtime failure if something unexpected happened
             {
