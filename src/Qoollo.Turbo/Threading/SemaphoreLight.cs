@@ -203,7 +203,7 @@ namespace Qoollo.Turbo.Threading
                         if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                             return true;
 
-                        Thread.SpinWait(150 + 16 * i);
+                        SpinWaitHelper.SpinWait(10 + 2 * i);
                         currentCountLocFree = _currentCountLockFree;
                     }
                 }
@@ -219,11 +219,18 @@ namespace Qoollo.Turbo.Threading
 
             if (_waitCount >= _currentCountForWait)
             {
-                Thread.Yield();
+                int currentCountLocFree;
+                for (int i = 0; i < 3; i++)
+                {
+                    if ((i % 2) == 1 && _processorCount > 1)
+                        SpinWaitHelper.SpinWait(10);
+                    else
+                        Thread.Yield();
 
-                int currentCountLocFree = _currentCountLockFree;
-                if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
-                    return true;
+                    currentCountLocFree = _currentCountLockFree;
+                    if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
+                        return true;
+                }
             }
 
             // Вынуждены уходить в lock

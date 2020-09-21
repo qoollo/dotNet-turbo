@@ -1,4 +1,5 @@
 ﻿using Qoollo.Turbo.Collections.Concurrent;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -209,7 +210,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                     {
                         col.Add(index - 1);
-                        Thread.SpinWait(addSpin);
+                        SpinWaitHelper.SpinWait(addSpin);
                     }
 
                     barierAdders.SignalAndWait();
@@ -231,7 +232,7 @@ namespace Qoollo.Turbo.PerformanceTests
                             val = col.Take(myToken);
 
                             valList.Add(val);
-                            Thread.SpinWait(takeSpin);
+                            SpinWaitHelper.SpinWait(takeSpin);
                         }
                     }
                     catch (OperationCanceledException)
@@ -316,7 +317,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     col.Add(index - 1);
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -338,7 +339,7 @@ namespace Qoollo.Turbo.PerformanceTests
                         val = col.Take(myToken);
 
                         valList.Add(val);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -425,7 +426,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     col.Add(index - 1);
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -447,7 +448,7 @@ namespace Qoollo.Turbo.PerformanceTests
                         val = col.Take(myToken);
 
                         valList.Add(val);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -535,7 +536,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     col.Add(index - 1);
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -557,7 +558,7 @@ namespace Qoollo.Turbo.PerformanceTests
                         val = col.Take(myToken);
 
                         valList.Add(val);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -736,75 +737,79 @@ namespace Qoollo.Turbo.PerformanceTests
             //TstBQ();
 
             //Process.GetCurrentProcess().ProcessorAffinity = (IntPtr)1;
+            while (!SpinWaitHelper.NormalizationCoefCalculated)
+                SpinWaitHelper.SpinWait(500);
+            Console.WriteLine($"SpinWait norm coef = {SpinWaitHelper.NormalizationCoef}");
+
 
             for (int i = 0; i < 10; i++)
             {
-                RunConcurrentBC("1, 1", 5000000, 1, 1, 10, 10);
+
+                RunConcurrentBC("1, 1", 5000000, 1, 1, 20, 20);
                 Free();
 
-                RunConcurrentBC("4, 4", 5000000, 4, 4, 10, 10);
+                RunConcurrentBC("4, 4", 5000000, 4, 4, 20, 20);
                 Free();
 
-                RunConcurrentBC("16, 1", 5000000, 16, 1, 10, 10);
+                RunConcurrentBC("16, 1", 5000000, 16, 1, 20, 20);
                 Free();
 
-                RunConcurrentBC("1, 16", 5000000, 1, 16, 10, 10);
+                RunConcurrentBC("1, 16", 5000000, 1, 16, 20, 20);
                 Free();
 
-                RunConcurrentBC("16, 16", 5000000, 16, 16, 10, 10);
-                Free();
-
-                Console.WriteLine();
-
-                RunConcurrentBQ("1, 1", 5000000, 1, 1, 10, 10);
-                Free();
-
-                RunConcurrentBQ("4, 4", 5000000, 4, 4, 10, 10);
-                Free();
-
-                RunConcurrentBQ("16, 1", 5000000, 16, 1, 10, 10);
-                Free();
-
-                RunConcurrentBQ("1, 16", 5000000, 1, 16, 10, 10);
-                Free();
-
-                RunConcurrentBQ("16, 16", 5000000, 16, 16, 10, 10);
+                RunConcurrentBC("16, 16", 5000000, 16, 16, 20, 20);
                 Free();
 
                 Console.WriteLine();
 
-                RunConcurrentCondVar("1, 1", 5000000, 1, 1, 10, 10);
+                RunConcurrentBQ("1, 1", 5000000, 1, 1, 20, 20);
                 Free();
 
-                RunConcurrentCondVar("4, 4", 5000000, 4, 4, 10, 10);
+                RunConcurrentBQ("4, 4", 5000000, 4, 4, 20, 20);
                 Free();
 
-                RunConcurrentCondVar("16, 1", 5000000, 16, 1, 10, 10);
+                RunConcurrentBQ("16, 1", 5000000, 16, 1, 20, 20);
                 Free();
 
-                RunConcurrentCondVar("1, 16", 5000000, 1, 16, 10, 10);
+                RunConcurrentBQ("1, 16", 5000000, 1, 16, 20, 20);
                 Free();
 
-                RunConcurrentCondVar("16, 16", 5000000, 16, 16, 10, 10);
+                RunConcurrentBQ("16, 16", 5000000, 16, 16, 20, 20);
                 Free();
 
                 Console.WriteLine();
 
-                RunConcurrentMon("1, 1", 5000000, 1, 1, 10, 10);
+                RunConcurrentCondVar("1, 1", 5000000, 1, 1, 20, 20);
                 Free();
 
-                RunConcurrentMon("4, 4", 5000000, 4, 4, 10, 10);
+                RunConcurrentCondVar("4, 4", 5000000, 4, 4, 20, 20);
                 Free();
 
-                RunConcurrentMon("16, 1", 5000000, 16, 1, 10, 10);
+                RunConcurrentCondVar("16, 1", 5000000, 16, 1, 20, 20);
                 Free();
 
-                RunConcurrentMon("1, 16", 5000000, 1, 16, 10, 10);
+                RunConcurrentCondVar("1, 16", 5000000, 1, 16, 20, 20);
                 Free();
 
-                RunConcurrentMon("16, 16", 5000000, 16, 16, 10, 10);
+                RunConcurrentCondVar("16, 16", 5000000, 16, 16, 20, 20);
                 Free();
 
+                Console.WriteLine();
+
+                RunConcurrentMon("1, 1", 5000000, 1, 1, 20, 20);
+                Free();
+
+                RunConcurrentMon("4, 4", 5000000, 4, 4, 20, 20);
+                Free();
+
+                RunConcurrentMon("16, 1", 5000000, 16, 1, 20, 20);
+                Free();
+
+                RunConcurrentMon("1, 16", 5000000, 1, 16, 20, 20);
+                Free();
+
+                RunConcurrentMon("16, 16", 5000000, 16, 16, 20, 20);
+                Free();
 
                 //RunConcurrentBC("Simple", 5000000, /*Environment.ProcessorCount */ 2, 2, 10, 100);//100 / Environment.ProcessorCount, 101);
                 //Free();
