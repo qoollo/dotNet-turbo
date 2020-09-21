@@ -214,16 +214,16 @@ namespace Qoollo.Turbo.Threading
             }
 
 
-            if (timeout == 0 && _waitCount >= _currentCountForWait)
-                return false;
-
             if (_waitCount >= _currentCountForWait)
             {
+                if (timeout == 0) // Редкая ситуация. При нулевом таймауте нам нечего ловить
+                    return false;
+
                 int currentCountLocFree;
                 for (int i = 0; i < 3; i++)
                 {
                     if ((i % 2) == 1 && _processorCount > 1)
-                        SpinWaitHelper.SpinWait(10);
+                        SpinWaitHelper.SpinWait(5);
                     else
                         Thread.Yield();
 

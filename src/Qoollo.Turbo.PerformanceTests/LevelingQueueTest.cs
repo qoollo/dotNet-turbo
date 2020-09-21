@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.PerformanceTests
 {
@@ -95,7 +96,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     col.Add(index - 1);
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -117,7 +118,7 @@ namespace Qoollo.Turbo.PerformanceTests
                         val = col.Take(myToken);
 
                         valList.Add(val);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -208,7 +209,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     col.Add(index - 1);
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -230,7 +231,7 @@ namespace Qoollo.Turbo.PerformanceTests
                         val = col.Take(myToken);
 
                         valList.Add(val);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -320,7 +321,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     col.Add(index - 1);
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -342,7 +343,7 @@ namespace Qoollo.Turbo.PerformanceTests
                         val = col.Take(myToken);
 
                         valList.Add(val);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -442,7 +443,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     col.Add(index - 1);
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -464,7 +465,7 @@ namespace Qoollo.Turbo.PerformanceTests
                         val = col.Take(myToken);
 
                         valList.Add(val);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -540,75 +541,78 @@ namespace Qoollo.Turbo.PerformanceTests
 
         public static void RunTest()
         {
+            SpinWaitHelper.WaitUntilNormalizationCoefCalculated();
+            Console.WriteLine($"SpinWait norm coef = {SpinWaitHelper.NormalizationCoef}");
+
             for (int i = 0; i < 10; i++)
             {
-                //RunConcurrentMemQ("1, 1", 5000000, 1, 1, 10, 10);
-                //Free();
-
-                //RunConcurrentMemQ("4, 4", 5000000, 4, 4, 10, 10);
-                //Free();
-
-                //RunConcurrentMemQ("16, 1", 5000000, 16, 1, 10, 10);
-                //Free();
-
-                //RunConcurrentMemQ("1, 16", 5000000, 1, 16, 10, 10);
-                //Free();
-
-                //RunConcurrentMemQ("16, 16", 5000000, 16, 16, 10, 10);
-                //Free();
-
-                //Console.WriteLine();
-
-
-                //RunConcurrentLvlQ("1, 1", 5000000, 1, 1, 10, 10);
-                //Free();
-
-                //RunConcurrentLvlQ("4, 4", 5000000, 4, 4, 10, 10);
-                //Free();
-
-                //RunConcurrentLvlQ("16, 1", 5000000, 16, 1, 10, 10);
-                //Free();
-
-                //RunConcurrentLvlQ("1, 16", 5000000, 1, 16, 10, 10);
-                //Free();
-
-                //RunConcurrentLvlQ("16, 16", 5000000, 16, 16, 10, 10);
-                //Free();
-
-                //Console.WriteLine();
-
-
-                //RunConcurrentDiskQ("1, 1", 5000000, 1, 1, 10, 10);
-                //Free();
-
-                //RunConcurrentDiskQ("4, 4", 5000000, 4, 4, 10, 10);
-                //Free();
-
-                //RunConcurrentDiskQ("16, 1", 5000000, 16, 1, 10, 10);
-                //Free();
-
-                //RunConcurrentDiskQ("1, 16", 5000000, 1, 16, 10, 10);
-                //Free();
-
-                //RunConcurrentDiskQ("16, 16", 5000000, 16, 16, 10, 10);
-                //Free();
-
-                //Console.WriteLine();
-
-
-                RunConcurrentDiskQFile("1, 1", 5000000, 1, 1, 10, 10);
+                RunConcurrentMemQ("1, 1", 5000000, 1, 1, 4, 4);
                 Free();
 
-                RunConcurrentDiskQFile("4, 4", 5000000, 4, 4, 10, 10);
+                RunConcurrentMemQ("4, 4", 5000000, 4, 4, 4, 4);
                 Free();
 
-                RunConcurrentDiskQFile("16, 1", 5000000, 16, 1, 10, 10);
+                RunConcurrentMemQ("16, 1", 5000000, 16, 1, 4, 4);
                 Free();
 
-                RunConcurrentDiskQFile("1, 16", 5000000, 1, 16, 10, 10);
+                RunConcurrentMemQ("1, 16", 5000000, 1, 16, 4, 4);
                 Free();
 
-                RunConcurrentDiskQFile("16, 16", 5000000, 16, 16, 10, 10);
+                RunConcurrentMemQ("16, 16", 5000000, 16, 16, 4, 4);
+                Free();
+
+                Console.WriteLine();
+
+
+                RunConcurrentLvlQ("1, 1", 5000000, 1, 1, 4, 4);
+                Free();
+
+                RunConcurrentLvlQ("4, 4", 5000000, 4, 4, 4, 4);
+                Free();
+
+                RunConcurrentLvlQ("16, 1", 5000000, 16, 1, 4, 4);
+                Free();
+
+                RunConcurrentLvlQ("1, 16", 5000000, 1, 16, 4, 4);
+                Free();
+
+                RunConcurrentLvlQ("16, 16", 5000000, 16, 16, 4, 4);
+                Free();
+
+                Console.WriteLine();
+
+
+                RunConcurrentDiskQ("1, 1", 5000000, 1, 1, 4, 4);
+                Free();
+
+                RunConcurrentDiskQ("4, 4", 5000000, 4, 4, 4, 4);
+                Free();
+
+                RunConcurrentDiskQ("16, 1", 5000000, 16, 1, 4, 4);
+                Free();
+
+                RunConcurrentDiskQ("1, 16", 5000000, 1, 16, 4, 4);
+                Free();
+
+                RunConcurrentDiskQ("16, 16", 5000000, 16, 16, 4, 4);
+                Free();
+
+                Console.WriteLine();
+
+
+                RunConcurrentDiskQFile("1, 1", 5000000, 1, 1, 4, 4);
+                Free();
+
+                RunConcurrentDiskQFile("4, 4", 5000000, 4, 4, 4, 4);
+                Free();
+
+                RunConcurrentDiskQFile("16, 1", 5000000, 16, 1, 4, 4);
+                Free();
+
+                RunConcurrentDiskQFile("1, 16", 5000000, 1, 16, 4, 4);
+                Free();
+
+                RunConcurrentDiskQFile("16, 16", 5000000, 16, 16, 4, 4);
                 Free();
 
                 Console.WriteLine();

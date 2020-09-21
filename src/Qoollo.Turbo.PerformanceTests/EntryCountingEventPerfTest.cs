@@ -1,4 +1,5 @@
 ﻿using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -105,7 +106,7 @@ namespace Qoollo.Turbo.PerformanceTests
 
                 while (Interlocked.Increment(ref value) < count)
                 {
-                    Thread.SpinWait(spin);
+                    SpinWaitHelper.SpinWait(spin);
                 }
 
                 barEnd.SignalAndWait();
@@ -147,7 +148,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 {
                     using (var guard = inst.TryEnter())
                     {
-                        Thread.SpinWait(spin);
+                        SpinWaitHelper.SpinWait(spin);
                     }
                 }
 
@@ -182,8 +183,8 @@ namespace Qoollo.Turbo.PerformanceTests
         {
             for (int i = 0; i < 10; i++)
             {
-                MeasureNormalProc(50000000, 4, 25);
-                MeasureCountingProc(50000000, 4, 25);
+                MeasureNormalProc(50000000, 4, 5);
+                MeasureCountingProc(50000000, 4, 5);
 
                 Console.WriteLine();
             }

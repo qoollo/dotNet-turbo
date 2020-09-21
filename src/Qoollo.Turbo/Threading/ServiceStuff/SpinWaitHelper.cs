@@ -65,6 +65,22 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
 #endif
 
 
+        internal static void WaitUntilNormalizationCoefCalculated()
+        {
+            EnsureSpinWaitNormalizationCoefCalculated();
+            int count = 0;
+            while (!NormalizationCoefCalculated)
+            {
+                if (count % 10 == 0)
+                    Thread.Sleep(1);
+                else if (count % 2 == 0)
+                    Thread.Sleep(0);
+                else
+                    Thread.Yield();
+            }
+        }
+
+
         private static bool TryParseProcessorIdentifierPart(string[] parts, string partName, out int value)
         {
             value = 0;
