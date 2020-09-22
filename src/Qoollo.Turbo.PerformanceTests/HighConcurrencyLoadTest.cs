@@ -737,8 +737,7 @@ namespace Qoollo.Turbo.PerformanceTests
             //TstBQ();
 
             //Process.GetCurrentProcess().ProcessorAffinity = (IntPtr)1;
-            while (!SpinWaitHelper.NormalizationCoefCalculated)
-                SpinWaitHelper.SpinWait(500);
+            SpinWaitHelper.WaitUntilNormalizationCoefCalculated();
             Console.WriteLine($"SpinWait norm coef = {SpinWaitHelper.NormalizationCoef}");
 
 

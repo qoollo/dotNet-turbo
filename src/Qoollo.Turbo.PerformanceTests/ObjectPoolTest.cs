@@ -4,6 +4,7 @@ using Qoollo.Turbo.ObjectPools.ServiceStuff;
 using Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections;
 using Qoollo.Turbo.ObjectPools.ServiceStuff.ElementContainers;
 using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -162,7 +163,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     {
                         el = pool.GetObject();
                         //Thread.Sleep(pauseSpin);
-                        Thread.SpinWait(pauseSpin);
+                        SpinWaitHelper.SpinWait(pauseSpin);
                     }
                     finally
                     {
@@ -218,7 +219,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     {
                         el = pool.GetObject();
                         //Thread.Sleep(pauseSpin);
-                        Thread.SpinWait(pauseSpin);
+                        SpinWaitHelper.SpinWait(pauseSpin);
                     }
                     finally
                     {
@@ -276,7 +277,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     {
                         el = pool.Take();
                         //Thread.Sleep(pauseSpin);
-                        Thread.SpinWait(pauseSpin);
+                        SpinWaitHelper.SpinWait(pauseSpin);
                     }
                     finally
                     {
@@ -343,7 +344,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     {
                         el = pool.Take();
                         //Thread.Sleep(pauseSpin);
-                        Thread.SpinWait(pauseSpin);
+                        SpinWaitHelper.SpinWait(pauseSpin);
                     }
                     finally
                     {
@@ -406,7 +407,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     using (var el = pool.Rent())
                     {
                         //Thread.Sleep(pauseSpin);
-                        Thread.SpinWait(pauseSpin);
+                        SpinWaitHelper.SpinWait(pauseSpin);
                     }
                 }
             };
@@ -478,18 +479,21 @@ namespace Qoollo.Turbo.PerformanceTests
 
         public static void RunTest()
         {
+            SpinWaitHelper.WaitUntilNormalizationCoefCalculated();
+            Console.WriteLine($"SpinWait norm coef = {SpinWaitHelper.NormalizationCoef}");
+
             //TestStaticThreadPool(4, 4, 10000000, 1);
             //TestStaticThreadPool(4, 4, 10000000, 1);
             //TestStaticThreadPool(4, 4, 10000000, 1);
 
             for (int i = 0; i < 3; i++)
-                RunTestBCL(8, 1, 10000000, 100);
+                RunTestBCL(8, 1, 10000000, 20);
 
             for (int i = 0; i < 3; i++)
-                TestNewDynamicPool(8, 1, 10000000, 100);
+                TestNewDynamicPool(8, 1, 10000000, 20);
 
             //for (int i = 0; i < 3; i++)
-            //    TestNewStaticPool(8, 1, 10000000, 100);
+            //    TestNewStaticPool(8, 1, 10000000, 20);
 
             //for (int i = 0; i < 1; i++)
             //    RunTestSimple(8, 16, 10000000, 10);
