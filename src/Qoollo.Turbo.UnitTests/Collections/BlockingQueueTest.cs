@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.Collections
 {
@@ -248,7 +249,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
                     Parallel.For(0, ItemsCount, val =>
                     {
                         queue.Add(val);
-                        Thread.SpinWait(val % 100);
+                        SpinWaitHelper.SpinWait(val % 16);
                     });
                 });
 
@@ -261,7 +262,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
                         if (!queue.TryTake(out res, 10000))
                             Assert.Fail("Value was expected in MemoryQueue");
                         bag.Add(res);
-                        Thread.SpinWait((val + 37) % 100);
+                        SpinWaitHelper.SpinWait((val + 5) % 16);
                     });
                 });
 
@@ -293,7 +294,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
                     for (int val = 0; val < ItemsCount; val++)
                     {
                         queue.Add(val);
-                        Thread.SpinWait(val % 100);
+                        SpinWaitHelper.SpinWait(val % 16);
                     }
                 });
 
@@ -306,7 +307,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
                         if (!queue.TryTake(out res, 10000))
                             Assert.Fail("Value was expected in MemoryQueue");
                         bag.Add(res);
-                        Thread.SpinWait((val + 37) % 100);
+                        SpinWaitHelper.SpinWait((val + 5) % 16);
                     }
                 });
 
@@ -461,14 +462,14 @@ namespace Qoollo.Turbo.UnitTests.Collections
                         q.Add(item);
 
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
 
                     int tmpItem = 0;
                     if (q.TryPeek(out tmpItem) && tmpItem == item)
-                        sleepTime += 100;
+                        sleepTime += 10;
 
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
 
                     if (rnd.Next(100) == 0)
                         q.IncreaseBoundedCapacity(1);
@@ -494,9 +495,9 @@ namespace Qoollo.Turbo.UnitTests.Collections
                         if (q.TryTake(out tmp, -1, tokSrc.Token))
                             data.Add((int)tmp);
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }

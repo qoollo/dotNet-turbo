@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Queues.ServiceStuff;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -315,7 +316,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     else
                     {
                         int spin = rnd.Next(0, workSpin);
-                        Thread.SpinWait(spin);
+                        SpinWaitHelper.SpinWait(spin);
                     }
                 }
                 finally
@@ -347,7 +348,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         }
 
                         int spin = rnd.Next(0, workSpin);
-                        Thread.SpinWait(spin);
+                        SpinWaitHelper.SpinWait(spin);
                     }
                     catch (OperationCanceledException) { }
 
@@ -395,9 +396,9 @@ namespace Qoollo.Turbo.UnitTests.Queues
             MutuallyExclusivePrimitive inst = new MutuallyExclusivePrimitive();
             //for (int i = 0; i < 10; i++)
             {
-                RunComplexTest(inst, 100000, 200, 50);
-                RunComplexTest(inst, 200000, 100, 100);
-                RunComplexTest(inst, 50000, 500, 50);
+                RunComplexTest(inst, 100000, 25, 50);
+                RunComplexTest(inst, 200000, 12, 100);
+                RunComplexTest(inst, 50000, 50, 50);
             }
         }
     }

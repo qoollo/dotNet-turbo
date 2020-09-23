@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
@@ -455,7 +456,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
             Action thAct = () =>
             {
                 Random localRand = new Random(Thread.CurrentThread.ManagedThreadId + Environment.TickCount);
-                int pasueDiff = pauseSpin / 4;
+                int pasueDiff = (int)Math.Ceiling(pauseSpin / 4.0);
 
                 startBar.SignalAndWait();
 
@@ -471,7 +472,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                             testInst.RemoveElement(el);
 
                         int spinCount = localRand.Next(pauseSpin - pasueDiff, pauseSpin + pasueDiff);
-                        Thread.SpinWait(spinCount);
+                        SpinWaitHelper.SpinWait(spinCount);
                     }
                 }
 
@@ -505,24 +506,24 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                 for (int i = testInst.ElementCount; i < 1; i++)
                     testInst.AddElement(i);
 
-                RunComplexTest(testInst, 1, 100000, 10, false);
+                RunComplexTest(testInst, 1, 100000, 4, false);
 
                 for (int i = testInst.ElementCount; i < Environment.ProcessorCount; i++)
                     testInst.AddElement(i);
 
-                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 10, false);
+                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 4, false);
 
                 for (int i = testInst.ElementCount; i < 2 * Environment.ProcessorCount; i++)
                     testInst.AddElement(i);
 
-                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 10, false);
+                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 4, false);
 
 
 
 
-                RunComplexTest(testInst, 1, 100000, 10, true);
-                RunComplexTest(testInst, Environment.ProcessorCount, 2000000, 10, true);
-                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 100, true);
+                RunComplexTest(testInst, 1, 100000, 4, true);
+                RunComplexTest(testInst, Environment.ProcessorCount, 2000000, 4, true);
+                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 12, true);
             }
         }
 
@@ -550,15 +551,15 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                     {
                         while (true)
                         {
-                            int curSpinTime = localRand.Next(0, 10000);
+                            int curSpinTime = localRand.Next(0, 2000);
 
                             Interlocked.Increment(ref totalExecutedOpCount);
                             using (var el = testInst.Rent(60 * 1000, throwOnUnavail: true))
                             {
-                                if (curSpinTime > 5000)
+                                if (curSpinTime > 1000)
                                     Thread.Sleep(0);
                                 else
-                                    Thread.SpinWait(curSpinTime);
+                                    SpinWaitHelper.SpinWait(curSpinTime);
                             }
 
                         }

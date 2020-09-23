@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Collections.Concurrent;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -425,9 +426,9 @@ namespace Qoollo.Turbo.UnitTests.Collections
 
                     q.Enqueue(item);
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -448,9 +449,9 @@ namespace Qoollo.Turbo.UnitTests.Collections
                         if (q.TryDequeue(out tmp))
                             data.AddRange(tmp);
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }

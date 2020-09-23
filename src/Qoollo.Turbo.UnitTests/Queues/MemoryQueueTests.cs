@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Queues;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     Parallel.For(0, ItemsCount, val =>
                     {
                         queue.Add(val);
-                        Thread.SpinWait(val % 100);
+                        SpinWaitHelper.SpinWait(val % 16);
                     });
                 });
 
@@ -42,7 +43,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         if (!queue.TryTake(out res, 10000))
                             Assert.Fail("Value was expected in MemoryQueue");
                         bag.Add(res);
-                        Thread.SpinWait((val + 37) % 100);
+                        SpinWaitHelper.SpinWait((val + 5) % 16);
                     });
                 });
 
@@ -74,7 +75,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                     for (int val = 0; val < ItemsCount; val++)
                     {
                         queue.Add(val);
-                        Thread.SpinWait(val % 100);
+                        SpinWaitHelper.SpinWait(val % 16);
                     }
                 });
 
@@ -87,7 +88,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         if (!queue.TryTake(out res, 10000))
                             Assert.Fail("Value was expected in MemoryQueue");
                         bag.Add(res);
-                        Thread.SpinWait((val + 37) % 100);
+                        SpinWaitHelper.SpinWait((val + 5) % 16);
                     }
                 });
 

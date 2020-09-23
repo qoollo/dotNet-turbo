@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Collections.Concurrent;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -320,7 +321,7 @@ namespace Qoollo.Turbo.UnitTests.Collections
                         temporaryCancelTokenTake = new CancellationTokenSource();
                     }
 
-                    Thread.SpinWait(rnd.Next(100));
+                    SpinWaitHelper.SpinWait(rnd.Next(12));
                 }
             });
 
@@ -466,9 +467,9 @@ namespace Qoollo.Turbo.UnitTests.Collections
 
                     col.Add(val);
 
-                    int delay = (int)(((double)val / itemCount) * 1000);
+                    int delay = (int)(((double)val / itemCount) * 100);
                     if (delay > 0)
-                        Thread.SpinWait(rnd.Next(delay));
+                        SpinWaitHelper.SpinWait(rnd.Next(delay));
                 }
             };
 
@@ -565,10 +566,10 @@ namespace Qoollo.Turbo.UnitTests.Collections
 
                     q.Add(item);
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
 
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -589,9 +590,9 @@ namespace Qoollo.Turbo.UnitTests.Collections
                         if (q.TryTake(out tmp, -1, tokSrc.Token))
                             data.AddRange(tmp);
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Queues;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,7 +69,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         else
                             queue.Add(val, new CancellationToken());
 
-                        Thread.SpinWait(val % 100);
+                        SpinWaitHelper.SpinWait(val % 16);
                     }
                 });
 
@@ -86,7 +87,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                             Assert.IsTrue(queue.TryTake(out res, TimeSpan.FromSeconds(10)), "Value was expected 3");
 
                         bag.Add(res);
-                        Thread.SpinWait((val + 37) % 100);
+                        SpinWaitHelper.SpinWait((val + 5) % 16);
                     }
                 });
 
