@@ -14,7 +14,7 @@ namespace Qoollo.Turbo.Threading
     /// Lightweigh semaphore based on Interlocked operations
     /// </summary>
     [DebuggerDisplay("CurrentCount = {CurrentCount}")]
-    public sealed class SemaphoreLight: IDisposable
+    public class SemaphoreLight: IDisposable
     {
         private static readonly int _processorCount = Environment.ProcessorCount;
 

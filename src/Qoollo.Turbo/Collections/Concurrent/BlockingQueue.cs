@@ -1217,8 +1217,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (!_isDisposed)
             {
                 _isDisposed = true;
-                _freeNodes?.Dispose();
-                _occupiedNodes.Dispose();
+                // TODO: dispose semaphores in future versions. Uncommenting this is a breaking change!
+                //_freeNodes?.Dispose();
+                //_occupiedNodes.Dispose();
             }
         }
 
