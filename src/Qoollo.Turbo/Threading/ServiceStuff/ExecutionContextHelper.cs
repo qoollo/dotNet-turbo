@@ -151,8 +151,12 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ExecutionContext CaptureContextNoSyncContextIfPossible()
         {
+#if NETCOREAPP
+            return ExecutionContext.Capture();
+#else
             var action = _captureContextDelegate?? InitCaptureContextMethod();
             return action();
+#endif
         }
         /// <summary>
         /// Runs a method in a specified execution context on the current thread
@@ -167,8 +171,12 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
             TurboContract.Requires(context != null, conditionString: "context != null");
             TurboContract.Requires(callback != null, conditionString: "callback != null");
 
+#if NETCOREAPP
+            ExecutionContext.Run(context, callback, state);
+#else
             var action = _runInContextDelegate ?? InitRunInContextMethod();
             action(context, callback, state, preserveSyncCtx);
+#endif
         }
     }
 }

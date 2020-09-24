@@ -6,7 +6,7 @@
     <AssemblyVersion>3.1.0</AssemblyVersion>
     <InformationalVersion>3.1.0</InformationalVersion>
 
-    <TargetFrameworks>net45;net46;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net45;net46;netstandard2.0;netcoreapp3.1</TargetFrameworks>
     <DefineConstants>SERVICE_CLASSES_PROFILING</DefineConstants>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
