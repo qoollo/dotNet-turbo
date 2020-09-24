@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Qoollo.Turbo.Queues;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.QueueProcessing
 {
@@ -261,7 +262,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
                 lock (rnd)
                     curSpinCount = rnd.Next(procSpinWaitCount);
 
-                Thread.SpinWait(curSpinCount);
+                SpinWaitHelper.SpinWait(curSpinCount);
 
                 lock (processedItems)
                     processedItems.Add(elem);
@@ -319,9 +320,9 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
             this.TestContext.WriteLine("QAP.ComplexTest: stage 1 complete");
             RunComplexTest(1, -1, 10000, Environment.ProcessorCount, 0, 1);
             this.TestContext.WriteLine("QAP.ComplexTest: stage 2 completed");
-            RunComplexTest(2 * Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 100, 0);
+            RunComplexTest(2 * Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 12, 0);
             this.TestContext.WriteLine("QAP.ComplexTest: stage 3 completed");
-            RunComplexTest(Environment.ProcessorCount, 100, 20000, Environment.ProcessorCount, 100, 1);
+            RunComplexTest(Environment.ProcessorCount, 100, 20000, Environment.ProcessorCount, 12, 1);
             this.TestContext.WriteLine("QAP.ComplexTest: stage 4 completed");
         }
 
@@ -342,7 +343,7 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
                 lock (rnd)
                     curSpinCount = rnd.Next(procSpinWaitCount);
 
-                Thread.SpinWait(curSpinCount);
+                SpinWaitHelper.SpinWait(curSpinCount);
 
                 lock (processedItems)
                     processedItems.Add(elem);
@@ -396,8 +397,8 @@ namespace Qoollo.Turbo.UnitTests.QueueProcessing
         {
             RunComplexTestOnCustom(Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 0, 0);
             RunComplexTestOnCustom(1, -1, 10000, Environment.ProcessorCount, 0, 1);
-            RunComplexTestOnCustom(2 * Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 100, 0);
-            RunComplexTestOnCustom(Environment.ProcessorCount, 100, 20000, Environment.ProcessorCount, 100, 1);
+            RunComplexTestOnCustom(2 * Environment.ProcessorCount, 1000, 1000000, Environment.ProcessorCount, 12, 0);
+            RunComplexTestOnCustom(Environment.ProcessorCount, 100, 20000, Environment.ProcessorCount, 12, 1);
         }
     }
 }

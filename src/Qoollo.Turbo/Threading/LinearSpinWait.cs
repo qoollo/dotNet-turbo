@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Qoollo.Turbo.Threading.ServiceStuff;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,15 +18,15 @@ namespace Qoollo.Turbo.Threading
         /// <summary>
         /// Best total spinning iteration count
         /// </summary>
-        public const int BestTotalSpinCount = 8196;
+        public const int BestTotalSpinCount = 256;
         /// <summary>
         /// Default threshold when it is better to yield the processor (perform context switch)
         /// </summary>
-        public const int DefaultYieldThreshold = 12;
+        public const int DefaultYieldThreshold = 10;
         /// <summary>
         /// Default number of iteration by which the spin interval increased every time
         /// </summary>
-        public const int DefaultSingleSpinCount = 100;
+        public const int DefaultSingleSpinCount = 4;
 
         private const int SLEEP_0_EVERY_HOW_MANY_TIMES = 5;
         private const int SLEEP_1_EVERY_HOW_MANY_TIMES = 20;
@@ -127,7 +128,7 @@ namespace Qoollo.Turbo.Threading
                     else
                     {
                         Thread.Yield();
-                    }
+                    }                   
                 }
             }
             else
@@ -136,7 +137,7 @@ namespace Qoollo.Turbo.Threading
                 if (spinCount == 0)
                     spinCount = DefaultSingleSpinCount;
 
-                Thread.SpinWait(spinCount * _count + spinCount);
+                SpinWaitHelper.SpinWait(spinCount * _count + spinCount);
             }
             this._count = ((this._count == int.MaxValue) ? 10 : (this._count + 1));
         }

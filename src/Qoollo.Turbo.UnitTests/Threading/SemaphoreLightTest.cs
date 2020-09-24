@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.Threading
 {
@@ -225,9 +226,9 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                     sem.Release();
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -245,9 +246,9 @@ namespace Qoollo.Turbo.UnitTests.Threading
                         sem.Wait(tokSrc.Token);
                         Interlocked.Increment(ref waitedTimesCount);
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }

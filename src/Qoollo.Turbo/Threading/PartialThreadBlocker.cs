@@ -170,7 +170,7 @@ namespace Qoollo.Turbo.Threading
                 if (i == 5)
                     Thread.Yield();
                 else
-                    Thread.SpinWait(150 + (4 << i));
+                    SpinWaitHelper.SpinWait(16 + 4 * i);
             }
 
 

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Queues;
 using Qoollo.Turbo.Queues.DiskQueueComponents;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.Queues
 {
@@ -38,7 +39,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
             public long ConvertBack(int item)
             {
-                Thread.SpinWait(50);
+                SpinWaitHelper.SpinWait(8);
                 return item;
             }
         }
@@ -105,7 +106,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                     if (rnd.Next(100) == 0)
                         Thread.Yield();
-                    Thread.SpinWait(rnd.Next(100));
+                    SpinWaitHelper.SpinWait(rnd.Next(12));
 
                     curElem++;
                 }
@@ -128,7 +129,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                         if (rnd.Next(100) == 0)
                             Thread.Yield();
-                        Thread.SpinWait(rnd.Next(400));
+                        SpinWaitHelper.SpinWait(rnd.Next(50));
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -198,10 +199,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                     long tmpItem = 0;
                     if (q.TryPeek(out tmpItem, 0, default(CancellationToken)) && tmpItem % 1000 == 0)
-                        sleepTime += 100;
+                        sleepTime += 12;
 
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -224,7 +225,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                         int sleepTime = rnd.Next(takeSpin);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -269,10 +270,10 @@ namespace Qoollo.Turbo.UnitTests.Queues
         [Timeout(2 * 60 * 1000)]
         public void ComplexTest1()
         {
-            RunTest(CreateQueue1, q => RunComplexTest(q, 1000000, 100, 100, Math.Max(1, Environment.ProcessorCount / 2)));
-            RunTest(CreateQueue1, q => RunComplexTest(q, 1000000, 100, 1000, Math.Max(1, Environment.ProcessorCount / 2) + 2));
-            RunTest(CreateQueue1, q => RunComplexTest(q, 1000000, 1000, 100, Math.Max(1, Environment.ProcessorCount / 2)));
-            RunTest(CreateQueue1, q => RunComplexTest(q, 1000000, 100, 200, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+            RunTest(CreateQueue1, q => RunComplexTest(q, 1000000, 12, 12, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(CreateQueue1, q => RunComplexTest(q, 1000000, 12, 120, Math.Max(1, Environment.ProcessorCount / 2) + 2));
+            RunTest(CreateQueue1, q => RunComplexTest(q, 1000000, 120, 12, Math.Max(1, Environment.ProcessorCount / 2)));
+            RunTest(CreateQueue1, q => RunComplexTest(q, 1000000, 12, 25, Math.Max(1, Environment.ProcessorCount / 2) + 2));
         }
     }
 }

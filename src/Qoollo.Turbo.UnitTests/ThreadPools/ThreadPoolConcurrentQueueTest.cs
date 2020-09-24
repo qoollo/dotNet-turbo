@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.ThreadPools
 {
@@ -184,9 +185,9 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
 
                     q.Add(new TestThreadPoolItem(item));
 
-                    int sleepTime = rnd.Next(1000);
+                    int sleepTime = rnd.Next(120);
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -204,9 +205,9 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
                     if (q.TryTake(out tmp))
                         data.Add((TestThreadPoolItem)tmp);
 
-                    int sleepTime = rnd.Next(1000);
+                    int sleepTime = rnd.Next(120);
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 ThreadPoolWorkItem tmp2;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Qoollo.Turbo.Threading.ServiceStuff;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -132,7 +133,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     {
                         Stopwatch sw111 = Stopwatch.StartNew();
                         while (sw111.ElapsedMilliseconds < taskTimeMs)
-                            Thread.SpinWait(10000);
+                            SpinWaitHelper.SpinWait(2000);
                     }
                     else if (taskTimeMs == 0)
                         Thread.Yield();

@@ -1,3 +1,8 @@
+v3.1.0 (24.09.2020)
+- ConcurrentBatchingQueue and BlockingBatchingQueue added
+- SpinWait normalization added
+- Native .NET Core 3.1 support
+
 v3.0.1 (28.02.2018)
 - .NET Core 2.0 support through .NET Standard 2.0
 - Public surface comments translated to English

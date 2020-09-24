@@ -1,4 +1,5 @@
 ﻿using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -129,7 +130,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             int delayedBoundedCapacityDecrease = _delayedBoundedCapacityDecrease;
             while (Interlocked.CompareExchange(ref _delayedBoundedCapacityDecrease, Math.Max(0, delayedBoundedCapacityDecrease) + decreaseValue, delayedBoundedCapacityDecrease) != delayedBoundedCapacityDecrease)
             {
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
                 delayedBoundedCapacityDecrease = _delayedBoundedCapacityDecrease;
             }
         }
@@ -157,7 +158,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                 int newBoundedCapacity = Math.Max(0, boundedCapacity - decreaseValue);
                 while (Interlocked.CompareExchange(ref _boundedCapacity, newBoundedCapacity, boundedCapacity) != boundedCapacity)
                 {
-                    sw.SpinOnce();
+                    sw.SpinOnceNoSleep();
                     boundedCapacity = _boundedCapacity;
                     newBoundedCapacity = Math.Max(0, boundedCapacity - decreaseValue);
                 }
@@ -885,6 +886,8 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <param name="timeout">Removing timeout in milliseconds</param>
         /// <param name="token">Cancellation token</param>
         /// <returns>True if the item was removed</returns>
+        /// <exception cref="OperationCanceledException">Cancellation was requested by token</exception>
+        /// <exception cref="ObjectDisposedException">Queue was disposed</exception>
         public bool TryTake(out T item, int timeout, CancellationToken token)
         {
             if (timeout < 0)
@@ -1195,11 +1198,6 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index));
-
  
             T[] localArray = _innerQueue.ToArray();
             if (array.Length - index < localArray.Length)
@@ -1220,6 +1218,9 @@ namespace Qoollo.Turbo.Collections.Concurrent
             if (!_isDisposed)
             {
                 _isDisposed = true;
+                // TODO: dispose semaphores in future versions. Uncommenting this is a breaking change!
+                //_freeNodes?.Dispose();
+                //_occupiedNodes.Dispose();
             }
         }
 

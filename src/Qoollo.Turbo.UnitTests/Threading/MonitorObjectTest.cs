@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -514,10 +515,10 @@ namespace Qoollo.Turbo.UnitTests.Threading
 
                     q.TryAdd(item, -1, default(CancellationToken));
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
 
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -538,9 +539,9 @@ namespace Qoollo.Turbo.UnitTests.Threading
                         if (q.TryTake(out tmp, -1, tokSrc.Token))
                             data.Add((int)tmp);
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }

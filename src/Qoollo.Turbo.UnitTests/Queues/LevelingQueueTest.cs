@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Queues;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.Queues
 {
@@ -111,7 +112,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                 for (int i = 0; i < 100; i++)
                 {
                     queue.TryAdd(100);
-                    Thread.SpinWait(100);
+                    SpinWaitHelper.SpinWait(12);
                 }
             }
 
@@ -474,7 +475,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                     if (rnd.Next(100) == 0)
                         Thread.Yield();
-                    Thread.SpinWait(rnd.Next(100));
+                    SpinWaitHelper.SpinWait(rnd.Next(12));
 
                     curElem++;
                 }
@@ -499,7 +500,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                         if (rnd.Next(100) == 0)
                             Thread.Yield();
-                        Thread.SpinWait(rnd.Next(100));
+                        SpinWaitHelper.SpinWait(rnd.Next(12));
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -586,14 +587,14 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         q.Add(item);
 
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
 
                     int tmpItem = 0;
                     if (q.TryPeek(out tmpItem) && tmpItem == item)
-                        sleepTime += 100;
+                        sleepTime += 12;
 
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -614,9 +615,9 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         if (q.TryTake(out tmp, -1, tokSrc.Token))
                             data.Add((int)tmp);
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
@@ -143,9 +144,9 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                     stack.Add(elem);
                     Interlocked.Increment(ref addedCountArray[storage.IndexOf(elem)]);
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -169,9 +170,9 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                             Interlocked.Increment(ref takenCountArray[storage.IndexOf(tmp)]);
                         }
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }
