@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Title>Qoollo.Turbo</Title>
@@ -24,10 +24,10 @@
     <Description>Collection of useful classes for your .NET application:
     Object Pool, Thread Pool, Queue Async Processor, BlockingQueue, DiskQueue, ThreadSetManager, Throttling, Semaphore, EntryCounteringEvent, Collections, ReadOnlyCollections, IoC, WeakEvent and other.
     </Description>
-    <PackageReleaseNotes>v3.1.0 (26.08.2020)
+    <PackageReleaseNotes>v3.1.0 (24.09.2020)
       - ConcurrentBatchingQueue and BlockingBatchingQueue added
-      - SemaphoreLight marked as sealed
-      - BlockingQueue proper dispose: now it interrupts all waiting threads
+      - SpinWait normalization added
+      - Native .NET Core 3.1 support
     </PackageReleaseNotes>
     <Copyright>Copyright 2015</Copyright>
     <PackageTags>Qoollo Turbo Common ServiceClasses Base Core Utils BCL Extension ObjectPool ThreadPool Thread Pool Threading Task Queue BlockingQueue AsyncQueueProcessor Async Parallel Processor Concurrent MultiThreading ThreadSetManager Throttling Semaphore SemaphoreLight ThreadSafe Synchronization EntryCountingEvent IoC DI WeakEvent WeakDelegate Collections PriorityQueue Deque ReadOnlyCollection ReadOnly Performance CircularList Disk DiskQueue MemoryQueue BatchingQueue</PackageTags>
