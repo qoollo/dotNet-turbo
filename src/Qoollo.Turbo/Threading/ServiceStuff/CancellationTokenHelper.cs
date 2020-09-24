@@ -39,7 +39,10 @@ namespace Qoollo.Turbo.Threading.ServiceStuff
         /// <returns>Delegate for generated method if successful, otherwise null</returns>
         private static RegisterWithoutECDelegate TryGenerateRegisterWithoutECMethod()
         {
-            var registerMethodCandidates = typeof(CancellationToken).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Where(o => o.Name == "Register" && o.GetParameters().Length == 4).ToList();
+            var registerMethodCandidates = typeof(CancellationToken).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).
+                                                                     Where(o => o.Name == "Register" && o.GetParameters().Length == 4).
+                                                                     Where(o => o.GetParameters()[2].ParameterType == typeof(bool) && o.GetParameters()[3].ParameterType == typeof(bool)).
+                                                                     ToList();
             if (registerMethodCandidates.Count != 1)
             {
                 TurboContract.Assert(false, "CancellationTokenHelper.TryCreateRegisterWithoutECMethod should be successful for known runtimes");

@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Qoollo.Turbo.Queues.DiskQueueComponents;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -359,9 +360,9 @@ namespace Qoollo.Turbo.UnitTests.Queues
             bar.SignalAndWait();
 
             while (Volatile.Read(ref added) < count)
-                Thread.SpinWait(100);
+                SpinWaitHelper.SpinWait(20);
 
-            Thread.SpinWait(rnd.Next(20000));
+            SpinWaitHelper.SpinWait(rnd.Next(4000));
             th.Abort();
             th.Join();
 
@@ -394,8 +395,8 @@ namespace Qoollo.Turbo.UnitTests.Queues
             bar.SignalAndWait();
 
             while (Volatile.Read(ref taken) < count)
-                Thread.SpinWait(100);
-            Thread.SpinWait(rnd.Next(20000));
+                SpinWaitHelper.SpinWait(20);
+            SpinWaitHelper.SpinWait(rnd.Next(4000));
             th.Abort();
             th.Join();
 
@@ -443,7 +444,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
         }
 
 
-#if !NETCOREAPP2_0
+#if NET45 || NET46 || NET462
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
         public void WriteAbortTest()
@@ -493,7 +494,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
 
 
-#if !NETCOREAPP2_0
+#if NET45 || NET46 || NET462
         [TestMethod]
         [Timeout(2 * 60 * 1000)]
         public void ReadAbortTest()
@@ -529,7 +530,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                     if (rnd.Next(100) == 0)
                         Thread.Yield();
-                    Thread.SpinWait(rnd.Next(100));
+                    SpinWaitHelper.SpinWait(rnd.Next(12));
 
                     curElem++;
                 }
@@ -551,7 +552,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                             takenElems.Add(curItem);
                         if (rnd.Next(100) == 0)
                             Thread.Yield();
-                        Thread.SpinWait(rnd.Next(100));
+                        SpinWaitHelper.SpinWait(rnd.Next(12));
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -616,14 +617,14 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         Assert.IsTrue(segment.TryAdd(item));
 
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
 
                     int tmpItem = 0;
                     if (segment.TryPeek(out tmpItem) && tmpItem == item)
-                        sleepTime += 100;
+                        sleepTime += 12;
 
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -644,9 +645,9 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         if (segment.TryTake(out tmp))
                             data.Add((int)tmp);
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }

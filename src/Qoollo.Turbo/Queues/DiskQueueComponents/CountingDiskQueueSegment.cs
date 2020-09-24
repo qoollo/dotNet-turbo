@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Qoollo.Turbo.Threading.ServiceStuff;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -115,7 +116,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             int fillCount = _fillCount;
             while (fillCount < _capacity && Interlocked.CompareExchange(ref _fillCount, fillCount + 1, fillCount) != fillCount)
             {
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
                 fillCount = _fillCount;
             }
 
@@ -154,7 +155,7 @@ namespace Qoollo.Turbo.Queues.DiskQueueComponents
             int itemCount = _itemCount;
             while (itemCount > 0 && Interlocked.CompareExchange(ref _itemCount, itemCount - 1, itemCount) != itemCount)
             {
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
                 itemCount = _itemCount;
             }
 

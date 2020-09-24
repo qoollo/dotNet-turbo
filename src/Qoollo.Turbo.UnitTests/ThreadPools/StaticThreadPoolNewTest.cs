@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.ThreadPools
 {
@@ -495,7 +496,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
                 lock (rndGenerator)
                     curTaskSpinCount = rndGenerator.Next(taskSpinCount);
 
-                Thread.SpinWait(curTaskSpinCount);
+                SpinWaitHelper.SpinWait(curTaskSpinCount);
 
                 if (spawnFromPool)
                 {
@@ -521,7 +522,7 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
                     lock (spawnRndGenerator)
                         curSpawnSpinCount = spawnRndGenerator.Next(spawnSpinTime);
 
-                    Thread.SpinWait(curSpawnSpinCount);
+                    SpinWaitHelper.SpinWait(curSpawnSpinCount);
                 }
             };
 
@@ -544,8 +545,8 @@ namespace Qoollo.Turbo.UnitTests.ThreadPools
         {
             using (StaticThreadPool testInst = new StaticThreadPool(2 * Environment.ProcessorCount, 1000, "name"))
             {
-                RunTestOnPool(testInst, 4000000, 1000, 2, 10, false);
-                RunTestOnPool(testInst, 4000000, 10, 2, 1000, false);
+                RunTestOnPool(testInst, 4000000, 120, 2, 4, false);
+                RunTestOnPool(testInst, 4000000, 4, 2, 120, false);
                 RunTestOnPool(testInst, 4000000, 0, 2, 0, true);
                 RunTestOnPool(testInst, 4000000, 0, Environment.ProcessorCount, 0, false);
             }

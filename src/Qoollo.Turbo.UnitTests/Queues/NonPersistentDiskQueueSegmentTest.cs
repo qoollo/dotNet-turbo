@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.Queues
 {
@@ -338,7 +339,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
 
                     if (rnd.Next(100) == 0)
                         Thread.Yield();
-                    Thread.SpinWait(rnd.Next(100));
+                    SpinWaitHelper.SpinWait(rnd.Next(12));
 
                     curElem++;
                 }
@@ -360,7 +361,7 @@ namespace Qoollo.Turbo.UnitTests.Queues
                             takenElems.Add(curItem);
                         if (rnd.Next(100) == 0)
                             Thread.Yield();
-                        Thread.SpinWait(rnd.Next(100));
+                        SpinWaitHelper.SpinWait(rnd.Next(12));
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -429,14 +430,14 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         Assert.IsTrue(segment.TryAdd(item));
 
 
-                    int sleepTime = rnd.Next(100);
+                    int sleepTime = rnd.Next(12);
 
                     int tmpItem = 0;
                     if (segment.TryPeek(out tmpItem) && tmpItem == item)
-                        sleepTime += 100;
+                        sleepTime += 12;
 
                     if (sleepTime > 0)
-                        Thread.SpinWait(sleepTime);
+                        SpinWaitHelper.SpinWait(sleepTime);
                 }
 
                 Interlocked.Increment(ref addFinished);
@@ -457,9 +458,9 @@ namespace Qoollo.Turbo.UnitTests.Queues
                         if (segment.TryTake(out tmp))
                             data.Add((int)tmp);
 
-                        int sleepTime = rnd.Next(100);
+                        int sleepTime = rnd.Next(12);
                         if (sleepTime > 0)
-                            Thread.SpinWait(sleepTime);
+                            SpinWaitHelper.SpinWait(sleepTime);
                     }
                 }
                 catch (OperationCanceledException) { }

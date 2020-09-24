@@ -34,6 +34,30 @@ namespace Qoollo.Turbo.Threading
         }
 
 
+        private const int SPIN_YIELD_THRESHOLD = 8;
+        private const int SPIN_SLEEP0_PERIOD = 5;
+        /// <summary>
+        /// Custom spinning logic implementation. Tweaked for SemaphoreLight (roughly equivalent to .NET Core 3.0 SpinWait logic, better than .NET Framework SpinWait logic)
+        /// </summary>
+        /// <param name="spinNumber">Number of the spin</param>
+        private static void SpinOnce(int spinNumber)
+        {
+            if (spinNumber < SPIN_YIELD_THRESHOLD)
+            {
+                SpinWaitHelper.SpinWait(8 + 2 * spinNumber);
+            }
+            else
+            {
+                if ((spinNumber - SPIN_YIELD_THRESHOLD) % SPIN_SLEEP0_PERIOD == (SPIN_SLEEP0_PERIOD - 1))
+                    Thread.Sleep(0);
+                else if ((spinNumber - SPIN_YIELD_THRESHOLD) % 2 == 1 && _processorCount > 1)
+                    SpinWaitHelper.SpinWait(8);
+                else
+                    Thread.Yield();
+            }
+        }
+
+
         // =============
 
 
@@ -107,7 +131,7 @@ namespace Qoollo.Turbo.Threading
                 if (Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                     return true;
 
-                spin.SpinOnce();
+                spin.SpinOnceNoSleep();
                 currentCountLocFree = _currentCountLockFree;
             }
 
@@ -191,41 +215,33 @@ namespace Qoollo.Turbo.Threading
             else if (timeout < -1)
                 timeout = Timeout.Infinite;
 
-
             // Ждём появления (лучше активно подождать, чем входить в lock)
-            if (_processorCount > 1)
+            if (_waitCount >= _currentCountForWait)
             {
-                int currentCountLocFree = _currentCountLockFree;
-                if (_waitCount >= _currentCountForWait && _waitCount <= _currentCountForWait + 2)
-                {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
-                            return true;
+                if (timeout == 0) // Редкая ситуация. При нулевом таймауте нам нечего ловить
+                    return false;
 
-                        Thread.SpinWait(150 + 16 * i);
-                        currentCountLocFree = _currentCountLockFree;
-                    }
+                int spinNumber = _processorCount > 1 ? 0 : SPIN_YIELD_THRESHOLD; // Пропускаем активное ожидание, если только одно ядро доступно
+                int currentCountLocFree = _currentCountLockFree;
+                while (spinNumber < SPIN_YIELD_THRESHOLD + 8)
+                {
+                    if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
+                        return true;
+
+                    SpinOnce(spinNumber);
+                    if (spinNumber < SPIN_YIELD_THRESHOLD && _waitCount > _currentCountForWait + 2) // Жгём CPU только если немного потоков в ожидании. Иначе лучше на Thread.Yield переходить
+                        spinNumber = SPIN_YIELD_THRESHOLD;
+                    else
+                        spinNumber++;
+
+                    currentCountLocFree = _currentCountLockFree;
                 }
 
                 // Пробуем захватить ещё раз
                 if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                     return true;
             }
-
-
-            if (timeout == 0 && _waitCount >= _currentCountForWait)
-                return false;
-
-            if (_waitCount >= _currentCountForWait)
-            {
-                Thread.Yield();
-
-                int currentCountLocFree = _currentCountLockFree;
-                if (currentCountLocFree > 0 && Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
-                    return true;
-            }
-
+            
             // Вынуждены уходить в lock
             CancellationTokenRegistration cancellationTokenRegistration = default(CancellationTokenRegistration);
             bool lockTaken = false;
@@ -468,7 +484,7 @@ namespace Qoollo.Turbo.Threading
                                     break;
                                 }
 
-                                spin.SpinOnce();
+                                spin.SpinOnceNoSleep();
                                 currentCountLocFree = _currentCountLockFree;
                                 countToRequestFromLockFree = Math.Min(currentCountLocFree, maxToRequestFromLockFree);
                             }

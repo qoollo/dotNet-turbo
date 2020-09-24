@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.Threading
 {
@@ -266,7 +267,7 @@ namespace Qoollo.Turbo.UnitTests.Threading
                     while (!tokenSrc.IsCancellationRequested)
                     {
                         inst.Wait();
-                        Thread.SpinWait(10000);
+                        SpinWaitHelper.SpinWait(1200);
                         Thread.Yield();
                     }
                     Interlocked.Increment(ref exitedCount);

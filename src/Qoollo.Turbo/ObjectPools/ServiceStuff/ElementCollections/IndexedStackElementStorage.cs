@@ -1,5 +1,6 @@
 ﻿using Qoollo.Turbo.ObjectPools.Common;
 using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -93,12 +94,12 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
 
         private void AddCore(PoolElementWrapper<T> element)
         {
-            LinearSpinWait sw = new LinearSpinWait(67, 13);
+            SpinWait sw = new SpinWait();
             var headIndexOp = _headIndexOp;
             element.NextIndex = GetHeadIndex(headIndexOp);
             while (Interlocked.CompareExchange(ref _headIndexOp, Repack(element.ThisIndex, headIndexOp), headIndexOp) != headIndexOp)
             {
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
                 headIndexOp = _headIndexOp;
                 element.NextIndex = GetHeadIndex(headIndexOp);
             }
@@ -130,7 +131,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
 
         private bool TryTakeCore(out PoolElementWrapper<T> element)
         {
-            LinearSpinWait sw = new LinearSpinWait(87, 11);
+            SpinWait sw = new SpinWait();
             var headIndexOp = _headIndexOp;
 
             while (GetHeadIndex(headIndexOp) >= 0)
@@ -143,7 +144,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
                     return true;
                 }
 
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
 
                 headIndexOp = _headIndexOp;
             }

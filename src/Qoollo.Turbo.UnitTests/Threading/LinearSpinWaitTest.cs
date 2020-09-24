@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.Threading
 {
@@ -60,5 +63,43 @@ namespace Qoollo.Turbo.UnitTests.Threading
                 sw.SpinOnce();
         }
 
+
+        [TestMethod]
+        public void TestThreadYieldPeriod()
+        {
+            const int yieldTimes = 4000;
+
+            Stopwatch sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < yieldTimes; i++)
+            {
+                if (i % 2 == 0)
+                    Thread.Yield();
+                else
+                    Thread.SpinWait(8);
+            }
+
+            sw.Stop();
+            TestContext.WriteLine($"Yield time: {sw.ElapsedMilliseconds}ms. For {yieldTimes} yields");
+        }
+
+        [TestMethod]
+        public void TestThreadSleep0Period()
+        {
+            const int sleepTimes = 4000;
+
+            Stopwatch sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < sleepTimes; i++)
+            {
+                if (i % 2 == 0)
+                    Thread.Sleep(0);
+                else
+                    Thread.SpinWait(8);
+            }
+
+            sw.Stop();
+            TestContext.WriteLine($"Sleep(0) time: {sw.ElapsedMilliseconds}ms. For {sleepTimes} sleeps");
+        }
     }
 }

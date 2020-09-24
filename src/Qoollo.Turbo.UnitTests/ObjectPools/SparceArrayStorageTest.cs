@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
@@ -305,7 +306,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                         }
 
                         int mySpinCount = spinCount / 2 + rnd.Next(spinCount / 2);
-                        Thread.SpinWait(mySpinCount);
+                        SpinWaitHelper.SpinWait(mySpinCount);
                     }
 
                     lock (activeElements)
@@ -341,9 +342,9 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
         [TestMethod]
         public void TestHeavyRandomAddRemove()
         {
-            TestHeavyRandomAddRemoveCore(1000000, Environment.ProcessorCount, 10, true);
-            TestHeavyRandomAddRemoveCore(500000, Environment.ProcessorCount * 2, 10, true);
-            TestHeavyRandomAddRemoveCore(1000000, Environment.ProcessorCount, 10, false);
+            TestHeavyRandomAddRemoveCore(1000000, Environment.ProcessorCount, 4, true);
+            TestHeavyRandomAddRemoveCore(500000, Environment.ProcessorCount * 2, 4, true);
+            TestHeavyRandomAddRemoveCore(1000000, Environment.ProcessorCount, 3, false);
         }
     }
 }

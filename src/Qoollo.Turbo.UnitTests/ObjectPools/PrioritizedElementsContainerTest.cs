@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Qoollo.Turbo.Threading.ServiceStuff;
 
 namespace Qoollo.Turbo.UnitTests.ObjectPools
 {
@@ -341,7 +342,7 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
                         {
                             item = testInst.Take();
                             //Thread.Sleep(pauseSpin);
-                            Thread.SpinWait(pauseSpin);
+                            SpinWaitHelper.SpinWait(pauseSpin);
                         }
                         finally
                         {
@@ -391,21 +392,21 @@ namespace Qoollo.Turbo.UnitTests.ObjectPools
 
                 TestContext.WriteLine("ComplexTest started");
 
-                RunComplexTest(testInst, Environment.ProcessorCount, 100000, 10);
+                RunComplexTest(testInst, Environment.ProcessorCount, 100000, 4);
 
                 TestContext.WriteLine("ComplexTest phase 1 finished");
 
                 for (int i = testInst.Count; i < Environment.ProcessorCount; i++)
                     testInst.Add(i, new PoolOperations(), true);
 
-                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 10);
+                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 4);
 
                 TestContext.WriteLine("ComplexTest phase 2 finished");
 
                 for (int i = testInst.Count; i < 2 * Environment.ProcessorCount; i++)
                     testInst.Add(i, new PoolOperations(), true);
 
-                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 10);
+                RunComplexTest(testInst, Environment.ProcessorCount, 1000000, 4);
 
                 TestContext.WriteLine("ComplexTest phase 3 finished");
             }

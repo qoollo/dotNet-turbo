@@ -4,7 +4,7 @@
     <Title>Qoollo.Turbo.PerformanceTests</Title>
     <AssemblyName>Qoollo.Turbo.PerformanceTests</AssemblyName>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp2.0;net45;net46</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0;netcoreapp3.1;net45;net46</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

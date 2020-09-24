@@ -1,4 +1,5 @@
 ﻿using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,7 +35,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     sem.Release();
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -52,7 +53,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     while (!srcCancel.IsCancellationRequested)
                     {
                         sem.WaitOne(1000);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -117,7 +118,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     sem.Release();
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -135,7 +136,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     while (!srcCancel.IsCancellationRequested)
                     {
                         sem.Wait(myToken);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -201,7 +202,7 @@ namespace Qoollo.Turbo.PerformanceTests
                 while ((index = Interlocked.Increment(ref addedElemCount)) <= elemCount)
                 {
                     sem.Release();
-                    Thread.SpinWait(addSpin);
+                    SpinWaitHelper.SpinWait(addSpin);
                 }
 
                 barierAdders.SignalAndWait();
@@ -219,7 +220,7 @@ namespace Qoollo.Turbo.PerformanceTests
                     while (!srcCancel.IsCancellationRequested)
                     {
                         sem.Wait(myToken);
-                        Thread.SpinWait(takeSpin);
+                        SpinWaitHelper.SpinWait(takeSpin);
                     }
                 }
                 catch (OperationCanceledException)
@@ -267,24 +268,24 @@ namespace Qoollo.Turbo.PerformanceTests
         public static void RunTest()
         {
             //for (int i = 0; i < 3; i++)
-            //    TestSemaphore("4, 4", 10000000, 16, 4, 10, 10);
+            //    TestSemaphore("16, 4", 10000000, 16, 4, 2, 2);
 
             //for (int i = 0; i < 3; i++)
-            //    TestSemaphoreSlim("4, 4", 10000000, 16, 4, 10, 10);
+            //    TestSemaphoreSlim("16, 4", 10000000, 16, 4, 2, 2);
 
             //for (int i = 0; i < 3; i++)
-            //    TestSemaphoreLight("8, 1", 10000000, 8, 1, 10, 10);
+            //    TestSemaphoreLight("8, 1", 10000000, 8, 1, 2, 2);
 
             for (int i = 0; i < 3; i++)
             {
-                TestSemaphoreLight("1, 1", 10000000, 1, 1, 10, 10);
-                //TestSemaphoreLight("2, 1", 10000000, 2, 1, 10, 10);
-                //TestSemaphoreLight("1, 2", 10000000, 1, 2, 10, 10);
-                TestSemaphoreLight("8, 8", 10000000, 8, 8, 10, 10);
-                TestSemaphoreLight("1, 8", 10000000, 1, 8, 10, 10);
-                TestSemaphoreLight("4, 16", 10000000, 4, 16, 10, 10);
-                TestSemaphoreLight("8, 1", 10000000, 8, 1, 10, 10);
-                TestSemaphoreLight("16, 4", 10000000, 16, 4, 10, 10);
+                TestSemaphoreLight("1, 1", 10000000, 1, 1, 2, 2);
+                //TestSemaphoreLight("2, 1", 10000000, 2, 1, 2, 2);
+                //TestSemaphoreLight("1, 2", 10000000, 1, 2, 2, 2);
+                TestSemaphoreLight("8, 8", 10000000, 8, 8, 2, 2);
+                TestSemaphoreLight("1, 8", 10000000, 1, 8, 2, 2);
+                TestSemaphoreLight("4, 16", 10000000, 4, 16, 2, 2);
+                TestSemaphoreLight("8, 1", 10000000, 8, 1, 2, 2);
+                TestSemaphoreLight("16, 4", 10000000, 16, 4, 2, 2);
 
                 Console.WriteLine();
             }
