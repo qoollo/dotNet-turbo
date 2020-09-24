@@ -362,8 +362,8 @@ namespace Qoollo.Turbo.UnitTests.Collections
             Assert.IsFalse(queue.TryAdd(3));
         }
 
-        [TestMethod]
-        [Ignore("Old behaviour is not good. Changing it can break production code. This test should be enabled when BlockingQueue dispose logic will be updated")]
+        //[TestMethod]
+        //[Ignore("Old behaviour is not good. Changing it can break production code. This test should be enabled when BlockingQueue dispose logic will be updated")]
         public void TestDisposeInterruptWaitersOnTake()
         {
             BlockingQueue<int> queue = new BlockingQueue<int>(10);
@@ -397,8 +397,8 @@ namespace Qoollo.Turbo.UnitTests.Collections
             disposeTask.Wait();
         }
 
-        [TestMethod]
-        [Ignore("Old behaviour is not good. Changing it can break production code. This test should be enabled when BlockingQueue dispose logic will be updated")]
+        //[TestMethod]
+        //[Ignore("Old behaviour is not good. Changing it can break production code. This test should be enabled when BlockingQueue dispose logic will be updated")]
         public void TestDisposeInterruptWaitersOnAdd()
         {
             BlockingQueue<int> queue = new BlockingQueue<int>(2);
