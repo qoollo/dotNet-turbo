@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Qoollo.Turbo.Threading.ServiceStuff;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -50,7 +51,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             SpinWait sw = new SpinWait();
             while (head != _head || tail != _tail)
             {
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
                 head = _head;
                 tail = _tail;
             }
@@ -138,7 +139,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
         /// <returns>True if the batch was removed</returns>
         internal bool TryDequeue(out BatchingQueueSegment<T> segment)
         {
-            SpinWait spinWait = new SpinWait();
+            SpinWait sw = new SpinWait();
 
             while (true)
             {
@@ -162,7 +163,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                     return true;
                 }
 
-                spinWait.SpinOnce();
+                sw.SpinOnceNoSleep();
             }
         }
 

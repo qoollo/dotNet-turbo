@@ -1,4 +1,5 @@
 ﻿using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -129,7 +130,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
             int delayedBoundedCapacityDecrease = _delayedBoundedCapacityDecrease;
             while (Interlocked.CompareExchange(ref _delayedBoundedCapacityDecrease, Math.Max(0, delayedBoundedCapacityDecrease) + decreaseValue, delayedBoundedCapacityDecrease) != delayedBoundedCapacityDecrease)
             {
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
                 delayedBoundedCapacityDecrease = _delayedBoundedCapacityDecrease;
             }
         }
@@ -157,7 +158,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                 int newBoundedCapacity = Math.Max(0, boundedCapacity - decreaseValue);
                 while (Interlocked.CompareExchange(ref _boundedCapacity, newBoundedCapacity, boundedCapacity) != boundedCapacity)
                 {
-                    sw.SpinOnce();
+                    sw.SpinOnceNoSleep();
                     boundedCapacity = _boundedCapacity;
                     newBoundedCapacity = Math.Max(0, boundedCapacity - decreaseValue);
                 }

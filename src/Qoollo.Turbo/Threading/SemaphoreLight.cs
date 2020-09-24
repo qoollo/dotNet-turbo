@@ -131,7 +131,7 @@ namespace Qoollo.Turbo.Threading
                 if (Interlocked.CompareExchange(ref _currentCountLockFree, currentCountLocFree - 1, currentCountLocFree) == currentCountLocFree)
                     return true;
 
-                spin.SpinOnce();
+                spin.SpinOnceNoSleep();
                 currentCountLocFree = _currentCountLockFree;
             }
 
@@ -484,7 +484,7 @@ namespace Qoollo.Turbo.Threading
                                     break;
                                 }
 
-                                spin.SpinOnce();
+                                spin.SpinOnceNoSleep();
                                 currentCountLocFree = _currentCountLockFree;
                                 countToRequestFromLockFree = Math.Min(currentCountLocFree, maxToRequestFromLockFree);
                             }

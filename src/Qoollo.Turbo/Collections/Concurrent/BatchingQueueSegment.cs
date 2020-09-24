@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Qoollo.Turbo.Threading.ServiceStuff;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -257,7 +258,7 @@ namespace Qoollo.Turbo.Collections.Concurrent
                         TurboContract.Assert(result, "New segment update failed");
                         break;
                     }
-                    sw.SpinOnce();
+                    sw.SpinOnceNoSleep();
                     reservedIndexWithFinalizationMark = _reservedIndexWithFinalizationMark;
                 }
             }

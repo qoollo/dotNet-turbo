@@ -1,5 +1,6 @@
 ﻿using Qoollo.Turbo.ObjectPools.Common;
 using Qoollo.Turbo.Threading;
+using Qoollo.Turbo.Threading.ServiceStuff;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -98,7 +99,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
             element.NextIndex = GetHeadIndex(headIndexOp);
             while (Interlocked.CompareExchange(ref _headIndexOp, Repack(element.ThisIndex, headIndexOp), headIndexOp) != headIndexOp)
             {
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
                 headIndexOp = _headIndexOp;
                 element.NextIndex = GetHeadIndex(headIndexOp);
             }
@@ -143,7 +144,7 @@ namespace Qoollo.Turbo.ObjectPools.ServiceStuff.ElementCollections
                     return true;
                 }
 
-                sw.SpinOnce();
+                sw.SpinOnceNoSleep();
 
                 headIndexOp = _headIndexOp;
             }
