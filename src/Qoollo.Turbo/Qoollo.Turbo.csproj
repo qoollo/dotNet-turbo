@@ -17,7 +17,7 @@
     <PackageId>Qoollo.Turbo</PackageId>
     <PackageVersion>3.1.0</PackageVersion>
     <Authors>Qoollo</Authors>
-    <PackageLicenseUrl>https://github.com/qoollo/dotNet-turbo/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/qoollo/dotNet-turbo</PackageProjectUrl>
     <RepositoryUrl>https://github.com/qoollo/dotNet-turbo</RepositoryUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
